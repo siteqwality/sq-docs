@@ -1,0 +1,32 @@
+---
+title: SiteQwality Docs
+description: Documentation for SiteQwality — uptime monitoring, observability, incidents, and status pages.
+template: splash
+hero:
+  tagline: Everything you need to monitor, observe, and respond.
+  actions:
+    - text: Get started
+      link: /getting-started/introduction/
+      icon: right-arrow
+    - text: API Reference
+      link: /api-reference/overview/
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+	<Card title="Uptime Monitoring" icon="approve-check">
+		HTTP, SSL/TLS, DNS, cron, and browser checks.
+	</Card>
+	<Card title="Observability" icon="bars">
+		Metrics, logs, traces, RUM, and session replay.
+	</Card>
+	<Card title="Incident Management" icon="warning">
+		Incidents, on-call schedules, escalation policies, and notifications.
+	</Card>
+	<Card title="Status Pages" icon="rocket">
+		Branded public status pages with components, incidents, and subscribers.
+	</Card>
+</CardGrid>

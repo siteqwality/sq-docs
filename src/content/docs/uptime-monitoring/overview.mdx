@@ -1,0 +1,22 @@
+---
+title: Uptime Monitoring
+description: HTTP, SSL/TLS, DNS, cron, and browser checks.
+last_verified: 2026-05-02
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="caution" title="Under construction">
+Detailed guides for each check type are being written. The endpoints are documented in the [API Reference](/api-reference/overview/).
+</Aside>
+
+SiteQwality's uptime monitoring covers five check types:
+
+- **HTTP checks** — request a URL on a schedule, assert status codes, response time, and keyword presence.
+- **SSL/TLS checks** — track certificate expiry and chain validity.
+- **DNS checks** — verify resolver answers for any record type.
+- **Cron / heartbeat checks** — receive pings from your scheduled jobs and alert when one is late.
+- **Browser checks** — run synthetic scripts in a real browser to validate critical user flows.
+
+Each check has the same lifecycle: configure → run on schedule → emit results → trigger notifications on state change.

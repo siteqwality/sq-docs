@@ -1,41 +1,46 @@
-# Website
+# SiteQwality Docs
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+Public documentation for SiteQwality, hosted at [docs.siteqwality.com](https://docs.siteqwality.com). Built with [Starlight](https://starlight.astro.build/) on [Astro](https://astro.build/).
 
-### Installation
+## Local development
 
-```
-$ yarn
-```
-
-### Local Development
-
-```
-$ yarn start
+```sh
+npm install
+npm run dev   # http://localhost:4321
 ```
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
-
-### Build
+## Project structure
 
 ```
-$ yarn build
+src/
+├── content/
+│   └── docs/                  # All MDX content. Sidebar groupings live in astro.config.mjs.
+└── assets/                    # Images, logos, OG cards.
+public/                        # Static files served as-is.
+astro.config.mjs               # Starlight config + sidebar.
+netlify.toml                   # Build settings for Netlify.
+openapi.json                   # (Phase 2) auto-synced from core-rs.
 ```
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
+## Content conventions
 
-### Deployment
+Every page has frontmatter:
 
-Using SSH:
-
-```
-$ USE_SSH=true yarn deploy
-```
-
-Not using SSH:
-
-```
-$ GIT_USER=<Your GitHub username> yarn deploy
+```yaml
+---
+title: Quickstart
+description: Send your first metric in 5 minutes
+last_verified: 2026-05-02
+owner: jj
+---
 ```
 
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+`last_verified` powers the scheduled stale-page audit. Bump it whenever you confirm a page still reflects reality.
+
+## Deployment
+
+Pushed commits to `main` trigger a Netlify build automatically.
+
+## Background
+
+See `~/code/SiteQwality/docs/plans/2026-05-02-docs-site-rebuild-design.md` for the full design and migration plan.
