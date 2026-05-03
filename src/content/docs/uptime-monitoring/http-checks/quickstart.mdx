@@ -1,0 +1,108 @@
+---
+title: HTTP check quickstart
+description: Create your first HTTP check via the dashboard or the API in under 5 minutes.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have an HTTP check running every 10 minutes against a URL of your choosing, with a notification that fires when the check fails.
+
+## Prerequisites
+
+- A SiteQwality account ([sign up free](https://app.siteqwality.com)).
+- An API key — generate one in **Settings → API keys**. Export it as an env var:
+
+  ```bash
+  export SITEQWALITY_API_KEY="sq_live_..."
+  ```
+
+- A URL to monitor. Use `https://mock.codes/200` to follow along — it always returns `200 OK`.
+
+## Create the check
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Go to Monitors → New → HTTP check.**
+
+2. **Fill in the basics.**
+   - **Friendly name:** `Mock 200 endpoint`
+   - **URL:** `https://mock.codes/200`
+   - **Method:** `GET`
+   - **Run interval:** `Every 10 minutes`
+
+3. **Pick a notification group** (or create one — email is the fastest channel to test).
+
+4. **Click Create.**
+
+</Steps>
+
+The check runs immediately and shows up in your monitors list. The first result lands within seconds.
+
+</TabItem>
+<TabItem label="API">
+
+<Steps>
+
+1. **POST to `/http/job`.**
+
+   ```bash
+   curl -X POST https://api.siteqwality.com/http/job \
+     -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "friendly_name": "Mock 200 endpoint",
+       "method": "GET",
+       "uri": "https://mock.codes/200",
+       "timeout_ms": 15000,
+       "run_interval_seconds": 600,
+       "group_notification_ids": [],
+       "monitor_tls": false,
+       "monitor_dns": false
+     }'
+   ```
+
+2. **Read back the response.**
+
+   The API returns a `201 Created` with the full HTTP-job object including its `id`. Save the `id` — you'll use it to fetch results, update settings, or delete the check later.
+
+3. **(Optional) Attach a notification group.**
+
+   If you already have a notification group, pass its UUID in `group_notification_ids` at create time. Otherwise add it later with `PUT /http/job/{job_id}`.
+
+</Steps>
+
+The full request schema is in the [API Reference](/api-reference/operations/create_http_job/).
+
+</TabItem>
+</Tabs>
+
+## Verify it's working
+
+<Steps>
+
+1. **Wait one tick** (≤10 minutes). The monitor's status changes from "pending" to "success."
+
+2. **Look at the recent results.**
+   - Dashboard: open the monitor, scroll to **Recent runs**.
+   - API: `GET /http/job/{job_id}/recent`.
+
+3. **Force a failure to test notifications.** Edit the check and change the URL to `https://mock.codes/500`. The next tick will fail, the monitor's status will flip, and your notification group will fire.
+
+4. **Flip it back.** Restore the URL to `https://mock.codes/200`. The monitor recovers on the next tick and the incident auto-resolves.
+
+</Steps>
+
+<Aside type="tip">
+30-second intervals are available on paid plans. Multi-region checks are also paid. The API will return `403 Forbidden` if you try either without an entitled plan.
+</Aside>
+
+## What's next
+
+<LinkCard title="Settings reference" description="Every field on an HTTP check, explained." href="../reference/" />
+<LinkCard title="Notifications & escalation" description="Route alerts to the right person at the right time." href="../../../incident-management/overview/" />
+<LinkCard title="Status pages" description="Publish your check's status to customers." href="../../../status-pages/overview/" />

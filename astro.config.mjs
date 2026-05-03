@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi';
 
 // https://astro.build/config
 export default defineConfig({
@@ -22,6 +23,16 @@ export default defineConfig({
 					attrs: { property: 'og:image', content: 'https://docs.siteqwality.com/og-feat.png' },
 				},
 			],
+			plugins: [
+				starlightOpenAPI([
+					{
+						base: 'api-reference',
+						label: 'API Reference',
+						schema: './openapi.json',
+						sidebar: { collapsed: false },
+					},
+				]),
+			],
 			sidebar: [
 				{
 					label: 'Getting Started',
@@ -33,6 +44,13 @@ export default defineConfig({
 					label: 'Uptime Monitoring',
 					items: [
 						{ label: 'Overview', slug: 'uptime-monitoring/overview' },
+						{
+							label: 'HTTP checks',
+							items: [
+								{ label: 'Overview', slug: 'uptime-monitoring/http-checks/overview' },
+								{ label: 'Quickstart', slug: 'uptime-monitoring/http-checks/quickstart' },
+							],
+						},
 					],
 				},
 				{
@@ -71,12 +89,7 @@ export default defineConfig({
 						{ label: 'Overview', slug: 'sdk/overview' },
 					],
 				},
-				{
-					label: 'API Reference',
-					items: [
-						{ label: 'Coming soon', slug: 'api-reference/overview' },
-					],
-				},
+				...openAPISidebarGroups,
 				{
 					label: 'Changelog',
 					link: '/changelog/',

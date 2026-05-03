@@ -1,0 +1,303 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SiteQwality API",
+    "description": "Public REST API for SiteQwality — uptime monitoring, observability, incidents, and status pages.",
+    "contact": {
+      "name": "SiteQwality Support",
+      "url": "https://siteqwality.com",
+      "email": "support@siteqwality.com"
+    },
+    "license": {
+      "name": "Proprietary"
+    },
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.siteqwality.com",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/http/job": {
+      "post": {
+        "tags": [
+          "HTTP Monitors"
+        ],
+        "summary": "Create an HTTP monitor.",
+        "description": "Creates a new HTTP check that runs on the specified schedule. Optionally\nalso provisions paired TLS, DNS, and page-speed monitors for the same URL.",
+        "operationId": "create_http_job",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHttpJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "HTTP monitor created"
+          },
+          "400": {
+            "description": "Invalid request body or feature not available on plan"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Feature requires a paid plan"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateHttpJobRequest": {
+        "type": "object",
+        "required": [
+          "method",
+          "timeout_ms",
+          "uri",
+          "run_interval_seconds"
+        ],
+        "properties": {
+          "check_regions": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "min_healthy_regions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "follow_redirects": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "final_uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "keyword_search": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "keyword_search_inverted": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "keyword_search_case_sensitive": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "keyword_search_regex": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "request_body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "content_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HttpJobContentType"
+              }
+            ]
+          },
+          "auth_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HttpJobAuthType"
+              }
+            ]
+          },
+          "auth_username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "auth_password": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "auth_bearer_token": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success_http_codes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "failure_http_codes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "custom_http_headers": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "run_interval_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "run_interval_thirty_seconds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "group_notification_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "monitor_tls": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "monitor_dns": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "monitor_page_speed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "HttpJobAuthType": {
+        "type": "string",
+        "enum": [
+          "basic",
+          "digest",
+          "bearer"
+        ]
+      },
+      "HttpJobContentType": {
+        "type": "string",
+        "enum": [
+          "json",
+          "xml",
+          "form_url_encoded",
+          "text"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "bearer_auth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "API Key",
+        "description": "Generate an API key in account settings and pass it as `Authorization: Bearer <KEY>`."
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "HTTP Monitors",
+      "description": "Create and manage HTTP uptime checks."
+    }
+  ]
+}
