@@ -439,38 +439,6 @@
         ]
       }
     },
-    "/admin/ping": {
-      "get": {
-        "tags": [
-          "Staff"
-        ],
-        "summary": "Staff-only liveness ping. Returns the authenticated staff user's email.\nMounted behind the staff-only middleware layer.",
-        "operationId": "ping",
-        "responses": {
-          "200": {
-            "description": "Pong with staff email",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PingResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "403": {
-            "description": "Caller is not a staff user"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
     "/auth/refresh": {
       "post": {
         "tags": [
@@ -507,44 +475,6 @@
             "description": "Internal server error"
           }
         }
-      }
-    },
-    "/bb4c85ee-b46f-40ed-9eef-86d6eda99d17/send_test_email": {
-      "post": {
-        "tags": [
-          "Admin"
-        ],
-        "summary": "Admin-only test endpoint to send a templated SendGrid email.",
-        "operationId": "send_test_email",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendTestEmailRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Test email queued"
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "404": {
-            "description": "Caller is not an admin"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
       }
     },
     "/billing/change-plan": {
@@ -1158,46 +1088,6 @@
           },
           "500": {
             "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
-    "/cf7d4777-b76d-4987-9149-7ad96fc05f46/impersonate/{user_id}": {
-      "get": {
-        "tags": [
-          "Admin"
-        ],
-        "summary": "Admin-only impersonation endpoint (currently returns 501 — Stytch port pending).",
-        "operationId": "impersonate_user",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "path",
-            "description": "Target user identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Session created (planned)"
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "404": {
-            "description": "User or admin path not authorized"
-          },
-          "501": {
-            "description": "Impersonation not yet ported to Stytch"
           }
         },
         "security": [
@@ -4068,20 +3958,6 @@
             "bearer_auth": []
           }
         ]
-      }
-    },
-    "/internal-server-error": {
-      "get": {
-        "tags": [
-          "Health"
-        ],
-        "summary": "Test endpoint that always returns 500 — used for monitoring smoke checks.",
-        "operationId": "internal_server_error",
-        "responses": {
-          "500": {
-            "description": "Always returns 500"
-          }
-        }
       }
     },
     "/log_parsers/": {
@@ -13813,23 +13689,6 @@
           }
         }
       },
-      "PingResponse": {
-        "type": "object",
-        "required": [
-          "ok"
-        ],
-        "properties": {
-          "ok": {
-            "type": "boolean"
-          },
-          "staff_email": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
       "PlanPackResponse": {
         "type": "object",
         "required": [
@@ -14892,17 +14751,6 @@
             "items": {
               "type": "string"
             }
-          }
-        }
-      },
-      "SendTestEmailRequest": {
-        "type": "object",
-        "required": [
-          "email"
-        ],
-        "properties": {
-          "email": {
-            "type": "string"
           }
         }
       },
@@ -17782,14 +17630,6 @@
     {
       "name": "Health",
       "description": "Liveness and readiness probes."
-    },
-    {
-      "name": "Admin",
-      "description": "Admin-only operational endpoints (impersonation, test emails)."
-    },
-    {
-      "name": "Staff",
-      "description": "Staff portal endpoints behind a Cloudflare Access layer."
     },
     {
       "name": "Webhooks",
