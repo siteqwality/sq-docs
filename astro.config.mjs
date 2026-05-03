@@ -29,13 +29,14 @@ export default defineConfig({
 						base: 'api-reference',
 						label: 'API Reference',
 						schema: './openapi.json',
-						sidebar: { collapsed: false },
+						sidebar: { collapsed: true },
 					},
 				]),
 			],
 			sidebar: [
 				{
 					label: 'Getting Started',
+					collapsed: true,
 					items: [
 						{ label: 'Introduction', slug: 'getting-started/introduction' },
 						{ label: 'Sign up & first monitor', slug: 'getting-started/signup-and-first-monitor' },
@@ -45,10 +46,12 @@ export default defineConfig({
 				},
 				{
 					label: 'Uptime Monitoring',
+					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'uptime-monitoring/overview' },
 						{
 							label: 'HTTP checks',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'uptime-monitoring/http-checks/overview' },
 								{ label: 'Quickstart', slug: 'uptime-monitoring/http-checks/quickstart' },
@@ -56,6 +59,7 @@ export default defineConfig({
 						},
 						{
 							label: 'SSL/TLS checks',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'uptime-monitoring/ssl-tls-checks/overview' },
 								{ label: 'Quickstart', slug: 'uptime-monitoring/ssl-tls-checks/quickstart' },
@@ -64,6 +68,7 @@ export default defineConfig({
 						},
 						{
 							label: 'DNS checks',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'uptime-monitoring/dns-checks/overview' },
 								{ label: 'Quickstart', slug: 'uptime-monitoring/dns-checks/quickstart' },
@@ -72,17 +77,20 @@ export default defineConfig({
 						},
 						{
 							label: 'Cron checks',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'uptime-monitoring/cron-checks/overview' },
 								{ label: 'Quickstart', slug: 'uptime-monitoring/cron-checks/quickstart' },
 								{
 									label: 'How-to guides',
+									collapsed: true,
 									autogenerate: { directory: 'uptime-monitoring/cron-checks/how-to' },
 								},
 							],
 						},
 						{
 							label: 'Browser checks',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'uptime-monitoring/browser-checks/overview' },
 								{ label: 'Quickstart', slug: 'uptime-monitoring/browser-checks/quickstart' },
@@ -93,10 +101,12 @@ export default defineConfig({
 				},
 				{
 					label: 'Observability',
+					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'observability/overview' },
 						{
 							label: 'Metrics',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'observability/metrics/overview' },
 								{ label: 'Quickstart', slug: 'observability/metrics/quickstart' },
@@ -105,41 +115,48 @@ export default defineConfig({
 						},
 						{
 							label: 'Logs',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'observability/logs/overview' },
 								{ label: 'Quickstart', slug: 'observability/logs/quickstart' },
 								{ label: 'Reference', slug: 'observability/logs/reference' },
 								{
 									label: 'How-to guides',
+									collapsed: true,
 									autogenerate: { directory: 'observability/logs/how-to' },
 								},
 							],
 						},
 						{
 							label: 'Traces',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'observability/traces/overview' },
 								{ label: 'Quickstart', slug: 'observability/traces/quickstart' },
 								{ label: 'Reference', slug: 'observability/traces/reference' },
 								{
 									label: 'How-to guides',
+									collapsed: true,
 									autogenerate: { directory: 'observability/traces/how-to' },
 								},
 							],
 						},
 						{
 							label: 'RUM',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'observability/rum/overview' },
 								{ label: 'Quickstart', slug: 'observability/rum/quickstart' },
 								{
 									label: 'How-to guides',
+									collapsed: true,
 									autogenerate: { directory: 'observability/rum/how-to' },
 								},
 							],
 						},
 						{
 							label: 'Session Replay',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'observability/replay/overview' },
 								{ label: 'Quickstart', slug: 'observability/replay/quickstart' },
@@ -149,32 +166,38 @@ export default defineConfig({
 				},
 				{
 					label: 'Incident Management',
+					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'incident-management/overview' },
 						{
 							label: 'Incidents',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'incident-management/incidents/overview' },
 								{ label: 'Quickstart', slug: 'incident-management/incidents/quickstart' },
 								{
 									label: 'How-to guides',
+									collapsed: true,
 									autogenerate: { directory: 'incident-management/incidents/how-to' },
 								},
 							],
 						},
 						{
 							label: 'On-call schedules',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'incident-management/on-call/overview' },
 								{ label: 'Quickstart', slug: 'incident-management/on-call/quickstart' },
 								{
 									label: 'How-to guides',
+									collapsed: true,
 									autogenerate: { directory: 'incident-management/on-call/how-to' },
 								},
 							],
 						},
 						{
 							label: 'Escalation policies',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'incident-management/escalation/overview' },
 								{ label: 'Quickstart', slug: 'incident-management/escalation/quickstart' },
@@ -183,22 +206,26 @@ export default defineConfig({
 						},
 						{
 							label: 'Notifications',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'incident-management/notifications/overview' },
 								{ label: 'Channels reference', slug: 'incident-management/notifications/channels' },
 								{
 									label: 'How-to guides',
+									collapsed: true,
 									autogenerate: { directory: 'incident-management/notifications/how-to' },
 								},
 							],
 						},
 						{
 							label: 'Maintenance windows',
+							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'incident-management/maintenance/overview' },
 								{ label: 'Quickstart', slug: 'incident-management/maintenance/quickstart' },
 								{
 									label: 'How-to guides',
+									collapsed: true,
 									autogenerate: { directory: 'incident-management/maintenance/how-to' },
 								},
 							],
@@ -207,17 +234,20 @@ export default defineConfig({
 				},
 				{
 					label: 'Status Pages',
+					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'status-pages/overview' },
 						{ label: 'Quickstart', slug: 'status-pages/quickstart' },
 						{
 							label: 'How-to guides',
+							collapsed: true,
 							autogenerate: { directory: 'status-pages/how-to' },
 						},
 					],
 				},
 				{
 					label: 'Dashboards',
+					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'dashboards/overview' },
 						{ label: 'Quickstart', slug: 'dashboards/quickstart' },
@@ -226,6 +256,7 @@ export default defineConfig({
 				},
 				{
 					label: 'Integrations',
+					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'integrations/overview' },
 						{ label: 'Slack', slug: 'integrations/slack' },
@@ -237,15 +268,12 @@ export default defineConfig({
 				},
 				{
 					label: 'SDK Reference',
+					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'sdk/overview' },
 					],
 				},
 				...openAPISidebarGroups,
-				{
-					label: 'Changelog',
-					link: '/changelog/',
-				},
 			],
 		}),
 	],
