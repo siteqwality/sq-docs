@@ -1,0 +1,68 @@
+---
+title: Microsoft Teams integration
+description: Connect a Teams channel via incoming webhook URL.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+The Microsoft Teams integration uses an incoming webhook URL from a Teams channel connector. SiteQwality posts Adaptive Cards rendered with status color, monitor details, and a link to the incident.
+
+## Set up
+
+<Steps>
+
+1. In Microsoft Teams, navigate to the channel you want alerts posted to.
+
+2. Click the channel's **More options (...) → Connectors**.
+
+3. Find **Incoming Webhook**, click **Configure**, give it a name (`SiteQwality Alerts`), upload an icon (optional), and **Create**.
+
+4. Copy the generated webhook URL.
+
+5. In SiteQwality: **Settings → Integrations → Microsoft Teams → Add**. Paste the URL. Save.
+
+</Steps>
+
+Or via the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/integration/microsoft_teams \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Ops Teams channel",
+    "url": "https://outlook.office.com/webhook/<unique>"
+  }'
+```
+
+## Create a notification channel
+
+```bash
+curl -X POST https://api.siteqwality.com/notification \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notification_group_id": "<your-group-id>",
+    "type": "microsoft_teams",
+    "details": {
+      "teams_integration_id": "<teams-integration-id>"
+    }
+  }'
+```
+
+The destination is implicit in the integration's webhook URL — you don't specify a channel separately.
+
+## Multiple channels
+
+For multiple Teams destinations, create one integration per destination (each with its own webhook URL). Then create one notification per integration.
+
+<Aside type="caution">
+Teams incoming webhooks are being deprecated by Microsoft in favor of the Workflows app — the URL format may change. Watch their announcements; SiteQwality will follow the migration.
+</Aside>
+
+## See also
+
+<LinkCard title="Channels reference" description="microsoft_teams channel detail shape." href="/incident-management/notifications/channels/#microsoft-teams" />
+<LinkCard title="Slack integration" description="The OAuth-based alternative for Slack-shop teams." href="/integrations/slack/" />

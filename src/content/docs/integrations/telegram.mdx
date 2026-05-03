@@ -1,0 +1,86 @@
+---
+title: Telegram integration
+description: Connect a Telegram chat (DM or group) via the SiteQwality bot using a setup-code flow.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+The Telegram integration uses the SiteQwality bot. Setup is a two-step flow because Telegram doesn't expose a webhook URL; instead, you message the bot a one-time code, and SiteQwality records the chat ID.
+
+## Set up
+
+<Steps>
+
+1. **Settings → Integrations → Telegram → Add → Start setup.**
+
+2. The dashboard generates a **setup code** (a long alphanumeric string).
+
+3. Open Telegram, find the SiteQwality bot, send the message:
+
+   ```
+   /start <setup-code>
+   ```
+
+4. The bot replies confirming the chat is registered.
+
+5. Back in SiteQwality, click **Finish**. The integration is created with the chat's ID.
+
+</Steps>
+
+For group chats, add the bot to the group first, then send the `/start <code>` command in the group.
+
+Or driven via API:
+
+```bash
+# Step 1 — start the setup
+curl -X POST https://api.siteqwality.com/integration/telegram/start \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+The response includes the `setup_code`. After the user messages the bot:
+
+```bash
+# Step 2 — poll until chat_id is set
+curl https://api.siteqwality.com/integration/telegram/get_setup_state \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+
+# Step 3 — finalize once chat_id is non-null
+curl -X POST https://api.siteqwality.com/integration/telegram \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Personal Telegram",
+    "setup_code": "<setup-code>"
+  }'
+```
+
+## Create a notification channel
+
+```bash
+curl -X POST https://api.siteqwality.com/notification \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notification_group_id": "<your-group-id>",
+    "type": "telegram",
+    "details": {
+      "telegram_integration_id": "<telegram-integration-id>"
+    }
+  }'
+```
+
+## Format
+
+Messages are HTML-formatted plain text with the monitor name, status, and a link to the incident in SiteQwality.
+
+## Notes
+
+- Setup codes expire after a fixed window. If the code expires before you message the bot, restart the setup.
+- One integration per chat. Use multiple integrations for multiple destinations.
+- Telegram has a global rate limit (~30 msg/sec) but per-chat limits are stricter (~1 msg/sec). Heavy alert bursts may queue.
+
+## See also
+
+<LinkCard title="Channels reference" description="telegram channel detail shape." href="/incident-management/notifications/channels/#telegram" />

@@ -1,14 +1,79 @@
 ---
 title: Dashboards
-description: Combine metrics, logs, and traces into shared views.
-last_verified: 2026-05-02
+description: Compose metrics, logs, traces, RUM, and uptime data into shared views with widgets and a global time range.
+last_verified: 2026-05-03
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-<Aside type="caution" title="Under construction">
-Dashboard authoring guides are being written.
+A **dashboard** is a named collection of widgets pinned to a layout, with a shared global time range. Build them for war-rooms during incidents, for the wall TV at standup, or for the CTO's daily dashboard refresh.
+
+## When to use dashboards
+
+- One canonical "is everything OK?" view per service.
+- Incident war-rooms — pin every relevant signal in one place.
+- Executive summaries — top-line business KPIs from your metric pipeline.
+
+## When NOT to use them
+
+- For ad-hoc exploration — use the per-pillar Explorers (Logs, Metrics, Traces).
+- For alerting — alerts live in the [incident management](/incident-management/overview/) layer, not on a chart.
+
+## Anatomy
+
+| Field | Description |
+|---|---|
+| `name` | Required, displayed at the top. |
+| `description` | Optional context. |
+| `global_time_range` | Object: `{type: "relative", value: "1h"}` or `{type: "absolute", from: ..., to: ...}`. Per-widget overrides allowed. |
+| `auto_refresh_seconds` | Optional polling interval. Common values: `30`, `60`, `300`. |
+| `widgets[]` | Array of `DashboardWidget`s. |
+
+## Widget types
+
+| Type | Renders |
+|---|---|
+| `timeseries` | Line / area chart over time. Most common for metrics. |
+| `stat` | Single big number (current value, latest p99, count). |
+| `table` | Tabular grid (group-by results, top-N lists). |
+| `log_stream` | Live-tailing log feed with filters. |
+| `monitor_status` | Status grid for a list of monitors. |
+| `text` | Markdown text — annotations, runbook links, headers. |
+
+## Data sources
+
+| Source | Use |
+|---|---|
+| `metrics` | Time-series metric queries. |
+| `logs` | Log queries (counts, top values, streams). |
+| `traces` | Trace counts, latency percentiles. |
+| `uptime` | Monitor status and uptime percentages. |
+| `rum` | Web vitals, session counts, error rates. |
+| `none` | For `text` widgets that don't query anything. |
+
+## Widget layout
+
+Each widget has a `layout: {x, y, w, h}` on a 12-column grid. Default is `{x: 0, y: 0, w: 6, h: 4}` — half-width, 4 rows tall. Drag to reorder in the dashboard editor.
+
+## Time range hierarchy
+
+1. The dashboard has a `global_time_range`.
+2. Each widget can override with `time_range_override` (e.g. for a "last 7 days" stat on an otherwise "last 1 hour" dashboard).
+3. The user can change the global range at the top of the page; widget overrides ignore it.
+
+## Auto-refresh
+
+Set `auto_refresh_seconds` to poll every N seconds. Useful for war-room dashboards on a wall TV. Don't set it on dashboards that drive expensive aggregations — refreshing every 30 seconds across 20 metric widgets is real load on ClickHouse.
+
+<Aside type="tip">
+Dashboards are per-account, not per-user. There's no privacy boundary — every team member sees every dashboard. Use `description` and naming conventions to make it clear when a dashboard is owned by a specific team.
 </Aside>
 
-Build dashboards from any combination of metrics, logs, traces, and uptime data. Share them with your team, embed them in incident war-rooms, or pin them on the wall.
+## See also
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Build your first dashboard with metrics and logs widgets." href="/dashboards/quickstart/" />
+  <LinkCard title="Widget reference" description="Every widget type and its config shape." href="/dashboards/reference/" />
+  <LinkCard title="Metrics" description="The most common dashboard data source." href="/observability/metrics/overview/" />
+</CardGrid>

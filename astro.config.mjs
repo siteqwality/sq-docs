@@ -220,12 +220,19 @@ export default defineConfig({
 					label: 'Dashboards',
 					items: [
 						{ label: 'Overview', slug: 'dashboards/overview' },
+						{ label: 'Quickstart', slug: 'dashboards/quickstart' },
+						{ label: 'Widget reference', slug: 'dashboards/reference' },
 					],
 				},
 				{
 					label: 'Integrations',
 					items: [
 						{ label: 'Overview', slug: 'integrations/overview' },
+						{ label: 'Slack', slug: 'integrations/slack' },
+						{ label: 'Microsoft Teams', slug: 'integrations/microsoft-teams' },
+						{ label: 'Discord', slug: 'integrations/discord' },
+						{ label: 'Telegram', slug: 'integrations/telegram' },
+						{ label: 'Webhooks', slug: 'integrations/webhooks' },
 					],
 				},
 				{

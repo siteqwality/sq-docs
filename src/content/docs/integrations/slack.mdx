@@ -1,0 +1,101 @@
+---
+title: Slack integration
+description: Install the SiteQwality Slack app via OAuth, then post rich-block alerts (with Acknowledge buttons) to any channel.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+The Slack integration installs an OAuth app into your workspace once. Each notification channel you create afterwards specifies a destination Slack channel.
+
+## Install
+
+<Steps>
+
+1. **Settings → Integrations → Slack → Add to Slack.**
+
+2. You're redirected to Slack's OAuth consent screen. Approve.
+
+3. Slack redirects back to SiteQwality with a code. The dashboard exchanges it for a workspace token and stores it as an integration.
+
+4. The Slack integration now appears in your list with a generated `friendly_name` like `Acme Slack`. You can rename it.
+
+</Steps>
+
+If you'd rather drive this from the API:
+
+```bash
+# After completing OAuth manually and capturing the code:
+curl -X POST https://api.siteqwality.com/integration/slack \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Acme Slack",
+    "code": "<slack-oauth-code>",
+    "redirect_uri": "https://app.siteqwality.com/oauth/slack/callback"
+  }'
+```
+
+## Add the bot to private channels
+
+By default, the bot only posts to public channels. For private channels, invite it manually:
+
+```
+/invite @SiteQwality
+```
+
+…in the target channel.
+
+## Create a Slack notification channel
+
+Once the integration is in, create a channel that targets a specific Slack channel:
+
+```bash
+curl -X POST https://api.siteqwality.com/notification \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notification_group_id": "<your-group-id>",
+    "type": "slack",
+    "details": {
+      "integration_id": "<slack-integration-id>",
+      "channel": "#ops"
+    }
+  }'
+```
+
+`channel` accepts `#name` or a Slack channel ID (`C0123456789`). Channel IDs are robust to renames.
+
+## Message format
+
+Alerts post as Slack blocks with:
+
+- A status-colored sidebar (red for failure, green for recovery).
+- Monitor name + URL.
+- Recent results (last 3 ticks).
+- An **Acknowledge** interactive button that, when clicked, sets the incident to `responder_status: acknowledged` and stops escalation.
+
+The interactive button uses Slack's interactivity feature — set up the **Request URL** in your Slack app settings to point at SiteQwality's interactivity endpoint if needed (only relevant for self-hosted custom Slack apps; the standard install handles this).
+
+## Removing
+
+Delete the integration to revoke the workspace token:
+
+```bash
+curl -X DELETE https://api.siteqwality.com/integration/$INTEGRATION_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+This invalidates every channel that used the integration. Make sure to recreate channels with a different integration first if you don't want to lose alerting.
+
+## Troubleshooting
+
+- **Channel not found.** The bot isn't in the channel. Run `/invite @SiteQwality` in the target channel.
+- **"Ack button does nothing."** Slack interactivity requires HTTPS; the bot is correctly configured by default. If you've forked the install for a custom workspace, check the Request URL in your Slack app settings.
+- **Posts arrive but rate limited.** Slack throttles bots at ~1 message/sec per channel. Spread alerts across channels if you're firing many at once.
+
+## See also
+
+<LinkCard title="Channels reference" description="Full slack channel detail shape." href="/incident-management/notifications/channels/#slack" />
+<LinkCard title="Notifications overview" description="How channels integrate with groups + escalation." href="/incident-management/notifications/overview/" />

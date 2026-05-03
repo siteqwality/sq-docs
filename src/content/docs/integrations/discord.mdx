@@ -1,0 +1,59 @@
+---
+title: Discord integration
+description: Connect a Discord channel via incoming webhook URL.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+The Discord integration uses an incoming webhook URL from a Discord channel. SiteQwality posts rich embeds with status color, monitor details, and an incident link.
+
+## Set up
+
+<Steps>
+
+1. In Discord, open the target channel's settings → **Integrations → Webhooks → New Webhook**.
+
+2. Name it (`SiteQwality Alerts`), assign an avatar (optional), copy the **Webhook URL**.
+
+3. In SiteQwality: **Settings → Integrations → Discord → Add**. Paste the URL. Save.
+
+</Steps>
+
+Or via the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/integration/discord \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Discord ops",
+    "url": "https://discord.com/api/webhooks/<id>/<token>"
+  }'
+```
+
+## Create a notification channel
+
+```bash
+curl -X POST https://api.siteqwality.com/notification \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notification_group_id": "<your-group-id>",
+    "type": "discord",
+    "details": {
+      "discord_integration_id": "<discord-integration-id>"
+    }
+  }'
+```
+
+## Notes
+
+- One integration per Discord channel. Create multiple integrations for multiple destinations.
+- Discord webhooks are subject to Discord's rate limits (5 requests/2sec/channel). Heavy alert volume may queue.
+- Webhook URLs are secrets — anyone with the URL can post to the channel. Rotate (delete + recreate) if leaked.
+
+## See also
+
+<LinkCard title="Channels reference" description="discord channel detail shape." href="/incident-management/notifications/channels/#discord" />

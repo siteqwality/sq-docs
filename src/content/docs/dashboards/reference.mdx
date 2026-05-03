@@ -1,0 +1,165 @@
+---
+title: Widget reference
+description: Every widget type with its query/visualization config shape.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Object: `Dashboard`
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `name` | string | required | Display name. |
+| `description` | string \| null | null | Subtitle. |
+| `global_time_range` | object | `{type: "relative", value: "1h"}` | Default time window for all widgets. |
+| `auto_refresh_seconds` | int \| null | null | Polling cadence. Set to skip. |
+| `widgets` | DashboardWidget[] | embedded on detail | Widgets in this dashboard. |
+| `created_by` | uuid | required | User who created. |
+
+## Time range shapes
+
+```json
+{ "type": "relative", "value": "1h" }
+{ "type": "relative", "value": "24h" }
+{ "type": "relative", "value": "7d" }
+{ "type": "absolute", "from": "2026-05-03T14:00:00Z", "to": "2026-05-03T15:00:00Z" }
+```
+
+## Object: `DashboardWidget`
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `title` | string | required | Display title at the top of the widget. |
+| `widget_type` | enum | required | See widget types table. |
+| `data_source` | enum | `none` | See data sources table. |
+| `query_config` | object | `{}` | Source-specific query (see below). |
+| `visualization_config` | object | `{}` | Display options (units, colors, limits). |
+| `layout` | object | `{x: 0, y: 0, w: 6, h: 4}` | Position on the 12-col grid. |
+| `time_range_override` | object \| null | null | If set, overrides dashboard's global range. |
+
+## Widget types
+
+| `widget_type` | Description |
+|---|---|
+| `timeseries` | Line/area chart over time. |
+| `stat` | Single big number. |
+| `table` | Tabular results (group-by, top-N). |
+| `log_stream` | Live log feed. |
+| `monitor_status` | Grid showing current status of selected monitors. |
+| `text` | Markdown content. No `data_source` needed. |
+
+## Data sources
+
+| `data_source` | Use |
+|---|---|
+| `metrics` | Metric queries. |
+| `logs` | Log queries. |
+| `traces` | Trace queries. |
+| `uptime` | Monitor status + uptime %. |
+| `rum` | RUM session and vitals data. |
+| `none` | For `text` widgets. |
+
+## Query config — by widget type
+
+### `timeseries` + `metrics`
+
+```json
+{
+  "metric_name": "http.request.duration_ms",
+  "aggregation": "p99",          // avg | max | min | sum | p50 | p95 | p99 | rate
+  "group_by": "endpoint",         // optional tag key
+  "filters": { "env": "prod" },   // optional tag filters
+  "resolution": "1m"              // optional bucket width
+}
+```
+
+### `stat` + `metrics`
+
+```json
+{
+  "metric_name": "http.requests.total",
+  "aggregation": "sum",
+  "filters": { "status_class": "5xx" }
+}
+```
+
+Renders as a big number — sum of 5xx counts in the time window.
+
+### `log_stream` + `logs`
+
+```json
+{
+  "level": "error,warn",
+  "source": "billing-api",
+  "search": "stripe",
+  "limit": 50
+}
+```
+
+Shape matches `LogQueryParams`.
+
+### `monitor_status` + `uptime`
+
+```json
+{
+  "monitor_ids": ["<job-id-1>", "<job-id-2>"]
+}
+```
+
+Renders a grid of status badges.
+
+### `table` + `metrics`
+
+```json
+{
+  "metric_name": "http.requests.total",
+  "group_by": "endpoint",
+  "aggregations": ["sum", "avg"]
+}
+```
+
+Returns a table grouped by `endpoint` with sum and avg.
+
+### `text`
+
+```json
+{}
+```
+
+Visualization config holds the markdown:
+
+```json
+{ "markdown": "## Service health\n\n[Runbook](https://...)" }
+```
+
+## Visualization config
+
+Free-form per widget type. Common keys:
+
+| Key | Used by | Description |
+|---|---|---|
+| `y_unit` | timeseries, stat | `ms`, `bytes`, `percent`, `count`. |
+| `color` | timeseries | Series color override. |
+| `limit` | log_stream, table | Max rows. |
+| `markdown` | text | Body markdown. |
+
+## Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/dashboard` | List all. |
+| `POST` | `/dashboard` | Create. |
+| `GET` | `/dashboard/{id}` | Detail with widgets. |
+| `PUT` | `/dashboard/{id}` | Update meta (name, description, global range). |
+| `DELETE` | `/dashboard/{id}` | Delete. |
+| `PUT` | `/dashboard/{id}/layout` | Batch update widget positions. |
+| `POST` | `/dashboard/{id}/widget` | Add widget. |
+| `PUT` | `/dashboard/{id}/widget/{widget_id}` | Update widget. |
+| `DELETE` | `/dashboard/{id}/widget/{widget_id}` | Delete widget. |
+
+## See also
+
+- [Dashboards overview](/dashboards/overview/) — concept.
+- [Metrics](/observability/metrics/overview/), [Logs](/observability/logs/overview/), [Traces](/observability/traces/overview/) — data sources.

@@ -1,0 +1,141 @@
+---
+title: Dashboards quickstart
+description: Build a dashboard with a metrics chart and a log stream in 5 minutes.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have a dashboard called `Service health` with two widgets — a metrics timeseries and a live log stream — both sharing a 1-hour global time range that auto-refreshes every minute.
+
+## 1. Create the dashboard
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Dashboards → New dashboard.**
+
+2. **Name:** `Service health`. **Description:** `Live ops view`. **Global time range:** `Last 1 hour`. **Auto-refresh:** `60s`. Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/dashboard \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Service health",
+    "description": "Live ops view",
+    "global_time_range": { "type": "relative", "value": "1h" },
+    "auto_refresh_seconds": 60
+  }'
+```
+
+Note: dashboards can only be created by users (not API keys) because they need a `created_by` user ID. Use a session-based call from the dashboard for the create step, or generate a token tied to a real user.
+
+</TabItem>
+</Tabs>
+
+## 2. Add a metrics widget
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Add widget → Timeseries.**
+
+2. **Title:** `Request latency p99`. **Data source:** `metrics`. **Metric:** `http.request.duration_ms`. **Aggregation:** `p99`. **Group by:** `endpoint`. Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/dashboard/$DASHBOARD_ID/widget \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Request latency p99",
+    "widget_type": "timeseries",
+    "data_source": "metrics",
+    "query_config": {
+      "metric_name": "http.request.duration_ms",
+      "aggregation": "p99",
+      "group_by": "endpoint"
+    },
+    "visualization_config": { "y_unit": "ms" },
+    "layout": { "x": 0, "y": 0, "w": 6, "h": 4 }
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+## 3. Add a log stream widget
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Add widget → Log stream.**
+
+2. **Title:** `Errors`. **Data source:** `logs`. Filter `level = error`. Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/dashboard/$DASHBOARD_ID/widget \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Errors",
+    "widget_type": "log_stream",
+    "data_source": "logs",
+    "query_config": { "level": "error" },
+    "visualization_config": { "limit": 50 },
+    "layout": { "x": 6, "y": 0, "w": 6, "h": 4 }
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+## 4. Reorder widgets
+
+Drag widgets around in the editor; the layout updates live. Or batch-update positions:
+
+```bash
+curl -X PUT https://api.siteqwality.com/dashboard/$DASHBOARD_ID/layout \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "widgets": [
+      { "widget_id": "<id-1>", "x": 0, "y": 0, "w": 12, "h": 4 },
+      { "widget_id": "<id-2>", "x": 0, "y": 4, "w": 12, "h": 4 }
+    ]
+  }'
+```
+
+This is the cheapest update path when you're rearranging multiple widgets at once.
+
+<Aside type="tip">
+For per-team or per-service dashboards, prefix the name: `[Platform] Service health`, `[Billing] Webhook deliveries`. Sidebars sort alphabetically and the prefix groups dashboards naturally.
+</Aside>
+
+## What's next
+
+<LinkCard title="Widget reference" description="All widget types with config shapes." href="/dashboards/reference/" />
+<LinkCard title="Metrics" description="The most common widget data source." href="/observability/metrics/overview/" />
+<LinkCard title="Logs" description="For log_stream widgets." href="/observability/logs/overview/" />

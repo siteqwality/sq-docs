@@ -1,14 +1,153 @@
 ---
 title: SDK Reference
-description: Client-side SDK for RUM, traces, metrics, and session replay.
-last_verified: 2026-05-02
+description: The @siteqwality/rum JavaScript SDK — RUM, replay, errors, and user actions from the browser.
+last_verified: 2026-05-03
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-<Aside type="caution" title="Under construction">
-SDK installation and API reference are being written.
+The SiteQwality client SDK is a single browser-side package: **`@siteqwality/rum`**. It collects [Real User Monitoring](/observability/rum/overview/) data and (when activated) [session replay](/observability/replay/overview/) segments.
+
+It is **not** a back-end ingestion library — for back-end metrics/logs/traces, ship via the OTel SDK or direct HTTP to the ingestion endpoints. See [Observability](/observability/overview/).
+
+## What it does
+
+| Capture | Always-on | Activated by filter |
+|---|---|---|
+| Web Vitals (LCP, FCP, CLS, INP, TTFB) | yes | — |
+| View counts, page loads | yes | — |
+| Aggregate error count | yes | — |
+| Aggregate action count | yes | — |
+| Individual error stacks | — | yes |
+| Click / keypress targets | — | yes |
+| Resource timings (fetch/XHR) | — | yes |
+| Long tasks (>50ms) | — | yes |
+| Distributed-trace IDs (traceparent injection) | yes | — |
+| DOM snapshots + mutations (rrweb) | — | yes (`capture_replay: true`) |
+
+## Install
+
+### NPM
+
+```bash
+npm install @siteqwality/rum
+```
+
+### CDN
+
+```html
+<script type="module" src="https://cdn.siteqwality.com/rum/v1/sdk.min.js"></script>
+```
+
+## Initialize
+
+```javascript
+import { SiteQwalityRUM } from '@siteqwality/rum';
+
+await SiteQwalityRUM.init({
+  applicationId: 'abc123',          // from RUM application
+  clientToken: 'pub_def456',        // from RUM application (public token)
+  service: 'web',                    // logical service name
+  version: '1.4.2',                  // app version (used for source-map matching)
+  env: 'prod',                       // 'prod' | 'staging' | 'dev'
+
+  // Optional overrides — for self-hosted SiteQwality
+  apiBase: 'https://api.siteqwality.com',
+  ingestBase: 'https://rum.siteqwality.com',
+  replayBase: 'https://replay.siteqwality.com',
+});
+```
+
+`init` is idempotent — calling it twice is a no-op.
+
+## Public methods
+
+### `setUser(user)`
+
+Identify the user. Call after login, or as soon as you know who's there.
+
+```javascript
+SiteQwalityRUM.setUser({
+  id: 'usr_abc123',
+  email: 'alice@example.com',
+  name: 'Alice',
+});
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `id` | optional | Your internal user ID. Indexed for filtering. |
+| `email` | optional | User's email. |
+| `name` | optional | Display name. |
+
+User context attaches to all subsequent events and replay segments.
+
+### `addError(error, context?)`
+
+Track a custom error in addition to auto-captured errors.
+
+```javascript
+try {
+  await chargeCard();
+} catch (err) {
+  SiteQwalityRUM.addError(err, { feature: 'checkout', step: '3' });
+  throw err;
+}
+```
+
+| Param | Type | Description |
+|---|---|---|
+| `error` | `Error` | Any JS Error. |
+| `context` | `Record<string, string>` | Optional free-form context. |
+
+### `addAction(name, context?)`
+
+Track a custom action (click-equivalent business event).
+
+```javascript
+SiteQwalityRUM.addAction('checkout_completed', { variant: 'A' });
+```
+
+| Param | Type | Description |
+|---|---|---|
+| `name` | `string` | Action label. |
+| `context` | `Record<string, string>` | Optional metadata. |
+
+## TypeScript types
+
+The SDK ships with TypeScript types:
+
+```typescript
+import type { RumConfig, UserContext } from '@siteqwality/rum';
+```
+
+Notable types:
+
+- `RumConfig` — `init` argument shape.
+- `UserContext` — `setUser` argument shape.
+- `RumMeasureEvent`, `RumDetailEvent`, `RumErrorEvent` — internal payload shapes (rarely needed).
+- `SessionFilterRule`, `SdkConfig` — server-fetched config shape.
+
+## Pricing
+
+The SDK is free; what costs is the data it sends. See [RUM pricing](/observability/rum/overview/#pricing) and [Replay pricing](/observability/replay/overview/#pricing).
+
+## Compatibility
+
+- Modern browsers — Chrome, Firefox, Safari, Edge (last 2 versions).
+- ES2020+ output. The CDN bundle is an ES module (`<script type="module">`).
+- For older browsers, transpile via your bundler. The npm bundle is published as both ESM and CJS.
+
+<Aside type="caution">
+The SDK uses `crypto.randomUUID()`, `PerformanceObserver`, and `fetch` — all widely available since ~2020. There's no IE11 support.
 </Aside>
 
-The SiteQwality JavaScript SDK collects RUM, traces, metrics, and session replay data from the browser and sends it to your account. Drop it into any web app to start collecting telemetry in minutes.
+## See also
+
+<CardGrid>
+  <LinkCard title="RUM quickstart" description="First-install walkthrough." href="/observability/rum/quickstart/" />
+  <LinkCard title="Source maps" description="Symbolicate your error stacks." href="/observability/rum/how-to/source-maps/" />
+  <LinkCard title="Session filters" description="Activate detail and replay capture." href="/observability/rum/how-to/session-filters/" />
+  <LinkCard title="Replay quickstart" description="Capture pixel-perfect session playback." href="/observability/replay/quickstart/" />
+</CardGrid>

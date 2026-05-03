@@ -1,0 +1,110 @@
+---
+title: Webhook integrations
+description: Send a JSON POST to your own URL on every notification — for ServiceNow, OpsGenie, custom dashboards, anything.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+A **webhook integration** is the universal escape hatch. If we don't have a native integration for the tool you use, the webhook integration POSTs incident JSON to a URL you control — wire it into ServiceNow, OpsGenie, an internal Slack-replacement, your audit log, anything.
+
+## Set up
+
+<Steps>
+
+1. **Settings → Integrations → Webhooks → Add**.
+
+2. **Friendly name:** `Internal incident bus`. **URL:** the endpoint that should receive POSTs. Save.
+
+</Steps>
+
+Or via the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/integration/webhook \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Internal incident bus",
+    "url": "https://incidents.example.com/sq-webhook"
+  }'
+```
+
+## Create a notification channel
+
+```bash
+curl -X POST https://api.siteqwality.com/notification \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notification_group_id": "<your-group-id>",
+    "type": "webhook",
+    "details": {
+      "integration_id": "<webhook-integration-id>"
+    }
+  }'
+```
+
+## Payload shape
+
+POST body is JSON with the incident, the triggering monitor, and account context. Approximate shape:
+
+```json
+{
+  "event": "incident.opened" | "incident.updated" | "incident.resolved",
+  "incident": {
+    "id": "<uuid>",
+    "title": "...",
+    "severity": "minor | major | critical",
+    "status": "investigating | identified | monitoring | resolved",
+    "responder_status": "triggered | acknowledged | resolved",
+    "created_at": "...",
+    "acknowledged_at": "...",
+    "resolved_at": "...",
+    "updates": [{ "status": "...", "message": "...", "created_at": "..." }]
+  },
+  "monitor": {
+    "id": "<uuid>",
+    "type": "http | tls | dns | cron | browser",
+    "friendly_name": "...",
+    "uri": "https://api.example.com"  // for HTTP
+  },
+  "account": {
+    "id": "<uuid>"
+  }
+}
+```
+
+## Receiver expectations
+
+Your endpoint should:
+
+- Return any 2xx within 5 seconds. SiteQwality treats anything else as a failure.
+- Be idempotent — the same event can be retried on receiver failure.
+- Accept large bodies (incidents with many updates can be 10–50KB).
+
+## Securing the receiver
+
+The webhook URL is the auth — anyone who knows it can POST. Treat the URL as a secret.
+
+For stronger guarantees, embed a shared secret in the URL:
+
+```
+https://incidents.example.com/sq-webhook?token=<long-random>
+```
+
+…and verify the token server-side. SiteQwality doesn't currently sign requests with HMAC; if you need that, request it via support.
+
+## Multiple integrations
+
+Create one webhook integration per destination URL. Channels can then route the same notification group to multiple destinations (a webhook + a Slack channel + an email) by attaching one channel per destination to the group.
+
+<Aside type="tip">
+For one-way "log every incident to my data warehouse" use cases, point a webhook integration at an ingest URL (Segment, Snowpipe, your own /events endpoint). It's a great audit trail.
+</Aside>
+
+## See also
+
+<LinkCard title="Channels reference" description="webhook channel detail shape." href="/incident-management/notifications/channels/#webhook" />
+<LinkCard title="Integrations overview" description="The five integration types." href="/integrations/overview/" />

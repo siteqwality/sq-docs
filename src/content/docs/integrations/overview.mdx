@@ -1,14 +1,60 @@
 ---
 title: Integrations
-description: Connect SiteQwality to your existing tools.
-last_verified: 2026-05-02
+description: Connect SiteQwality to Slack, Microsoft Teams, Discord, Telegram, and arbitrary webhooks for notification delivery.
+last_verified: 2026-05-03
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-<Aside type="caution" title="Under construction">
-Per-integration setup guides are being written.
-</Aside>
+An **integration** is a stored credential or webhook URL connecting SiteQwality to an external service. Once an integration exists, you can create [notification channels](/incident-management/notifications/channels/) that deliver to it.
 
-Send notifications to and pull data from the tools your team already uses. Each integration has its own setup guide with credentials, scopes, and configuration tips.
+The split exists because:
+
+- One integration → many channels. One Slack workspace integration can fan into 20 different channels (`#ops`, `#deploys`, `#alerts-billing`, ...).
+- Credentials are reusable. You connect Slack once via OAuth; you don't re-enter the workspace every time you want a new channel.
+
+## Available integrations
+
+<CardGrid>
+  <LinkCard title="Slack" description="OAuth-installed app. Posts rich blocks to any channel; supports interactive Acknowledge buttons." href="/integrations/slack/" />
+  <LinkCard title="Microsoft Teams" description="Incoming webhook URL from a Teams channel connector. Posts Adaptive Cards." href="/integrations/microsoft-teams/" />
+  <LinkCard title="Discord" description="Incoming webhook URL from a Discord channel. Posts embeds." href="/integrations/discord/" />
+  <LinkCard title="Telegram" description="Bot-based via setup-code flow. Direct messages or group chats." href="/integrations/telegram/" />
+  <LinkCard title="Webhooks" description="Generic outbound webhook URL. POSTs incident JSON to your endpoint." href="/integrations/webhooks/" />
+</CardGrid>
+
+## How integrations and channels relate
+
+```
+Integrations              Notification channels                Notification group
+(account-level)           (group-level)                        (monitor-level)
+
+┌──────────────────┐      ┌──────────────────┐                 ┌──────────────────┐
+│ Slack workspace  │ ←──  │ Channel: #ops    │ ─┐              │                  │
+│ (one OAuth)      │      └──────────────────┘  │              │  "Default group" │
+│                  │      ┌──────────────────┐  ├──→ attached →│                  │
+│                  │ ←──  │ Channel: #alerts │ ─┤              │                  │
+└──────────────────┘      └──────────────────┘  │              │                  │
+                          ┌──────────────────┐  │              │                  │
+                          │ Channel: webhook │ ─┘              │                  │
+                          └──────────────────┘                 └──────────────────┘
+```
+
+So the typical setup flow is:
+
+1. Connect the **integration** (one-time OAuth or webhook URL).
+2. Create a **notification channel** referencing that integration with the per-channel detail (the Slack channel name, the Telegram chat ID).
+3. Add the channel to a **notification group**.
+4. Attach the group to your **monitors**.
+
+## Pricing
+
+Integrations themselves are free. Delivery costs (SMS, phone calls) are extra and per-message; see [Notifications](/incident-management/notifications/overview/#pricing).
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Notification channels" description="The next step after connecting an integration." href="/incident-management/notifications/channels/" />
+  <LinkCard title="Notifications overview" description="Channels, groups, contact methods, rules." href="/incident-management/notifications/overview/" />
+</CardGrid>
