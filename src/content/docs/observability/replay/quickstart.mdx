@@ -1,0 +1,123 @@
+---
+title: Session Replay quickstart
+description: Enable replay for errored sessions in your RUM app, then watch a real session in the dashboard.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have replay activated for any session that throws an error, and you'll have watched a recorded session play back in the dashboard.
+
+## Prerequisites
+
+- A RUM application set up — see [RUM quickstart](/observability/rum/quickstart/).
+- The SDK installed in your app.
+
+## 1. Set privacy defaults on the application
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **RUM → Applications → your app → Settings → Privacy.**
+
+2. Enable **Mask inputs**. (Almost always a yes — your customers shouldn't see other customers' typed passwords.)
+
+3. Enable **Mask text** if your app displays sensitive content (financial info, PII).
+
+4. Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X PUT https://api.siteqwality.com/rum/$APP_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "settings": {
+      "privacy": {
+        "mask_inputs": true,
+        "mask_text": false
+      }
+    }
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+## 2. Add a session filter to enable replay
+
+Replay only activates when a session matches a filter with `capture_replay: true`.
+
+```bash
+curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Errored sessions — replay",
+    "filter_type": "error",
+    "conditions": {},
+    "capture_replay": true,
+    "enabled": true,
+    "priority": 50
+  }'
+```
+
+The SDK fetches the filter list at session start; new sessions begin honoring the filter immediately.
+
+## 3. Trigger an error in your app
+
+Open your app, do something that throws an error in production code. (Or temporarily add `throw new Error('replay test')` to a button handler and click it.)
+
+The SDK detects the error, activates the replay recorder, and starts shipping segments within a few seconds.
+
+## 4. Watch the replay
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **RUM → Sessions** — find your session (it has the error indicator).
+
+2. Click the session, then click **Replay** at the top.
+
+3. The video player loads. Hit play; scrub the timeline; jump to the error using the marker on the timeline.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+# Get the segment URLs
+curl https://api.siteqwality.com/rum/$APP_ID/replay/$SESSION_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+You get a list of segments with presigned S3 URLs. The dashboard's player consumes these directly.
+
+</TabItem>
+</Tabs>
+
+## Privacy checklist
+
+Before rolling out replay broadly:
+
+- [ ] Inputs are masked (`mask_inputs: true`) unless you have a strong reason to capture them.
+- [ ] Sensitive text (PII, financial figures, health info) is wrapped in `<div class="rr-mask">` or behind a `mask_text: true` global setting.
+- [ ] Pages with payment forms have `<div class="rr-block">` on the form (don't record at all).
+- [ ] Your privacy policy mentions session replay if you collect from EU/CA customers (GDPR/CCPA).
+- [ ] Replay-enabled session filters are scoped — don't replay every session, just interesting ones.
+
+## What's next
+
+<LinkCard title="Session filters" description="More filter patterns." href="/observability/rum/how-to/session-filters/" />
+<LinkCard title="Replay overview" description="What's captured, retention, pricing." href="/observability/replay/overview/" />
+<LinkCard title="RUM overview" description="The parent observability pillar." href="/observability/rum/overview/" />

@@ -1,0 +1,144 @@
+---
+title: Traces quickstart
+description: Instrument a Node service with OpenTelemetry and see your first trace in 10 minutes.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have an instrumented Node service emitting OTLP traces to SiteQwality and a working trace visible in the Trace Explorer.
+
+## 1. Install the OpenTelemetry SDK
+
+```bash
+npm install \
+  @opentelemetry/api \
+  @opentelemetry/sdk-node \
+  @opentelemetry/auto-instrumentations-node \
+  @opentelemetry/exporter-trace-otlp-http
+```
+
+## 2. Initialize tracing
+
+Create `tracing.js` at the **top** of your project (loaded before everything else):
+
+```javascript
+const { NodeSDK } = require('@opentelemetry/sdk-node');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
+
+const sdk = new NodeSDK({
+  serviceName: 'demo-api',
+  traceExporter: new OTLPTraceExporter({
+    url: 'https://traces.siteqwality.com/v1/traces',
+    headers: {
+      Authorization: `Bearer ${process.env.SITEQWALITY_API_KEY}`,
+    },
+  }),
+  instrumentations: [getNodeAutoInstrumentations()],
+});
+
+sdk.start();
+```
+
+Load it at the top of your entry point:
+
+```javascript
+// index.js
+require('./tracing');
+const express = require('express');
+// ... rest of your app
+```
+
+## 3. Make a request
+
+Start the app, hit any endpoint:
+
+```bash
+SITEQWALITY_API_KEY=sq_live_... node index.js
+curl http://localhost:3000/api/anything
+```
+
+The `auto-instrumentations-node` package automatically traces Express, HTTP, fs, common DB drivers, and more — you don't have to write spans by hand.
+
+## 4. Find your trace
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+**Traces → Explorer** → filter `service_name = demo-api`. Your trace appears within ~10 seconds. Click into it to see the span tree.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+START=$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)
+END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+curl -G https://api.siteqwality.com/traces/search \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "service_name=demo-api" \
+  --data-urlencode "start_time=$START" \
+  --data-urlencode "end_time=$END"
+```
+
+Each trace summary includes `trace_id`. Pull spans:
+
+```bash
+curl https://api.siteqwality.com/traces/$TRACE_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+</TabItem>
+</Tabs>
+
+## 5. Add custom spans
+
+For business-logic instrumentation:
+
+```javascript
+const { trace } = require('@opentelemetry/api');
+const tracer = trace.getTracer('demo-api');
+
+app.post('/api/charge', async (req, res) => {
+  await tracer.startActiveSpan('charge_card', async (span) => {
+    span.setAttribute('user_id', req.body.userId);
+    span.setAttribute('amount_cents', req.body.amountCents);
+    try {
+      const result = await stripe.charges.create({ ... });
+      span.setStatus({ code: 1 }); // OK
+      res.json(result);
+    } catch (err) {
+      span.recordException(err);
+      span.setStatus({ code: 2, message: err.message }); // ERROR
+      res.status(500).send(err.message);
+    } finally {
+      span.end();
+    }
+  });
+});
+```
+
+This wraps your Stripe call in a custom span with attributes you can search on.
+
+## 6. Other languages
+
+The OTLP HTTP endpoint accepts the standard format from any OTel SDK. The pattern is the same: install the SDK + OTLP exporter, point at `https://traces.siteqwality.com/v1/traces`, set the `Authorization` header.
+
+| Language | OTel docs |
+|---|---|
+| Python | https://opentelemetry.io/docs/instrumentation/python/ |
+| Java | https://opentelemetry.io/docs/instrumentation/java/ |
+| Go | https://opentelemetry.io/docs/instrumentation/go/ |
+| .NET | https://opentelemetry.io/docs/instrumentation/net/ |
+
+<Aside type="tip">
+For high-volume production, configure a tail-based sampler to keep all error traces and 1–10% of successful ones — see [sampling](/observability/traces/how-to/sampling/).
+</Aside>
+
+## What's next
+
+<LinkCard title="Sampling" description="Reduce volume without losing signal." href="/observability/traces/how-to/sampling/" />
+<LinkCard title="Reference" description="Span attributes and search params." href="/observability/traces/reference/" />
+<LinkCard title="Logs correlation" description="Tag your logs with trace_id for end-to-end debugging." href="/observability/logs/overview/" />

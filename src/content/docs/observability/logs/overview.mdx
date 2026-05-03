@@ -1,0 +1,124 @@
+---
+title: Logs
+description: Structured + unstructured log ingestion with full-text search, parsers, saved views, and ML-powered insights.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+A **log** is a discrete event with a timestamp, level, message, and arbitrary structured metadata. SiteQwality stores them in ClickHouse and queries them via a fast full-text + structured fabric.
+
+## When to use logs
+
+- For **discrete events** with rich context — what happened, who triggered it, what state was the system in.
+- For the audit trail of "what happened at 14:32:17.345?"
+- When you need to grep through error context to find a pattern.
+
+## When NOT to use logs
+
+- For "how many?" — emit a [metric](/observability/metrics/overview/). Counting logs is slow; counting metrics is the point.
+- For "why was this request slow?" — use [traces](/observability/traces/overview/). Logs alone don't show causality.
+
+## Ingest
+
+```bash
+curl -X POST https://logs.siteqwality.com/v1/ingest \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamp": "2026-05-03T14:32:17.345Z",
+    "level": "error",
+    "message": "Failed to charge card",
+    "service": "billing",
+    "env": "prod",
+    "host": "api-7d4f9-xkz3l",
+    "tags": { "endpoint": "/api/charge" },
+    "metadata": {
+      "user_id": "usr_abc123",
+      "amount_cents": 9900,
+      "stripe_error": "card_declined"
+    }
+  }'
+```
+
+Three accepted body shapes:
+
+- **Single JSON object** — one log entry.
+- **JSON array** — multiple log entries in one request.
+- **NDJSON** (`Content-Type: application/x-ndjson`) — one JSON entry per line. Best for shipping pipelines.
+
+Optional headers:
+
+- `X-Log-Source: <name>` — sets `source` field on every log in the request.
+- `X-Log-Parser: <parser-id>` — apply a specific [parser](/observability/logs/how-to/parsers/) to every log.
+
+A `202 Accepted` means the logs were queued.
+
+## Anatomy of a log entry
+
+| Field | Description |
+|---|---|
+| `timestamp` | RFC 3339. Defaults to ingest time if omitted. |
+| `level` | `trace`, `debug`, `info`, `warn`, `error`, `fatal`. Free-string but stick to the standard set for filtering. |
+| `message` | Human-readable summary. Searched as full-text. |
+| `source` | Logical source name (`billing-api`, `worker-fleet`). Indexed; high-cardinality avoid. |
+| `host` | Pod/container/VM identity. |
+| `env` | `prod`, `staging`, `dev`. |
+| `version` | App version. Useful for "did the latest deploy regress?" |
+| `device` | For client logs (browser logs from the SDK). |
+| `tags` | `string → string` map for filtering. |
+| `metadata` | Arbitrary structured object. Searchable via `metadata_search` query param. |
+
+## Querying
+
+Logs are queried via `GET /logs/query` with these params:
+
+- `start_time`, `end_time` — RFC 3339 window (defaults to last 1h).
+- `level` — comma-separated levels (`error,warn`).
+- `source`, `env`, `host` — exact filters.
+- `search` — full-text search of `message`.
+- `metadata_search` — full-text search of `metadata` field values.
+- `tags` — JSON-encoded `{key: value}` filter.
+- `excluded` — JSON-encoded same-shape exclusion.
+- `sort_field` (`timestamp`), `sort_order` (`asc|desc`), `limit`, `offset`.
+
+The dashboard's **Logs Explorer** is the friendliest interface; it composes these params for you. For programmatic access (CI, scripts), call the API directly.
+
+## Tail
+
+For follow-mode (`tail -f`-style):
+
+```bash
+GET /logs/tail/poll?since=<cursor>&...
+```
+
+Returns logs since the cursor, plus a new cursor to use on the next poll. Poll every few seconds.
+
+## Insights
+
+`GET /logs/insights` returns ML-derived alerts:
+
+- **Error spike** — sudden increase in `error` level vs baseline.
+- **New error** — a never-seen-before error message.
+- **Silent source** — a normally-chatty source has gone quiet.
+- **Top errors** — most frequent error messages in the window.
+
+Each insight comes with severity (`info`, `medium`, `high`) and a pre-built filter you can click into the Logs Explorer to investigate.
+
+## Pricing
+
+Logs are billed per GB ingested + retention. The dashboard's **Settings → Billing → Usage** shows current month-to-date.
+
+<Aside type="tip">
+The cheapest log is the one you don't send. Set log levels appropriately in production — `info` and above. Use [metrics](/observability/metrics/overview/) for "how many" counters instead of logging every event.
+</Aside>
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Send your first log, find it in the explorer." href="/observability/logs/quickstart/" />
+  <LinkCard title="Parsers" description="Extract structured fields from unstructured log lines." href="/observability/logs/how-to/parsers/" />
+  <LinkCard title="Saved views" description="Pre-saved filters to share with the team." href="/observability/logs/how-to/saved-views/" />
+  <LinkCard title="Reference" description="Query syntax and ingestion details." href="/observability/logs/reference/" />
+</CardGrid>

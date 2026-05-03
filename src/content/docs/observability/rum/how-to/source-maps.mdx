@@ -1,0 +1,126 @@
+---
+title: Upload source maps
+description: Symbolicate minified JS errors in the dashboard by uploading source maps per release.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+Without source maps, a production error stack looks like this:
+
+```
+TypeError: Cannot read properties of undefined (reading 'name')
+  at v (https://app.example.com/assets/main.4f9a3.js:1:42089)
+  at d (https://app.example.com/assets/main.4f9a3.js:1:38215)
+```
+
+Useless. After uploading source maps, the dashboard renders:
+
+```
+TypeError: Cannot read properties of undefined (reading 'name')
+  at renderProfile (src/components/UserProfile.tsx:42:18)
+  at App (src/App.tsx:78:5)
+```
+
+## How it works
+
+Each version of your app has a **release** in SiteQwality. Source maps are uploaded against that release. When errors flow in tagged with a matching `version`, the dashboard resolves stacks against the uploaded maps.
+
+## 1. Tag your bundle with a version
+
+In your SDK init:
+
+```javascript
+SiteQwalityRUM.init({
+  applicationId: 'abc123',
+  clientToken: 'pub_def456',
+  version: '1.4.2',  // or process.env.GIT_SHA, or release tag
+});
+```
+
+Use whatever version scheme you have. The same string must be used both at init time and at upload time.
+
+## 2. Create the release
+
+```bash
+curl -X POST https://api.siteqwality.com/rum/$APP_ID/releases \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "1.4.2" }'
+```
+
+`version` must match what the SDK sends.
+
+## 3. Upload source maps
+
+For each `.js.map` file produced by your bundler:
+
+```bash
+curl -X POST "https://api.siteqwality.com/rum/$APP_ID/releases/1.4.2/sourcemaps" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -F "sourcemap=@dist/assets/main.4f9a3.js.map" \
+  -F "filename=main.4f9a3.js"
+```
+
+`filename` is the original bundle name (without the source-map extension). The dashboard uses this to match incoming errors to the right map.
+
+## Automate in CI
+
+Wire the upload into your build pipeline:
+
+```yaml
+# .github/workflows/deploy.yml
+- name: Build
+  run: npm run build
+
+- name: Create RUM release
+  run: |
+    curl -X POST https://api.siteqwality.com/rum/$APP_ID/releases \
+      -H "Authorization: Bearer ${{ secrets.SITEQWALITY_API_KEY }}" \
+      -d "{\"version\":\"$GITHUB_SHA\"}"
+
+- name: Upload source maps
+  run: |
+    for map in dist/assets/*.js.map; do
+      file=$(basename "$map" .map)
+      curl -X POST "https://api.siteqwality.com/rum/$APP_ID/releases/$GITHUB_SHA/sourcemaps" \
+        -H "Authorization: Bearer ${{ secrets.SITEQWALITY_API_KEY }}" \
+        -F "sourcemap=@$map" \
+        -F "filename=$file"
+    done
+```
+
+Make sure your `init({ version })` call uses the same `$GITHUB_SHA` (or whatever you tag with).
+
+## Cleanup
+
+Old releases can be deleted to free storage:
+
+```bash
+curl -X DELETE https://api.siteqwality.com/rum/$APP_ID/releases/0.9.1 \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+A reasonable policy: keep the last 30 releases (or the last 90 days) and delete older ones.
+
+## Don't ship source maps in production
+
+Your bundler probably writes `//# sourceMappingURL=main.4f9a3.js.map` at the bottom of each bundle. If your build pipeline also publishes the `.map` files publicly, anyone can de-minify your code.
+
+To keep source maps **private** (uploaded to SiteQwality, not published):
+
+- For Vite: `build.sourcemap = 'hidden'`.
+- For Webpack: `devtool: 'hidden-source-map'`.
+- For Rollup: `output.sourcemap = 'hidden'`.
+
+This generates the maps but doesn't write the `sourceMappingURL` comment. Browsers won't try to fetch them; SiteQwality has them via the upload.
+
+<Aside type="tip">
+The SDK is open and inspectable — but your business logic probably isn't. `hidden-source-map` is the right default for production.
+</Aside>
+
+## See also
+
+<LinkCard title="RUM overview" description="The pillar concepts." href="/observability/rum/overview/" />
+<LinkCard title="Session filters" description="Capture detailed errors selectively." href="/observability/rum/how-to/session-filters/" />

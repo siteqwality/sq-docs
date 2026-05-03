@@ -1,22 +1,83 @@
 ---
 title: Observability
-description: Metrics, logs, traces, RUM, and session replay.
-last_verified: 2026-05-02
+description: Metrics, logs, traces, RUM, and session replay — five pillars on one query fabric, billed per seat instead of per gigabyte.
+last_verified: 2026-05-03
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-<Aside type="caution" title="Under construction">
-Quickstart and reference content for each pillar is being written. The ingestion endpoints are documented in the [API Reference](/api-reference/overview/).
+SiteQwality's observability suite has five pillars. They share the same time picker, dashboards, and alerting fabric, so once you know one you know the others.
+
+| Pillar | Stores | Best for |
+|---|---|---|
+| [Metrics](/observability/metrics/overview/) | Numeric time-series with tags | Counters, gauges, histograms, anything chart-able |
+| [Logs](/observability/logs/overview/) | Structured + unstructured events | Error context, audit trails, full-text search |
+| [Traces](/observability/traces/overview/) | Span trees following one request | Why a request was slow, what services it touched |
+| [RUM](/observability/rum/overview/) | Browser-side telemetry from real users | Web vitals, JS errors, user actions |
+| [Replay](/observability/replay/overview/) | Pixel playback of user sessions | "What did the user actually do?" debugging |
+
+## How they relate
+
+```
+       (numeric ↑↓)              (events)              (request shape)
+        Metrics    ←────→         Logs       ←────→        Traces
+         "what?"               "why?"                  "where?"
+
+                                    │
+                                    │ correlates via trace_id
+                                    │
+                                    ▼
+                                  RUM            ←────→     Replay
+                                "from the user's side"
+```
+
+- A **trace** can pull in **logs** for any of its spans (look for `trace_id` in your logs).
+- **RUM** session events include the **trace IDs** of XHR/fetch requests, letting you jump from a user's experience to the back-end trace.
+- **Metrics** are derived from logs/traces at ingest time (count of errors, p99 latency) and can be alerted on.
+
+## When to reach for which
+
+| Question | Tool |
+|---|---|
+| "How many errors in the last hour?" | **Metrics** — alertable, fast, cheap. |
+| "What was the error message at 14:32?" | **Logs** — the full payload is there. |
+| "Why was that one request slow?" | **Traces** — see the call graph. |
+| "What was the LCP for users in Brazil?" | **RUM** — geographically segmented. |
+| "What did the user click before the error?" | **Replay** — watch them. |
+
+If you find yourself reaching for **logs** to answer "how many" — that's a metric. Emit one. If you reach for **metrics** to answer "what was the actual value" — that's a log. Cross-emit.
+
+## Ingestion
+
+| Pillar | Endpoint | Auth |
+|---|---|---|
+| Metrics | `POST https://metrics.siteqwality.com/v1/ingest` | API key |
+| Logs | `POST https://logs.siteqwality.com/v1/ingest` | API key |
+| Traces | `POST https://traces.siteqwality.com/v1/traces` (OTLP-compatible) | API key |
+| RUM | Auto via SDK | Client token (per-app, public) |
+| Replay | Auto via SDK | Client token (per-app, public) |
+
+Backends:
+
+- Postgres for transactional data (configs, accounts, dashboards).
+- ClickHouse for time-series storage (metrics, logs, traces, RUM events).
+- S3 for blobs (HAR files, video, replay segments).
+
+## Pricing
+
+The observability pillars are **paid features** beyond the included free tier. Pricing is based on seats and ingestion volume — see **Settings → Billing → Plans**.
+
+<Aside type="caution">
+Specific quotas (events/month, retention windows) are evolving. The dashboard's **Settings → Billing → Usage** page is the source of truth.
 </Aside>
 
-SiteQwality's observability suite has five pillars:
+## See also
 
-- **Metrics** — numeric time-series with tags, dashboards, and alerting.
-- **Logs** — structured and unstructured log search, with parsers and saved views.
-- **Traces** — distributed tracing across your services.
-- **RUM (Real User Monitoring)** — page-load and interaction telemetry from real users in the browser, with source-map support.
-- **Session Replay** — pixel-perfect playback of user sessions for debugging UX issues.
-
-All five pillars share the same query language, dashboards, and alerting fabric.
+<CardGrid>
+  <LinkCard title="Metrics" description="Counters, gauges, histograms, queries, alerts." href="/observability/metrics/overview/" />
+  <LinkCard title="Logs" description="Search, parsers, saved views, insights." href="/observability/logs/overview/" />
+  <LinkCard title="Traces" description="Distributed tracing with service-map and span detail." href="/observability/traces/overview/" />
+  <LinkCard title="RUM" description="Real-browser telemetry via the JS SDK." href="/observability/rum/overview/" />
+  <LinkCard title="Session Replay" description="Pixel playback of user sessions, sampled by filter." href="/observability/replay/overview/" />
+</CardGrid>

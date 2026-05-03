@@ -1,0 +1,101 @@
+---
+title: Traces
+description: OpenTelemetry-compatible distributed tracing — span trees showing where a request spent its time across services.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+A **trace** is the path of one logical request through your system. It's made of **spans** — each span is one unit of work (an HTTP request, a database query, a cache lookup) with a start time, end time, status, and structured attributes.
+
+Use traces to answer "where did this request spend its time?" and "what did it talk to?"
+
+## When to use traces
+
+- Diagnosing tail latency: a request that takes 3 seconds — which service is at fault?
+- Debugging cross-service errors: an upstream returns 500; trace shows the downstream call that returned 503.
+- Visualizing service dependencies you didn't know you had.
+
+## When NOT to use traces
+
+- For "how many requests per second" — that's a [metric](/observability/metrics/overview/).
+- For full payload bodies — those are [logs](/observability/logs/overview/) (you can correlate via `trace_id`).
+
+## How it works
+
+SiteQwality is OpenTelemetry-compatible: instrument your apps with the OTel SDK, point the OTLP exporter at SiteQwality's traces endpoint, and traces flow in.
+
+```
+POST https://traces.siteqwality.com/v1/traces
+Authorization: Bearer <api-key>
+Content-Type: application/json | application/x-protobuf
+```
+
+The body shape is the standard OTLP `ExportTraceServiceRequest`. Most language SDKs handle this for you.
+
+Span attributes follow OTel semantic conventions: `http.method`, `http.status_code`, `db.system`, `service.name`, etc. Custom attributes are accepted on every span.
+
+## Anatomy of a span
+
+| Field | Description |
+|---|---|
+| `trace_id` | Identifier for the whole trace. Same across every span in one request. |
+| `span_id` | Identifier for this span. |
+| `parent_span_id` | The span that triggered this one. Empty for the root span. |
+| `service_name` | Logical service emitting the span (`web`, `api`, `db-proxy`). |
+| `operation_name` | What this span did (`POST /checkout`, `SELECT users`). |
+| `span_kind` | `server`, `client`, `producer`, `consumer`, `internal`. |
+| `start_time` / `end_time` | Wall-clock span boundaries. |
+| `duration_ms` | Computed span length. |
+| `status_code` | `OK`, `ERROR`. |
+| `attributes` | Free-form span metadata. |
+| `resource_attributes` | Service-level metadata (host, region, version) shared across spans. |
+| `events` | Timestamped log-like events within the span. |
+| `links` | Cross-trace references (e.g. async followups). |
+
+## Querying
+
+Traces have their own search index. Common queries:
+
+| Query | Use |
+|---|---|
+| `service_name=billing` | All spans in one service. |
+| `min_duration_ms=1000` | Slow requests. |
+| `status=error` | Failing spans. |
+| `search=user_id_abc123` | Free-text search across attributes. |
+
+The dashboard's **Trace Explorer** composes these. For programmatic access, use `GET /traces/search`.
+
+## Service map
+
+`GET /traces/service-map` returns nodes (services) and edges (caller→callee with call counts and latencies p50/p95/p99). Useful for:
+
+- Finding unexpected dependencies ("we still call legacy-svc?").
+- Spotting hot paths (the edge with the most calls).
+- Identifying error sources (the edge with the highest error rate).
+
+The dashboard renders this as an interactive graph.
+
+## Correlation
+
+- Every log can include a `trace_id` and `span_id` field. SiteQwality auto-correlates and offers a "View trace" link from any log.
+- `GET /traces/{trace_id}/logs` returns all logs tagged with the trace ID.
+- The RUM SDK injects a `traceparent` header on outgoing fetch/XHR requests, allowing browser → backend trace stitching.
+
+<Aside type="tip">
+For the most useful traces, instrument **at service boundaries** (incoming and outgoing HTTP, database calls, message queue ops). Don't instrument every internal function — the noise drowns the signal.
+</Aside>
+
+## Pricing
+
+Traces are billed per span ingested + retention. Sampling is your friend — see [sampling how-to](/observability/traces/how-to/sampling/).
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Send your first trace via the OTLP HTTP exporter." href="/observability/traces/quickstart/" />
+  <LinkCard title="Sampling" description="Reduce volume without losing signal." href="/observability/traces/how-to/sampling/" />
+  <LinkCard title="Reference" description="Span attribute conventions, search params." href="/observability/traces/reference/" />
+  <LinkCard title="Logs" description="The other half of debugging." href="/observability/logs/overview/" />
+</CardGrid>

@@ -1,0 +1,126 @@
+---
+title: Metrics reference
+description: Ingest endpoint, query parameters, naming rules, and aggregation list.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Ingest endpoint
+
+```
+POST https://metrics.siteqwality.com/v1/ingest
+Authorization: Bearer <api-key>
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "metrics": [
+    {
+      "type": "gauge | counter | histogram",
+      "name": "<metric_name>",
+      "timestamp": "2026-05-03T14:32:00Z",   // optional; defaults to ingest time
+      "value": 42.0,                           // gauge / counter
+      "buckets": [{ "le": "10", "count": 0 }], // histogram
+      "sum": 4250.0,                            // histogram
+      "count": 20,                              // histogram
+      "unit": "ms",                             // optional
+      "tags": { "key": "value" }
+    }
+  ]
+}
+```
+
+- Max **1000 metrics per request**. Larger payloads must be batched.
+- Returns `202 Accepted` on enqueue.
+- Returns `400` for malformed payloads, `401` for missing/invalid auth.
+
+## Naming rules
+
+Metric names must match `^[a-zA-Z0-9._]+$`. Dots and underscores are allowed; everything else (dashes, slashes, spaces) is rejected. Convention is dot-separated:
+
+```
+http.requests.total
+http.request.duration_ms
+db.connections.active
+job.duration_seconds
+```
+
+## Tags
+
+Free-form `string → string`. Tags are indexed for query filtering; cardinality matters.
+
+**Reasonable**: `service`, `env`, `region`, `endpoint`, `status_class`, `queue`, `team`.
+
+**Risky**: `user_id`, `request_id`, `full_url`, `session_id`, `email` — anything unique per request.
+
+**Default tags** (added server-side at ingest):
+
+- `account_id` — derived from API key.
+
+## Query endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/metrics/names` | Search metric names (`prefix`, `limit`). |
+| `GET` | `/metrics/tag-keys` | List tag keys for a metric (`metric_name`). |
+| `GET` | `/metrics/tag-values` | List values for a (`metric_name`, `tag_key`). |
+| `GET` | `/metrics/query` | Time-series chart data. |
+| `GET` | `/metrics/summary` | Aggregated table (`avg/min/max/latest` per group). |
+| `GET` | `/metrics/sources` | List ingest sources (e.g. inferred from `service` tag). |
+
+### `/metrics/query` parameters
+
+| Param | Type | Description |
+|---|---|---|
+| `metric_name` | string | Required. |
+| `aggregation` | string | `avg` (default), `max`, `min`, `sum`, `p50`, `p95`, `p99`, `rate`. |
+| `group_by` | string | Tag key to split series by. |
+| `start_time` / `end_time` | RFC 3339 | Time window. Default last 1 hour. |
+| `resolution` | string | `auto`, `1m`, `5m`, `1h`, `6h`. Bucket width. |
+| `filters` | string | JSON-encoded `{tag_key: tag_value}` map for filtering. |
+
+Response:
+
+```json
+{
+  "metric_type": "gauge",
+  "unit": "ms",
+  "series": [
+    {
+      "group": { "endpoint": "/api/checkout" },
+      "points": [
+        { "timestamp": "2026-05-03T14:00:00Z", "value": 42.5 },
+        ...
+      ]
+    }
+  ]
+}
+```
+
+### Aggregation × type compatibility
+
+| Aggregation | Gauge | Counter | Histogram |
+|---|---|---|---|
+| `avg`, `min`, `max`, `sum` | yes | yes (sum is cumulative) | yes (`sum` field) |
+| `rate` | n/a | yes | n/a |
+| `p50`, `p95`, `p99` | n/a | n/a | yes |
+
+## Limits
+
+| Constraint | Value |
+|---|---|
+| Metrics per ingest request | 1000 |
+| Max metric name length | 255 |
+| Max tag key/value length | 255 |
+| Default retention | 90 days (paid tiers extend) |
+
+## See also
+
+- [Metrics overview](/observability/metrics/overview/) — types, conventions.
+- [Quickstart](/observability/metrics/quickstart/) — first-metric walkthrough.
+- [API Reference](/api-reference/) — wire-level shapes.

@@ -1,0 +1,113 @@
+---
+title: Metrics
+description: Counters, gauges, and histograms with tags. Charted, summarised, and alertable from the same query fabric.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+A **metric** is a numeric time-series — a value plus a timestamp plus a set of tags. Use metrics for anything you'd put on a chart: request counts, error rates, latencies, queue depths, business KPIs.
+
+## When to use metrics
+
+- You want to alert on a numeric threshold (`error_rate > 1%`, `queue_depth > 1000`).
+- You want a chart over time, optionally split by a tag (`requests by region`).
+- You're sending data with high cardinality you can't afford to log every event of (e.g. 10K req/s).
+
+## When NOT to use metrics
+
+- For one-off events with rich context — that's a [log](/observability/logs/overview/).
+- For arbitrary, high-cardinality data (per-user IDs, full URLs). Tag explosion will hurt query performance and your bill.
+
+## Three metric types
+
+### `gauge`
+
+Current value of something. The value goes up and down independently.
+
+```json
+{
+  "type": "gauge",
+  "name": "queue.depth",
+  "value": 42,
+  "tags": { "queue": "orders" }
+}
+```
+
+Examples: queue depth, connection pool size, in-flight requests, memory usage.
+
+### `counter`
+
+Monotonically increasing value. SiteQwality computes deltas/rates server-side.
+
+```json
+{
+  "type": "counter",
+  "name": "http.requests.total",
+  "value": 1,
+  "tags": { "method": "GET", "status": "200" }
+}
+```
+
+Examples: requests served, errors, jobs processed.
+
+### `histogram`
+
+Distribution of values bucketed by an upper bound (`le`). Same shape as Prometheus histograms.
+
+```json
+{
+  "type": "histogram",
+  "name": "http.request.duration_ms",
+  "buckets": [
+    { "le": "10",   "count": 0 },
+    { "le": "50",   "count": 5 },
+    { "le": "100",  "count": 12 },
+    { "le": "500",  "count": 18 },
+    { "le": "+Inf", "count": 20 }
+  ],
+  "sum": 4250,
+  "count": 20,
+  "tags": { "endpoint": "/api/checkout" }
+}
+```
+
+Examples: request latency, request body size, computation time. Allows p50/p95/p99 queries.
+
+## Tag conventions
+
+Tags are arbitrary key/value strings. Use them consistently:
+
+| Tag | Convention |
+|---|---|
+| `service` | Logical service name. `service:api`, `service:billing`. |
+| `env` | `env:prod`, `env:staging`, `env:dev`. |
+| `region` | `region:us-east-1`. |
+| `endpoint` | The route. `endpoint:/api/checkout`. |
+| `status_class` | `status_class:2xx` rather than per-status-code (which explodes cardinality). |
+
+**Avoid high-cardinality tags** like user IDs, request IDs, or full URLs. The rule of thumb: if it's unique per request, it's a log field, not a metric tag.
+
+## Aggregations
+
+When querying:
+
+- `avg`, `min`, `max`, `sum` — work on any metric type.
+- `p50`, `p95`, `p99` — only on histograms.
+- `rate` — only on counters; computes per-second rate over the bucket.
+
+Group by any tag to split the series. Filter by any tag to scope.
+
+## Pricing notes
+
+Metrics ingestion is billed per data point per month. Histograms count as one data point regardless of bucket count. There's a hard cap of **1000 metrics per ingest request** — batch larger payloads into multiple requests.
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Send your first metric via curl, see it on a chart." href="/observability/metrics/quickstart/" />
+  <LinkCard title="Reference" description="Ingestion endpoint, query params, naming rules." href="/observability/metrics/reference/" />
+  <LinkCard title="Logs" description="The other half of observability for non-numeric context." href="/observability/logs/overview/" />
+  <LinkCard title="Dashboards" description="Compose metric charts with logs and traces." href="/dashboards/overview/" />
+</CardGrid>

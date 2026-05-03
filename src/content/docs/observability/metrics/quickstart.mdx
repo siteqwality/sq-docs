@@ -1,0 +1,147 @@
+---
+title: Metrics quickstart
+description: Send your first metric via curl, see it on a chart in 5 minutes.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have sent a counter and a gauge from your laptop, queried them via the API, and seen them on a dashboard chart.
+
+## 1. Send a metric
+
+```bash
+curl -X POST https://metrics.siteqwality.com/v1/ingest \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "metrics": [
+      {
+        "type": "counter",
+        "name": "demo.requests",
+        "value": 1,
+        "tags": { "endpoint": "/checkout", "status_class": "2xx" }
+      },
+      {
+        "type": "gauge",
+        "name": "demo.queue_depth",
+        "value": 42,
+        "tags": { "queue": "orders" }
+      }
+    ]
+  }'
+```
+
+A `202 Accepted` means the metrics were queued. Datapoints land in ClickHouse within ~10 seconds.
+
+<Aside type="tip">
+The ingest endpoint accepts up to 1000 metrics per request. Batch where you can — fewer requests = lower API gateway costs and faster ingestion.
+</Aside>
+
+## 2. Send some more so we have a series
+
+A single point isn't a chart. Loop:
+
+```bash
+for i in {1..30}; do
+  VALUE=$((RANDOM % 100))
+  curl -X POST https://metrics.siteqwality.com/v1/ingest \
+    -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "{ \"metrics\": [{
+      \"type\": \"gauge\",
+      \"name\": \"demo.queue_depth\",
+      \"value\": $VALUE,
+      \"tags\": { \"queue\": \"orders\" }
+    }] }" > /dev/null
+  sleep 5
+done
+```
+
+This gives you 30 points over 2.5 minutes — enough to render a chart.
+
+## 3. Query the metric
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+**Metrics → Explorer**, type `demo.queue_depth` in the metric name, leave defaults. The chart renders.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+START=$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)
+END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+curl -G https://api.siteqwality.com/metrics/query \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "metric_name=demo.queue_depth" \
+  --data-urlencode "aggregation=avg" \
+  --data-urlencode "start_time=$START" \
+  --data-urlencode "end_time=$END" \
+  --data-urlencode "resolution=1m"
+```
+
+Response includes `series[]` with `points[]` of `{timestamp, value}`.
+
+</TabItem>
+</Tabs>
+
+## 4. Add it to a dashboard
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Dashboards → New dashboard.** Name it `Demo`.
+
+2. **Add widget → Timeseries.** Pick the metric `demo.queue_depth`. Aggregation `avg`. Layout to taste.
+
+3. Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+See [Dashboards quickstart](/dashboards/quickstart/) for the wire-level shape.
+
+</TabItem>
+</Tabs>
+
+## 5. Wire your real app
+
+Most languages have a Prometheus client that can convert to SiteQwality's format trivially. The shape closely mirrors OpenTelemetry / Prometheus.
+
+For ad-hoc instrumentation:
+
+```python
+import os, time, requests
+
+API = "https://metrics.siteqwality.com/v1/ingest"
+KEY = os.environ["SITEQWALITY_API_KEY"]
+
+def send_counter(name, value=1, tags=None):
+    requests.post(API, json={
+        "metrics": [{
+            "type": "counter",
+            "name": name,
+            "value": value,
+            "tags": tags or {},
+        }]
+    }, headers={"Authorization": f"Bearer {KEY}"}, timeout=5)
+
+# In your code
+send_counter("orders.created", tags={"region": "us-east-1"})
+```
+
+For production, batch + flush periodically rather than one-request-per-metric.
+
+## What's next
+
+<LinkCard title="Metrics reference" description="Endpoint, query syntax, naming rules." href="/observability/metrics/reference/" />
+<LinkCard title="Logs" description="The next pillar." href="/observability/logs/overview/" />
+<LinkCard title="Dashboards" description="Compose metrics into shared views." href="/dashboards/overview/" />

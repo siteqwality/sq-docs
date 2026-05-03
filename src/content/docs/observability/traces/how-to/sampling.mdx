@@ -1,0 +1,116 @@
+---
+title: Sample traces
+description: Reduce trace volume (and cost) without losing the signal you actually need.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+A high-traffic service can produce millions of spans per hour. Most of them are uninteresting — successful requests that all look the same. **Sampling** is the standard answer: send a representative subset, keep cost manageable, retain the ability to debug.
+
+## Two flavors
+
+### Head-based sampling
+
+Decision made at trace start. Cheap, deterministic, but blind to outcome — you might sample away the one slow trace.
+
+```javascript
+// OpenTelemetry — sample 10% of traces
+const { NodeSDK } = require('@opentelemetry/sdk-node');
+const { TraceIdRatioBasedSampler } = require('@opentelemetry/sdk-trace-base');
+
+const sdk = new NodeSDK({
+  serviceName: 'demo-api',
+  sampler: new TraceIdRatioBasedSampler(0.1),  // 10%
+  // ...
+});
+```
+
+Use head sampling for sustained-high-volume services where you can afford to lose individual traces.
+
+### Tail-based sampling
+
+Decision made after the trace completes. Expensive (you have to buffer everything until you decide), but smart — keep all errors, all slow traces, plus a sample of normal ones.
+
+OpenTelemetry has a [tail sampling collector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor) that runs as a sidecar / daemon between your apps and SiteQwality:
+
+```yaml
+# otel-collector-config.yaml
+processors:
+  tail_sampling:
+    decision_wait: 30s
+    policies:
+      - name: errors-policy
+        type: status_code
+        status_code: { status_codes: [ERROR] }
+      - name: slow-policy
+        type: latency
+        latency: { threshold_ms: 1000 }
+      - name: sample-rest
+        type: probabilistic
+        probabilistic: { sampling_percentage: 5 }
+
+exporters:
+  otlphttp:
+    endpoint: https://traces.siteqwality.com/v1/traces
+    headers:
+      Authorization: Bearer ${SITEQWALITY_API_KEY}
+
+service:
+  pipelines:
+    traces:
+      processors: [tail_sampling]
+      exporters: [otlphttp]
+```
+
+Use tail sampling when:
+
+- You can run an OTel collector in your infra.
+- Most traces are uninteresting but the few interesting ones are critical.
+- You want to keep 100% of errors regardless of volume.
+
+## Recommended starting point
+
+For most teams:
+
+- **Low volume (under 10 spans/sec):** No sampling. Send everything.
+- **Mid volume (10–500 spans/sec):** Head sample at 30–50% in app, send the rest.
+- **High volume (over 500 spans/sec):** Tail sample via a collector. Keep 100% errors + 5% successful.
+
+## Per-request override
+
+Sometimes you want to force a trace through regardless of the sampler:
+
+```javascript
+const { trace, SpanKind } = require('@opentelemetry/api');
+
+app.post('/api/critical-thing', async (req, res) => {
+  const span = trace.getTracer('demo').startSpan('critical_thing', {
+    kind: SpanKind.SERVER,
+    attributes: { 'sampling.priority': 1 },  // hint to sampler: keep me
+  });
+  // ...
+});
+```
+
+Many sampler implementations honor `sampling.priority`. Check yours.
+
+## Cost vs visibility tradeoff
+
+| Sampling rate | Use case |
+|---|---|
+| 100% | Dev/staging, low-traffic prod, anything < 50 spans/sec. |
+| 50% | Mid-traffic prod where you can spot patterns from half the data. |
+| 10% | High-traffic prod with head-based sampling. |
+| 1–5% + 100% errors | Very high traffic, tail-based. |
+
+<Aside type="tip">
+Combine sampling with **logs that include `trace_id`**: even if a trace was sampled out, the logs still exist for that request. You won't have the span tree, but you'll have the breadcrumbs.
+</Aside>
+
+## See also
+
+<LinkCard title="Traces overview" description="Concepts and the OTLP endpoint." href="/observability/traces/overview/" />
+<LinkCard title="Quickstart" description="If you haven't instrumented yet." href="/observability/traces/quickstart/" />
+<LinkCard title="Reference" description="Span attribute conventions." href="/observability/traces/reference/" />

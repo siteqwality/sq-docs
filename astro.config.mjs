@@ -95,6 +95,56 @@ export default defineConfig({
 					label: 'Observability',
 					items: [
 						{ label: 'Overview', slug: 'observability/overview' },
+						{
+							label: 'Metrics',
+							items: [
+								{ label: 'Overview', slug: 'observability/metrics/overview' },
+								{ label: 'Quickstart', slug: 'observability/metrics/quickstart' },
+								{ label: 'Reference', slug: 'observability/metrics/reference' },
+							],
+						},
+						{
+							label: 'Logs',
+							items: [
+								{ label: 'Overview', slug: 'observability/logs/overview' },
+								{ label: 'Quickstart', slug: 'observability/logs/quickstart' },
+								{ label: 'Reference', slug: 'observability/logs/reference' },
+								{
+									label: 'How-to guides',
+									autogenerate: { directory: 'observability/logs/how-to' },
+								},
+							],
+						},
+						{
+							label: 'Traces',
+							items: [
+								{ label: 'Overview', slug: 'observability/traces/overview' },
+								{ label: 'Quickstart', slug: 'observability/traces/quickstart' },
+								{ label: 'Reference', slug: 'observability/traces/reference' },
+								{
+									label: 'How-to guides',
+									autogenerate: { directory: 'observability/traces/how-to' },
+								},
+							],
+						},
+						{
+							label: 'RUM',
+							items: [
+								{ label: 'Overview', slug: 'observability/rum/overview' },
+								{ label: 'Quickstart', slug: 'observability/rum/quickstart' },
+								{
+									label: 'How-to guides',
+									autogenerate: { directory: 'observability/rum/how-to' },
+								},
+							],
+						},
+						{
+							label: 'Session Replay',
+							items: [
+								{ label: 'Overview', slug: 'observability/replay/overview' },
+								{ label: 'Quickstart', slug: 'observability/replay/quickstart' },
+							],
+						},
 					],
 				},
 				{

@@ -1,0 +1,133 @@
+---
+title: Traces reference
+description: Ingest endpoint, span attribute conventions, and search/detail endpoints.
+last_verified: 2026-05-03
+owner: jj
+---
+
+## Ingest
+
+```
+POST https://traces.siteqwality.com/v1/traces
+Authorization: Bearer <api-key>
+Content-Type: application/json | application/x-protobuf
+```
+
+Body: standard OTLP `ExportTraceServiceRequest`. Most OTel SDK exporters handle the format for you.
+
+## Span attribute conventions
+
+SiteQwality renders standard OTel semantic-convention attributes natively. Stick to the standard names where possible:
+
+### HTTP
+
+| Attribute | Description |
+|---|---|
+| `http.method` | `GET`, `POST`, ... |
+| `http.url` | Full URL including query. |
+| `http.target` | Path + query (e.g. `/api/users?id=123`). |
+| `http.host` | Host header. |
+| `http.status_code` | Numeric. |
+| `http.user_agent` | UA string. |
+| `http.request_content_length` | Bytes. |
+| `http.response_content_length` | Bytes. |
+
+### DB
+
+| Attribute | Description |
+|---|---|
+| `db.system` | `postgresql`, `mysql`, `redis`, `mongodb`. |
+| `db.statement` | The SQL/query (consider scrubbing PII). |
+| `db.operation` | `SELECT`, `INSERT`, `UPDATE`. |
+| `db.name` | Database name. |
+| `db.user` | Connection user. |
+
+### Messaging
+
+| Attribute | Description |
+|---|---|
+| `messaging.system` | `kafka`, `sqs`, `rabbitmq`. |
+| `messaging.destination` | Topic / queue. |
+| `messaging.operation` | `send`, `receive`, `process`. |
+
+### Resource attributes (per-service)
+
+These should be set once on the OTel SDK init (`Resource.create({...})`) and apply to every span:
+
+| Attribute | Description |
+|---|---|
+| `service.name` | Required. Logical service name. |
+| `service.version` | App version. |
+| `service.instance.id` | Pod / VM identity. |
+| `deployment.environment` | `prod`, `staging`. |
+| `host.name` | Hostname. |
+| `cloud.region` | `us-east-1`. |
+
+## Span fields stored
+
+| Field | Description |
+|---|---|
+| `trace_id` | 32-char hex; identifies the trace. |
+| `span_id` | 16-char hex; identifies the span. |
+| `parent_span_id` | Empty for root spans. |
+| `operation_name` | Span name. |
+| `service_name` | From resource attributes. |
+| `span_kind` | `server`, `client`, `producer`, `consumer`, `internal`. |
+| `start_time`, `end_time` | RFC 3339. |
+| `duration_ms` | Computed. |
+| `status_code` | `OK` or `ERROR`. |
+| `status_message` | Optional error message. |
+| `attributes` | All custom + standard span attributes. |
+| `resource_attributes` | All resource attributes. |
+| `events[]` | Timestamped log-like events. |
+| `links[]` | Cross-trace span references. |
+
+## Search: `GET /traces/search`
+
+| Param | Description |
+|---|---|
+| `start_time`, `end_time` | RFC 3339 window. |
+| `service_name` | Exact match. |
+| `operation_name` | Exact match. |
+| `min_duration_ms`, `max_duration_ms` | Range filter. |
+| `status` | `ok` or `error`. |
+| `search` | Free-text across span attributes. |
+| `limit` (default 50), `offset` | Pagination. |
+| `sort_field`, `sort_order` | Order. |
+
+Response:
+
+```json
+{
+  "total": 1234,
+  "traces": [
+    {
+      "trace_id": "...",
+      "root_service": "api",
+      "root_operation": "POST /checkout",
+      "services": ["api", "billing", "db"],
+      "span_count": 14,
+      "duration_ms": 482.3,
+      "error_count": 0,
+      "start_time": "..."
+    }
+  ]
+}
+```
+
+## Adjacent endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/traces/services` | Distinct services seen in window. |
+| `GET` | `/traces/operations` | Distinct operations (optionally filtered by service). |
+| `GET` | `/traces/timeline` | Bucketed counts (total + errors) for charting. |
+| `GET` | `/traces/{trace_id}` | Full span tree. |
+| `GET` | `/traces/{trace_id}/logs` | Logs tagged with this trace_id. |
+| `GET` | `/traces/service-map` | Nodes + edges for the dependency graph. |
+
+## See also
+
+- [Traces overview](/observability/traces/overview/) — concepts.
+- [Sampling](/observability/traces/how-to/sampling/) — head vs tail.
+- [API Reference](/api-reference/) — wire-level shapes.

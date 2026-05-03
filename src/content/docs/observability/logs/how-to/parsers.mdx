@@ -1,0 +1,140 @@
+---
+title: Use log parsers
+description: Extract structured fields from unstructured log lines (Apache, Nginx, syslog, regex, kv) at ingest time.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+If your logs arrive as plain strings (`Apache combined`, syslog, key/value pairs), parsers extract structured fields server-side at ingest. The result: searchable, filterable fields on every log without the app having to ship JSON.
+
+## Supported parser types
+
+| Type | What it parses |
+|---|---|
+| `json` | Already-structured JSON (no-op identity). |
+| `regex` | Custom named-capture regex. |
+| `apache_combined` | Apache combined log format. |
+| `nginx` | Nginx default log format. |
+| `syslog` | RFC 5424 syslog. |
+| `csv` | Comma-separated with configurable headers. |
+| `kv` | `key=value key2=value2` style. |
+
+## Anatomy of a parser
+
+A parser has:
+
+- `name` — display label.
+- `parse_type` — one of the above.
+- `parse_config` — type-specific config (regex pattern, CSV headers, kv separator).
+- `field_mapping` — map extracted fields to the canonical log fields (`level`, `host`, etc.).
+- `detect_pattern` — optional regex; only logs matching this run through the parser.
+- `source_filter` — optional source name; only logs from this source run through the parser.
+- `priority` — when multiple parsers match, lower number runs first.
+- `enabled` — toggle on/off without deleting.
+
+## Example: Apache combined
+
+```bash
+curl -X POST https://api.siteqwality.com/log_parsers \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Web access logs",
+    "parse_type": "apache_combined",
+    "source_filter": "web-access",
+    "field_mapping": {
+      "host": "remote_host",
+      "metadata.user_agent": "user_agent",
+      "metadata.status": "status"
+    },
+    "enabled": true,
+    "priority": 100
+  }'
+```
+
+After this is enabled, every log with `source: "web-access"` gets the parser applied. Extracted fields like `remote_host`, `user_agent`, `status` end up in the indicated log fields.
+
+## Example: custom regex
+
+```json
+{
+  "name": "Custom audit log",
+  "parse_type": "regex",
+  "parse_config": {
+    "pattern": "^\\[(?P<timestamp>[^\\]]+)\\]\\s+\\[(?P<level>[A-Z]+)\\]\\s+user=(?P<user_id>\\S+)\\s+(?P<message>.*)$"
+  },
+  "source_filter": "audit",
+  "field_mapping": {
+    "level": "level",
+    "message": "message",
+    "metadata.user_id": "user_id"
+  },
+  "enabled": true,
+  "priority": 50
+}
+```
+
+Named captures (`(?P<name>...)`) become extracted fields. Map them via `field_mapping`.
+
+## Test before saving
+
+Before enabling, send a sample line to the test endpoint:
+
+```bash
+curl -X POST https://api.siteqwality.com/log_parsers/test \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sample": "[2026-05-03T14:32:17Z] [ERROR] user=usr_abc123 Failed to charge card",
+    "parse_type": "regex",
+    "parse_config": {
+      "pattern": "^\\[(?P<timestamp>[^\\]]+)\\]\\s+\\[(?P<level>[A-Z]+)\\]\\s+user=(?P<user_id>\\S+)\\s+(?P<message>.*)$"
+    },
+    "field_mapping": {
+      "level": "level",
+      "message": "message",
+      "metadata.user_id": "user_id"
+    }
+  }'
+```
+
+Response:
+
+```json
+{
+  "matched": true,
+  "extracted_fields": { "timestamp": "...", "level": "ERROR", "user_id": "usr_abc123", "message": "Failed to charge card" },
+  "mapped_fields": { "level": "ERROR", "message": "Failed to charge card", "metadata": { "user_id": "usr_abc123" } },
+  "parse_type": "regex",
+  "error": null
+}
+```
+
+If `matched: false` or `error` is set, fix the pattern and retry.
+
+## Per-request override
+
+You can also tag a single ingest request to use a specific parser via the `X-Log-Parser` header:
+
+```bash
+curl -X POST https://logs.siteqwality.com/v1/ingest \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: text/plain" \
+  -H "X-Log-Parser: <parser-id>" \
+  -H "X-Log-Source: web-access" \
+  --data-binary '127.0.0.1 - - [03/May/2026:14:32:17 +0000] "GET / HTTP/1.1" 200 1234 "-" "curl/8"'
+```
+
+Use this when you can't set `source_filter` ahead of time.
+
+<Aside type="tip">
+For pipelines that ship raw text logs (Vector, Fluent Bit), set the `source` once via the parser's `source_filter` and you don't need per-request headers.
+</Aside>
+
+## See also
+
+<LinkCard title="Logs overview" description="Concepts and the ingest endpoint." href="/observability/logs/overview/" />
+<LinkCard title="Saved views" description="Save your filtered queries." href="/observability/logs/how-to/saved-views/" />
+<LinkCard title="Reference" description="Query syntax." href="/observability/logs/reference/" />

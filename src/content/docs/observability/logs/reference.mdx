@@ -1,0 +1,119 @@
+---
+title: Logs reference
+description: Ingest endpoint, query parameters, parser types, and the saved-view shape.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Ingest
+
+```
+POST https://logs.siteqwality.com/v1/ingest
+Authorization: Bearer <api-key>
+Content-Type: application/json | application/x-ndjson | text/plain
+```
+
+Three body shapes:
+
+| Content-Type | Body |
+|---|---|
+| `application/json` | Single JSON object **or** array of objects. |
+| `application/x-ndjson` | One JSON object per newline. |
+| `text/plain` | Raw text — runs through the configured parser if a `source` matches. |
+
+Optional headers:
+
+- `X-Log-Source: <name>` — applies `source` to every entry in this request.
+- `X-Log-Parser: <parser-id>` — applies a specific parser to every entry.
+
+## Log entry fields
+
+| Field | Type | Description |
+|---|---|---|
+| `timestamp` | RFC 3339 | Defaults to ingest time. |
+| `level` | string | `trace`, `debug`, `info`, `warn`, `error`, `fatal`. |
+| `message` | string | Full-text indexed. |
+| `host` | string | Pod/container/VM identity. |
+| `env` | string | `prod`, `staging`, etc. |
+| `source` | string | Logical source. |
+| `version` | string | App version. |
+| `device` | string | Browser/device for client-side logs. |
+| `tags` | `{string: string}` | Filterable map. |
+| `metadata` | object | Arbitrary structured. Searchable via `metadata_search`. |
+
+## Query: `GET /logs/query`
+
+| Param | Description |
+|---|---|
+| `start_time`, `end_time` | RFC 3339 window; default last 1h. |
+| `level` | Comma-separated levels (`error,warn`). |
+| `source`, `env`, `host` | Exact-match filters. |
+| `search` | Full-text in `message`. |
+| `metadata_search` | Full-text across `metadata` values. |
+| `tags` | JSON-encoded `{key: value}` to require. |
+| `excluded` | JSON-encoded `{key: value}` to exclude. |
+| `limit` (default 100), `offset` | Pagination. |
+| `sort_field` (`timestamp`), `sort_order` (`asc|desc`) | Ordering. |
+
+Response:
+
+```json
+{
+  "logs": [
+    {
+      "timestamp": "...",
+      "level": "error",
+      "message": "...",
+      "host": "...",
+      "env": "...",
+      "source": "...",
+      "version": "...",
+      "device": "...",
+      "tags": { "endpoint": "/api/charge" },
+      "metadata": { "user_id": "usr_abc" }
+    }
+  ],
+  "total": 1234
+}
+```
+
+## Adjacent endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/logs/facets` | Per-field value counts for narrowing filters. |
+| `GET` | `/logs/fields` | Discoverable field names + types. |
+| `GET` | `/logs/sources` | Distinct `source` values seen. |
+| `GET` | `/logs/stats` | Counts by level + source for the time window. |
+| `GET` | `/logs/timeline` | Bucketed counts by level for charting. |
+| `GET` | `/logs/insights` | ML-derived insights (error spikes, new errors, etc.). |
+| `GET` | `/logs/tail/poll` | Polling tail; pass returned `cursor` on next call. |
+
+## Parsers
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/log_parsers` | List. |
+| `POST` | `/log_parsers` | Create. |
+| `POST` | `/log_parsers/test` | Test a sample against a parser config. |
+| `GET` / `PUT` / `DELETE` | `/log_parsers/{parser_id}` | Detail/update/delete. |
+
+`parse_type` values: `json`, `regex`, `apache_combined`, `nginx`, `syslog`, `csv`, `kv`.
+
+## Saved views
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/log_saved_views` | List (yours + shared). |
+| `POST` | `/log_saved_views` | Create. |
+| `GET` / `PUT` / `DELETE` | `/log_saved_views/{view_id}` | Detail/update/delete. |
+
+`filters` is a free-form JSON object; the dashboard treats keys matching `LogQueryParams` field names as filters.
+
+## See also
+
+- [Logs overview](/observability/logs/overview/) — concepts.
+- [Parsers](/observability/logs/how-to/parsers/) — extract structure from raw text.
+- [API Reference](/api-reference/) — wire-level shapes.

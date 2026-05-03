@@ -1,0 +1,132 @@
+---
+title: RUM (Real User Monitoring)
+description: Web vitals, errors, user actions, resource timing — collected from real browsers via the JS SDK, optionally with session replay.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+**Real User Monitoring** captures performance and interaction data from your real users' browsers. Unlike browser checks (synthetic, runs from one IP), RUM measures the actual experience: every user, every device, every network condition.
+
+## When to use RUM
+
+- Track user-perceived performance (web vitals: LCP, FCP, CLS, INP, TTFB).
+- Catch JS errors your test suite missed.
+- Understand real user flows (which pages, which buttons, in what order).
+- Identify slow regions, slow devices, slow ISPs.
+
+## When NOT to use RUM
+
+- For "is the site up?" — that's a [browser check](/uptime-monitoring/browser-checks/overview/) or HTTP check.
+- For backend performance — use [traces](/observability/traces/overview/).
+- For a single canary value — RUM is statistical (millions of points), not deterministic.
+
+## How it works
+
+You install the `@siteqwality/rum` SDK in your front-end. It:
+
+1. Generates a session ID per user/visit.
+2. Subscribes to PerformanceObserver for web vitals.
+3. Listens for errors (`window.onerror`, `unhandledrejection`).
+4. Tracks click and view events.
+5. Periodically posts batched events to `https://rum.siteqwality.com`.
+
+The SDK is **two layers**:
+
+- **Always-on collection** of light measurements (web vitals, view counts, error counts) — sent on every session.
+- **Detail collection** (resource timings, individual error stacks, click targets) — activated only when a [session filter](/observability/rum/how-to/session-filters/) matches the session. Keeps cost down by not capturing every detail for every user.
+
+[Session replay](/observability/replay/overview/) is the third tier: pixel playback, activated only by replay-enabled session filters. See its own page.
+
+## RUM application
+
+Each install of the SDK targets a **RUM application** — typically one per domain or one per major build. Each app has:
+
+- A unique `application_id` and a public `client_token`.
+- A `domain` for the dashboard's "Open in app" links.
+- Privacy settings (`mask_inputs`, `mask_text`).
+- Session filters that activate detail/replay capture.
+
+Create one in **RUM → New application**.
+
+## Install
+
+Two install paths:
+
+### NPM
+
+```bash
+npm install @siteqwality/rum
+```
+
+```javascript
+import { SiteQwalityRUM } from '@siteqwality/rum';
+
+await SiteQwalityRUM.init({
+  applicationId: 'abc123',
+  clientToken: 'pub_def456',
+  service: 'web',
+  version: '1.4.2',
+  env: 'prod',
+});
+```
+
+### CDN
+
+For static sites, drop in a script tag:
+
+```html
+<script type="module" src="https://cdn.siteqwality.com/rum/v1/sdk.min.js"></script>
+<script type="module">
+  await SiteQwalityRUM.init({
+    applicationId: 'abc123',
+    clientToken: 'pub_def456',
+    service: 'web',
+    env: 'prod',
+  });
+</script>
+```
+
+The CDN bundle code-splits — `rrweb` (replay engine) is loaded only when a replay-enabled filter activates, so it's free for users not being replayed.
+
+## Tracking custom data
+
+```javascript
+// Identify a user (call after login)
+SiteQwalityRUM.setUser({ id: 'usr_abc', email: 'alice@example.com', name: 'Alice' });
+
+// Custom error
+SiteQwalityRUM.addError(new Error('Payment dialog refused'), { feature: 'checkout' });
+
+// Custom action
+SiteQwalityRUM.addAction('checkout_step_2', { variant: 'A' });
+```
+
+## What gets captured
+
+| Always-on | Detail (filter-activated) | Replay (replay-enabled filter) |
+|---|---|---|
+| View counts, page loads | Resource timings (every fetch/XHR) | Full DOM snapshots + mutations |
+| Web vitals (LCP, FCP, CLS, TTFB, INP) | Individual errors with stack traces | Mouse/keyboard input events |
+| Aggregate error count | Click/keypress events with target | Network requests captured visually |
+| Aggregate action count | Long tasks (>50ms blocking) | (privacy: optional input/text masking) |
+| Session start/end | Distributed-trace IDs from outgoing fetches | |
+
+## Privacy
+
+The SDK respects two privacy toggles set on the RUM application:
+
+- `mask_inputs` — replace input values with `***` before sending.
+- `mask_text` — replace user-visible text with `***` (for replay only).
+
+Set these conservatively if you handle PII or financial data. See [replay privacy](/observability/replay/overview/#privacy).
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Install the SDK in your app, see your first session." href="/observability/rum/quickstart/" />
+  <LinkCard title="Source maps" description="Symbolicate JS errors with original source code." href="/observability/rum/how-to/source-maps/" />
+  <LinkCard title="Session filters" description="Activate detail capture and replay only when needed." href="/observability/rum/how-to/session-filters/" />
+  <LinkCard title="Session Replay" description="Pixel playback of user sessions." href="/observability/replay/overview/" />
+</CardGrid>

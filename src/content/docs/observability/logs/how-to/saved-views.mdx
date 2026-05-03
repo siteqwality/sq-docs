@@ -1,0 +1,77 @@
+---
+title: Save and share log views
+description: Pin frequently-used log searches as saved views, share them with your team.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
+
+A **saved view** is a named, reusable filter set on the Logs Explorer. Use them for:
+
+- "All errors in billing prod" — the search the on-call opens during pages.
+- "Slow queries (>1s) on the search service."
+- "Logs with `metadata.user_id = X`" — for one-off customer support investigations.
+
+## Create
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+In **Logs → Explorer**, apply your filters. Click **Save view**. Name it. Toggle **Shared** if it should be visible to teammates. Save.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/log_saved_views \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Billing errors — prod",
+    "description": "All error-level logs from billing-api in prod, last 24h",
+    "is_shared": true,
+    "filters": {
+      "source": "billing-api",
+      "env": "prod",
+      "level": "error"
+    }
+  }'
+```
+
+The `filters` object accepts any params from `GET /logs/query`.
+
+</TabItem>
+</Tabs>
+
+## Personal vs shared
+
+- **Personal** views are visible only to the user who created them. Use for ad-hoc, "remember this for me" filters.
+- **Shared** views appear in everyone's sidebar. Use for runbook-style queries the whole team should reach for.
+
+A shared view is editable by any account member. Update with `PUT /log_saved_views/{view_id}`.
+
+## Naming conventions
+
+For shared views, prefix with a category for sortability:
+
+- `[Errors] Billing — prod`
+- `[Errors] Auth — prod`
+- `[Slow] Search > 1s`
+- `[Audit] Admin actions`
+- `[Customer] usr_<known-customer>`
+
+## Maintenance
+
+- **Delete unused views** — they accumulate. Quarterly cleanup is healthy.
+- **Bump filter time windows** — saved views store the relative time range (`last 1h`, `last 24h`). Re-save to update.
+- **Don't bake in user IDs** — for one-off customer investigations, run the filter in Explorer; don't save a permanent view per customer.
+
+<Aside type="tip">
+A common pattern: add a saved view for every paging notification. The pager link drops the on-call into a pre-filtered view of the relevant logs, no clicking around at 3am.
+</Aside>
+
+## See also
+
+<LinkCard title="Logs overview" description="Search params and concepts." href="/observability/logs/overview/" />
+<LinkCard title="Parsers" description="Extract fields from raw text logs." href="/observability/logs/how-to/parsers/" />

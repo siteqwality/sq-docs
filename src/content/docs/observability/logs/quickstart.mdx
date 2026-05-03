@@ -1,0 +1,141 @@
+---
+title: Logs quickstart
+description: Send a log, search it, save the search as a view — in 5 minutes.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have ingested a few logs, queried them via the API, and pinned a saved view in the dashboard.
+
+## 1. Send a log
+
+```bash
+curl -X POST https://logs.siteqwality.com/v1/ingest \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
+    "level": "error",
+    "message": "Failed to charge card",
+    "source": "billing-api",
+    "env": "prod",
+    "host": "api-demo-1",
+    "tags": { "endpoint": "/api/charge" },
+    "metadata": {
+      "user_id": "usr_abc123",
+      "amount_cents": 9900,
+      "stripe_error": "card_declined"
+    }
+  }'
+```
+
+`202 Accepted`. The log appears in ClickHouse within ~10 seconds.
+
+## 2. Send a few more
+
+```bash
+for i in {1..20}; do
+  LEVEL="info"
+  [ $((i % 5)) -eq 0 ] && LEVEL="error"
+  curl -X POST https://logs.siteqwality.com/v1/ingest \
+    -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+      \"level\": \"$LEVEL\",
+      \"message\": \"Order $i processed\",
+      \"source\": \"billing-api\",
+      \"env\": \"prod\",
+      \"tags\": { \"endpoint\": \"/api/orders\" }
+    }" > /dev/null
+  sleep 2
+done
+```
+
+That's 20 logs over 40 seconds, with 4 errors mixed in.
+
+## 3. Query
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+**Logs → Explorer**. Filter `source = billing-api`, `level = error`. The matching logs render in a table with the message and metadata expanded.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+START=$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)
+END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+curl -G https://api.siteqwality.com/logs/query \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "source=billing-api" \
+  --data-urlencode "level=error" \
+  --data-urlencode "start_time=$START" \
+  --data-urlencode "end_time=$END" \
+  --data-urlencode "limit=50"
+```
+
+Returns `{logs: [...], total: N}`.
+
+</TabItem>
+</Tabs>
+
+## 4. Save the search
+
+In the dashboard's Logs Explorer, after applying your filters click **Save view**, name it `Billing errors — prod`. It now appears in the **Saved views** sidebar; share with your team by toggling **Shared**.
+
+Or via the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/log_saved_views \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Billing errors — prod",
+    "description": "All errors from billing-api in prod",
+    "is_shared": true,
+    "filters": {
+      "source": "billing-api",
+      "env": "prod",
+      "level": "error"
+    }
+  }'
+```
+
+## 5. Wire your real app
+
+Most logging libraries can ship to a HTTP sink. Two common patterns:
+
+**Direct ship from your app** (small services):
+
+```python
+import logging, requests, json, os
+
+class SqHandler(logging.Handler):
+    def emit(self, record):
+        requests.post(
+            "https://logs.siteqwality.com/v1/ingest",
+            headers={"Authorization": f"Bearer {os.environ['SITEQWALITY_API_KEY']}"},
+            json={
+                "timestamp": record.created,
+                "level": record.levelname.lower(),
+                "message": record.getMessage(),
+                "source": "my-app",
+            },
+            timeout=2,
+        )
+```
+
+**Ship via your existing log pipeline** (Vector, Fluent Bit, Filebeat) — point it at `https://logs.siteqwality.com/v1/ingest` with the API key in the Authorization header.
+
+For high-volume apps, batch via NDJSON: stick to `Content-Type: application/x-ndjson` and submit one JSON object per line, up to ~1MB per request.
+
+## What's next
+
+<LinkCard title="Parsers" description="Auto-extract structured fields from unstructured lines." href="/observability/logs/how-to/parsers/" />
+<LinkCard title="Saved views" description="More on sharing and organising saved searches." href="/observability/logs/how-to/saved-views/" />
+<LinkCard title="Logs reference" description="Full query syntax." href="/observability/logs/reference/" />
