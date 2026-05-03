@@ -1,0 +1,38 @@
+---
+title: Manage subscribers
+description: Let visitors subscribe to status page incident updates by email.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+A *subscriber* is a visitor to your status page who's opted in to receive notifications when you publish or update an incident, or schedule maintenance. SiteQwality supports email subscribers out of the box; webhook subscribers are coming.
+
+<Aside type="caution">
+Subscribers are partially shipped. The data model and ingestion paths exist, but the dashboard UI for managing the subscriber list and the front-end opt-in widget are still being polished. This guide will be expanded once the dashboard surface lands. In the meantime, the visible subscribe widget on the public page may not be present on every theme.
+</Aside>
+
+## How it works (today)
+
+When a status page incident is created or updated, the back-end fans out a delivery to every confirmed email subscriber on that page. Subscribers can be added or removed via the public-facing subscribe widget on the status page (when present), or via the public status-page API.
+
+A confirmation email is sent on subscribe; the visitor must click the link to activate. This protects against visitors being signed up against their will.
+
+## Best practices
+
+- **Don't auto-subscribe customers.** Always require explicit opt-in. SiteQwality enforces double opt-in via the confirmation email.
+- **Send maintenance windows, not flapping checks.** Subscribers expect signal, not noise. Use [maintenance windows](/incident-management/maintenance/overview/) to suppress monitor-driven incidents during planned work; only manually-created incidents should reach subscribers.
+- **Keep messages short and actionable.** "We're investigating elevated 500 errors on the API. Affects: checkout. ETA: 30 minutes." is better than three paragraphs of context.
+
+## Coming soon
+
+- Webhook subscribers (POST your incident JSON to a customer URL).
+- Per-component subscriptions (subscribe only to certain components).
+- Slack subscribers (post to a Slack channel via webhook).
+- Bulk subscriber management in the dashboard.
+
+## See also
+
+<LinkCard title="Status page quickstart" description="Get your status page set up before subscribers can find it." href="/status-pages/quickstart/" />
+<LinkCard title="Custom domain" description="Subscribe widgets feel more legitimate on your own domain." href="/status-pages/how-to/custom-domain/" />

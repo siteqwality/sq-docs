@@ -1,0 +1,112 @@
+---
+title: Account and team setup
+description: Invite teammates, generate API keys, and set up the things that should exist before anything goes wrong.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+Once you have an account, there are a handful of one-time setup steps that pay off the moment something breaks. Do them now, not at 3am.
+
+## Invite your team
+
+<Steps>
+
+1. Open **Settings → Team**.
+
+2. Click **Invite user**, enter their email, and choose a role:
+   - **Owner** — full access, including billing.
+   - **Admin** — full access except billing.
+   - **Member** — can view everything and edit monitors/incidents, but can't modify team or billing.
+
+3. The invite email contains a link they click to sign up. Pending invites stay listed under **Settings → Team** with a **Resend** and **Revoke** button.
+
+</Steps>
+
+<Aside type="caution">
+There's no per-seat trial — every invited user counts toward your plan's seat limit immediately on accepting. Revoke unused invites before inviting more.
+</Aside>
+
+## Set up your contact methods
+
+A *contact method* is **how you personally** can be reached — your email, your phone for SMS, your phone for calls, your Slack DM. Distinct from a notification *channel*, which is account-level.
+
+Each user manages their own contact methods under **Settings → My profile → Contact methods**. Available types:
+
+| Type | What it is |
+|---|---|
+| `email` | Your inbox. Always pre-populated with your sign-up address. |
+| `sms` | A verified phone number. SiteQwality sends a verification code on add. |
+| `phone_call` | The same verified number, dialed instead of SMS-ed for high-urgency pages. |
+| `slack_dm` | DM via the Slack integration once your account has connected it. |
+
+Once contact methods exist, set up **notification rules** to define which method fires for which urgency:
+
+- *High* urgency — incidents from monitors, escalation pages, anything that should wake you up.
+- *Low* urgency — informational, status-only.
+
+A rule has an urgency, a contact method, and an optional `delay_minutes`. Stack multiple rules at increasing delays for personal escalation: SMS at 0 min, phone call at 5 min, email at 15 min.
+
+See the [Notification rules how-to](/incident-management/notifications/how-to/notification-rules/) for the full setup.
+
+## Generate API keys
+
+Anything you can do in the dashboard, you can do via the API. Generate a key under **Settings → API keys**.
+
+<Steps>
+
+1. **Settings → API keys → New key.**
+
+2. Name it after where it'll be used (`local-dev`, `terraform-prod`, `ci`). One key per use case so you can rotate them independently.
+
+3. Copy the value (`sq_live_...`) when shown — it's only displayed once. Store it in your secrets manager.
+
+4. Use it as a Bearer token:
+
+   ```bash
+   curl https://api.siteqwality.com/http/jobs \
+     -H "Authorization: Bearer sq_live_..."
+   ```
+
+</Steps>
+
+Keys are scoped to the account, not the user. Revoke immediately if leaked.
+
+## Configure billing
+
+<Steps>
+
+1. **Settings → Billing → Plans** to see what you're on and what's available.
+
+2. **Change plan** flips you between tiers. Upgrades are immediate; downgrades take effect at the end of the current billing cycle.
+
+3. **Customer portal** opens the Stripe-hosted portal where you can update payment methods, download invoices, and cancel.
+
+</Steps>
+
+Usage-relevant counters (monitor count, ingested logs/metrics/traces volume, RUM session count) live under **Settings → Billing → Usage**. Hard limits are enforced at the API layer — you'll get a `403 Forbidden` if a request would push you over.
+
+## Set up integrations early
+
+The rest of these docs assume Slack/Teams/Discord/Telegram/webhook integrations are already connected if you reference them. Connect the ones you use under **Settings → Integrations** before you wire monitors to them. See [Integrations overview](/integrations/overview/) for the per-tool setup steps.
+
+## What's next
+
+<CardGrid>
+  <LinkCard
+    title="Concepts and glossary"
+    description="The vocabulary used across the docs."
+    href="/getting-started/concepts/"
+  />
+  <LinkCard
+    title="On-call schedules"
+    description="Stop manually paging the same person every night."
+    href="/incident-management/on-call/overview/"
+  />
+  <LinkCard
+    title="Notification rules"
+    description="How personal contact methods, urgency, and delays interact."
+    href="/incident-management/notifications/how-to/notification-rules/"
+  />
+</CardGrid>

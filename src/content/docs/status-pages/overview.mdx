@@ -1,19 +1,65 @@
 ---
-title: Status Pages
-description: Branded public status pages with components, incidents, and subscribers.
-last_verified: 2026-05-02
+title: Status pages
+description: Branded, custom-domain public status pages with components, scheduled maintenance, and email/webhook subscribers.
+last_verified: 2026-05-03
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-<Aside type="caution" title="Under construction">
-Setup, branding, and subscriber-management guides are being written.
+A SiteQwality **status page** is the public face of your reliability story. It lives at `<page-id>.siteqwality.com` (or your custom domain) and shows visitors the current and historical state of the parts of your service you choose to publish — driven by the same monitors you already have set up internally.
+
+## When to use a status page
+
+- You sell to other businesses and customers ask "where's your status page?" in pre-sales calls.
+- You'd rather customers self-serve "is it me or is it down?" instead of opening a support ticket.
+- You need a single canonical place to publish incident updates so support doesn't paste the same message into 40 conversations.
+- You want a dashboard your VP can refresh during an outage instead of asking you for an ETA in Slack.
+
+## When not to use it
+
+- Don't expose internal dashboards on it. Status pages are for *what's broken from a customer's perspective*. If you publish "DB read replica lag" your customers will wonder what to do with that information.
+- Don't make it a marketing surface. Brand it, sure — but the page exists to communicate facts during outages. Heavy custom CSS works against scannability.
+
+## How it works
+
+A status page is composed of three layers:
+
+1. **Status page object** — the container, with branding (logo, colors, theme), a custom domain (optional), and a default theme.
+2. **Components** — links between the status page and underlying monitors. You attach an HTTP check or a browser check to a status page with a public-facing `friendly_name` and optional `sla_target_percentage`. The component's status is the underlying monitor's live status.
+3. **Incidents and maintenance** — published events. Incidents auto-resolve with their underlying monitor, or you can post manual ones with custom updates. Scheduled maintenance shows future planned downtime.
+
+When a visitor loads the page, the [public status page API](https://github.com/SiteQwality/sq-docs) reads the latest status of every component, joins in any open incident or active maintenance, and renders the result via the public Next.js front-end.
+
+<Aside type="tip">
+The status page back-end is a separate Lambda (`status-page-api`) reading the same Postgres + ClickHouse data as the dashboard, so there's no separate sync step — what's true in the dashboard is true on the page within seconds.
 </Aside>
 
-A SiteQwality status page is the public face of your reliability story:
+## What you can configure
 
-- **Branding** — custom logo, colors, and a custom domain.
-- **Components** — the user-visible building blocks of your service ("API," "Dashboard," "Webhooks").
-- **Incidents** — publish ongoing and historical incidents with status updates.
-- **Subscribers** — let users subscribe to email or webhook updates.
+| Concern | Settings |
+|---|---|
+| **Identity** | `friendly_name`, `page_title`, default theme (`light` / `dark` / `system`) |
+| **Branding** | logo, favicon, OG image, primary/accent color (`#hex`), header & footer text, custom CSS (50KB max), white-label toggle |
+| **Custom domain** | bring your own subdomain (e.g. `status.example.com`) — SiteQwality provisions an ACM cert and gives you the CNAME to add |
+| **Components** | attach any HTTP check or browser check, override its public name, set an SLA target |
+| **Incidents** | manually open / update / resolve, or let monitor-driven ones flow through |
+| **Maintenance** | publish scheduled windows ahead of planned work |
+| **Subscribers** | (coming soon) — visitors opt in to email or webhook notifications |
+
+<Aside type="caution">
+Subscriber management is partially implemented in the API. Email-based subscribers exist on the data side but the dashboard surface is still in progress. Track via [public status pages](https://app.siteqwality.com/status-pages).
+</Aside>
+
+## Pricing notes
+
+Status pages are included in every plan; the **white-label** toggle (removes the "powered by SiteQwality" footer) and **custom domain** require a paid plan.
+
+## Next steps
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Create, brand, and publish your first status page in 10 minutes." href="/status-pages/quickstart/" />
+  <LinkCard title="Add a custom domain" description="Point status.yourcompany.com at your status page." href="/status-pages/how-to/custom-domain/" />
+  <LinkCard title="Manage subscribers" description="Let visitors subscribe to incident updates." href="/status-pages/how-to/subscribers/" />
+  <LinkCard title="API reference" description="Status-page endpoints in the API." href="/api-reference/" />
+</CardGrid>

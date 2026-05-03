@@ -1,0 +1,183 @@
+---
+title: Concepts and glossary
+description: The vocabulary used across the SiteQwality docs and product, defined precisely.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The product uses a small set of nouns consistently. When the docs say "attach a notification group to a monitor," every word means a specific thing. This page defines them.
+
+## Monitoring vocabulary
+
+### Monitor
+
+The umbrella term for any scheduled health check. SiteQwality has five monitor families: HTTP, SSL/TLS, DNS, cron heartbeat, and browser. The dashboard's **Monitors** view lists all of them together.
+
+### Check
+
+A single execution of a monitor — one HTTP request, one DNS lookup, one TLS handshake. Each check produces a *result* (`success`, `failure`, plus latency and any captured payload). Multiple regions running the same monitor produce multiple checks per tick.
+
+### Run interval
+
+How often a monitor's checks fire. Free plan minimum is 60 seconds; paid plans go down to 30 seconds. Browser checks have their own discrete intervals (`5m`, `10m`, `15m`, `30m`, `1h`).
+
+### Region
+
+A geographic location SiteQwality runs checks from. Default is `us-east-1`. Multi-region requires a paid plan; see the [HTTP checks reference](/uptime-monitoring/http-checks/reference/) for the full list.
+
+### Min healthy regions
+
+When a monitor runs in N regions, this knob says "consider the monitor failing only if fewer than M regions report healthy." Set it equal to N to require unanimity, or to 1 to tolerate any single region failing.
+
+## Incident vocabulary
+
+### Incident
+
+An open record of "something is broken." Incidents are opened automatically when a monitor flips from healthy to failing, or manually via API/dashboard. Each incident has:
+
+- **Status** — `investigating` → `identified` → `monitoring` → `resolved`.
+- **Severity** — `minor`, `major`, or `critical`.
+- **Responder status** — `triggered` (no one's looking), `acknowledged` (someone's on it), or `resolved`.
+- **Updates** — a chronological log of status changes, posted internally and (optionally) to the public status page.
+
+Auto-created incidents have `auto_created: true`; manually created ones do not.
+
+### Incident update
+
+A single timeline entry on an incident — a change of status with a written message ("We've identified a database failover; recovery in progress"). Posted via the dashboard or `POST /incident/{id}/update`.
+
+### Acknowledgement
+
+When a responder claims an incident, its `responder_status` flips from `triggered` to `acknowledged`. This stops further escalation but doesn't resolve the incident.
+
+## On-call vocabulary
+
+### On-call schedule
+
+A named rotation of users that produces "who's on call right now" given a timestamp. Each schedule has one or more **layers** stacked in priority order, plus optional **overrides**.
+
+### Layer
+
+A single rotation rule: which users participate, how often they hand off (`daily`, `weekly`, `custom_days`), at what time of day, optionally bounded by an `effective_from` / `effective_until` window. Higher-priority layers override lower ones during their effective window.
+
+### Override
+
+A hard "user X is on call from time A to time B" entry that beats every layer. Used for "I'm covering for Alice while she's on holiday."
+
+### Rotation type
+
+- `daily` — handoff every day at `handoff_time`.
+- `weekly` — handoff once a week, on `handoff_day` (0=Sunday, 6=Saturday) at `handoff_time`.
+- `custom_days` — handoff every `rotation_interval_days` days.
+
+## Escalation vocabulary
+
+### Escalation policy
+
+A named pipeline of "who to page if no one acknowledges." Has an ordered list of **levels** and an optional `repeat_count` for what to do after exhausting the list.
+
+### Escalation level
+
+One step in the pipeline. Specifies a `timeout_minutes` (how long to wait for an ack before moving on) and a list of targets — `target_user_ids` (page these humans directly) and `target_schedule_ids` (page whoever's on-call in these schedules right now).
+
+### Repeat count
+
+After running through every level, how many full cycles to repeat before giving up. `0` means stop after one pass.
+
+## Notification vocabulary
+
+### Notification (channel)
+
+One delivery destination at the account level. Type-specific:
+- `email` → an email address
+- `sms` → a phone number
+- `slack` → a channel inside a Slack integration
+- `webhook`, `discord`, `telegram`, `microsoft_teams` → reference an integration
+
+A notification belongs to a **notification group** — it's not attached to monitors directly.
+
+### Notification group
+
+A bundle of notification channels that monitors attach to. Optionally has `delay_send_after_minutes` (wait this long before paging — useful for flapping checks) and `resend_every_minutes` (re-page periodically until acknowledged).
+
+### Contact method
+
+A user's personal way to be reached: their email, their phone for SMS, their phone for calls, their Slack DM. Distinct from a notification channel — channels are *to a destination*; contact methods are *to a person*. On-call and escalation pages route to contact methods, not channels.
+
+### Notification rule
+
+A user's personal preference: "for high-urgency incidents, SMS me at 0 min, phone-call me at 5 min, email me at 15 min." Stacks multiple rules with increasing delays per urgency level.
+
+### Urgency
+
+Either `high` (wakes someone up) or `low` (informational). Set per incident; user notification rules are scoped to one urgency at a time.
+
+## Maintenance vocabulary
+
+### Maintenance window
+
+A time range during which monitors with matching tags are silenced — they still run, but failures don't open incidents and don't fire notifications. Useful for planned deploys.
+
+Two flavors:
+- **One-time** — a single `starts_at` / `ends_at` pair.
+- **Recurring** — a recurrence rule (e.g. "every Sunday 2am-4am UTC").
+
+### Status page maintenance
+
+A separate object — *not* a maintenance window — that publishes "scheduled maintenance" cards on the public status page. Doesn't silence anything; purely communicative. See [Status page maintenance](/status-pages/overview/).
+
+## Status page vocabulary
+
+### Status page
+
+A public, branded page at `<your-id>.siteqwality.com` (or your custom domain) showing the current and historical state of components you choose to publish.
+
+### Status page component
+
+A monitor (HTTP check or browser check) attached to a status page with a public-facing `friendly_name` and optional `sla_target_percentage`. The component's status is the underlying monitor's status.
+
+### Subscriber
+
+A visitor who's opted in to be notified when the status page publishes an incident or maintenance. Email by default; webhook subscribers also exist.
+
+## Observability vocabulary
+
+### Metric
+
+A numeric time-series — `gauge` (current value), `counter` (monotonically increasing), or `histogram` (distribution of values bucketed by `le`). Tagged with key/value pairs for filtering and grouping.
+
+### Log
+
+A discrete event with a timestamp, level, message, and arbitrary structured metadata. Stored in ClickHouse, queried with the SiteQwality query syntax.
+
+### Trace
+
+A distributed-tracing object: one trace = one logical request, made up of many **spans**. Each span has a service name, operation name, duration, and structured attributes. SiteQwality follows OpenTelemetry conventions.
+
+### RUM (Real User Monitoring)
+
+Telemetry collected from real browsers via the [`@siteqwality/rum`](/sdk/overview/) SDK: page-load timings, web-vitals, errors, user actions, resource timing.
+
+### RUM application
+
+One SDK installation, identified by an `application_id` and a `client_token`. Each app you instrument is a separate application — typically one per domain or one per major build.
+
+### Session replay
+
+A reconstructable video of a user session, recorded by the RUM SDK. Privacy-aware (`mask_inputs`, `mask_text`). Activated only when a [session filter](/observability/rum/how-to/session-filters/) matches the session.
+
+## Account vocabulary
+
+### Account
+
+The top-level billing entity. One account = one subscription = one set of monitors, dashboards, and integrations.
+
+### User
+
+A person with login credentials, scoped to one or more accounts. Roles are per-account.
+
+### API key
+
+An account-scoped Bearer token (`sq_live_...`) used for programmatic access. Generate under **Settings → API keys**.

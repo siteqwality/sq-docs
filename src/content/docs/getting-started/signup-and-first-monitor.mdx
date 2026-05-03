@@ -1,0 +1,151 @@
+---
+title: Sign up and your first monitor
+description: From zero account to a working HTTP check that pages your phone, in under five minutes.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+By the end of this guide you will have:
+
+1. A SiteQwality account.
+2. An HTTP check running every 10 minutes against `https://mock.codes/200`.
+3. A notification group that emails you when the check fails.
+4. Confirmed an incident open and resolve cleanly.
+
+Total time: about five minutes.
+
+## 1. Create an account
+
+<Steps>
+
+1. Go to [app.siteqwality.com/signup](https://app.siteqwality.com/signup).
+
+2. Sign up with Google or email + password. Both create a fresh account in the free tier — no credit card required.
+
+3. You'll land on the empty dashboard. The left sidebar has every product area; the right column has the "Add your first monitor" prompt that walks you through the same flow as this guide.
+
+</Steps>
+
+## 2. Add a notification channel
+
+Before creating the monitor, set up where alerts should go. The default is email to your sign-up address — that's fine for testing, but worth confirming.
+
+<Steps>
+
+1. Open **Notifications → Channels** (sidebar).
+
+2. You should see one entry: an `email` notification pointing at your sign-up address. If not, click **New notification → Email** and add yours.
+
+3. Open **Notifications → Groups**.
+
+4. Click **New group**, name it `Default email`, and attach the email channel from step 2. Save.
+
+</Steps>
+
+A *channel* is one delivery destination. A *group* bundles channels so a single monitor can fan out to "Slack #ops + my phone + the on-call schedule" in one config field. You always attach groups to monitors, never raw channels.
+
+## 3. Create the HTTP check
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Monitors → New → HTTP check.**
+
+2. Fill in the form:
+   - **Friendly name:** `Mock 200 endpoint`
+   - **URL:** `https://mock.codes/200`
+   - **Method:** `GET`
+   - **Run interval:** `Every 10 minutes` (the free-plan minimum is 60 seconds; we use 10 minutes here so the demo doesn't spam your inbox)
+   - **Notification groups:** select `Default email` from step 2.
+   - Leave everything else as default.
+
+3. Click **Create**. The check runs immediately; the first result appears within a few seconds.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+If you'd rather start from the API, generate a key first under **Settings → API keys**, export it, and POST:
+
+```bash
+export SITEQWALITY_API_KEY="sq_live_..."
+
+curl -X POST https://api.siteqwality.com/http/job \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Mock 200 endpoint",
+    "method": "GET",
+    "uri": "https://mock.codes/200",
+    "timeout_ms": 15000,
+    "run_interval_seconds": 600,
+    "group_notification_ids": ["<your-group-id>"],
+    "monitor_tls": false,
+    "monitor_dns": false
+  }'
+```
+
+You'll get back a `201 Created` with the full job object. Save the `id` — you'll use it to fetch results, update the check, or delete it later.
+
+</TabItem>
+</Tabs>
+
+## 4. Confirm it's working
+
+<Steps>
+
+1. Open the monitor's detail page. The status badge should flip to **Success** within one minute.
+
+2. Scroll down to **Recent runs**. You'll see one row per check result with status code, latency, and the region it ran from.
+
+3. Force a failure: edit the check, change the URL to `https://mock.codes/500`, save.
+
+4. On the next tick the monitor flips to **Failure**, an incident opens, and you should receive an email within ~30 seconds.
+
+5. Flip the URL back to `/200`. The monitor recovers, the incident auto-resolves, and you'll get a recovery email.
+
+</Steps>
+
+<Aside type="tip">
+If the email never arrives, check your spam folder and confirm the channel email matches your inbox. SiteQwality only retries failed sends a few times — the [Notification channels reference](/incident-management/notifications/channels/) covers the gotchas.
+</Aside>
+
+## What just happened
+
+- Your check ran on a schedule from one of our edge regions.
+- The result was compared against the assertions on the monitor (status code in the success list, no body keyword search).
+- A change in monitor status (success → failure) opened an **incident** automatically.
+- The incident's `notification group` was looked up, fanned out to its `notification channels`, and each channel rendered the alert in its own format.
+- When the URL recovered, the same path ran in reverse — the incident was marked resolved and a recovery message went out.
+
+You can wire this up much further: on-call schedules pick *who* gets the page, escalation policies decide what to do if no one acknowledges, and a status page can publish the incident publicly. All of that is in [Incident Management](/incident-management/overview/).
+
+## What's next
+
+<CardGrid>
+  <LinkCard
+    title="Concepts and glossary"
+    description="The mental model behind monitors, checks, incidents, on-call, and notifications."
+    href="/getting-started/concepts/"
+  />
+  <LinkCard
+    title="Account and team setup"
+    description="Invite teammates, set up SSO, generate API keys."
+    href="/getting-started/account-and-team/"
+  />
+  <LinkCard
+    title="HTTP checks deep dive"
+    description="Multi-region, custom headers, body assertions, paired TLS/DNS checks."
+    href="/uptime-monitoring/http-checks/overview/"
+  />
+  <LinkCard
+    title="On-call schedules"
+    description="Rotate responders across timezones with overrides."
+    href="/incident-management/on-call/overview/"
+  />
+</CardGrid>

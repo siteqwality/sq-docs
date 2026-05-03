@@ -1,0 +1,120 @@
+---
+title: Use a custom domain
+description: Point status.yourcompany.com at your SiteQwality status page with an automatically-provisioned TLS certificate.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By default a status page lives at `<page-id>.siteqwality.com`. Adding a custom domain — typically `status.yourcompany.com` — takes a few minutes plus DNS propagation time.
+
+SiteQwality provisions the TLS certificate via AWS Certificate Manager (ACM) and serves the page from the same edge as the default URL. There's no extra runtime cost or proxy hop.
+
+<Aside type="caution">
+Custom domains require a paid plan. The API returns `403 Forbidden` if you try to add one on the free tier.
+</Aside>
+
+## What you'll add to DNS
+
+You'll create **two CNAME records**:
+
+1. A **traffic CNAME** — your subdomain points at SiteQwality's edge.
+2. An **ACM validation CNAME** — proves to AWS you control the domain so it can issue the cert.
+
+Both values come from the API response in step 1 below.
+
+## 1. Register the custom domain in SiteQwality
+
+<Steps>
+
+1. Open the status page in the dashboard, then **Settings → Custom domain → Add domain**.
+
+2. Enter your subdomain — e.g. `status.example.com`. Save.
+
+3. The page reloads with two CNAME records to add to your DNS provider, plus a status badge that starts at `pending_validation`.
+
+</Steps>
+
+Or via the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/custom_domain \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "domain": "status.example.com" }'
+```
+
+The response includes:
+
+```json
+{
+  "status_page_id": "abc123",
+  "domain": "status.example.com",
+  "status": "pending_validation",
+  "cname_target": "abc123.custom.siteqwality.com",
+  "acm_validation": {
+    "name": "_xyz.status.example.com",
+    "value": "_xyz.acm-validations.aws"
+  },
+  ...
+}
+```
+
+## 2. Add both CNAME records
+
+In your DNS provider (Cloudflare, Route53, NS1, etc.) add:
+
+| Record type | Name | Value | TTL |
+|---|---|---|---|
+| `CNAME` | `status` (i.e. `status.example.com`) | `<cname_target from step 1>` | `300` (or auto) |
+| `CNAME` | `_xyz.status` (the `acm_validation.name`) | `_xyz.acm-validations.aws` (the `acm_validation.value`) | `300` |
+
+<Aside type="caution">
+If you use Cloudflare with the orange-cloud proxy, **set the traffic CNAME to "DNS only" (grey cloud)**. Cloudflare's proxy will break the upstream TLS handshake against ACM's certificate.
+</Aside>
+
+## 3. Wait for validation
+
+ACM polls your DNS for the validation record every ~5 minutes. The `status` field progresses through:
+
+- `pending_validation` — DNS records not yet seen.
+- `provisioning` — validation passed, certificate being issued.
+- `active` — fully live; your domain serves the status page.
+- `failed` — something went wrong; check `failure_reason` in the API response.
+
+Refresh the dashboard or poll:
+
+```bash
+curl https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/custom_domain \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+Total time is usually 5–15 minutes once both DNS records are in place.
+
+## 4. Verify
+
+Open `https://status.example.com` in a fresh browser. You should see:
+
+- A valid TLS certificate (no warnings).
+- Your branded status page.
+- The default URL (`<page-id>.siteqwality.com`) still works as a fallback.
+
+## Removing a custom domain
+
+```bash
+curl -X DELETE https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/custom_domain \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+Or use the **Remove** button in the dashboard. Removing the custom domain immediately stops serving it; you should also delete the two CNAME records from your DNS to avoid a dangling pointer at SiteQwality's edge.
+
+## Notes
+
+- Only one custom domain per status page.
+- Apex domains (`example.com` with no subdomain) aren't supported because of the CNAME-at-apex restriction in DNS. Use a subdomain like `status` or `health`.
+- The certificate auto-renews. If renewal ever fails, the dashboard surfaces a warning with the failure reason.
+
+## See also
+
+<LinkCard title="Status page quickstart" description="If you haven't created the page yet, start here." href="/status-pages/quickstart/" />

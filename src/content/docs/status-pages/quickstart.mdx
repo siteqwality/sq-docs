@@ -1,0 +1,215 @@
+---
+title: Status page quickstart
+description: Create a branded status page with components and your first published incident in under 10 minutes.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have a public status page at `<page-id>.siteqwality.com` showing the status of an HTTP check, with a custom logo and brand color, and you'll have published one incident update to it.
+
+## Prerequisites
+
+- An existing HTTP check (or [follow the first-monitor quickstart](/getting-started/signup-and-first-monitor/)).
+- A logo as PNG or SVG, ≤2MB.
+
+## 1. Create the page
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Status pages → New status page.**
+
+2. Set the **friendly name** — this is the public page title. Use your product name, e.g. `Acme Cloud`.
+
+3. Click **Create**. You're dropped onto the page settings, with a unique URL (`<id>.siteqwality.com`) shown at the top.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/status_page \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "friendly_name": "Acme Cloud" }'
+```
+
+Returns the new page's `id`. The default URL is `https://<id>.siteqwality.com`.
+
+</TabItem>
+</Tabs>
+
+## 2. Add components
+
+A *component* is a public-facing label for one of your monitors. Attach any HTTP check or browser check.
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. On the page, open **Components → Add component**.
+
+2. Pick an HTTP check from the dropdown. Override the **public friendly name** if the internal one is too technical (`prod-api-eu-west-1` → `API`).
+
+3. Optionally set an **SLA target** (e.g. `99.9`). The page renders monthly uptime against this target.
+
+4. Save.
+
+</Steps>
+
+Repeat for each monitor you want public. A typical SaaS publishes 3–6 components: API, Web app, Auth, Webhooks, Background workers.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+# Attach an HTTP check
+curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/http_job/$HTTP_JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "friendly_name": "API" }'
+
+# Attach a browser check
+curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/browser_check/$BROWSER_CHECK_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "friendly_name": "Checkout flow" }'
+```
+
+</TabItem>
+</Tabs>
+
+## 3. Brand the page
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. On the page, open **Branding**.
+
+2. **Upload a logo** — PNG or SVG up to 2MB. SiteQwality stores it on S3 and serves via CDN.
+
+3. Set the **primary color** to your brand color (must be `#RRGGBB`). The accent color is used for sub-headings and links.
+
+4. Set a **page title** (browser tab) and optional **header/footer text**.
+
+5. Pick a **default theme** (`light`, `dark`, or `system` to follow visitor's preference).
+
+6. Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+Branding is a two-step flow because logos go to S3 first.
+
+```bash
+# 1. Get a presigned upload URL for the logo
+UPLOAD=$(curl -s -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/branding/upload \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "file_type": "logo",
+    "content_type": "image/png",
+    "file_size_bytes": 24576
+  }')
+
+UPLOAD_URL=$(echo "$UPLOAD" | jq -r .upload_url)
+S3_KEY=$(echo "$UPLOAD" | jq -r .s3_key)
+
+# 2. PUT the bytes directly to S3
+curl -X PUT "$UPLOAD_URL" \
+  -H "Content-Type: image/png" \
+  --data-binary @logo.png
+
+# 3. Save the s3_key + branding fields
+curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/branding \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"page_title\": \"Acme Cloud Status\",
+    \"default_theme\": \"system\",
+    \"logo_s3_key\": \"$S3_KEY\",
+    \"primary_color\": \"#0066ff\",
+    \"accent_color\": \"#00ccaa\"
+  }"
+```
+
+</TabItem>
+</Tabs>
+
+## 4. Publish your first incident
+
+Most incidents on a status page should be auto-published from the same incident the monitor opened internally. Let's create a manual one to confirm the publish path works.
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. On the status page, open **Incidents → New incident**.
+
+2. Title: `Investigating elevated API latency`. Severity: `minor`. Status: `investigating`.
+
+3. Paste an initial update message: `Our monitoring detected increased latency on the API. We're looking into it now.`
+
+4. Save. The incident appears immediately on the public page.
+
+5. To resolve, post an update with status `resolved` and a closing message.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+# Create the incident on the status page
+curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Investigating elevated API latency",
+    "severity": "minor",
+    "message": "Our monitoring detected increased latency on the API. We are looking into it now.",
+    "affected_http_job_ids": ["acct_abc123"]
+  }'
+
+# Add an update later
+curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident/$INCIDENT_ID/update \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "resolved",
+    "message": "Latency has returned to baseline. We are continuing to monitor."
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+## 5. Confirm visitors can see it
+
+Open `https://<page-id>.siteqwality.com` in an incognito window. You should see:
+
+- Your logo and brand colors.
+- Each component with its current status (green check if healthy, red if failing).
+- The published incident at the top with its updates in chronological order.
+- Per-component uptime graph for the last 90 days.
+
+<Aside type="tip">
+The status page is statically rendered at the edge with a short cache TTL (~30 seconds), so visitors during an active incident always see fresh data.
+</Aside>
+
+## What's next
+
+<LinkCard title="Custom domain" description="Move the page from siteqwality.com to status.yourcompany.com." href="/status-pages/how-to/custom-domain/" />
+<LinkCard title="Subscribers" description="Let visitors subscribe to incident updates by email." href="/status-pages/how-to/subscribers/" />
+<LinkCard title="Maintenance windows" description="Publish scheduled maintenance ahead of planned work." href="/incident-management/maintenance/overview/" />

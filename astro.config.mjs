@@ -38,6 +38,9 @@ export default defineConfig({
 					label: 'Getting Started',
 					items: [
 						{ label: 'Introduction', slug: 'getting-started/introduction' },
+						{ label: 'Sign up & first monitor', slug: 'getting-started/signup-and-first-monitor' },
+						{ label: 'Account & team setup', slug: 'getting-started/account-and-team' },
+						{ label: 'Concepts & glossary', slug: 'getting-started/concepts' },
 					],
 				},
 				{
@@ -69,6 +72,11 @@ export default defineConfig({
 					label: 'Status Pages',
 					items: [
 						{ label: 'Overview', slug: 'status-pages/overview' },
+						{ label: 'Quickstart', slug: 'status-pages/quickstart' },
+						{
+							label: 'How-to guides',
+							autogenerate: { directory: 'status-pages/how-to' },
+						},
 					],
 				},
 				{

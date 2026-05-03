@@ -1,22 +1,73 @@
 ---
-title: Introduction
-description: Welcome to SiteQwality.
-last_verified: 2026-05-02
+title: Welcome to SiteQwality
+description: A unified platform for uptime monitoring, observability, on-call, and public status — without paying Datadog prices.
+last_verified: 2026-05-03
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-<Aside type="caution" title="Under construction">
-This guide is being written. In the meantime, see the [API Reference](/api-reference/overview/) or jump straight to a product area from the sidebar.
+SiteQwality combines the four tools every engineering team duct-tapes together — uptime monitoring, observability (metrics + logs + traces + RUM), on-call paging, and a public status page — into a single product, billed per seat instead of per gigabyte.
+
+If you're tired of stitching Pingdom + Datadog + PagerDuty + Statuspage and watching the invoices climb in lock-step with your traffic, you're in the right place.
+
+## What's in the platform
+
+<CardGrid>
+  <Card title="Uptime monitoring" icon="approve-check">
+    HTTP, SSL/TLS, DNS, cron heartbeats, and full-browser synthetic checks — every 30 seconds, from any of our regions.
+  </Card>
+  <Card title="Observability" icon="bars">
+    Metrics, logs, traces, RUM, and session replay. One query language across all five.
+  </Card>
+  <Card title="Incident response" icon="warning">
+    Incidents, on-call rotations, escalation policies, and notifications across email, SMS, Slack, Teams, Discord, Telegram, and webhooks.
+  </Card>
+  <Card title="Public status pages" icon="rocket">
+    Branded, custom-domain status pages with components, scheduled maintenance, and email/webhook subscribers.
+  </Card>
+</CardGrid>
+
+## How the docs are organised
+
+Each product area has the same shape:
+
+- **Overview** — what the feature is, when to reach for it, how it relates to the rest of the platform.
+- **Quickstart** — the fastest copy-pasteable path to first success.
+- **How-to guides** — task-shaped recipes ("rotate an on-call schedule," "add a custom domain to a status page").
+- **Reference** — every field on every object, with defaults and constraints.
+
+The [API Reference](/api-reference/) is auto-generated from the live Rust handlers — so it's always in sync with what the API actually does.
+
+## Where to start
+
+<CardGrid>
+  <LinkCard
+    title="Sign up and create your first monitor"
+    description="A 5-minute walkthrough from sign-up to a working HTTP check that pages your phone."
+    href="/getting-started/signup-and-first-monitor/"
+  />
+  <LinkCard
+    title="Concepts and glossary"
+    description="Monitor, check, incident, on-call, escalation, notification group — the words you'll see across the docs, defined."
+    href="/getting-started/concepts/"
+  />
+  <LinkCard
+    title="Account and team setup"
+    description="Invite teammates, generate API keys, and configure per-user contact methods before anything goes wrong."
+    href="/getting-started/account-and-team/"
+  />
+  <LinkCard
+    title="Jump straight to the API"
+    description="Auto-generated reference for every endpoint."
+    href="/api-reference/"
+  />
+</CardGrid>
+
+## A note on plans
+
+Most features in these docs work on the free plan. A few — sub-minute check intervals, multi-region checks, custom status-page domains, session replay — are paid. Where that's the case the relevant page calls it out in an `Aside`.
+
+<Aside type="tip">
+Need help picking a plan, or want to see a demo before signing up? Email <a href="mailto:hello@siteqwality.com">hello@siteqwality.com</a>.
 </Aside>
-
-SiteQwality is a website monitoring and status-page platform. These docs cover:
-
-- **Uptime monitoring** — HTTP, SSL/TLS, DNS, cron heartbeats, and browser checks.
-- **Observability** — metrics, logs, traces, real-user monitoring (RUM), and session replay.
-- **Incident management** — incidents, on-call schedules, escalation policies, and notifications.
-- **Status pages** — branded public pages with components, incidents, and subscribers.
-- **Dashboards** and **integrations**.
-
-If you're new, start with [Sign up & your first monitor](#) (coming soon).
