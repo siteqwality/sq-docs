@@ -1,0 +1,109 @@
+---
+title: SSL/TLS check quickstart
+description: Enable TLS monitoring on an HTTP check in two minutes.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have TLS expiry monitoring active on an existing HTTP check, and you'll know how to view its current status and expiry countdown.
+
+## Prerequisites
+
+- An existing HTTP check pointing at an `https://` URL. If you don't have one, follow the [HTTP checks quickstart](/uptime-monitoring/http-checks/quickstart/).
+
+## 1. Enable TLS monitoring
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. Open the HTTP check, click **Settings**.
+
+2. Toggle **Monitor TLS certificate** on. Save.
+
+</Steps>
+
+A paired TLS check is provisioned within seconds; the first handshake happens on the next HTTP tick.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+# On create
+curl -X POST https://api.siteqwality.com/http/job \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "API homepage",
+    "method": "GET",
+    "uri": "https://api.example.com/",
+    "monitor_tls": true,
+    "monitor_dns": false,
+    "timeout_ms": 15000,
+    "run_interval_seconds": 600,
+    "group_notification_ids": []
+  }'
+
+# Or update an existing check
+curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "monitor_tls": true }'
+```
+
+</TabItem>
+</Tabs>
+
+## 2. View the TLS check status
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+The HTTP check page now shows a **TLS** sub-card with the current status, hostname, and an expiry countdown.
+
+</TabItem>
+<TabItem label="API">
+
+The HTTP check's response includes the paired `tls_job_id`. Fetch it directly:
+
+```bash
+curl https://api.siteqwality.com/tls/job/$TLS_JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+You get back the `TlsJob`:
+
+```json
+{
+  "id": "...",
+  "http_job_id": "...",
+  "current_status": "healthy",
+  "domain": "api.example.com",
+  "expiry_date": "2026-12-15T08:00:00Z",
+  "last_run_at": "2026-05-03T14:32:00Z",
+  ...
+}
+```
+
+</TabItem>
+</Tabs>
+
+## 3. Verify alerting works
+
+Force a TLS failure path by:
+
+1. Pointing an HTTP check at a known-broken-cert site (e.g. `https://expired.badssl.com`) for ~30 minutes.
+2. The TLS check flips to `failed`.
+3. The HTTP check's notification group fires.
+
+<Aside type="tip">
+TLS failures alert through the same notification group as the HTTP parent. If you want a separate group for TLS issues, use the dashboard's per-check group override.
+</Aside>
+
+## What's next
+
+<LinkCard title="TLS reference" description="Status enum, fields, and expiry-warning thresholds." href="/uptime-monitoring/ssl-tls-checks/reference/" />
+<LinkCard title="DNS checks" description="The other check type often paired with HTTP." href="/uptime-monitoring/dns-checks/overview/" />

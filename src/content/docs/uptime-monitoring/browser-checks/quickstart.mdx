@@ -1,0 +1,152 @@
+---
+title: Browser check quickstart
+description: Write your first Playwright script and run it on a 15-minute schedule.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have a browser check running every 15 minutes that logs into a demo site, navigates to the dashboard, and confirms it loads. You'll see step results, screenshots, the HAR, and web vitals for every run.
+
+## Prerequisites
+
+- A paid plan (browser checks aren't on free tier).
+
+## 1. Write the script
+
+The script is plain JavaScript that runs inside an `async` function with `page` (Playwright Page) and `step` (wrapper) injected.
+
+```javascript
+// Open the homepage
+await step('Open homepage', async () => {
+  await page.goto('https://demo.siteqwality.com', { waitUntil: 'networkidle' });
+});
+
+// Click "Sign in"
+await step('Open sign-in form', async () => {
+  await page.click('text=Sign in');
+  await page.waitForSelector('input[name="email"]');
+});
+
+// Fill credentials and submit
+await step('Submit credentials', async () => {
+  await page.fill('input[name="email"]', 'demo@example.com');
+  await page.fill('input[name="password"]', 'demo-password-1234');
+  await page.click('button[type="submit"]');
+});
+
+// Confirm the dashboard rendered
+await step('Confirm dashboard loaded', async () => {
+  await page.waitForSelector('h1:has-text("Dashboard")', { timeout: 10000 });
+});
+```
+
+A step that throws fails the whole check. Steps capture screenshots on both success and failure, so you have a visual trail.
+
+## 2. Create the check
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Monitors → New → Browser check.**
+
+2. Configure:
+   - **Name:** `Demo login flow`.
+   - **Frequency:** `15m`.
+   - **Timeout:** `90` seconds.
+   - **Regions:** `aws-us-east-1`.
+   - **Notification groups:** pick one.
+
+3. Paste the script into the editor. The editor has Playwright autocomplete.
+
+4. Save. The first run kicks off within a minute.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+SCRIPT='await step("Open homepage", async () => {
+  await page.goto("https://demo.siteqwality.com", { waitUntil: "networkidle" });
+});
+await step("Click sign-in", async () => {
+  await page.click("text=Sign in");
+});
+await step("Submit credentials", async () => {
+  await page.fill("input[name=email]", "demo@example.com");
+  await page.fill("input[name=password]", "demo-password-1234");
+  await page.click("button[type=submit]");
+});
+await step("Confirm dashboard", async () => {
+  await page.waitForSelector("h1:has-text(\"Dashboard\")", { timeout: 10000 });
+});'
+
+curl -X POST https://api.siteqwality.com/browser_check \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "$(jq -n --arg script "$SCRIPT" '{
+    name: "Demo login flow",
+    script: $script,
+    frequency: "15m",
+    timeout_seconds: 90,
+    check_regions: ["aws-us-east-1"],
+    min_healthy_regions: 1,
+    group_notification_ids: []
+  }')"
+```
+
+The response includes the new check's `id`. Save it.
+
+</TabItem>
+</Tabs>
+
+## 3. Watch the first run
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+The check page shows a **Recent runs** list. Click the latest entry to see step-by-step results, screenshots, the HAR, the video, and web vitals.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+# Trigger a manual run
+curl -X POST https://api.siteqwality.com/browser_check/$CHECK_ID/run \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+
+# Wait ~60 seconds, then list results
+curl https://api.siteqwality.com/browser_check/$CHECK_ID/results \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+
+# Get the HAR/video URL for a specific result
+curl https://api.siteqwality.com/browser_check/$CHECK_ID/results/$RESULT_ID/artifact_url \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+</TabItem>
+</Tabs>
+
+## 4. Iterate
+
+Browser scripts often need tuning before they're reliable:
+
+- **Wait for network idle** at navigation (`{ waitUntil: 'networkidle' }`) for SPAs.
+- **Use text selectors** (`text=Sign in`) over CSS classes — they survive design refactors.
+- **Wait for selectors before interacting** — `await page.waitForSelector(...)` then `await page.click(...)` is more robust than just `click()`.
+- **Set explicit timeouts on assertions** — `waitForSelector(..., { timeout: 10000 })` is clearer than relying on the default 30s.
+
+The dashboard's "Run now" button gives a quick iteration loop — edit script, save, click Run, see result.
+
+<Aside type="tip">
+For login flows in real apps, store the credentials in your secrets manager and reference them via your CI's environment when you `terraform apply` or `curl` the API. Don't bake real production secrets into the script field.
+</Aside>
+
+## What's next
+
+<LinkCard title="Browser check reference" description="Step API, supported assertions, artifact captures." href="/uptime-monitoring/browser-checks/reference/" />
+<LinkCard title="Status pages" description="Publish browser check status to customers." href="/status-pages/overview/" />

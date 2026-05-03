@@ -1,0 +1,44 @@
+---
+title: DNS check reference
+description: Every field on a DNS check, with status meanings.
+last_verified: 2026-05-03
+owner: jj
+---
+
+The full schema is in the auto-generated [API Reference](/api-reference/). Cheat sheet below.
+
+## Object: `DnsJob`
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | uuid | DNS check ID. |
+| `account_id` | uuid | Owning account. |
+| `http_job_id` | uuid | The HTTP check this was paired with. |
+| `current_status` | enum | See status table. |
+| `domain` | string | Registrable domain extracted from the HTTP check's URL. |
+| `expiry_date` | rfc3339 \| null | Domain registration expiry (when available via WHOIS). |
+| `last_run_at` | rfc3339 \| null | Most recent resolution timestamp. |
+| `last_status_change_at` | rfc3339 \| null | When `current_status` last transitioned. |
+| `created_at` | rfc3339 | When the check was provisioned. |
+
+## Status enum
+
+| Status | Meaning |
+|---|---|
+| `healthy` | Resolution succeeded across the resolver pool. |
+| `pending_failure` | One resolution failed; next confirms. |
+| `failed` | Two consecutive resolution failures. Triggers notifications. |
+
+## Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/dns/job/{dns_job_id}` | Fetch current status. |
+| `GET` | `/dns/job/{dns_job_id}/recent` | Recent resolution results. |
+
+Toggle on/off via `PUT /http/job/{job_id}` with `monitor_dns: true|false`.
+
+## See also
+
+- [DNS overview](/uptime-monitoring/dns-checks/overview/) — concept.
+- [TLS checks](/uptime-monitoring/ssl-tls-checks/overview/) — sibling sub-check.

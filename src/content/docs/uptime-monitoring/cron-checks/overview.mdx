@@ -1,0 +1,77 @@
+---
+title: Cron / heartbeat checks
+description: Receive HTTP pings from your scheduled jobs and alert when one is late or missed entirely.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+A **cron check** (also called a heartbeat or deadman's switch) is the inverse of an HTTP check. Instead of SiteQwality calling your service, your service calls SiteQwality at the end of each successful run. SiteQwality alerts when the expected ping doesn't arrive on time.
+
+The pattern is simple:
+
+```
+# At the end of your nightly backup script
+curl -X POST https://ping.siteqwality.com/<account-id>/<cron-job-id>
+```
+
+If the ping doesn't arrive within `check_interval_seconds` of the previous one, the check flips to failure and notifications fire.
+
+## When to use cron checks
+
+- **Backups, ETL jobs, batch jobs.** You want to know when they don't complete — not just when the host is up.
+- **Cleanup tasks** (purge old data, rotate logs, compact tables) where silence is the failure mode.
+- **External cron services** (cron-job.org, EventBridge, GitHub Actions schedules) that don't have built-in failure alerting.
+
+## When NOT to use them
+
+- Don't use cron checks for "is my service running?" That's an [HTTP check](/uptime-monitoring/http-checks/overview/) job.
+- Don't use them for "is the queue draining?" That's a metric — emit one and alert on it via a [metrics-backed dashboard](/observability/metrics/overview/).
+
+## How it works
+
+1. You create a cron check in SiteQwality with a `check_interval_seconds` — say, `86400` for a daily job. SiteQwality returns a `cron_job_id`.
+2. Your job pings `https://ping.siteqwality.com/<account-id>/<cron-job-id>` at the end of every successful run.
+3. SiteQwality records each ping with a timestamp, source IP, and headers.
+4. A scheduler runs every minute checking every cron job. If `now - last_received_at > check_interval_seconds + grace_period`, the check flips to failure and notifications fire.
+5. The next successful ping flips status back to healthy.
+
+A grace period is automatically applied so a slightly-delayed job (running 24h 5m instead of exactly 24h) doesn't immediately page. Today the grace period is fixed at one check interval — see [grace period notes](/uptime-monitoring/cron-checks/how-to/grace-period/).
+
+## Anatomy
+
+| Field | Default | Description |
+|---|---|---|
+| `friendly_name` | optional | Display name. |
+| `check_interval_seconds` | required | Expected interval between pings, in seconds. Validated against AWS Scheduler rate expressions. |
+| `group_notification_ids` | `[]` | Notification groups to fire on state change. Cap of 10. |
+| `state` | `active` | `active` or `paused`. Paused checks don't alert. |
+| `tags` | `[]` | For grouping and matching against [maintenance windows](/incident-management/maintenance/overview/). |
+
+## What the ping endpoint records
+
+Every ping captures:
+
+- A unique `id` for the receipt.
+- `created_at` — server-side timestamp.
+- `receiving_address` — IP from `X-Forwarded-For`.
+- `receiving_headers` — entire headers map (useful for debugging which job pinged).
+
+These are queryable via `GET /cron/job/{cron_job_id}/recent`.
+
+<Aside type="tip">
+The `cron-receiver` is a separate Lambda hosted at `ping.siteqwality.com` — independent of the main API. You don't need an API key to ping (the URL itself is the auth). Treat the URL like a secret.
+</Aside>
+
+## Pricing
+
+Cron checks are included on every plan. There's a soft monthly cap on total pings per account on the free tier — see your **Settings → Billing → Usage** page.
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Create your first heartbeat in 5 minutes." href="/uptime-monitoring/cron-checks/quickstart/" />
+  <LinkCard title="Sending heartbeats" description="Best practices for the actual ping in your jobs." href="/uptime-monitoring/cron-checks/how-to/heartbeats/" />
+  <LinkCard title="Grace period notes" description="How late is too late." href="/uptime-monitoring/cron-checks/how-to/grace-period/" />
+</CardGrid>

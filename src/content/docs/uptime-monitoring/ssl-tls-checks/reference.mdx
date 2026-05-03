@@ -1,0 +1,50 @@
+---
+title: TLS check reference
+description: Every field on a TLS check, with status meanings.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The full request/response schema is in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet.
+
+## Object: `TlsJob`
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | uuid | TLS check ID. |
+| `account_id` | uuid | Owning account. |
+| `http_job_id` | uuid | The HTTP check this TLS check was paired with on creation. |
+| `current_status` | enum | See status table below. |
+| `domain` | string | Hostname extracted from the HTTP check's URL. |
+| `expiry_date` | rfc3339 \| null | Cert's `notAfter` (set after first successful handshake). |
+| `last_run_at` | rfc3339 \| null | Most recent handshake timestamp. |
+| `last_status_change_at` | rfc3339 \| null | When `current_status` last transitioned. |
+| `created_at` | rfc3339 | When the TLS check was first provisioned. |
+
+## Status enum
+
+| Status | Meaning |
+|---|---|
+| `healthy` | Most recent handshake succeeded; cert valid, chain trusted, hostname matches, expiry > warning threshold. |
+| `pending_failure` | One handshake failed; the next will confirm. Suppresses alerts on transient blips. |
+| `failed` | Two consecutive handshake failures: chain invalid, hostname mismatch, or cert expired. Triggers notifications. |
+| `expiring_soon` | Cert is valid but expiry is within the warning window (default 14 days). |
+
+## Endpoints
+
+The TLS check is read-only via its own endpoints (you create it implicitly by setting `monitor_tls: true` on an HTTP check):
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/tls/job/{tls_job_id}` | Fetch current status. |
+| `GET` | `/tls/job/{tls_job_id}/recent` | Recent handshake results. |
+
+To enable/disable TLS monitoring, `PUT /http/job/{job_id}` with `monitor_tls: true|false`.
+
+## See also
+
+- [TLS overview](/uptime-monitoring/ssl-tls-checks/overview/) — concept and lifecycle.
+- [HTTP checks reference](/uptime-monitoring/http-checks/) — the parent check.
+- [API Reference](/api-reference/) — wire-level shapes.

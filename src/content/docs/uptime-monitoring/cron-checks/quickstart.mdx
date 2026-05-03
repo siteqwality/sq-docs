@@ -1,0 +1,133 @@
+---
+title: Cron check quickstart
+description: Set up a heartbeat for a daily job and confirm it pages you when the job stops running.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have a cron check expecting a ping every 24 hours, your job sending the ping, and a verified failure → alert path.
+
+## 1. Create the cron check
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Monitors → New → Cron check.**
+
+2. Configure:
+   - **Friendly name:** `Nightly backup`.
+   - **Expected interval:** `1 day` (`86400` seconds).
+   - **Notification groups:** pick your default group.
+
+3. Save. The check page now shows a unique **ping URL** at the top.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/cron/job \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Nightly backup",
+    "check_interval_seconds": 86400,
+    "group_notification_ids": ["<group-id>"]
+  }'
+```
+
+The response includes `id`, `account_id`, and the inferred ping URL: `https://ping.siteqwality.com/<account_id>/<id>`.
+
+</TabItem>
+</Tabs>
+
+## 2. Wire your job to ping
+
+Add a single line to the **end** of your job, after the work has succeeded.
+
+```bash
+# Bash — at the end of nightly_backup.sh
+PING_URL="https://ping.siteqwality.com/<account-id>/<cron-job-id>"
+
+if pg_dump $DB > backup.sql && aws s3 cp backup.sql s3://backups/; then
+  curl -fsS --max-time 10 --retry 3 "$PING_URL" || true
+fi
+```
+
+```python
+# Python
+import requests
+
+PING_URL = "https://ping.siteqwality.com/acct_abc123/job_xyz789"
+
+def ping():
+    try:
+        requests.post(PING_URL, timeout=10)
+    except requests.RequestException:
+        pass  # never let the ping failure kill the job
+
+# At the end of your job
+do_backup()
+ping()
+```
+
+```javascript
+// Node
+const PING_URL = "https://ping.siteqwality.com/acct_abc123/job_xyz789";
+
+async function ping() {
+  try {
+    await fetch(PING_URL, { method: "POST" });
+  } catch {
+    // intentional swallow — don't let ping failures break the job
+  }
+}
+
+await doBackup();
+await ping();
+```
+
+<Aside type="tip">
+Ping at the **end** of the job, after work succeeds. Pinging at the start gives you a "the job started" signal, but masks the case where the job started and then crashed. Most users want the success-confirming variant.
+</Aside>
+
+## 3. Verify the heartbeat lands
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+The check's **Recent pings** list shows each received ping with timestamp and source IP within seconds.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl https://api.siteqwality.com/cron/job/$JOB_ID/recent \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+Returns the most recent receipts.
+
+</TabItem>
+</Tabs>
+
+## 4. Force a failure
+
+To verify the alerting path:
+
+1. Edit the cron check, drop `check_interval_seconds` to `300` (5 minutes).
+2. Don't ping for 10 minutes.
+3. The check flips to `failed`, an incident opens, your notification group fires.
+4. Send a ping manually (`curl <ping-url>`). The check flips back to `success` and the incident auto-resolves.
+
+Don't forget to set the interval back to `86400` when done testing.
+
+## What's next
+
+<LinkCard title="Heartbeat best practices" description="Retries, jitter, idempotency, and start-vs-end pinging." href="/uptime-monitoring/cron-checks/how-to/heartbeats/" />
+<LinkCard title="Grace periods" description="How SiteQwality decides 'late enough to alert.'" href="/uptime-monitoring/cron-checks/how-to/grace-period/" />

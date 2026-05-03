@@ -1,0 +1,102 @@
+---
+title: Send heartbeats reliably
+description: Patterns for adding ping calls to cron jobs without making them brittle.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+The basic pattern is one line of curl, but production cron jobs need a bit more thought. Here's the playbook.
+
+## 1. Always ping at the end, after success
+
+```bash
+# Wrong — pings even on partial failure
+do_thing
+curl $PING_URL
+
+# Right — pings only on success
+if do_thing; then
+  curl $PING_URL
+fi
+```
+
+Pinging at the start gives you "started" signal but masks "started but crashed" — usually you want the success variant.
+
+If you need both signals, run two separate cron checks (one for "job started," one for "job completed") and ping each at the appropriate time.
+
+## 2. Never let the ping fail the job
+
+The ping is a notification, not part of the job's correctness. If the network is flaky, the job still succeeded — don't let `curl` exit non-zero from the ping line cause your job's exit code to lie.
+
+```bash
+# Bash — || true makes failures non-fatal
+curl -fsS --max-time 10 --retry 3 "$PING_URL" || true
+```
+
+```python
+# Python — try/except swallows
+try:
+    requests.post(PING_URL, timeout=10)
+except requests.RequestException:
+    logging.warning("Failed to ping SiteQwality")
+```
+
+## 3. Use timeouts and limited retries
+
+The ping endpoint is fast (~50ms p95) but can briefly fail during deploys.
+
+- **Timeout:** 10 seconds is plenty.
+- **Retries:** 2 or 3 with brief backoff. Don't retry indefinitely — that wedges the job.
+- **Backoff:** linear or exponential up to ~30s total budget.
+
+```bash
+curl -fsS --max-time 10 --retry 3 --retry-delay 5 "$PING_URL"
+```
+
+## 4. Add jitter to avoid thundering herds
+
+If 200 of your jobs all run at exactly 02:00 UTC and all ping immediately, you'll get a brief spike at the receiver. Add 0–60 seconds of jitter to staggered fleets:
+
+```bash
+sleep $((RANDOM % 60))
+curl ...
+```
+
+(Skip this for one-off or low-volume jobs.)
+
+## 5. Treat the ping URL as a secret
+
+The URL contains your account ID and the cron job ID. Anyone who knows it can ping (and silence) the check. Store it in your secrets manager (Vault, AWS Secrets Manager, GitHub Actions secrets) — not in shell scripts checked into git.
+
+## 6. Distinguish your jobs in the receipt headers
+
+The receiver records all incoming HTTP headers. Send a custom header so you can tell which deploy / pod / runner pinged:
+
+```bash
+curl -H "X-Backup-Host: $(hostname)" \
+     -H "X-Backup-Version: $APP_VERSION" \
+     "$PING_URL"
+```
+
+Useful when you've got 20 backup jobs across regions all sharing one check (you usually shouldn't, but sometimes you do).
+
+## 7. Don't conflate cron checks with pipeline status
+
+A cron check answers "did this job run on schedule?" It's not a substitute for a deploy pipeline status, a CI build status, or anything with multi-step success semantics. For those:
+
+- Use **HTTP checks** against a `/health` endpoint your app exposes.
+- Use **metrics** with alert thresholds for queue depth, error rate, etc.
+- Use **logs** for the audit trail of what the job actually did.
+
+The cron check is purely "did the ping arrive in time" — keep it pure.
+
+<Aside type="tip">
+A common pattern: wrap your cron job in a script that `set -e`s, runs the work, and pings at the end. Keep the ping in the wrapper, not in the job's own code, so swapping out the monitoring tool doesn't require touching app code.
+</Aside>
+
+## See also
+
+<LinkCard title="Cron checks overview" description="Concept and lifecycle." href="/uptime-monitoring/cron-checks/overview/" />
+<LinkCard title="Grace period" description="What 'late' actually means." href="/uptime-monitoring/cron-checks/how-to/grace-period/" />

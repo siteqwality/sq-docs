@@ -1,0 +1,83 @@
+---
+title: DNS check quickstart
+description: Enable DNS monitoring on an HTTP check in two minutes.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have DNS resolution monitoring on an existing HTTP check.
+
+## Prerequisites
+
+- An existing HTTP check.
+
+## 1. Enable DNS monitoring
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. Open the HTTP check, **Settings**.
+
+2. Toggle **Monitor DNS** on. Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "monitor_dns": true }'
+```
+
+Or set it at create time:
+
+```bash
+curl -X POST https://api.siteqwality.com/http/job \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "API homepage",
+    "method": "GET",
+    "uri": "https://api.example.com/",
+    "monitor_tls": true,
+    "monitor_dns": true,
+    "timeout_ms": 15000,
+    "run_interval_seconds": 600,
+    "group_notification_ids": []
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+## 2. View the DNS check
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+The HTTP check page shows a **DNS** sub-card with current status and the registrable domain SiteQwality is resolving.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl https://api.siteqwality.com/dns/job/$DNS_JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+The `DnsJob` response gives `current_status`, `domain`, and `last_run_at`.
+
+</TabItem>
+</Tabs>
+
+## What's next
+
+<LinkCard title="DNS reference" description="Status enum and field details." href="/uptime-monitoring/dns-checks/reference/" />
+<LinkCard title="TLS checks" description="The other paired-check type." href="/uptime-monitoring/ssl-tls-checks/overview/" />

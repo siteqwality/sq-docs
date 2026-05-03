@@ -54,6 +54,41 @@ export default defineConfig({
 								{ label: 'Quickstart', slug: 'uptime-monitoring/http-checks/quickstart' },
 							],
 						},
+						{
+							label: 'SSL/TLS checks',
+							items: [
+								{ label: 'Overview', slug: 'uptime-monitoring/ssl-tls-checks/overview' },
+								{ label: 'Quickstart', slug: 'uptime-monitoring/ssl-tls-checks/quickstart' },
+								{ label: 'Reference', slug: 'uptime-monitoring/ssl-tls-checks/reference' },
+							],
+						},
+						{
+							label: 'DNS checks',
+							items: [
+								{ label: 'Overview', slug: 'uptime-monitoring/dns-checks/overview' },
+								{ label: 'Quickstart', slug: 'uptime-monitoring/dns-checks/quickstart' },
+								{ label: 'Reference', slug: 'uptime-monitoring/dns-checks/reference' },
+							],
+						},
+						{
+							label: 'Cron checks',
+							items: [
+								{ label: 'Overview', slug: 'uptime-monitoring/cron-checks/overview' },
+								{ label: 'Quickstart', slug: 'uptime-monitoring/cron-checks/quickstart' },
+								{
+									label: 'How-to guides',
+									autogenerate: { directory: 'uptime-monitoring/cron-checks/how-to' },
+								},
+							],
+						},
+						{
+							label: 'Browser checks',
+							items: [
+								{ label: 'Overview', slug: 'uptime-monitoring/browser-checks/overview' },
+								{ label: 'Quickstart', slug: 'uptime-monitoring/browser-checks/quickstart' },
+								{ label: 'Reference', slug: 'uptime-monitoring/browser-checks/reference' },
+							],
+						},
 					],
 				},
 				{

@@ -1,0 +1,46 @@
+---
+title: SSL/TLS checks
+description: Track certificate expiry, chain validity, and host-mismatch errors — standalone or paired with an HTTP check.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+A **TLS check** verifies that a domain's TLS certificate is valid and tells you when it's about to expire. It catches the silent failure mode where your site is up but its cert quietly expires next Tuesday.
+
+## When to use TLS checks
+
+- Anything served over HTTPS where an expired cert would cause customer pain.
+- Internal services with self-renewing certs (Let's Encrypt, ACM) where renewal can fail without anyone noticing.
+- Custom-domain status pages, customer subdomains, anything where you don't have full control of the renewal pipeline.
+
+## How it works
+
+TLS checks are **paired with an HTTP check** today. Set `monitor_tls: true` when creating an HTTP check; SiteQwality auto-provisions a paired TLS check that targets the same domain on a slower schedule (no need to handshake every minute).
+
+The TLS check's `current_status` reflects the most recent handshake outcome:
+
+- **Healthy** — cert valid, hostname matches, chain trusted, expiry > 14 days away.
+- **Pending failure** — handshake failed in one tick; flips to fail after another.
+- **Failed** — chain invalid, hostname mismatch, or cert expired.
+
+`expiry_date` is recorded so the dashboard can render a countdown. Standard advance-warning periods (30 days, 14 days, 7 days) trigger increasingly severe notifications.
+
+<Aside type="tip">
+You don't need a separate TLS monitor for every HTTPS endpoint. Enable `monitor_tls` on any one HTTP check per host and you're covered for that hostname.
+</Aside>
+
+## What it doesn't do (today)
+
+- **Standalone TLS checks** (without an HTTP host) aren't currently supported. Track via the API roadmap.
+- **CT log checks** — confirming new certs appear in Certificate Transparency logs — aren't yet supported.
+- **Custom expiry-warning thresholds** are inherited from the HTTP check's notification group.
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Add a TLS check to an existing HTTP monitor." href="/uptime-monitoring/ssl-tls-checks/quickstart/" />
+  <LinkCard title="Reference" description="Every field on a TLS check, with status meanings." href="/uptime-monitoring/ssl-tls-checks/reference/" />
+  <LinkCard title="HTTP checks" description="TLS checks are paired with HTTP checks." href="/uptime-monitoring/http-checks/overview/" />
+</CardGrid>

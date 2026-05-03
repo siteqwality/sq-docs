@@ -1,0 +1,138 @@
+---
+title: Browser check reference
+description: Settings, the step API, supported assertions, and captured artifacts.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The full request schema is in the auto-generated [API Reference](/api-reference/). Cheat sheet below.
+
+## Object: `BrowserCheck`
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `name` | string | required | Display name; validated as a "friendly name." |
+| `script` | string | required | The Playwright script body. Wrapped in an async IIFE; max ~50KB. |
+| `frequency` | enum | required | `5m`, `10m`, `15m`, `30m`, or `1h`. |
+| `timeout_seconds` | int | `60` | Max script runtime, 1–300. The actual user-script budget is `timeout - 30s`. |
+| `check_regions` | string[] | `["aws-us-east-1"]` | Regions to run from. Subset of [supported regions](#supported-regions). |
+| `min_healthy_regions` | int | `1` | Required healthy regions for overall status. Must be ≤ region count. |
+| `group_notification_ids` | uuid[] | `[]` | Notification groups; cap of 10. |
+| `state` | enum | `active` | `active` or `paused`. Paused checks don't run. |
+| `tags` | string[] | `[]` | Free-form labels for filtering and maintenance windows. |
+| `service_id` | uuid \| null | `null` | Optional logical service grouping. |
+| `current_status` | enum | derived | `success`, `pending_failure`, `failed`. |
+
+## Supported regions
+
+- `aws-us-east-1` — N. Virginia
+- `aws-us-east-2` — Ohio
+- `aws-us-west-1` — N. California
+- `aws-eu-west-2` — London
+
+## The script API
+
+Two globals are injected: `page` (Playwright Page) and `step` (your wrapper).
+
+### `step(name, fn)`
+
+```javascript
+await step('Open homepage', async () => {
+  await page.goto('https://example.com');
+});
+```
+
+- `name` is the display label in the result UI.
+- `fn` is an `async () => Promise<void>`.
+- A step that throws fails. Subsequent steps are skipped.
+- A screenshot is captured after every step (pass or fail).
+
+### `page` — Playwright Page
+
+The full Playwright API is available — anything documented at https://playwright.dev/docs/api/class-page works.
+
+Common helpers:
+
+```javascript
+await page.goto(url, { waitUntil: 'networkidle' });
+await page.click('text=Sign in');
+await page.fill('input[name=email]', 'demo@example.com');
+await page.waitForSelector('h1:has-text("Welcome")', { timeout: 10000 });
+const text = await page.textContent('h1');
+const ok = await page.isVisible('.success-banner');
+const url = page.url();
+```
+
+### Common assertion patterns
+
+Browser checks don't have a separate assertion DSL — assertions are just JavaScript that throws.
+
+```javascript
+// Wait for an element
+await step('Dashboard loaded', async () => {
+  await page.waitForSelector('h1:has-text("Dashboard")', { timeout: 10000 });
+});
+
+// Assert text content
+await step('Welcome message correct', async () => {
+  const text = await page.textContent('h1');
+  if (!text?.includes('Welcome')) {
+    throw new Error(`Expected "Welcome", got "${text}"`);
+  }
+});
+
+// Assert URL
+await step('Redirected to dashboard', async () => {
+  if (!page.url().endsWith('/dashboard')) {
+    throw new Error(`Expected dashboard, got ${page.url()}`);
+  }
+});
+
+// Assert HTTP response
+await step('Submit form', async () => {
+  const [response] = await Promise.all([
+    page.waitForResponse(/\/api\/login$/),
+    page.click('button[type="submit"]'),
+  ]);
+  if (response.status() !== 200) {
+    throw new Error(`Expected 200, got ${response.status()}`);
+  }
+});
+```
+
+## Captured artifacts
+
+For every result:
+
+| Artifact | Stored as | API endpoint |
+|---|---|---|
+| Step results | Inline JSON in the result row | `GET /browser_check/{id}/results` |
+| Screenshots | Per-step PNGs in S3 | embedded in step results |
+| HAR file | Full network capture, S3 | `GET /browser_check/{id}/results/{result_id}/artifact_url` |
+| Video | 1280×720 MP4 of the run, S3 | same artifact_url endpoint |
+| Web vitals | Inline JSON: `{lcp_ms, fcp_ms, cls, ttfb_ms}` | `GET /browser_check/{id}/vitals` |
+| Console errors | Inline JSON array | embedded in result |
+| Trace IDs | List of traceparent IDs from outgoing requests | embedded in result |
+
+The HAR and video URLs are presigned, expire in 1 hour, and are S3-direct (no proxying through SiteQwality's API).
+
+## Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/browser_check` | Create. |
+| `GET` | `/browser_check` | List all. |
+| `GET` | `/browser_check/{id}` | Detail. |
+| `PUT` | `/browser_check/{id}` | Update (partial body). |
+| `DELETE` | `/browser_check/{id}` | Delete. |
+| `POST` | `/browser_check/{id}/run` | Trigger an immediate run. |
+| `GET` | `/browser_check/{id}/results` | List recent results. |
+| `GET` | `/browser_check/{id}/results/{result_id}/artifact_url` | Presigned HAR + video URLs. |
+| `GET` | `/browser_check/{id}/vitals` | Aggregated web vitals over time. |
+
+## See also
+
+- [Browser check overview](/uptime-monitoring/browser-checks/overview/) — concept and trade-offs.
+- [Quickstart](/uptime-monitoring/browser-checks/quickstart/) — first-script walkthrough.

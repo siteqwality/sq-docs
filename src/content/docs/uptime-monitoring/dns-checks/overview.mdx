@@ -1,0 +1,50 @@
+---
+title: DNS checks
+description: Verify a domain resolves correctly across resolvers and record types — paired with an HTTP check today.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+A **DNS check** verifies a domain resolves to records you expect. Use it to catch:
+
+- Stale or hijacked records.
+- Registrar/DNS-provider outages.
+- Misconfigured DNS after a migration.
+- Apex-domain availability where there's no HTTPS endpoint to monitor.
+
+## When to use DNS checks
+
+- Your domain matters even when you're not serving HTTP from it (mail records, third-party services pointing at you).
+- You've ever had a DNS misconfig take down a launch.
+- You want a quick canary that *resolution* works independently of your application stack.
+
+## How it works
+
+Like TLS, DNS checks today are **paired with an HTTP check**. Set `monitor_dns: true` on creation and SiteQwality provisions a paired DNS check on the registrable domain.
+
+The check resolves the domain on a regular schedule and flips status:
+
+- **Healthy** — resolution succeeded with sane records.
+- **Pending failure** — one tick failed; the next confirms.
+- **Failed** — multiple consecutive resolution failures.
+
+The check uses public resolvers (a mix to avoid single-resolver bias). The `domain` field is the registrable domain extracted from the HTTP check's URL — `https://www.example.com/path` → `example.com`.
+
+## When NOT to use DNS checks
+
+- For **monitoring specific record values** (e.g. "the MX record points at provider X"), use a periodic comparison job rather than DNS checks. Today's DNS check confirms resolution succeeded, not that any specific record matches a target value.
+- For **per-resolver canary tests** (Cloudflare 1.1.1.1, Google 8.8.8.8, your ISP), this isn't supported in the current release.
+
+<Aside type="caution">
+The DNS check today is intentionally simple — "does this domain resolve to *something*?" — not "does it resolve to *exactly this*?" If you need stronger record-level guarantees, run a custom HTTP check that triggers a script you control.
+</Aside>
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Enable DNS monitoring on an HTTP check." href="/uptime-monitoring/dns-checks/quickstart/" />
+  <LinkCard title="Reference" description="Every field on a DNS check." href="/uptime-monitoring/dns-checks/reference/" />
+  <LinkCard title="HTTP checks" description="DNS checks pair with HTTP checks." href="/uptime-monitoring/http-checks/overview/" />
+</CardGrid>
