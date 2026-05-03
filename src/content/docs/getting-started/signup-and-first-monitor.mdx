@@ -11,8 +11,7 @@ By the end of this guide you will have:
 
 1. A SiteQwality account.
 2. An HTTP check running every 10 minutes against `https://mock.codes/200`.
-3. A notification group that emails you when the check fails.
-4. Confirmed an incident open and resolve cleanly.
+3. Confirmed an incident open and resolve cleanly, with an email landing in your inbox.
 
 Total time: about five minutes.
 
@@ -28,25 +27,11 @@ Total time: about five minutes.
 
 </Steps>
 
-## 2. Add a notification channel
+<Aside type="tip" title="Notifications are already wired up">
+On signup, SiteQwality automatically creates a default notification group with your admin email as the destination. New monitors are attached to it by default — so you can skip notification setup for now and your first incident will email you. To customize (add Slack, change the email, route different monitors to different groups), see [Notifications](/incident-management/notifications/overview/).
+</Aside>
 
-Before creating the monitor, set up where alerts should go. The default is email to your sign-up address — that's fine for testing, but worth confirming.
-
-<Steps>
-
-1. Open **Notifications → Channels** (sidebar).
-
-2. You should see one entry: an `email` notification pointing at your sign-up address. If not, click **New notification → Email** and add yours.
-
-3. Open **Notifications → Groups**.
-
-4. Click **New group**, name it `Default email`, and attach the email channel from step 2. Save.
-
-</Steps>
-
-A *channel* is one delivery destination. A *group* bundles channels so a single monitor can fan out to "Slack #ops + my phone + the on-call schedule" in one config field. You always attach groups to monitors, never raw channels.
-
-## 3. Create the HTTP check
+## 2. Create the HTTP check
 
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
@@ -60,7 +45,7 @@ A *channel* is one delivery destination. A *group* bundles channels so a single 
    - **URL:** `https://mock.codes/200`
    - **Method:** `GET`
    - **Run interval:** `Every 10 minutes` (the free-plan minimum is 60 seconds; we use 10 minutes here so the demo doesn't spam your inbox)
-   - **Notification groups:** select `Default email` from step 2.
+   - Leave **Notification groups** on its default — your account's auto-created group is pre-selected.
    - Leave everything else as default.
 
 3. Click **Create**. The check runs immediately; the first result appears within a few seconds.
@@ -84,7 +69,6 @@ curl -X POST https://api.siteqwality.com/http/job \
     "uri": "https://mock.codes/200",
     "timeout_ms": 15000,
     "run_interval_seconds": 600,
-    "group_notification_ids": ["<your-group-id>"],
     "monitor_tls": false,
     "monitor_dns": false
   }'
@@ -92,10 +76,12 @@ curl -X POST https://api.siteqwality.com/http/job \
 
 You'll get back a `201 Created` with the full job object. Save the `id` — you'll use it to fetch results, update the check, or delete it later.
 
+Omitting `group_notification_ids` attaches the monitor to your account's auto-created default group, so the email lands in your inbox without further setup. To target a specific group, pass its UUID in `group_notification_ids` (`GET /notification_group/list` to enumerate).
+
 </TabItem>
 </Tabs>
 
-## 4. Confirm it's working
+## 3. Confirm it's working
 
 <Steps>
 
