@@ -1,0 +1,86 @@
+---
+title: Cover holidays with rotation overrides
+description: Use overrides to swap shifts, cover vacations, and patch gaps without rebuilding the rotation.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+An **override** is a hard "user X is on call from time A to time B" entry that beats every layer in the schedule. It's the right tool for:
+
+- **Vacation cover** — "Carol is covering Alice's week while she's at a wedding."
+- **One-off swaps** — "I'll take your Tuesday if you take my Thursday."
+- **Filling layer gaps** — if a layer's effective window leaves a hole, override the gap.
+
+Overrides do *not* modify the underlying rotation. Once the override expires, the rotation continues as if it never happened — Alice will still be next-up the week she'd normally have rotated to.
+
+## Add an override
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. Open the schedule, click **Overrides → Add override**.
+
+2. Pick the **user** to put on call, the **start** and **end** timestamps.
+
+3. Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/override \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "33333333-aaaa-4bbb-9ccc-ffffffffffff",
+    "start_at": "2026-12-22T09:00:00Z",
+    "end_at": "2027-01-02T09:00:00Z"
+  }'
+```
+
+Times are RFC 3339 with timezone. The schedule's own timezone doesn't apply to override timestamps — they're absolute.
+
+</TabItem>
+</Tabs>
+
+## Common patterns
+
+### Whole-week vacation cover
+
+Single override covering the entire week. Carol takes over from Alice 09:00 Monday through 09:00 the following Monday. Both `start_at` and `end_at` must be set.
+
+### Daily swap
+
+Two overrides: each engineer takes the other's day. Each override is one calendar day, both saved with explicit start/end.
+
+### Patch a gap in a layer
+
+If your weekly rotation has `effective_from: 2026-06-01` and you have an incident before then, the layer doesn't apply. Add an override covering the period until the layer kicks in.
+
+## Overlapping overrides
+
+If two overrides cover the same time, **first-defined wins**. Don't rely on this — instead, delete or shorten the earlier one before adding a conflicting one.
+
+## Removing an override
+
+```bash
+curl -X DELETE https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/override/$OVERRIDE_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+The dashboard's per-schedule **Overrides** list has a delete button per row.
+
+<Aside type="tip">
+You can delete an active override (one currently in effect). The on-call lookup re-evaluates immediately — the next page will route per the underlying layers.
+</Aside>
+
+## See also
+
+<LinkCard title="On-call overview" description="Layers, rotations, and the lookup algorithm." href="/incident-management/on-call/overview/" />
+<LinkCard title="Quickstart" description="Build your first schedule from scratch." href="/incident-management/on-call/quickstart/" />

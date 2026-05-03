@@ -1,0 +1,84 @@
+---
+title: On-call schedules
+description: Layered rotations across timezones with overrides — produces "who's on call right now" given a timestamp.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+An **on-call schedule** is a named rotation of users that, given any timestamp, returns the user who is currently on call. Escalation policies reference schedules instead of hard-coded user lists, so when the rotation hands off, paging follows automatically.
+
+## When to use schedules
+
+- You want pages to follow a rotation rather than always hitting the same person.
+- You have responders in multiple timezones and want the page to land where it's awake.
+- You want to handle holiday cover and one-off swaps cleanly.
+
+If you only have one engineer, you don't need a schedule — just point your escalation policy at that user directly.
+
+## How a schedule produces "who's on call"
+
+Each schedule has:
+
+- A **name** (`Primary on-call`, `Eng manager backup`).
+- A **timezone** — IANA name (`America/Los_Angeles`, `Europe/Berlin`, `UTC`). All `handoff_time` and `handoff_day` values are interpreted in this timezone.
+- One or more **layers** — stacked in priority order.
+- Zero or more **overrides** — hard "user X is on from time A to time B" entries.
+
+When asked who's on call at time `T`:
+
+1. Apply overrides first. If any override covers `T`, that user is on call. Done.
+2. Otherwise walk layers from highest priority (lowest `layer_number`) downward. For each layer in its `effective_from`/`effective_until` window, compute whose turn it is given the rotation type. The first layer that returns a user wins.
+
+This means **higher-priority layers shadow lower-priority ones during their effective windows**. Useful pattern: a "weekend coverage" layer with `effective_from`/`effective_until` set to weekend hours, sitting on top of a base "weekday rotation" layer.
+
+## Layer rotation types
+
+| `rotation_type` | Behavior |
+|---|---|
+| `daily` | Hand off every day at `handoff_time`. |
+| `weekly` | Hand off once a week, on `handoff_day` (0=Sun, 6=Sat) at `handoff_time`. |
+| `custom_days` | Hand off every `rotation_interval_days` days at `handoff_time`. |
+
+`participants` is an ordered list of user UUIDs — the rotation walks the list and wraps around.
+
+## Overrides
+
+An override beats every layer. Use them for:
+
+- **Holiday cover:** "Bob is covering for Alice from Dec 22–Jan 2."
+- **Swap weekends:** "I'll take next weekend if you take this one."
+- **Filling gaps:** if an effective window leaves a hole, an override patches it.
+
+Overrides are time-bounded with `start_at` and `end_at`. Overlapping overrides are first-defined-wins.
+
+## Common patterns
+
+### Single weekly rotation
+
+One layer, `rotation_type: weekly`, `handoff_day: 1` (Monday), `handoff_time: 09:00`, `participants: [alice, bob, carol]`. Each engineer is on for one week starting Monday morning.
+
+### Follow-the-sun
+
+Three layers, all `rotation_type: weekly`. Layer 1 (priority): `effective_from`/`effective_until` covers Asia-Pacific awake hours, participants are APAC engineers. Layer 2: EMEA hours, EMEA engineers. Layer 3: Americas hours, Americas engineers. The escalation policy points at this one schedule and gets the awake engineer for free.
+
+### Primary + secondary
+
+Two separate schedules: `Primary` and `Secondary`. Escalation policy: level 1 → `Primary`, level 2 → `Secondary`. Each schedule rotates independently.
+
+## Pricing
+
+On-call schedules are included on every paid plan. Free tier is limited to a single non-rotating responder list.
+
+<Aside type="caution">
+Pricing tier specifics are in flux. Confirm current limits in the **Settings → Billing → Plans** screen of your account.
+</Aside>
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Build your first schedule with two engineers and a weekly rotation." href="/incident-management/on-call/quickstart/" />
+  <LinkCard title="Rotation overrides" description="Cover holidays and swap shifts." href="/incident-management/on-call/how-to/rotation-overrides/" />
+  <LinkCard title="Escalation policies" description="Wire schedules into the paging chain." href="/incident-management/escalation/overview/" />
+</CardGrid>

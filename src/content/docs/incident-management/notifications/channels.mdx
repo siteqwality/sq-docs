@@ -1,0 +1,148 @@
+---
+title: Channels reference
+description: Every notification channel type — email, SMS, Slack, Teams, Discord, Telegram, webhook — with required fields and gotchas.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+A channel (also called a *notification* in the API) is a single delivery destination. Channels live inside a [notification group](/incident-management/notifications/overview/#notification-groups), which is what you attach to monitors.
+
+Every channel has:
+
+```json
+{
+  "notification_group_id": "<group-uuid>",
+  "type": "email|sms|slack|webhook|telegram|discord|microsoft_teams",
+  "details": { ... }    // type-specific fields
+}
+```
+
+This page documents `details` for each type.
+
+## Email
+
+```json
+{
+  "type": "email",
+  "details": { "email_address": "alerts@example.com" }
+}
+```
+
+- Validated against a basic email regex.
+- No verification step — anything that parses as an email is accepted.
+- Sender is `alerts@siteqwality.com`. Whitelist it to avoid spam folders.
+- Subject line includes monitor name + status; body includes a deep link to the incident.
+
+## SMS
+
+```json
+{
+  "type": "sms",
+  "details": {
+    "country_code": 1,
+    "phone_number": "5551234567"
+  }
+}
+```
+
+- `country_code` is the country dialing prefix as an integer (1 for US, 44 for UK, 49 for DE, etc).
+- `phone_number` is the local number with no formatting characters.
+- Validation requires a parseable phone number.
+- Costs Twilio pass-through rates; billed per page on paid plans.
+
+<Aside type="caution">
+SMS delivery is best-effort. International routing can be flaky; for critical pages prefer escalation chains that include both SMS and a phone-call rule.
+</Aside>
+
+## Slack
+
+```json
+{
+  "type": "slack",
+  "details": {
+    "integration_id": "<slack-integration-uuid>",
+    "channel": "#ops"
+  }
+}
+```
+
+- Requires a Slack integration first — see [Integrations → Slack](/integrations/overview/).
+- `channel` accepts `#name` or a Slack channel ID. Bot must be invited to private channels.
+- Messages render as rich blocks with status color, monitor name, recent results, and an "Acknowledge" interactive button.
+
+## Webhook
+
+```json
+{
+  "type": "webhook",
+  "details": { "integration_id": "<webhook-integration-uuid>" }
+}
+```
+
+- The URL lives on the integration object (`/integration/webhook`), not the channel — so multiple channels can share one URL with different downstream meaning.
+- Payload is a JSON POST with the incident object + monitor context.
+
+Sample webhook body (truncated):
+
+```json
+{
+  "event": "incident.opened",
+  "incident": {
+    "id": "<incident-uuid>",
+    "title": "HTTP check failure: prod-api",
+    "severity": "major",
+    "status": "investigating"
+  },
+  "monitor": { "id": "<job-uuid>", "type": "http", "uri": "https://api.example.com" }
+}
+```
+
+## Telegram
+
+```json
+{
+  "type": "telegram",
+  "details": { "telegram_integration_id": "<telegram-integration-uuid>" }
+}
+```
+
+- Setup is two-step: create a setup state, send your bot a code, then finalize. See [Integrations → Telegram](/integrations/overview/).
+- Messages render as HTML-formatted text with a deep link to the incident.
+
+## Discord
+
+```json
+{
+  "type": "discord",
+  "details": { "discord_integration_id": "<discord-integration-uuid>" }
+}
+```
+
+- Discord integration uses an incoming webhook URL (created in your Discord server settings).
+- Messages render as embeds with status color and incident link.
+
+## Microsoft Teams
+
+```json
+{
+  "type": "microsoft_teams",
+  "details": { "teams_integration_id": "<teams-integration-uuid>" }
+}
+```
+
+- Teams integration uses an incoming webhook URL from a Teams channel connector.
+- Messages render as Adaptive Cards with status color.
+
+## Common pitfalls
+
+- **Channel created but no notifications arrive.** First check whether the channel is attached to a *group* and the group is attached to the *monitor*. Channels alone don't deliver.
+- **Slack/webhook channels saying integration not found.** The integration must exist on the same account and be referenced by UUID.
+- **SMS not arriving.** Verify the country code is the integer prefix (`1`, not `"+1"`); confirm the number is plain digits.
+
+## See also
+
+- [Notifications overview](/incident-management/notifications/overview/) — the four-object mental model.
+- [Integrations](/integrations/overview/) — set up Slack, Teams, Discord, Telegram, webhooks.
+- [API Reference](/api-reference/) — full request/response shapes.

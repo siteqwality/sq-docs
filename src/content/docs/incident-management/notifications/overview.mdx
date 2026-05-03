@@ -1,0 +1,106 @@
+---
+title: Notifications
+description: Channels, groups, contact methods, and rules — the four-layer system for routing alerts to the right person via the right tool.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+SiteQwality's notifications system has four objects and they often get confused. This page is the map.
+
+| Object | Owner | Purpose | Example |
+|---|---|---|---|
+| **Channel** (a.k.a. notification) | account | One delivery destination | "Send to #ops in our Slack" |
+| **Notification group** | account | Bundle of channels attached to a monitor | "Default alerts" → email + Slack + webhook |
+| **Contact method** | user (personal) | One way to reach me | "My phone for SMS" |
+| **Notification rule** | user (personal) | Per-urgency delivery preferences for me | "High urgency? SMS at 0min, call at 5min" |
+
+The first two are account-wide; the last two are personal — every team member configures their own. The two layers are decoupled on purpose: the team picks "where this monitor's alerts go" once; each engineer picks "how I personally want to be paged."
+
+## Channels (notifications)
+
+A *channel* is a single delivery destination. Each channel has a `type` and `details` specific to that type:
+
+| Type | Required `details` |
+|---|---|
+| `email` | `email_address` |
+| `sms` | `country_code` (int), `phone_number` |
+| `slack` | `integration_id` (a Slack integration UUID), `channel` (`#ops`) |
+| `webhook` | `integration_id` (a webhook integration UUID — the URL is on the integration) |
+| `telegram` | `telegram_integration_id` |
+| `discord` | `discord_integration_id` |
+| `microsoft_teams` | `teams_integration_id` |
+
+Channels for `slack`, `webhook`, `telegram`, `discord`, and `microsoft_teams` reference an [integration](/integrations/overview/) — set those up first in **Settings → Integrations**.
+
+Channels live inside a notification group; you don't attach raw channels to monitors.
+
+## Notification groups
+
+A *notification group* is the bag of channels you attach to a monitor. Two extra knobs let you control timing:
+
+| Field | Purpose |
+|---|---|
+| `delay_send_after_minutes` | Wait this long before sending the first alert. Suppresses brief flapping. Clamped 0–60. |
+| `resend_every_minutes` | If the incident is still active and unacknowledged, re-send every N minutes. Clamped 0–60. |
+
+The delay is the cleanest way to suppress noise: if a check fails for one tick and recovers, no notification fires.
+
+A monitor can attach to multiple groups (cap of 10 per monitor) — useful when you want a single check to alert both an internal team and a customer-facing channel.
+
+## Contact methods (per user)
+
+Each user defines how they personally can be reached, under **Settings → My profile → Contact methods**:
+
+| Type | Detail |
+|---|---|
+| `email` | An email address (auto-populated with sign-up address). |
+| `sms` | A verified phone number. |
+| `phone_call` | Same number, dialed for high-urgency pages. |
+| `slack_dm` | DM via the Slack integration. |
+
+Contact methods are *not* attached to monitors. They power escalation paging — when an escalation level targets `target_user_ids`, that user's notification rules determine which contact methods fire.
+
+`verified` indicates the user has confirmed the destination (e.g. SMS confirmation code). Unverified contact methods don't deliver.
+
+## Notification rules (per user)
+
+Personal preferences for "if I'm being paged at urgency X, fire this contact method after this many minutes." Stack multiple rules at increasing delays for personal escalation:
+
+```json
+[
+  { "urgency": "high", "contact_method_id": "<sms-id>",  "delay_minutes": 0,  "position": 0 },
+  { "urgency": "high", "contact_method_id": "<call-id>", "delay_minutes": 5,  "position": 1 },
+  { "urgency": "high", "contact_method_id": "<email-id>","delay_minutes": 15, "position": 2 }
+]
+```
+
+That's: SMS me immediately, call my phone if I haven't ack'd in 5 minutes, email me if I haven't ack'd in 15.
+
+`urgency` is `high` or `low`. Configure rules per urgency level.
+
+## How a page actually fires
+
+1. Monitor flips, opens an incident.
+2. Incident attaches to the monitor's `group_notification_ids`.
+3. For each notification group:
+   - Wait `delay_send_after_minutes` (if any).
+   - Fan out to every channel in the group.
+4. If an escalation policy is wired in via the routing path, page targeted users:
+   - For each user, walk their notification rules for the incident's urgency.
+   - Each rule waits its `delay_minutes`, then fires its contact method.
+5. If no ack within the level's `timeout_minutes`, advance to the next escalation level.
+6. Optional `resend_every_minutes` re-fires the channel fanout in step 3.
+
+## Pricing
+
+Email, Slack, webhook, Discord, Teams, and Telegram are included on every plan. SMS and phone call delivery cost real money (Twilio pass-through) and are billed per page on paid plans.
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Channels reference" description="Every channel type with required fields." href="/incident-management/notifications/channels/" />
+  <LinkCard title="Set up notification rules" description="Personal delivery preferences for high vs low urgency." href="/incident-management/notifications/how-to/notification-rules/" />
+  <LinkCard title="Integrations" description="Connect Slack, Teams, Discord, Telegram, webhooks." href="/integrations/overview/" />
+</CardGrid>

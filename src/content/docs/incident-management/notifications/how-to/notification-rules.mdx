@@ -1,0 +1,135 @@
+---
+title: Set up personal notification rules
+description: Stack contact methods at increasing delays so high-urgency pages always reach you, but low-urgency ones don't wake you up.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+Notification rules are how each user tells the platform "for high-urgency pages, reach me this way; for low-urgency, this way." They're per-user and decouple personal preference from the team-level routing in notification groups.
+
+The mental model: **stack rules at increasing `delay_minutes` for personal escalation**.
+
+## Prerequisites
+
+You need contact methods first. Add them under **Settings → My profile → Contact methods**:
+
+```bash
+# SMS
+curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "sms",
+    "details": { "country_code": 1, "phone_number": "5551234567" }
+  }'
+
+# Phone call
+curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "phone_call",
+    "details": { "country_code": 1, "phone_number": "5551234567" }
+  }'
+
+# Email
+curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "email",
+    "details": { "email_address": "alice@example.com" }
+  }'
+```
+
+`type` is one of `email`, `sms`, `phone_call`, `slack_dm`.
+
+## Recommended high-urgency stack
+
+Three rules, increasing delays:
+
+```bash
+# 0 min — SMS me
+curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urgency": "high",
+    "contact_method_id": "<sms-id>",
+    "delay_minutes": 0,
+    "position": 0
+  }'
+
+# 5 min — call me
+curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urgency": "high",
+    "contact_method_id": "<call-id>",
+    "delay_minutes": 5,
+    "position": 1
+  }'
+
+# 15 min — email me
+curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urgency": "high",
+    "contact_method_id": "<email-id>",
+    "delay_minutes": 15,
+    "position": 2
+  }'
+```
+
+`position` is sort order within the urgency. Useful for the dashboard — the firing logic just walks rules by their `delay_minutes`.
+
+## Recommended low-urgency stack
+
+For low-urgency, send a single delivery to your low-impact channel:
+
+```bash
+curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urgency": "low",
+    "contact_method_id": "<email-id>",
+    "delay_minutes": 0,
+    "position": 0
+  }'
+```
+
+Or skip the rule entirely — without a low-urgency rule the user is silently skipped from low-urgency pages.
+
+## How the stack interacts with escalation
+
+Escalation policy timeouts and personal-rule delays are **independent timers**. If your escalation policy fires a level at minute 0 and you have rules at 0/5/15 min:
+
+| Time | Event |
+|---|---|
+| 0 min | Escalation level fires you. Your rule at 0 min fires (SMS). |
+| 5 min | Your rule at 5 min fires (call). Still no ack. |
+| 5 min | Escalation policy advances to level 2 — pages the next person. |
+| 15 min | Your rule at 15 min fires (email). |
+
+You'll keep getting your full personal stack even after escalation has moved on. Acknowledging the incident at any point stops everything.
+
+## Tips
+
+- **Don't put SMS at high delay.** SMS is the fastest signal; reserve it for `delay_minutes: 0`.
+- **Phone calls work as a deduplicator.** If the SMS already woke you, you'll silence the call. If it didn't, the ringing definitely will.
+- **Email is the catcher's mitt.** A 15-minute email rule means "if I missed everything, at least the message is in my inbox."
+
+<Aside type="tip">
+On a paid plan? Add `slack_dm` as a contact method too. It's quieter than SMS but more visible than email — a good middle option for "I want to know but don't need to wake up."
+</Aside>
+
+## See also
+
+<LinkCard title="Notifications overview" description="The full four-object model." href="/incident-management/notifications/overview/" />
+<LinkCard title="Channels reference" description="Account-level channels — different from contact methods." href="/incident-management/notifications/channels/" />
+<LinkCard title="Escalation policies" description="What triggers your personal rules in the first place." href="/incident-management/escalation/overview/" />

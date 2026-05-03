@@ -1,0 +1,113 @@
+---
+title: Schedule recurring maintenance
+description: Daily and weekly maintenance windows for ongoing batch jobs, weekly deploys, and vendor maintenance windows.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+Recurring maintenance windows fire on a schedule instead of a single timestamp pair. Two recurrence types are supported: `daily` and `weekly`.
+
+## Daily — same window every day
+
+Useful for nightly batch jobs, regular cache warm-ups, or anything else that hits a known short window every 24 hours.
+
+```bash
+curl -X POST https://api.siteqwality.com/maintenance_windows \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Nightly batch ETL",
+    "tags": ["service:etl"],
+    "schedule_type": "recurring",
+    "timezone": "America/Los_Angeles",
+    "recurrence": {
+      "type": "daily",
+      "start_time": "02:00",
+      "end_time": "03:00"
+    }
+  }'
+```
+
+`start_time` and `end_time` are 24-hour `HH:MM` strings interpreted in the window's `timezone`. The window fires from `start_time` to `end_time` every day.
+
+If `end_time < start_time`, the window crosses midnight: e.g. `start_time: "23:00"`, `end_time: "01:00"` runs from 11pm to 1am.
+
+## Weekly — chosen days each week
+
+Useful for weekly deploys, weekend-only maintenance, or vendor maintenance on a specific day.
+
+```bash
+curl -X POST https://api.siteqwality.com/maintenance_windows \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Sunday maintenance",
+    "tags": ["all"],
+    "schedule_type": "recurring",
+    "timezone": "UTC",
+    "recurrence": {
+      "type": "weekly",
+      "days": ["sunday"],
+      "start_time": "02:00",
+      "end_time": "04:00"
+    }
+  }'
+```
+
+`days` is an array of lowercase English day names. Combine multiple:
+
+```json
+"days": ["saturday", "sunday"]
+```
+
+…to silence both weekend days.
+
+## Timezones
+
+Always set `timezone` explicitly. Defaulting to UTC is fine if your team operates that way, but most engineering teams want their windows in their primary office timezone so "02:00" means "the dead of night locally."
+
+Valid values are IANA timezone names: `America/Los_Angeles`, `America/New_York`, `Europe/London`, `Asia/Tokyo`, etc.
+
+## Updating a recurring window
+
+Sending a `PUT` to the same window with a partial body updates only those fields:
+
+```bash
+curl -X PUT https://api.siteqwality.com/maintenance_windows/$WINDOW_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "recurrence": {
+      "type": "weekly",
+      "days": ["saturday", "sunday"],
+      "start_time": "01:00",
+      "end_time": "05:00"
+    }
+  }'
+```
+
+## Disabling vs deleting
+
+There's no "disabled" flag. To temporarily stop a window from firing, delete it; to permanently keep it for reference, leave it alone (it has no real cost beyond a row in the DB).
+
+```bash
+curl -X DELETE https://api.siteqwality.com/maintenance_windows/$WINDOW_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+## Common mistakes
+
+- **Forgetting the timezone.** UTC for "02:00" lands at 7pm Pacific — most teams want their actual local time.
+- **`tags: []`.** Empty tags is invalid (the API rejects it); an unscoped window doesn't make sense. Use `["all"]` if you really do want everything silenced.
+- **Daily window crossing midnight.** Set `start_time > end_time` and the window correctly wraps. Don't try to model it as two separate windows.
+
+<Aside type="tip">
+For one-off events that happen on a known recurring schedule but only once or twice (e.g. a quarterly DB rotation), prefer a series of one-time windows over a recurring rule with `effective_until` — recurrences don't currently support a `until` clause.
+</Aside>
+
+## See also
+
+<LinkCard title="Maintenance overview" description="What 'silence' actually means and how tags match." href="/incident-management/maintenance/overview/" />
+<LinkCard title="Quickstart" description="One-time windows for ad-hoc deploys." href="/incident-management/maintenance/quickstart/" />

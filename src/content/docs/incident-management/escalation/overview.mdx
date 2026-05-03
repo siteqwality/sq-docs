@@ -1,0 +1,95 @@
+---
+title: Escalation policies
+description: Ordered chains of "page these targets, wait, then escalate" — with timeouts, repeats, and on-call schedule integration.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+An **escalation policy** is the rule for *what to do if no one acknowledges an incident*. It's an ordered list of levels; each level fires its targets, waits its timeout, and if no acknowledgement arrives, the next level fires.
+
+You attach an escalation policy to an incident-routing path (typically via a notification group → escalation policy chain). When the incident opens, the policy starts at level 1; each level transition advances or restarts based on timeouts.
+
+## Anatomy
+
+| Field | What it is |
+|---|---|
+| `name` | Human label. `"Primary on-call escalation"`. |
+| `repeat_count` | After exhausting all levels, how many full passes to run. `0` means stop. |
+| `levels[]` | Ordered list of `EscalationLevel`s. |
+
+Each level:
+
+| Field | What it is |
+|---|---|
+| `level_number` | Sort order. Auto-assigned to the next integer if omitted. |
+| `timeout_minutes` | How long to wait for an ack before moving on. |
+| `target_user_ids` | Page these specific users (their notification rules + contact methods kick in). |
+| `target_schedule_ids` | Page whoever's on-call in these schedules right now. |
+
+Both target arrays can be combined on a single level: "page Alice *and* whoever's on the platform schedule, wait 5 minutes, then move on."
+
+## Lifecycle
+
+```
+Incident opens
+     │
+     ▼
+┌─ Level 1 ──────────────────┐
+│ targets: [on_call_primary] │
+│ timeout: 5 min             │
+└────────┬───────────────────┘
+         │
+   no ack within 5 min
+         │
+         ▼
+┌─ Level 2 ──────────────────┐
+│ targets: [on_call_backup]  │
+│ timeout: 10 min            │
+└────────┬───────────────────┘
+         │
+   no ack within 10 min
+         │
+         ▼
+┌─ Level 3 ──────────────────┐
+│ targets: [eng_manager]     │
+│ timeout: 15 min            │
+└────────┬───────────────────┘
+         │
+   no ack within 15 min
+         │
+         ▼
+   repeat or stop (per repeat_count)
+```
+
+If anyone acks at any level, the policy stops dead. The acked incident keeps existing — the responder works the fix.
+
+## Targets vs notification groups
+
+Two different mechanisms with overlapping vibes:
+
+- **Notification groups** are the raw fanout: "this monitor's alerts go to these channels." Channel-level. No retry, no escalation.
+- **Escalation policies** are the smart routing: "if no one acks, move on." User and schedule level, hooking into per-user notification rules.
+
+A monitor's alert always fires its notification group. The group can include channels that further trigger an escalation policy. In practice: the group sends a Slack ping for visibility; the escalation policy is what actually pages the on-call.
+
+## Repeat behavior
+
+`repeat_count: 0` means "after exhausting all levels, give up." That's almost never what you want. Set it to at least `1` or `2` so the policy keeps re-paging until acked.
+
+After a full repeat, the policy starts over at level 1. Setting `repeat_count: 999` effectively means "page forever until acked."
+
+## When to use multiple policies
+
+- One per **service** if your on-call rotations differ by service ownership.
+- One per **severity** if `critical` should escalate faster than `major`.
+- One per **environment** if `prod` should hit on-call but `staging` should only ping a Slack channel.
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Build a 3-level escalation in 5 minutes." href="/incident-management/escalation/quickstart/" />
+  <LinkCard title="Reference" description="Every escalation step type and field." href="/incident-management/escalation/reference/" />
+  <LinkCard title="On-call schedules" description="What 'target_schedule_ids' resolves to." href="/incident-management/on-call/overview/" />
+</CardGrid>

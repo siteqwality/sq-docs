@@ -1,0 +1,99 @@
+---
+title: Maintenance windows quickstart
+description: Schedule a 30-minute deploy window that silences your prod API monitors.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have a one-time maintenance window scheduled for Friday 14:00–14:30 UTC that silences any monitor tagged `service:api`.
+
+## Prerequisites
+
+- One or more monitors tagged with `service:api`. Tags are an array on every monitor — set on create or via `PUT`.
+
+## 1. Tag your monitors
+
+If your monitors aren't tagged yet:
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+Open the monitor → **Settings → Tags** → add `service:api` → save.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "tags": ["service:api", "env:prod"] }'
+```
+
+</TabItem>
+</Tabs>
+
+## 2. Create the window
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Maintenance → New window.**
+
+2. Configure:
+   - **Name:** `Friday API deploy`.
+   - **Tags:** `service:api`.
+   - **Schedule type:** `one-time`.
+   - **Starts:** `2026-05-10 14:00 UTC`. **Ends:** `2026-05-10 14:30 UTC`.
+
+3. Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/maintenance_windows \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Friday API deploy",
+    "tags": ["service:api"],
+    "schedule_type": "one_time",
+    "starts_at": "2026-05-10T14:00:00Z",
+    "ends_at": "2026-05-10T14:30:00Z"
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+The response includes `is_currently_active: false` (assuming the window is in the future) and confirms the start/end timestamps in RFC 3339.
+
+## 3. Verify
+
+The window appears in the **Maintenance** list with a status badge:
+
+- `Scheduled` — in the future.
+- `Active` — happening now.
+- `Past` — already ended.
+
+When the window goes active, any matching monitor's status badge in the dashboard gets a "Maintenance" overlay. Notifications are suppressed automatically.
+
+<Aside type="tip">
+You can verify suppression by manually breaking a monitor during an active window. The check still runs and shows `failure` in recent results, but no notifications fire.
+</Aside>
+
+## 4. (Recommended) Publish on the status page
+
+For customer-visible maintenance, also create a status-page maintenance entry — see [Status pages](/status-pages/overview/). The two objects are independent: the maintenance window suppresses internal paging, the status page maintenance shows "Scheduled" cards to customers.
+
+## What's next
+
+<LinkCard title="Recurring windows" description="Daily and weekly schedules for ongoing maintenance." href="/incident-management/maintenance/how-to/recurring/" />
+<LinkCard title="Status page maintenance" description="Customer-facing companion to maintenance windows." href="/status-pages/overview/" />

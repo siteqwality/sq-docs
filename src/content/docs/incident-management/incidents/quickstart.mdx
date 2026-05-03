@@ -1,0 +1,153 @@
+---
+title: Incidents quickstart
+description: Open, update, acknowledge, and resolve an incident in five minutes — via the dashboard or API.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have created a manual incident, posted a couple of updates to it, acknowledged it from a responder's perspective, and resolved it.
+
+## 1. Create the incident
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Incidents → New incident.**
+
+2. Fill in:
+   - **Title:** `Investigating elevated 5xx errors on the API`.
+   - **Severity:** `major`.
+   - **Initial message:** `Several monitors reported failures starting around 14:30 UTC. We're investigating.`
+   - **Affected monitors:** select your `prod-api` monitor (optional — drives status-page banner).
+
+3. Click **Create**.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/incident \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Investigating elevated 5xx errors on the API",
+    "severity": "major",
+    "message": "Several monitors reported failures starting around 14:30 UTC. We are investigating.",
+    "affected_http_job_ids": ["a3c1f5e0-1234-4abc-9def-aaaaaaaaaaaa"]
+  }'
+```
+
+The response is the full incident object including the auto-attached first update. Save the `id`.
+
+</TabItem>
+</Tabs>
+
+The incident lands at `status: investigating`, `responder_status: triggered`. The first update is automatically created with the `message` you provided.
+
+## 2. Post an update
+
+As you learn more, append updates. Each update is a `(status, message)` pair.
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+Open the incident, scroll to **Updates**, type a message, choose a status, post.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/update \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "identified",
+    "message": "Cause identified: database connection pool exhaustion. Rolling out a fix."
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+Posting an update with a new `status` advances the incident's overall status. Don't skip statuses — go `investigating` → `identified` → `monitoring` → `resolved`.
+
+## 3. Acknowledge
+
+Acknowledging stops escalation. It says "I've got this; stop paging." It does *not* resolve the incident.
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+Click the **Acknowledge** button on the incident.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/acknowledge \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "acknowledged_by": "<your-user-uuid>" }'
+```
+
+If `acknowledged_by` is omitted, the requesting user is recorded.
+
+</TabItem>
+</Tabs>
+
+The `responder_status` flips to `acknowledged`. `acknowledged_at` and `acknowledged_by` are set. Escalation stops.
+
+## 4. Resolve
+
+When the underlying issue is fixed, resolve.
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+Either:
+
+- **Post an update** with `status: resolved` and a closing message — recommended, captures context.
+- Or click the **Resolve** button — quick, no message.
+
+</TabItem>
+<TabItem label="API">
+
+Recommended (with closing context):
+
+```bash
+curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/update \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "resolved",
+    "message": "Connection pool size increased; error rate back to baseline."
+  }'
+```
+
+Or quick resolve:
+
+```bash
+curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/resolve \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+</TabItem>
+</Tabs>
+
+Both paths set `status: resolved`, `responder_status: resolved`, and `resolved_at`.
+
+<Aside type="tip">
+For monitor-driven incidents, you don't usually call `POST /resolve` — the monitor's recovery does it for you. Manually resolving an auto-created incident before the monitor recovers won't suppress future re-opens; the monitor and the incident lifecycle are linked but not fused.
+</Aside>
+
+## What's next
+
+<LinkCard title="Manual incidents — when and how" description="Patterns for non-monitor-driven incidents." href="/incident-management/incidents/how-to/manual-incidents/" />
+<LinkCard title="On-call schedules" description="Set up who responds in the first place." href="/incident-management/on-call/overview/" />
+<LinkCard title="Escalation policies" description="What happens if the on-call doesn't ack." href="/incident-management/escalation/overview/" />

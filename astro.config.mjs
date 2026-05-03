@@ -66,6 +66,58 @@ export default defineConfig({
 					label: 'Incident Management',
 					items: [
 						{ label: 'Overview', slug: 'incident-management/overview' },
+						{
+							label: 'Incidents',
+							items: [
+								{ label: 'Overview', slug: 'incident-management/incidents/overview' },
+								{ label: 'Quickstart', slug: 'incident-management/incidents/quickstart' },
+								{
+									label: 'How-to guides',
+									autogenerate: { directory: 'incident-management/incidents/how-to' },
+								},
+							],
+						},
+						{
+							label: 'On-call schedules',
+							items: [
+								{ label: 'Overview', slug: 'incident-management/on-call/overview' },
+								{ label: 'Quickstart', slug: 'incident-management/on-call/quickstart' },
+								{
+									label: 'How-to guides',
+									autogenerate: { directory: 'incident-management/on-call/how-to' },
+								},
+							],
+						},
+						{
+							label: 'Escalation policies',
+							items: [
+								{ label: 'Overview', slug: 'incident-management/escalation/overview' },
+								{ label: 'Quickstart', slug: 'incident-management/escalation/quickstart' },
+								{ label: 'Reference', slug: 'incident-management/escalation/reference' },
+							],
+						},
+						{
+							label: 'Notifications',
+							items: [
+								{ label: 'Overview', slug: 'incident-management/notifications/overview' },
+								{ label: 'Channels reference', slug: 'incident-management/notifications/channels' },
+								{
+									label: 'How-to guides',
+									autogenerate: { directory: 'incident-management/notifications/how-to' },
+								},
+							],
+						},
+						{
+							label: 'Maintenance windows',
+							items: [
+								{ label: 'Overview', slug: 'incident-management/maintenance/overview' },
+								{ label: 'Quickstart', slug: 'incident-management/maintenance/quickstart' },
+								{
+									label: 'How-to guides',
+									autogenerate: { directory: 'incident-management/maintenance/how-to' },
+								},
+							],
+						},
 					],
 				},
 				{

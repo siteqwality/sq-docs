@@ -1,0 +1,139 @@
+---
+title: On-call quickstart
+description: Build a weekly rotation with two engineers and confirm the right person is on call right now.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have a schedule called `Primary on-call` that hands off every Monday at 09:00 in your timezone, rotating between two engineers.
+
+## Prerequisites
+
+- At least two users in the account ([invite teammates first](/getting-started/account-and-team/)).
+- Their UUIDs (`GET /account/info` returns them, or look in **Settings → Team**).
+
+## 1. Create the schedule
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **On-call → New schedule.**
+
+2. **Name:** `Primary on-call`. **Timezone:** pick yours (defaults to UTC). Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/on_call_schedule \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Primary on-call",
+    "timezone": "America/Los_Angeles"
+  }'
+```
+
+Save the returned `id` — you'll attach a layer to it next.
+
+</TabItem>
+</Tabs>
+
+## 2. Add a rotation layer
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. On the schedule, **Add layer**.
+
+2. Configure:
+   - **Rotation:** `Weekly`.
+   - **Handoff day:** `Monday`.
+   - **Handoff time:** `09:00`.
+   - **Participants:** add Alice and Bob in the order you want them to rotate.
+
+3. Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/layer \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rotation_type": "weekly",
+    "handoff_day": 1,
+    "handoff_time": "09:00",
+    "participants": [
+      "11111111-aaaa-4bbb-9ccc-dddddddddddd",
+      "22222222-aaaa-4bbb-9ccc-eeeeeeeeeeee"
+    ]
+  }'
+```
+
+`handoff_day` is 0=Sunday … 6=Saturday. `handoff_time` is `HH:MM` in 24-hour format, interpreted in the schedule's timezone.
+
+`layer_number` is auto-assigned to the next free integer. Lower numbers have higher priority.
+
+</TabItem>
+</Tabs>
+
+## 3. Confirm who's on call right now
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+The schedule's detail page shows a calendar view with the current shift highlighted and the next 4 weeks laid out.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+The response includes `layers` and `overrides`. To compute the current responder, walk the layers in order — the dashboard does this for you.
+
+</TabItem>
+</Tabs>
+
+## 4. Wire it into an escalation policy
+
+A schedule on its own doesn't page anyone; you need an [escalation policy](/incident-management/escalation/overview/) that targets it.
+
+```bash
+# Create a policy
+curl -X POST https://api.siteqwality.com/escalation_policy \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Primary on-call escalation" }'
+
+# Add a level that pages the schedule
+curl -X POST https://api.siteqwality.com/escalation_policy/$POLICY_ID/level \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timeout_minutes": 5,
+    "target_schedule_ids": ["'$SCHEDULE_ID'"]
+  }'
+```
+
+This level pages whoever is on-call in `$SCHEDULE_ID` and waits 5 minutes for them to ack before moving on.
+
+## What's next
+
+<LinkCard title="Rotation overrides" description="Cover holidays without disturbing the rotation." href="/incident-management/on-call/how-to/rotation-overrides/" />
+<LinkCard title="Escalation policies" description="What happens when no one acks." href="/incident-management/escalation/overview/" />
+<LinkCard title="Notifications" description="The channels and contact methods that pages route through." href="/incident-management/notifications/overview/" />

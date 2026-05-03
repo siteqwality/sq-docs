@@ -1,20 +1,93 @@
 ---
 title: Incident Management
-description: Incidents, on-call schedules, escalation policies, and notifications.
-last_verified: 2026-05-02
+description: Incidents, on-call rotations, escalation policies, multi-channel notifications, and maintenance windows — the full responder workflow.
+last_verified: 2026-05-03
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-<Aside type="caution" title="Under construction">
-Per-feature guides are being written. The endpoints are documented in the [API Reference](/api-reference/overview/).
-</Aside>
+When a monitor breaks at 3am, five things have to happen — fast and in the right order:
 
-SiteQwality's incident management features:
+1. **An incident is opened** that records what's broken and when.
+2. **Someone is identified** as the on-call responder.
+3. **They're paged** through their preferred contact methods.
+4. **If they don't ack**, the page escalates to the next person.
+5. **No one gets paged for known maintenance.**
 
-- **Incidents** — track active issues with status, severity, and a chronological log.
-- **On-call schedules** — rotate responders across timezones with overrides.
-- **Escalation policies** — chain notification steps with timeouts and fallbacks.
-- **Notification rules & channels** — control who gets paged, how, and when.
-- **Maintenance windows** — silence checks during planned work.
+SiteQwality's incident management module wires these five together. You can use any of them in isolation — incidents without on-call, manual incidents with no monitors, notification channels with no on-call schedule — but the value compounds when they work together.
+
+## The five building blocks
+
+<CardGrid>
+  <LinkCard
+    title="Incidents"
+    description="Record + timeline of an outage. Auto-opened by monitors, or created manually for non-monitor events."
+    href="/incident-management/incidents/overview/"
+  />
+  <LinkCard
+    title="On-call schedules"
+    description="Layered rotations across timezones with overrides for holidays and handoffs."
+    href="/incident-management/on-call/overview/"
+  />
+  <LinkCard
+    title="Escalation policies"
+    description="Ordered list of who to page next if no one acknowledges, with timeouts."
+    href="/incident-management/escalation/overview/"
+  />
+  <LinkCard
+    title="Notifications"
+    description="Channels (email, SMS, Slack, Teams, Discord, Telegram, webhooks) and groups, plus per-user contact methods."
+    href="/incident-management/notifications/overview/"
+  />
+  <LinkCard
+    title="Maintenance windows"
+    description="Silence specific monitors during planned work — one-time or recurring."
+    href="/incident-management/maintenance/overview/"
+  />
+</CardGrid>
+
+## How they fit together
+
+```
+┌──────────────────────┐
+│ Monitor flips status │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Incident opened      │  ←── manual incidents go here too
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Notification group   │  ── channels: email, Slack, webhooks, etc.
+│ (account-level)      │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Escalation policy    │  ── targets: users + on-call schedules
+│ (per incident)       │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ User contact methods │  ── personal: email, SMS, phone-call, Slack DM
+│ × notification rules │  ── personal: "high urgency? SMS at 0min, call at 5min"
+└──────────────────────┘
+```
+
+The split between **notification groups** (account-level "where this monitor's alerts go") and **contact methods + rules** (per-user "how I personally want to be reached") is intentional. It lets the team configure routing once and lets each engineer set their own delivery preferences.
+
+## When NOT to use this
+
+- **Don't open incidents for transient flakes.** Set the notification group's `delay_send_after_minutes` so a check that fails once and recovers within a minute doesn't page anyone. See [Notification groups](/incident-management/notifications/overview/#notification-groups).
+- **Don't escalate everything.** Reserve escalation policies for high-urgency incidents. For warnings, a single Slack channel notification is enough.
+- **Don't put your CTO on every escalation policy.** They'll mute everything within a week. Build escalation chains with clear ownership: primary on-call → secondary → engineering manager.
+
+## See also
+
+- [Maintenance windows](/incident-management/maintenance/overview/) — silence monitors during deploys.
+- [Status pages](/status-pages/overview/) — publish incidents externally.
+- [Integrations](/integrations/overview/) — connect Slack, Teams, Discord, Telegram, webhooks.

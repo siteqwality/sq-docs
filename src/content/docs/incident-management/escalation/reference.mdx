@@ -1,0 +1,93 @@
+---
+title: Escalation policy reference
+description: Every field on an escalation policy and its levels, with defaults and constraints.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The full request schemas live in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet.
+
+## Escalation policy
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `name` | string | required | Human label, shown in dashboards and per-incident views. |
+| `repeat_count` | int | `0` | After exhausting all levels, how many full passes to run before giving up. `0` = stop. Set to at least `1` to avoid silent drop-offs. |
+
+## Escalation level
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `level_number` | int | next-free | Sort order within the policy. Lower runs first. Auto-assigned to `max(existing) + 1` if omitted. |
+| `timeout_minutes` | int | required | How long to wait for any responder ack at this level before advancing. Whole minutes only. |
+| `target_user_ids` | uuid[] | `[]` | Page these specific users. Each user's notification rules + contact methods determine the actual delivery. |
+| `target_schedule_ids` | uuid[] | `[]` | Page whoever is on-call in these on-call schedules at firing time. |
+
+At least one of `target_user_ids` or `target_schedule_ids` must be non-empty — a level with no targets does nothing.
+
+## Step types — practical recipes
+
+### Page the on-call rotation
+
+```json
+{ "timeout_minutes": 5, "target_schedule_ids": ["<primary>"] }
+```
+
+The most common first level. Resolves at firing time, so handoffs work transparently.
+
+### Page a specific person
+
+```json
+{ "timeout_minutes": 10, "target_user_ids": ["<eng-manager>"] }
+```
+
+Use for fixed targets like "the engineering manager always gets paged at level 2."
+
+### Page on-call + a backup person
+
+```json
+{
+  "timeout_minutes": 5,
+  "target_schedule_ids": ["<primary>"],
+  "target_user_ids": ["<sre-lead>"]
+}
+```
+
+Both fire in parallel. First ack from anyone wins.
+
+### Page on-call + secondary on-call
+
+```json
+{
+  "timeout_minutes": 10,
+  "target_schedule_ids": ["<primary>", "<secondary>"]
+}
+```
+
+Both schedules' current responders get paged. Useful when you want a second pair of eyes from level 1.
+
+### Final-level "page everyone"
+
+```json
+{ "timeout_minutes": 30, "target_user_ids": ["<eng-mgr>", "<vp-eng>", "<cto>"] }
+```
+
+Reserve for `critical` incidents that have already burned through 30+ minutes without an ack. If you hit this regularly, fix the on-call rotation, not the escalation.
+
+## Reorder endpoint
+
+`PUT /escalation_policy/{policy_id}/level/reorder` accepts a `level_ids` array in desired order and rewrites every level's `level_number` to match.
+
+```json
+{ "level_ids": ["<id-1>", "<id-2>", "<id-3>"] }
+```
+
+The array must contain exactly the existing levels — no adds, no removes.
+
+## See also
+
+- [Escalation overview](/incident-management/escalation/overview/) — concept and lifecycle.
+- [On-call schedules](/incident-management/on-call/overview/) — what `target_schedule_ids` resolves to.
+- [API Reference](/api-reference/) — wire-level request/response shapes.

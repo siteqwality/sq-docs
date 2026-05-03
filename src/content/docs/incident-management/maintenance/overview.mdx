@@ -1,0 +1,117 @@
+---
+title: Maintenance windows
+description: Silence specific monitors during planned work — one-time or recurring — so deploys don't page on-call.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+A **maintenance window** is a time range during which monitors with matching tags don't open incidents and don't fire notifications. Checks still run — failures are still recorded — they just don't escalate to humans.
+
+Use maintenance windows for:
+
+- **Scheduled deploys** — the four-second blip during your zero-downtime rollout shouldn't page anyone.
+- **Database migrations** — the ten-second connection-pool restart isn't an outage.
+- **Vendor maintenance** — your CDN's scheduled maintenance shouldn't page you.
+- **Long-running batch jobs** — the queue spike during nightly ETL is expected.
+
+## Two types
+
+### One-time
+
+A single `starts_at` / `ends_at` pair. Fire-and-forget for one specific deploy or operation.
+
+```json
+{
+  "name": "Friday API deploy",
+  "tags": ["service:api"],
+  "schedule_type": "one_time",
+  "starts_at": "2026-05-10T14:00:00Z",
+  "ends_at": "2026-05-10T14:30:00Z"
+}
+```
+
+### Recurring
+
+A recurrence rule. Two flavors:
+
+**Daily** — same window every day:
+
+```json
+{
+  "name": "Nightly batch ETL",
+  "tags": ["service:etl"],
+  "schedule_type": "recurring",
+  "timezone": "America/Los_Angeles",
+  "recurrence": {
+    "type": "daily",
+    "start_time": "02:00",
+    "end_time": "03:00"
+  }
+}
+```
+
+**Weekly** — same window on chosen days each week:
+
+```json
+{
+  "name": "Sunday maintenance window",
+  "tags": ["all"],
+  "schedule_type": "recurring",
+  "timezone": "UTC",
+  "recurrence": {
+    "type": "weekly",
+    "days": ["sunday"],
+    "start_time": "02:00",
+    "end_time": "04:00"
+  }
+}
+```
+
+`start_time` and `end_time` are 24-hour `HH:MM` in the window's `timezone` (defaults to `UTC`). Days are lowercase English names: `monday`, `tuesday`, … `sunday`.
+
+## How tags match
+
+Each maintenance window has a list of `tags`. Monitors also have tags. A monitor is silenced when its tags overlap with any active window's tags.
+
+Patterns we recommend:
+
+- `service:<name>` — silence everything in a service.
+- `env:<name>` — silence everything in an environment.
+- `type:cron` — silence all cron checks.
+
+The special tag `all` matches every monitor (`["all"]` → silence everything during the window).
+
+## What "silenced" means precisely
+
+During an active window:
+
+- **Checks still run on schedule.** Results are recorded.
+- **No new auto-incidents are opened** for matching monitors.
+- **No notifications fire** for any incident — including pre-existing incidents that were open before the window started.
+- **Status pages keep showing live status** unless you also publish a [status page maintenance](/status-pages/overview/) entry.
+- **Existing incidents auto-resolve** if their underlying monitor recovers — the recovery path itself isn't suppressed.
+
+`is_currently_active` on the response tells you whether the window is in effect right now (computed against the server clock).
+
+## Maintenance windows vs status page maintenance
+
+Easy to confuse:
+
+| | Maintenance window | Status page maintenance |
+|---|---|---|
+| **Purpose** | Suppress paging | Tell customers "scheduled maintenance" |
+| **Effect** | Internal | External |
+| **Routes through** | Notification fanout (suppressed) | Status page rendering |
+| **Endpoint** | `/maintenance_windows` | `/status_page/{id}/maintenance` |
+
+You typically want both for a planned outage: the maintenance window so on-call doesn't get woken; the status page maintenance so customers see "Scheduled maintenance: 02:00–04:00 UTC" on the public page.
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Schedule your first deploy window." href="/incident-management/maintenance/quickstart/" />
+  <LinkCard title="Recurring windows" description="Daily and weekly recurrence patterns in detail." href="/incident-management/maintenance/how-to/recurring/" />
+  <LinkCard title="Status page maintenance" description="The customer-facing companion to maintenance windows." href="/status-pages/overview/" />
+</CardGrid>

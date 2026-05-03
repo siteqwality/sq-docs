@@ -1,0 +1,128 @@
+---
+title: Escalation quickstart
+description: Build a three-level escalation policy from primary on-call to engineering manager, in under five minutes.
+last_verified: 2026-05-03
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have an escalation policy that:
+
+1. Pages the on-call rotation first; waits 5 minutes for ack.
+2. If no ack: pages a secondary user; waits 10 minutes.
+3. If still no ack: pages the engineering manager; waits 15 minutes.
+4. Repeats once if no one ever acks.
+
+## Prerequisites
+
+- An on-call schedule already created — see [On-call quickstart](/incident-management/on-call/quickstart/).
+- The user UUIDs of the secondary engineer and the manager (`GET /account/info`).
+
+## 1. Create the policy
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Escalation → New policy.**
+
+2. Name: `Primary escalation`. **Repeat count:** `1`. Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/escalation_policy \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Primary escalation", "repeat_count": 1 }'
+```
+
+Save the returned `id`.
+
+</TabItem>
+</Tabs>
+
+## 2. Add the levels
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. On the policy, **Add level**.
+
+2. Level 1: **Timeout** `5 min`. **Targets:** the `Primary on-call` schedule. Save.
+
+3. **Add level**. Level 2: **Timeout** `10 min`. **Targets:** the secondary engineer (a user). Save.
+
+4. **Add level**. Level 3: **Timeout** `15 min`. **Targets:** the engineering manager (a user). Save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+# Level 1 — page the on-call schedule
+curl -X POST https://api.siteqwality.com/escalation_policy/$POLICY_ID/level \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timeout_minutes": 5,
+    "target_schedule_ids": ["'$SCHEDULE_ID'"]
+  }'
+
+# Level 2 — page secondary user
+curl -X POST https://api.siteqwality.com/escalation_policy/$POLICY_ID/level \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timeout_minutes": 10,
+    "target_user_ids": ["44444444-aaaa-4bbb-9ccc-bbbbbbbbbbbb"]
+  }'
+
+# Level 3 — page eng manager
+curl -X POST https://api.siteqwality.com/escalation_policy/$POLICY_ID/level \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "timeout_minutes": 15,
+    "target_user_ids": ["55555555-aaaa-4bbb-9ccc-cccccccccccc"]
+  }'
+```
+
+`level_number` is auto-assigned in creation order.
+
+</TabItem>
+</Tabs>
+
+## 3. (Optional) Reorder levels
+
+If you ever want to swap level order without recreating, send the desired sequence of level UUIDs:
+
+```bash
+curl -X PUT https://api.siteqwality.com/escalation_policy/$POLICY_ID/level/reorder \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "level_ids": ["<level-1-id>", "<level-2-id>", "<level-3-id>"]
+  }'
+```
+
+## 4. Test it
+
+The cleanest test: open a manual incident on a monitor wired to a notification group that triggers this policy, and don't ack it. You should see the page hit the on-call first, escalate at 5 minutes, then 10, then 15.
+
+<Aside type="tip">
+For acceptance testing, use a temporary policy with 1-minute timeouts so you can confirm escalation works end-to-end in 3 minutes instead of 30.
+</Aside>
+
+## What's next
+
+<LinkCard title="Escalation reference" description="Every field on an escalation level." href="/incident-management/escalation/reference/" />
+<LinkCard title="Notifications overview" description="Channels and groups upstream of escalation." href="/incident-management/notifications/overview/" />
