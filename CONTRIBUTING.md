@@ -190,6 +190,26 @@ import { Aside, Steps, Tabs, TabItem, Code, Card, CardGrid, LinkCard } from '@as
 <LinkCard title="Next: Settings reference" href="../reference/" />
 ```
 
+## Theming
+
+The site uses the **Atlas** design system (shared with the marketing site and
+app). Branding lives in a few places — content/structure changes never need to
+touch these:
+
+| File | Role |
+|---|---|
+| `src/styles/atlas.css` | The whole theme — maps Starlight's `--sl-color-*` vars onto Atlas tokens (light + dark), restyles every component. Wired via `customCss` in `astro.config.mjs`. |
+| `ec.config.mjs` | Expressive Code (code-block) theming — the always-dark Atlas ink panel. |
+| `public/fonts/` | Self-hosted Manrope + JetBrains Mono woff2. |
+| `src/assets/atlas-logo-{light,dark}.svg` | The Pulse logo mark (per theme) — canonical `mark.svg` / `mark-light.svg` from the brand kit. |
+| `public/favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `android-icon-{192,512}.png`, `og-feat.png` | Canonical assets from the SiteQwality brand kit — drop in replacements verbatim, don't regenerate. |
+| `public/site.webmanifest` | PWA manifest pointing at the android icons. |
+
+> **Gotcha — code-block theming lives in `ec.config.mjs`, not `astro.config.mjs`.**
+> The `starlight-openapi` plugin overwrites Starlight's `expressiveCode` config
+> option, so themes/styleOverrides set there are silently discarded.
+> `astro-expressive-code` merges `ec.config.mjs` in separately, so that survives.
+
 ## Deployment
 
 Pushing to `main` triggers a Netlify build (~1-2 min). The site lives at [docs.siteqwality.com](https://docs.siteqwality.com).

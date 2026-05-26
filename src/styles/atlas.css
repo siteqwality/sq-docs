@@ -1,0 +1,749 @@
+/* ============================================================
+   SiteQwality Docs — "Atlas" theme for Starlight
+   warm · precise · alive
+
+   Maps Starlight's --sl-color-* / --sl-font system onto the Atlas
+   design tokens (see landingpage/src/assets/css/tokens.css).
+   Light theme is primary; the dark variant is fully themed too.
+   ============================================================ */
+
+/* ---- Fonts (self-hosted, variable woff2) ------------------- */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/manrope-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/manrope-latinext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latinext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ============================================================
+   1. TOKENS  ·  Atlas palette + Starlight mapping
+   ============================================================ */
+
+/* :root carries the Atlas palette (theme-independent) AND the
+   dark-theme Starlight mapping — Starlight uses bare :root for dark. */
+:root {
+  /* ---- Atlas palette (constant across themes) ---- */
+  --at-ink:    #1A1816;
+  --at-bark:   #272320;
+  --at-soil:   #363029;
+  --at-canvas: #F0EBE0;
+  --at-bone:   #E3DCC9;
+  --at-pebble: #CFC7B5;
+  --at-stone:  #6B665D;
+  --at-ash:    #8B857B;
+
+  --at-clay:      #D14A2D;
+  --at-clay-deep: #A8341B;
+  --at-clay-soft: #F4DCD2;
+  --at-clay-lift: #E78A66;   /* lightened clay — links on dark */
+
+  --at-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --at-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --at-tracking-eyebrow: 0.12em;
+  --at-ease: cubic-bezier(0.22, 0.7, 0.3, 1);
+  --at-t-fast: 0.16s;
+  --at-t-med: 0.28s;
+
+  /* ---- Typography ---- */
+  --sl-font: var(--at-sans);
+  --sl-font-mono: var(--at-mono);
+
+  /* ---- DARK theme mapping ----
+     Starlight semantics: white = highest-contrast text,
+     black = page background, gray-1..7 = decreasing contrast. */
+  --sl-color-white:  #F0EBE0;
+  --sl-color-gray-1: #F0EBE0;
+  --sl-color-gray-2: #DCD5C5;
+  --sl-color-gray-3: #8B857B;
+  --sl-color-gray-4: #6B665D;
+  --sl-color-gray-5: #363029;
+  --sl-color-gray-6: #272320;
+  --sl-color-gray-7: #211E1B;
+  --sl-color-black:  #1A1816;
+
+  --sl-color-accent-low:  #3A2117;
+  --sl-color-accent:      #D14A2D;
+  --sl-color-accent-high: #E78A66;
+
+  --sl-color-text:        var(--sl-color-gray-2);
+  --sl-color-text-accent: var(--sl-color-accent-high);
+  --sl-color-bg:          var(--sl-color-black);
+  --sl-color-bg-nav:      #211E1B;
+  --sl-color-bg-sidebar:  #221F1B;
+  --sl-color-bg-inline-code: #2E2925;
+  --sl-color-bg-accent:   var(--sl-color-accent);
+  --sl-color-hairline-light: #363029;
+  --sl-color-hairline-shade: #2A2622;
+  --sl-color-hairline:    #2F2A25;
+  --sl-color-backdrop-overlay: rgba(12, 11, 10, 0.7);
+
+  /* aside / badge hues — dark variants */
+  --sl-color-blue-low:   #18283A;  --sl-color-blue:   #4A9FE0;  --sl-color-blue-high:   #A9CFEC;
+  --sl-color-green-low:  #1E2A19;  --sl-color-green:  #7BA268;  --sl-color-green-high:  #B4CBA6;
+  --sl-color-purple-low: #1E2A19;  --sl-color-purple: #7BA268;  --sl-color-purple-high: #B4CBA6;
+  --sl-color-orange-low: #322811; --sl-color-orange: #D9A21A;  --sl-color-orange-high: #ECCD75;
+  --sl-color-red-low:    #331C1C;  --sl-color-red:    #D86A6A;  --sl-color-red-high:    #ECB0B0;
+
+  /* shadows — warm */
+  --sl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sl-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.4), 0 12px 28px -14px rgba(0, 0, 0, 0.5);
+  --sl-shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.4), 0 28px 60px -28px rgba(0, 0, 0, 0.6);
+}
+
+/* ---- LIGHT theme mapping (primary) ---- */
+:root[data-theme='light'] {
+  --sl-color-white:  #1A1816;
+  --sl-color-gray-1: #1A1816;
+  --sl-color-gray-2: #28241F;
+  --sl-color-gray-3: #6B665D;
+  --sl-color-gray-4: #8B857B;
+  --sl-color-gray-5: #CFC7B5;
+  --sl-color-gray-6: #E3DCC9;
+  --sl-color-gray-7: #E9E2D3;
+  --sl-color-black:  #F0EBE0;
+
+  --sl-color-accent-low:  #F4DCD2;
+  --sl-color-accent:      #D14A2D;
+  --sl-color-accent-high: #A8341B;
+
+  --sl-color-text:        var(--sl-color-gray-2);
+  --sl-color-text-accent: var(--sl-color-accent-high);
+  --sl-color-bg:          var(--sl-color-black);
+  --sl-color-bg-nav:      #EFEADF;
+  --sl-color-bg-sidebar:  #EAE3D4;
+  --sl-color-bg-inline-code: #E3DCC9;
+  --sl-color-bg-accent:   var(--sl-color-accent);
+  --sl-color-hairline-light: #CFC7B5;
+  --sl-color-hairline-shade: #DBD3C0;
+  --sl-color-hairline:    #CFC7B5;
+  --sl-color-backdrop-overlay: rgba(26, 24, 22, 0.4);
+
+  /* aside / badge hues — light variants */
+  --sl-color-blue-low:   #DCEAF7;  --sl-color-blue:   #4A9FE0;  --sl-color-blue-high:   #2F6FA5;
+  --sl-color-green-low:  #D8E2CF;  --sl-color-green:  #6B8E5A;  --sl-color-green-high:  #3F5A35;
+  --sl-color-purple-low: #D8E2CF;  --sl-color-purple: #6B8E5A;  --sl-color-purple-high: #3F5A35;
+  --sl-color-orange-low: #F4E4B6; --sl-color-orange: #D9A21A;  --sl-color-orange-high: #7A5A0E;
+  --sl-color-red-low:    #F2D5D5;  --sl-color-red:    #C94545;  --sl-color-red-high:    #7E2424;
+
+  --sl-shadow-sm: 0 1px 2px rgba(26, 24, 22, 0.08);
+  --sl-shadow-md: 0 12px 32px -16px rgba(26, 24, 22, 0.2);
+  --sl-shadow-lg: 0 28px 60px -28px rgba(26, 24, 22, 0.3);
+}
+
+/* ============================================================
+   2. BASE  ·  global feel
+   ============================================================ */
+
+body {
+  font-weight: 450;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--at-clay);
+  color: #F0EBE0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+
+/* thin themed scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sl-color-gray-5) transparent;
+}
+
+/* ============================================================
+   3. TYPOGRAPHY
+   ============================================================ */
+
+h1, h2, h3, h4, h5, h6,
+.sl-markdown-content h1, .sl-markdown-content h2,
+.sl-markdown-content h3, .sl-markdown-content h4,
+.sl-markdown-content h5, .sl-markdown-content h6 {
+  font-family: var(--at-sans);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  color: var(--sl-color-white);
+  text-wrap: balance;
+}
+
+/* the page <h1> in the content header */
+.content-panel h1,
+.sl-markdown-content h1 {
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.sl-markdown-content h2 { letter-spacing: -0.04em; }
+
+/* mono eyebrow feel for kbd + small caps labels */
+kbd {
+  font-family: var(--at-mono);
+  background: var(--sl-color-gray-6);
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 5px;
+}
+
+p { text-wrap: pretty; }
+
+/* ============================================================
+   4. LINKS & ANCHORS
+   ============================================================ */
+
+.sl-markdown-content a:not(:where(.not-content *)) {
+  color: var(--sl-color-text-accent);
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: color-mix(in srgb, var(--sl-color-text-accent) 45%, transparent);
+  transition: text-decoration-color var(--at-t-fast) var(--at-ease);
+}
+.sl-markdown-content a:not(:where(.not-content *)):hover {
+  text-decoration-color: var(--sl-color-text-accent);
+}
+
+/* heading anchor link */
+.sl-markdown-content .sl-anchor-link {
+  color: var(--sl-color-accent);
+}
+
+/* ============================================================
+   5. HEADER  ·  translucent, blurred — like the Atlas site nav
+   ============================================================ */
+
+/* element-qualified so it can't leak into Expressive Code's
+   terminal-frame `.header` element */
+header.header {
+  background: color-mix(in srgb, var(--sl-color-bg-nav) 82%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+          backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid var(--sl-color-hairline);
+}
+
+.site-title {
+  font-family: var(--at-sans);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--sl-color-white);
+}
+
+/* logo mark sizing */
+.site-title img { height: 1.85rem; width: auto; }
+
+/* ============================================================
+   6. SIDEBAR (left nav)
+   ============================================================ */
+
+.sidebar-pane {
+  border-inline-end: 1px solid var(--sl-color-hairline);
+  background: var(--sl-color-bg-sidebar);
+}
+
+/* group labels — mono uppercase "eyebrow" */
+.sidebar-content .large,
+nav.sidebar .top-level > li > details > summary .large,
+nav.sidebar summary .large {
+  font-family: var(--at-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: var(--at-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+}
+
+/* nav links */
+.sidebar-content a {
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  border-radius: 7px;
+  transition: background var(--at-t-fast) var(--at-ease),
+              color var(--at-t-fast) var(--at-ease);
+}
+.sidebar-content a:hover {
+  background: color-mix(in srgb, var(--sl-color-gray-5) 35%, transparent);
+  color: var(--sl-color-white);
+}
+
+/* current page */
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover {
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-text-accent);
+  font-weight: 700;
+  box-shadow: inset 2px 0 0 var(--sl-color-accent);
+}
+
+/* ============================================================
+   7. RIGHT SIDEBAR  ·  table of contents
+   ============================================================ */
+
+.right-sidebar { border-inline-start: 1px solid var(--sl-color-hairline); }
+
+starlight-toc nav > h2,
+mobile-starlight-toc nav > h2 {
+  font-family: var(--at-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: var(--at-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+}
+
+starlight-toc a {
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: color var(--at-t-fast) var(--at-ease);
+}
+starlight-toc a:hover { color: var(--sl-color-white); }
+starlight-toc a[aria-current='true'],
+starlight-toc a[aria-current='true']:hover {
+  color: var(--sl-color-text-accent);
+  font-weight: 700;
+}
+
+/* mobile TOC bar */
+mobile-starlight-toc nav {
+  border-bottom: 1px solid var(--sl-color-hairline);
+  background: color-mix(in srgb, var(--sl-color-bg-nav) 92%, transparent);
+}
+
+/* ============================================================
+   8. SEARCH
+   ============================================================ */
+
+/* header search button */
+site-search button {
+  font-family: var(--at-sans);
+  font-weight: 550;
+  border-radius: 9px;
+  border-color: var(--sl-color-hairline);
+  background: var(--sl-color-bg);
+  transition: border-color var(--at-t-fast) var(--at-ease),
+              color var(--at-t-fast) var(--at-ease);
+}
+site-search button:hover {
+  border-color: var(--sl-color-accent);
+  color: var(--sl-color-white);
+}
+site-search button kbd {
+  background: var(--sl-color-gray-6);
+  font-size: 0.66rem;
+}
+
+/* search dialog */
+.dialog-frame {
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 14px;
+  box-shadow: var(--sl-shadow-lg);
+}
+
+/* Pagefind UI tokens */
+#starlight__search {
+  --pagefind-ui-primary: var(--sl-color-accent);
+  --pagefind-ui-text: var(--sl-color-text);
+  --pagefind-ui-background: var(--sl-color-bg);
+  --pagefind-ui-border: var(--sl-color-hairline);
+  --pagefind-ui-border-radius: 10px;
+  --pagefind-ui-font: var(--at-sans);
+}
+
+/* ============================================================
+   9. CODE BLOCKS  ·  Atlas dark panel in both themes
+   ------------------------------------------------------------
+   Frame colours come from astro.config.mjs expressiveCode
+   styleOverrides; this just sharpens the surrounding details.
+   ============================================================ */
+
+.expressive-code {
+  --ec-brdRad: 12px;
+}
+.expressive-code .frame {
+  box-shadow: var(--sl-shadow-md);
+}
+
+/* inline code */
+.sl-markdown-content code:not(:where(.not-content *)) {
+  font-family: var(--at-mono);
+  font-size: 0.86em;
+  background: var(--sl-color-bg-inline-code);
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 5px;
+  padding: 0.1em 0.38em;
+}
+.sl-markdown-content :where(h1,h2,h3,h4) code { font-size: 0.92em; }
+/* clay tint for code inside links */
+.sl-markdown-content a code { color: var(--sl-color-text-accent); }
+
+/* ============================================================
+   10. ASIDES / CALLOUTS
+   ============================================================ */
+
+.starlight-aside {
+  border-radius: 10px;
+  border-inline-start-width: 3px;
+  padding: 1rem 1.15rem;
+}
+.starlight-aside__title {
+  font-family: var(--at-sans);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  font-size: 0.9rem;
+}
+
+/* ============================================================
+   11. CARDS / CARD GRID
+   ============================================================ */
+
+.card {
+  background: var(--sl-color-bg);
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 14px;
+  transition: transform var(--at-t-med) var(--at-ease),
+              box-shadow var(--at-t-med) var(--at-ease),
+              border-color var(--at-t-med) var(--at-ease);
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sl-shadow-lg);
+  border-color: var(--sl-color-gray-4);
+}
+.card .icon {
+  color: var(--sl-color-accent);
+  background: var(--sl-color-accent-low);
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 28%, transparent);
+  border-radius: 9px;
+  padding: 6px;
+}
+.card .title {
+  font-family: var(--at-sans);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+/* link card */
+.sl-link-card {
+  border-radius: 12px;
+  border-color: var(--sl-color-hairline);
+  transition: transform var(--at-t-med) var(--at-ease),
+              box-shadow var(--at-t-med) var(--at-ease),
+              border-color var(--at-t-med) var(--at-ease);
+}
+.sl-link-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sl-shadow-md);
+  border-color: var(--sl-color-accent);
+}
+.sl-link-card .title { font-weight: 800; letter-spacing: -0.025em; }
+.sl-link-card .icon { color: var(--sl-color-accent); }
+
+/* ============================================================
+   12. BADGES
+   ============================================================ */
+
+.sl-badge {
+  font-family: var(--at-mono);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: 999px;
+}
+.sl-badge.default {
+  background: var(--sl-color-accent-low);
+  border-color: color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
+  color: var(--sl-color-text-accent);
+}
+
+/* ============================================================
+   13. BUTTONS  (hero actions, link buttons)
+   ============================================================ */
+
+.sl-link-button {
+  font-family: var(--at-sans);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  border-radius: 11px;
+  transition: transform var(--at-t-fast) var(--at-ease),
+              background var(--at-t-fast) var(--at-ease),
+              border-color var(--at-t-fast) var(--at-ease),
+              box-shadow var(--at-t-fast) var(--at-ease),
+              color var(--at-t-fast) var(--at-ease);
+}
+.sl-link-button.primary {
+  background: var(--sl-color-accent);
+  border-color: var(--sl-color-accent);
+  color: #F0EBE0;
+}
+.sl-link-button.primary:hover {
+  background: var(--at-clay-deep);
+  border-color: var(--at-clay-deep);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -12px rgba(209, 74, 45, 0.6);
+}
+.sl-link-button.secondary {
+  border-color: var(--sl-color-white);
+  color: var(--sl-color-white);
+}
+.sl-link-button.secondary:hover {
+  background: var(--sl-color-white);
+  color: var(--sl-color-bg);
+  transform: translateY(-2px);
+}
+.sl-link-button.minimal:hover { color: var(--sl-color-text-accent); }
+.sl-link-button:active { transform: translateY(1px) scale(0.99); }
+
+/* ============================================================
+   14. TABS
+   ============================================================ */
+
+starlight-tabs .tablist-wrapper ul {
+  border-bottom-color: var(--sl-color-hairline);
+}
+starlight-tabs .tab > [role='tab'] {
+  font-family: var(--at-sans);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--sl-color-gray-3);
+}
+starlight-tabs .tab > [role='tab'][aria-selected='true'] {
+  color: var(--sl-color-text-accent);
+  border-color: var(--sl-color-accent);
+}
+
+/* ============================================================
+   15. STEPS
+   ============================================================ */
+
+.sl-steps > li::before {
+  font-family: var(--at-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  background: var(--sl-color-accent-low) !important;
+  color: var(--sl-color-text-accent) !important;
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
+  box-shadow: none !important;
+}
+.sl-steps > li { border-inline-start-color: var(--sl-color-hairline); }
+
+/* ============================================================
+   16. TABLES
+   ============================================================ */
+
+.sl-markdown-content table {
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 10px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+.sl-markdown-content th {
+  font-family: var(--at-sans);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-white);
+}
+.sl-markdown-content th,
+.sl-markdown-content td {
+  border: 0;
+  border-bottom: 1px solid var(--sl-color-hairline);
+  border-inline-end: 1px solid var(--sl-color-hairline);
+}
+.sl-markdown-content tr > :last-child { border-inline-end: 0; }
+.sl-markdown-content tbody tr:last-child > * { border-bottom: 0; }
+.sl-markdown-content tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--sl-color-gray-6) 45%, transparent);
+}
+
+/* ============================================================
+   17. PAGINATION / FOOTER NAV
+   ============================================================ */
+
+.pagination-links a {
+  border-radius: 12px;
+  border-color: var(--sl-color-hairline);
+  transition: transform var(--at-t-med) var(--at-ease),
+              box-shadow var(--at-t-med) var(--at-ease),
+              border-color var(--at-t-med) var(--at-ease);
+}
+.pagination-links a:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sl-shadow-md);
+  border-color: var(--sl-color-accent);
+}
+.pagination-links a .link-title { font-weight: 800; letter-spacing: -0.02em; }
+.pagination-links svg { color: var(--sl-color-accent); }
+
+/* ============================================================
+   18. SPLASH HOMEPAGE HERO  ·  full Atlas treatment
+   ============================================================ */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+}
+/* decorative radar-ring backdrop (CSS-only, no markup change).
+   SVGs loaded as background-images can't read host CSS vars, so the
+   ring stroke is baked per theme — dark default here, light below. */
+.hero::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  right: -8%;
+  width: min(760px, 92vw);
+  aspect-ratio: 1;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.55;
+  background: no-repeat center / contain
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800' fill='none'%3E%3Ccircle cx='400' cy='400' r='384' stroke='%23363029' stroke-width='1.2' opacity='.5'/%3E%3Ccircle cx='400' cy='400' r='312' stroke='%23363029' stroke-width='1.2' opacity='.55'/%3E%3Ccircle cx='400' cy='400' r='240' stroke='%23363029' stroke-width='1.2' opacity='.6'/%3E%3Ccircle cx='400' cy='400' r='168' stroke='%23363029' stroke-width='1.2' opacity='.7'/%3E%3Ccircle cx='400' cy='400' r='96' stroke='%23363029' stroke-width='1.2' opacity='.85'/%3E%3Ccircle cx='400' cy='400' r='15' fill='%23D14A2D'/%3E%3C/svg%3E");
+  animation: at-drift 26s ease-in-out infinite alternate;
+}
+:root[data-theme='light'] .hero::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800' fill='none'%3E%3Ccircle cx='400' cy='400' r='384' stroke='%23CFC7B5' stroke-width='1.2' opacity='.6'/%3E%3Ccircle cx='400' cy='400' r='312' stroke='%23CFC7B5' stroke-width='1.2' opacity='.65'/%3E%3Ccircle cx='400' cy='400' r='240' stroke='%23CFC7B5' stroke-width='1.2' opacity='.7'/%3E%3Ccircle cx='400' cy='400' r='168' stroke='%23CFC7B5' stroke-width='1.2' opacity='.8'/%3E%3Ccircle cx='400' cy='400' r='96' stroke='%23CFC7B5' stroke-width='1.2' opacity='.95'/%3E%3Ccircle cx='400' cy='400' r='15' fill='%23D14A2D'/%3E%3C/svg%3E");
+}
+@keyframes at-drift {
+  from { transform: translateY(-50%) scale(1); }
+  to   { transform: translateY(-52%) scale(1.05); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero::before { animation: none; }
+}
+
+.hero h1 {
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+  font-size: clamp(2.6rem, 1.5rem + 4.6vw, 4.6rem);
+}
+.hero .tagline {
+  font-size: clamp(1.05rem, 1rem + 0.4vw, 1.2rem);
+  font-weight: 500;
+  color: var(--sl-color-gray-3);
+  line-height: 1.55;
+}
+.hero .actions { margin-top: 0.5rem; }
+
+/* logo image inside the hero, when present */
+.hero > img,
+.hero .hero-html img { filter: drop-shadow(0 20px 40px rgba(26, 24, 22, 0.2)); }
+
+@media (max-width: 50rem) {
+  .hero::before { opacity: 0.32; right: -30%; }
+}
+
+/* ============================================================
+   19. starlight-openapi  ·  API reference pages
+   ============================================================ */
+
+/* HTTP method badges — recolour starlight-openapi's verbs onto the Atlas
+   status palette. Doubled :root beats the plugin's own :root declarations
+   regardless of stylesheet order. Deep fill + mid border reads on cream
+   and ink alike; the plugin keeps the label white. */
+:root:root {
+  --sl-openapi-method-bg-get:     #2F6FA5;  --sl-openapi-method-border-get:     #4A9FE0;
+  --sl-openapi-method-bg-post:    #3F5A35;  --sl-openapi-method-border-post:    #6B8E5A;
+  --sl-openapi-method-bg-put:     #8A6510;  --sl-openapi-method-border-put:     #D9A21A;
+  --sl-openapi-method-bg-patch:   #8A6510;  --sl-openapi-method-border-patch:   #D9A21A;
+  --sl-openapi-method-bg-delete:  #9B3535;  --sl-openapi-method-border-delete:  #C94545;
+  --sl-openapi-method-bg-head:    #4A443B;  --sl-openapi-method-border-head:    #6B665D;
+  --sl-openapi-method-bg-options: #4A443B;  --sl-openapi-method-border-options: #6B665D;
+  --sl-openapi-method-bg-trace:   #4A443B;  --sl-openapi-method-border-trace:   #6B665D;
+}
+
+/* method badge shape — doubled class to beat the component's scoped rule */
+.sl-openapi-operation-method-badge.sl-openapi-operation-method-badge {
+  font-family: var(--at-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 5px;
+}
+
+/* operation path / mono detail blocks */
+.sl-markdown-content .sl-openapi-path,
+.sl-markdown-content [class*='openapi'] code {
+  font-family: var(--at-mono);
+}
+
+/* schema / parameter disclosure blocks read denser */
+.sl-markdown-content details {
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 10px;
+}
+.sl-markdown-content details > summary {
+  font-family: var(--at-sans);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+/* ============================================================
+   20. MISC
+   ============================================================ */
+
+/* horizontal rule */
+.sl-markdown-content hr {
+  border-color: var(--sl-color-hairline);
+}
+
+/* blockquote — Atlas: clay bar + bone surface */
+.sl-markdown-content blockquote {
+  border-inline-start: 3px solid var(--sl-color-accent);
+  background: color-mix(in srgb, var(--sl-color-gray-6) 55%, transparent);
+  border-radius: 0 8px 8px 0;
+  padding: 0.6rem 1.1rem;
+  font-style: normal;
+}
+
+/* content list markers in clay */
+.sl-markdown-content :where(ul, ol):not(:where(.not-content *)) ::marker {
+  color: var(--sl-color-accent);
+}
+
+/* "last updated / edit" meta footer */
+.meta a:hover { color: var(--sl-color-text-accent); }
+
+/* theme-select + social icons hover */
+starlight-theme-select select:hover,
+.social-icons a:hover { color: var(--sl-color-text-accent); }

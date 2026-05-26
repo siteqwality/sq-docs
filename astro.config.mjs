@@ -3,6 +3,10 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi';
 
+// NOTE: Expressive Code (code-block) theming lives in ./ec.config.mjs, not in
+// the Starlight `expressiveCode` option below — starlight-openapi's plugin
+// overwrites that option, so anything set there is silently discarded.
+
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://docs.siteqwality.com',
@@ -12,16 +16,49 @@ export default defineConfig({
 			description:
 				'Documentation for SiteQwality — uptime monitoring, observability, incidents, and status pages.',
 			logo: {
-				src: './src/assets/logo.png',
+				light: './src/assets/atlas-logo-light.svg',
+				dark: './src/assets/atlas-logo-dark.svg',
 				alt: 'SiteQwality',
 				replacesTitle: false,
 			},
-			favicon: '/favicon.ico',
+			favicon: '/favicon.svg',
+			customCss: ['./src/styles/atlas.css'],
 			head: [
 				{
 					tag: 'meta',
 					attrs: { property: 'og:image', content: 'https://docs.siteqwality.com/og-feat.png' },
 				},
+				{
+					tag: 'link',
+					attrs: {
+						rel: 'preload',
+						href: '/fonts/manrope-latin.woff2',
+						as: 'font',
+						type: 'font/woff2',
+						crossorigin: true,
+					},
+				},
+				{
+					tag: 'link',
+					attrs: {
+						rel: 'preload',
+						href: '/fonts/jetbrains-mono-latin.woff2',
+						as: 'font',
+						type: 'font/woff2',
+						crossorigin: true,
+					},
+				},
+				{
+					tag: 'meta',
+					attrs: { name: 'theme-color', content: '#F0EBE0', media: '(prefers-color-scheme: light)' },
+				},
+				{
+					tag: 'meta',
+					attrs: { name: 'theme-color', content: '#1A1816', media: '(prefers-color-scheme: dark)' },
+				},
+				// iOS / Android home-screen icons + PWA manifest
+				{ tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' } },
+				{ tag: 'link', attrs: { rel: 'manifest', href: '/site.webmanifest' } },
 			],
 			plugins: [
 				starlightOpenAPI([
