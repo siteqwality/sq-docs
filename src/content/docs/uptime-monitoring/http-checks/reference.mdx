@@ -1,0 +1,125 @@
+---
+title: HTTP check reference
+description: Every field on an HTTP check, with defaults, validation limits, and status meanings.
+last_verified: 2026-08-01
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The full request/response schema is in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for `POST /http/job` and `PUT /http/job/{job_id}`.
+
+## Request settings
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `friendly_name` | string | none | Display name shown in the dashboard. 1 to 99 characters. |
+| `uri` | string | required | Target URL. Must parse as an absolute URI with a host. `https` is required unless `monitor_tls` is explicitly `false`. |
+| `method` | string | required | Any valid HTTP method token (`GET`, `POST`, `HEAD`, ...). |
+| `run_interval_seconds` | int | required | Seconds between checks. Must be at least `60` and a multiple of `60`. |
+| `run_interval_thirty_seconds` | bool | `false` | Run every 30 seconds instead. Only valid together with `run_interval_seconds: 60`. |
+| `timeout_ms` | int | required | Per-request timeout in milliseconds. Maximum `60000`. |
+| `check_regions` | string[] | `["aws-us-east-1"]` | Regions the check runs from. Omitted or empty falls back to the default. See [regions](#check-regions). |
+| `min_healthy_regions` | int | `1` | Minimum regions that must pass for the check to count as healthy. At least `1`, at most the number of `check_regions`. |
+| `follow_redirects` | bool | `true` | Follow HTTP redirects before evaluating the response. |
+| `request_body` | string | none | Body sent with the request. |
+| `content_type` | enum | none | `Content-Type` of the request body. See [content types](#content-types). |
+| `auth_type` | enum | none | `basic`, `digest`, or `bearer`. |
+| `auth_username` | string | none | Username for `basic` / `digest` auth. |
+| `auth_password` | string | none | Password for `basic` / `digest` auth. |
+| `auth_bearer_token` | string | none | Token for `bearer` auth. |
+| `success_http_codes` | int[] | none | Status codes that force a success. Each must be a valid HTTP status code. |
+| `failure_http_codes` | int[] | none | Status codes that force a failure. Each must be a valid HTTP status code. |
+| `custom_http_headers` | map | none | Extra request headers as `{name: value}`. |
+| `keyword_search` | string | none | Text to search for in the response body. Maximum 1000 characters; an empty string is treated as unset. |
+| `keyword_search_inverted` | bool | `false` | Invert the assertion: fail when the keyword IS found. |
+| `keyword_search_case_sensitive` | bool | `false` | Match case-sensitively. |
+| `keyword_search_regex` | bool | `false` | Interpret `keyword_search` as a regular expression. |
+| `group_notification_ids` | uuid[] | none | Notification groups to fire on state change. Maximum 10, no duplicates, must belong to your account. |
+| `monitor_tls` | bool | `true` | Provision a paired [TLS check](/uptime-monitoring/ssl-tls-checks/overview/) for the URL's hostname. |
+| `monitor_dns` | bool | `true` | Provision a paired [DNS check](/uptime-monitoring/dns-checks/overview/) for the domain. |
+| `monitor_page_speed` | bool | `false` | Provision a paired page-speed (Lighthouse) check on a slower schedule. |
+| `tags` | string[] | none | Free-form tags. Used for grouping and [maintenance-window](/incident-management/maintenance/overview/) matching. |
+| `http_version` | enum | `auto` | Preferred HTTP version for the check transport. See [HTTP versions](#http-versions). |
+| `state` | enum | `active` | Update only. `active` or `paused`. Paused checks stop running and alerting. |
+| `final_uri` | string | none | Accepted by the API but not evaluated by the check runner today. |
+
+`PUT /http/job/{job_id}` takes the same fields, all optional; a request with no fields is rejected. Sending `check_regions: []` on update leaves regions unchanged.
+
+## Read-only fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | uuid | Check ID. |
+| `account_id` | uuid | Owning account. |
+| `current_status` | enum | See [status enum](#status-enum). |
+| `last_run_at` | rfc3339 \| null | Most recent check execution. |
+| `last_status_change_at` | rfc3339 \| null | When `current_status` last transitioned. |
+| `created_at` | rfc3339 | When the check was created. |
+| `tls_job_id` | uuid \| null | Paired TLS check, if `monitor_tls` is on. |
+| `dns_job_id` | uuid \| null | Paired DNS check, if `monitor_dns` is on. |
+| `page_speed_job_id` | uuid \| null | Paired page-speed check, if `monitor_page_speed` is on. |
+| `group_notifications` | object[] \| null | Full notification-group objects resolved from `group_notification_ids`. |
+| `service_id` | uuid \| null | Service this check belongs to, set via the [service endpoints](/api-reference/). |
+
+## Status enum
+
+| Status | Meaning |
+|---|---|
+| `success` | Most recent check passed all assertions. |
+| `pending_failure` | One check failed; the next run confirms. Suppresses alerts on transient blips. |
+| `failed` | Confirmed failure. Notifications fire. |
+
+## Check regions
+
+| Region value | Location |
+|---|---|
+| `aws-us-east-1` | N. Virginia, USA (default) |
+| `aws-us-west-1` | N. California, USA |
+| `aws-us-east-2` | Ohio, USA |
+| `aws-eu-west-2` | London, UK |
+
+## HTTP versions
+
+| Value | Behavior |
+|---|---|
+| `auto` | Prefer HTTP/2 via ALPN, fall back to HTTP/1.1 (default). |
+| `http_1_1` | Force HTTP/1.1 only. Best for some CDN / bot-management edges. |
+| `http_2` | Require HTTP/2; the check fails if it cannot be negotiated. |
+| `http_2_with_fallback` | Explicit prefer-h2-with-fallback. Same transport behavior as `auto` today. |
+
+The negotiated version actually observed on each run is recorded on the check result.
+
+## Content types
+
+| Value | Sent as |
+|---|---|
+| `json` | `application/json` |
+| `xml` | `application/xml` |
+| `form_url_encoded` | `application/x-www-form-urlencoded` |
+| `text` | `text/plain` |
+
+## Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/http/job` | Create. |
+| `GET` | `/http/job/{job_id}` | Fetch one check. |
+| `PUT` | `/http/job/{job_id}` | Update (partial). |
+| `DELETE` | `/http/job/{job_id}` | Delete. |
+| `GET` | `/http/jobs` | List, with sort/filter query params. |
+| `GET` | `/http/tags` | Distinct tags across your checks. |
+| `GET` | `/http/job/{job_id}/recent` | Recent check runs. |
+| `GET` | `/http/job/{job_id}/recent-checks` | Recent per-region check results. |
+| `GET` | `/http/job/{job_id}/events` | Status-transition events. |
+| `GET` | `/http/job/{job_id}/uptime_percentage` | Uptime percentage and incident count for a date range. |
+| `GET` | `/http/job/{job_id}/performance` | Per-phase timing (dns/tcp/tls/ttfb/download). |
+| `GET` | `/http/job/result/{job_result_id}/details` | Full detail for one recorded result. |
+| `GET` | `/http/job/{job_id}/page_speed` | Latest page-speed result. |
+| `GET` | `/http/job/{job_id}/page_speed/history` | Page-speed history. |
+
+## See also
+
+- [HTTP checks overview](/uptime-monitoring/http-checks/overview/) for the concept and lifecycle.
+- [TLS check reference](/uptime-monitoring/ssl-tls-checks/reference/) for the paired certificate check.
+- [API Reference](/api-reference/) for wire-level shapes.
