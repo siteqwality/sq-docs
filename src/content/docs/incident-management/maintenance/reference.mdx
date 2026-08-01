@@ -1,0 +1,78 @@
+---
+title: Maintenance window reference
+description: Every field on a maintenance window, recurrence shapes, and exactly what suppression does.
+last_verified: 2026-08-01
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The full request schemas live in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for `/maintenance_windows`.
+
+## Request settings
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `name` | string | required | Window label. |
+| `tags` | string[] | required | Must be non-empty. A monitor is covered when its tags overlap this list. |
+| `schedule_type` | enum | required | `one_time` or `recurring`. |
+| `timezone` | string | `UTC` | IANA timezone name. Recurrence times are interpreted in this timezone. |
+| `starts_at` | rfc3339 | required for `one_time` | Window start. Must be before `ends_at`. |
+| `ends_at` | rfc3339 | required for `one_time` | Window end. |
+| `recurrence` | object | required for `recurring` | Recurrence rule (below). |
+
+## Recurrence shapes
+
+### Daily
+
+```json
+{ "type": "daily", "start_time": "02:00", "end_time": "03:00" }
+```
+
+### Weekly
+
+```json
+{ "type": "weekly", "days": ["sun"], "start_time": "02:00", "end_time": "04:00" }
+```
+
+| Key | Type | Description |
+|---|---|---|
+| `type` | enum | `daily` or `weekly`. |
+| `start_time` / `end_time` | string | 24-hour `HH:MM` in the window's `timezone`. An `end_time` earlier than `start_time` wraps past midnight (e.g. `23:00` to `01:00`). |
+| `days` | string[] | Weekly only; must be non-empty. Three-letter day abbreviations, case-insensitive: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`. |
+
+<Aside type="caution">
+Day values are the three-letter abbreviations. Full names like `"sunday"` pass request validation but never match a day, producing a window that silently never activates.
+</Aside>
+
+## Read-only fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | uuid | Window ID. |
+| `account_id` | uuid | Owning account. |
+| `is_currently_active` | bool | Whether the window is in effect right now, computed server-side. |
+| `created_at` / `updated_at` | rfc3339 | Timestamps. |
+
+## What suppression does, precisely
+
+The check applies to notifications that carry monitor context (HTTP and cron monitors). While a matching window is active:
+
+- **Failure notifications are held**, not dropped: they are stored and re-evaluated when the window's current occurrence ends, so a monitor still down after the window pages then.
+- **Recovery notifications are suppressed** and clear the held failure for that monitor, so a blip fully inside the window pages no one.
+- **Checks keep running** and results keep being recorded throughout.
+
+## Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/maintenance_windows` | List. |
+| `POST` | `/maintenance_windows` | Create. |
+| `PUT` | `/maintenance_windows/{window_id}` | Update (partial; omitted fields keep their value). |
+| `DELETE` | `/maintenance_windows/{window_id}` | Delete. |
+
+## See also
+
+- [Maintenance overview](/incident-management/maintenance/overview/) for the concept and tag patterns.
+- [Recurring windows](/incident-management/maintenance/how-to/recurring/) for daily and weekly setups.
+- [Status page maintenance](/status-pages/reference/#scheduled-maintenance) for the customer-facing companion.
