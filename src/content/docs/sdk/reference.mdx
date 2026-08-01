@@ -1,0 +1,123 @@
+---
+title: SDK reference
+description: Every init option and public method of @siteqwality/rum, plus session, batching, and sampling behavior.
+last_verified: 2026-08-01
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Field-by-field reference for the **`@siteqwality/rum`** browser SDK. For install and first-run, see the [SDK overview](/sdk/overview/) and the [RUM quickstart](/observability/rum/quickstart/).
+
+## Init options (`RumConfig`)
+
+```javascript
+import { SiteQwalityRUM } from '@siteqwality/rum';
+
+await SiteQwalityRUM.init({ applicationId: '...', clientToken: '...' });
+```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `applicationId` | string | required | The [RUM application](/observability/rum/reference/) ID. |
+| `clientToken` | string | required | The application's public client token. Sent as the bearer token on every payload. |
+| `service` | string | none | Logical service name, stored in the SDK's context. |
+| `version` | string | none | App version. Attached to every error event and used for [source-map](/observability/rum/how-to/source-maps/) matching. |
+| `env` | string | none | Environment label (`prod`, `staging`, ...), stored in the SDK's context. |
+| `apiBase` | string | `https://api.siteqwality.com` | Override for the config-fetch API. |
+| `ingestBase` | string | `https://rum.siteqwality.com` | Override for the RUM ingest endpoints. |
+| `replayBase` | string | `https://replay.siteqwality.com` | Override for the replay segment endpoint. |
+
+`init` is idempotent: a second call while an instance exists is a no-op. On init the SDK fetches its server-side config (session filters + privacy settings) from `{apiBase}/v1/rum/config/{applicationId}` and refreshes it every 5 minutes.
+
+## Public methods
+
+### `SiteQwalityRUM.init(options)`
+
+Starts the SDK: creates or restores the session, fetches config, starts all collectors, and begins sampling evaluation. Returns a promise; `await` it if you call other methods immediately after.
+
+### `SiteQwalityRUM.setUser(user)`
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Your internal user ID. Used by `custom` session filters (`has_user`). |
+| `email` | string | User email. |
+| `name` | string | Display name. |
+
+All fields optional. User identity attaches to subsequent error and detail events.
+
+### `SiteQwalityRUM.addError(error, context?)`
+
+Records a custom error alongside auto-captured ones (recorded with `error_source: "custom"`, message, and stack). Custom errors count toward `error` session filters. The `context` parameter is accepted for forward compatibility and is not attached to the event today.
+
+### `SiteQwalityRUM.addAction(name, context?)`
+
+Records a custom action with `action_type: "custom"` and `action_target: name`. Actions always increment the session's action count (used by `custom` filters with `min_actions`); the individual action event is only shipped when detail capture is active for the session. The `context` parameter is accepted for forward compatibility and is not attached to the event today.
+
+## What is collected when
+
+| Signal | Always-on | Detail (filter-activated) |
+|---|---|---|
+| Page views, load / DOM-ready timing | yes | |
+| Web Vitals: `lcp_ms`, `fcp_ms`, `cls`, `inp_ms`, `ttfb_ms` | yes | |
+| Error events (message, stack, fingerprinting) | yes | |
+| Action count | yes | |
+| Individual click / action events | | yes |
+| Resource timings (url, duration, transfer size) | | yes |
+| Long tasks (browser `longtask` entries, with duration) | | yes |
+| Session replay (rrweb) | | with `capture_replay: true` |
+
+Detail capture activates when any enabled [session filter](/observability/rum/how-to/session-filters/) matches; replay additionally requires `capture_replay: true` on the matching filter.
+
+## Sampling evaluation
+
+Filters are evaluated in the browser every 5 seconds against the running session state (error count, LCP, CLS, page count, action count, user presence). Activation is one-way: once detail or replay capture turns on for a session, it stays on for that session.
+
+| `filter_type` | Condition keys | Matches when |
+|---|---|---|
+| `error` | `has_error` | The session has thrown at least one error. |
+| `slow_performance` | `lcp_gt_ms`, `cls_gt` | LCP or CLS exceeds the threshold. |
+| `custom` | `has_user`, `min_actions` | User is identified and/or action count reached. |
+
+## Sessions
+
+| Behavior | Value |
+|---|---|
+| Storage | `sessionStorage` key `sq_rum_session`. |
+| Session ID | `crypto.randomUUID()`. |
+| Expiry | After 15 minutes of inactivity, or 4 hours total, a new session starts. |
+
+## Batching and delivery
+
+The SDK sends three event streams to `ingestBase`, each independently batched:
+
+| Stream | Endpoint | Contents |
+|---|---|---|
+| Measures | `POST /v1/measure` | Views and vitals. |
+| Detail events | `POST /v1/events` | Resources, actions, long tasks. |
+| Errors | `POST /v1/errors` | Error events. |
+
+A batch flushes every 10 seconds, immediately at 50 queued events, and on tab hide / page unload (via `navigator.sendBeacon`, with the client token as a query parameter since beacons cannot set headers). Delivery is fire-and-forget; failed sends are not retried.
+
+## Replay recording
+
+- rrweb is lazy-loaded only when a replay-enabled filter activates, keeping the base bundle small.
+- Segments flush at 100 rrweb events and at least every 30 seconds, to `POST {replayBase}/v1/segments`.
+- Input masking (`mask_inputs`, default on) and text masking (`mask_text`, default off) come from the application's [privacy settings](/observability/replay/reference/#privacy-settings).
+
+## Exported types
+
+```typescript
+import type {
+  RumConfig,      // init options
+  UserContext,    // setUser argument
+  RumMeasureEvent, RumDetailEvent, RumErrorEvent, // payload shapes
+  SessionFilterRule, SdkConfig, // server-fetched config shapes
+} from '@siteqwality/rum';
+```
+
+## See also
+
+- [SDK overview](/sdk/overview/) for install paths and compatibility.
+- [RUM reference](/observability/rum/reference/) for the application, filter, and analytics API.
+- [Replay reference](/observability/replay/reference/) for segment mechanics and retrieval.
