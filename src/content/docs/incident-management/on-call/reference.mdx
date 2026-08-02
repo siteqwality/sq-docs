@@ -1,0 +1,80 @@
+---
+title: On-call schedule reference
+description: Every field on schedules, layers, and overrides, plus how "who's on call" is resolved.
+last_verified: 2026-08-01
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The full request schemas live in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet.
+
+## Schedule
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `name` | string | required | Schedule label, referenced from escalation levels. |
+| `timezone` | string | `UTC` | IANA timezone name stored on the schedule. |
+
+## Layer
+
+Created under `/on_call_schedule/{schedule_id}/layer`.
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `layer_number` | int | `max(existing) + 1` | Layer position. Layers with a **higher** `layer_number` are evaluated first and shadow lower ones during their effective windows. |
+| `rotation_type` | enum | required | `daily`, `weekly`, or `custom`. |
+| `rotation_interval_days` | int | none | Days per handoff. Required for `custom` (a `custom` layer without it never resolves). Ignored for `daily` / `weekly`. |
+| `handoff_time` | string | required | `HH:MM` (24-hour) handoff time. Anchors the rotation. |
+| `handoff_day` | int | none | Stored on the layer; not currently used by the resolver. |
+| `participants` | uuid[] | required | Ordered user list. The rotation walks it and wraps around. A layer with no participants never matches. |
+| `effective_from` | rfc3339 | none | Layer applies only from this instant. |
+| `effective_until` | rfc3339 | none | Layer stops applying at this instant. |
+
+Rotation periods:
+
+| `rotation_type` | Period |
+|---|---|
+| `daily` | 24 hours per participant. |
+| `weekly` | 7 days per participant. |
+| `custom` | `rotation_interval_days` days per participant. |
+
+## Override
+
+Created under `/on_call_schedule/{schedule_id}/override`. An override is a hard "this user is on call" window that beats every layer.
+
+| Field | Type | Description |
+|---|---|---|
+| `user_id` | uuid | The covering user. |
+| `start_at` | rfc3339 | Window start (inclusive). |
+| `end_at` | rfc3339 | Window end (exclusive). |
+
+## How "who's on call at time T" is resolved
+
+1. **Overrides first.** If any override covers `T`, that user is on call. When overrides overlap, the most recently created one wins.
+2. **Layers next, highest `layer_number` first.** A layer is skipped when it has no participants or `T` is outside its `effective_from` / `effective_until` window.
+3. For the first matching layer, the on-call participant is computed from the time elapsed since the layer's anchor (its start date at `handoff_time`), divided by the rotation period, wrapped around `participants`.
+4. If nothing matches, the schedule has a coverage gap and resolves to no one.
+
+<Aside type="caution">
+A coverage gap resolves to no responder, and an escalation level targeting only that schedule pages nobody for that window. Keep a bottom layer without effective bounds as a catch-all.
+</Aside>
+
+## Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` / `GET` | `/on_call_schedule` | Create / list schedules. |
+| `GET` / `PUT` / `DELETE` | `/on_call_schedule/{schedule_id}` | Detail (with layers + overrides) / update / delete. |
+| `POST` / `GET` | `/on_call_schedule/{schedule_id}/layer` | Create / list layers. |
+| `DELETE` | `/on_call_schedule/{schedule_id}/layer/{layer_id}` | Delete a layer. |
+| `POST` / `GET` | `/on_call_schedule/{schedule_id}/override` | Create / list overrides. |
+| `DELETE` | `/on_call_schedule/{schedule_id}/override/{override_id}` | Delete an override. |
+
+Layers and overrides have no update endpoint: delete and recreate to change one.
+
+## See also
+
+- [On-call overview](/incident-management/on-call/overview/) for patterns (follow-the-sun, primary + secondary).
+- [Rotation overrides](/incident-management/on-call/how-to/rotation-overrides/) for holiday cover and swaps.
+- [Escalation policy reference](/incident-management/escalation/reference/) for wiring schedules into paging.

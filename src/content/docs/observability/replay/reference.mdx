@@ -1,0 +1,75 @@
+---
+title: Session Replay reference
+description: Replay activation settings, privacy toggles, segment mechanics, and the retrieval endpoint.
+last_verified: 2026-08-01
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Replay is configured through the [RUM application](/observability/rum/reference/), not through its own object. This page collects every replay-relevant setting in one place.
+
+## Activation
+
+Replay records only for sessions matching a [session filter](/observability/rum/how-to/session-filters/) with `capture_replay: true`. The SDK re-evaluates filters every 5 seconds; once replay activates for a session it stays on for that session.
+
+| Setting | Where | Default | Description |
+|---|---|---|---|
+| `capture_replay` | Session filter | `false` | Record replay when this filter matches. |
+| `enabled` | Session filter | `true` | Disabled filters are never delivered to the SDK. |
+
+## Privacy settings
+
+Set on the RUM application (`PUT /rum/{app_id}` under `settings.privacy`), delivered to the SDK with its config:
+
+| Field | Default | Effect |
+|---|---|---|
+| `mask_inputs` | `true` | Masks all input values in the recording (rrweb `maskAllInputs`). |
+| `mask_text` | `false` | Masks all user-visible text in the recording. |
+
+## Segment mechanics
+
+The SDK records with [rrweb](https://www.rrweb.io), which is lazy-loaded only when replay activates. Recorded events are shipped as **segments**:
+
+- A segment is flushed when it reaches 100 rrweb events, and at least every 30 seconds.
+- `segment_index` starts at 0 and increments per flush within the session.
+- Delivery is best-effort: a failed segment upload is dropped silently.
+
+Ingest request (sent by the SDK):
+
+```
+POST https://replay.siteqwality.com/v1/segments?session_id={id}&segment_index={n}
+Authorization: Bearer <client_token>
+Content-Type: application/json
+
+{ "session_id": "...", "segment_index": 0, "events": [ ... ] }
+```
+
+## Stored segment fields
+
+| Field | Type | Description |
+|---|---|---|
+| `session_id` | string | The RUM session. |
+| `segment_index` | int | Position within the session. |
+| `timestamp` | string | When the segment was recorded. |
+| `s3_key` | string | Storage location (internal). |
+| `size_bytes` | int | Segment payload size. |
+
+## Retrieval
+
+`GET /rum/{app_id}/replay/{session_id}` returns one entry per segment, in order:
+
+| Field | Description |
+|---|---|
+| `segment_index` | Position within the session. |
+| `url` | Presigned download URL for the segment payload. |
+| `size_bytes` | Segment payload size. |
+| `expires_in_seconds` | URL lifetime: 900 seconds (15 minutes). Re-fetch the list for fresh URLs. |
+
+The dashboard player consumes these; you can also fetch them directly for your own tooling.
+
+## See also
+
+- [Replay overview](/observability/replay/overview/) for the concept and privacy guidance.
+- [Session filters](/observability/rum/how-to/session-filters/) for the activation mechanism.
+- [SDK reference](/sdk/reference/) for the recorder's browser-side behavior.

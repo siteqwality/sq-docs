@@ -92,6 +92,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Overview', slug: 'uptime-monitoring/http-checks/overview' },
 								{ label: 'Quickstart', slug: 'uptime-monitoring/http-checks/quickstart' },
+								{ label: 'Reference', slug: 'uptime-monitoring/http-checks/reference' },
 							],
 						},
 						{
@@ -118,6 +119,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Overview', slug: 'uptime-monitoring/cron-checks/overview' },
 								{ label: 'Quickstart', slug: 'uptime-monitoring/cron-checks/quickstart' },
+								{ label: 'Reference', slug: 'uptime-monitoring/cron-checks/reference' },
 								{
 									label: 'How-to guides',
 									collapsed: true,
@@ -184,6 +186,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Overview', slug: 'observability/rum/overview' },
 								{ label: 'Quickstart', slug: 'observability/rum/quickstart' },
+								{ label: 'Reference', slug: 'observability/rum/reference' },
 								{
 									label: 'How-to guides',
 									collapsed: true,
@@ -197,6 +200,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Overview', slug: 'observability/replay/overview' },
 								{ label: 'Quickstart', slug: 'observability/replay/quickstart' },
+								{ label: 'Reference', slug: 'observability/replay/reference' },
 							],
 						},
 					],
@@ -212,6 +216,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Overview', slug: 'incident-management/incidents/overview' },
 								{ label: 'Quickstart', slug: 'incident-management/incidents/quickstart' },
+								{ label: 'Reference', slug: 'incident-management/incidents/reference' },
 								{
 									label: 'How-to guides',
 									collapsed: true,
@@ -225,6 +230,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Overview', slug: 'incident-management/on-call/overview' },
 								{ label: 'Quickstart', slug: 'incident-management/on-call/quickstart' },
+								{ label: 'Reference', slug: 'incident-management/on-call/reference' },
 								{
 									label: 'How-to guides',
 									collapsed: true,
@@ -260,6 +266,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Overview', slug: 'incident-management/maintenance/overview' },
 								{ label: 'Quickstart', slug: 'incident-management/maintenance/quickstart' },
+								{ label: 'Reference', slug: 'incident-management/maintenance/reference' },
 								{
 									label: 'How-to guides',
 									collapsed: true,
@@ -275,6 +282,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Overview', slug: 'status-pages/overview' },
 						{ label: 'Quickstart', slug: 'status-pages/quickstart' },
+						{ label: 'Reference', slug: 'status-pages/reference' },
 						{
 							label: 'How-to guides',
 							collapsed: true,
@@ -308,6 +316,7 @@ export default defineConfig({
 					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'sdk/overview' },
+						{ label: 'Reference', slug: 'sdk/reference' },
 					],
 				},
 				...openAPISidebarGroups,

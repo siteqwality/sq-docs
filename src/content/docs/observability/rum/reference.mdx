@@ -1,0 +1,126 @@
+---
+title: RUM reference
+description: RUM application fields, session filters, source-map releases, analytics query parameters, and every endpoint.
+last_verified: 2026-08-01
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The full request/response schema is in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for the `/rum` endpoint family. For the browser SDK itself, see the [SDK reference](/sdk/reference/).
+
+## RUM application
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `name` | string | required | Application name. 1 to 255 characters. |
+| `domain` | string | none | Site domain, used by dashboard deep links. |
+| `settings.privacy.mask_inputs` | bool | `true` | Mask input values in replay recordings. |
+| `settings.privacy.mask_text` | bool | `false` | Mask all user-visible text in replay recordings. |
+
+`POST /rum` takes `name` and `domain`. `PUT /rum/{app_id}` additionally takes `settings`.
+
+Read-only fields on the response:
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | uuid | Application ID. Passed to the SDK as `applicationId`. |
+| `account_id` | uuid | Owning account. |
+| `client_token` | string | Public token the SDK sends with every payload. Rotate via `POST /rum/{app_id}/rotate-token`. |
+| `created_at` / `updated_at` | rfc3339 | Timestamps. |
+
+## Session filters
+
+Session filters decide which sessions get detail capture (and optionally replay). Managed under `/rum/{app_id}/filters`.
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `name` | string | required | Filter label. |
+| `filter_type` | enum | required | `error`, `slow_performance`, or `custom`. |
+| `conditions` | map | required | Condition object; keys depend on `filter_type` (below). |
+| `capture_replay` | bool | `false` | Also record [session replay](/observability/replay/overview/) when this filter matches. |
+| `enabled` | bool | `true` | Disabled filters are not delivered to the SDK. |
+| `priority` | int | `0` | Ordering value. |
+
+### Conditions by filter type
+
+| `filter_type` | Condition keys | Matches when |
+|---|---|---|
+| `error` | `has_error` | The session has thrown at least one error. |
+| `slow_performance` | `lcp_gt_ms`, `cls_gt` | Session LCP exceeds `lcp_gt_ms` (milliseconds) or CLS exceeds `cls_gt`. |
+| `custom` | `has_user`, `min_actions` | `has_user: true` requires an identified user; `min_actions` requires at least that many user actions. |
+
+## Source-map releases
+
+Managed under `/rum/{app_id}/releases`. See [Source maps](/observability/rum/how-to/source-maps/).
+
+| Field | Type | Description |
+|---|---|---|
+| `version` | string | Release version, 1 to 255 characters. Must match the `version` passed to the SDK's `init`. |
+
+## SDK config
+
+The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/config`, authenticated by the client token, at init and every 5 minutes after. The dashboard API exposes the same payload at `GET /rum/{app_id}/config` (session-authed):
+
+| Field | Description |
+|---|---|
+| `application_id` | The application. |
+| `filters` | Enabled session filters only. |
+| `settings` | Privacy settings (`mask_inputs`, `mask_text`). |
+
+## Analytics query parameters
+
+### `GET /rum/{app_id}/overview` and `/vitals`
+
+| Param | Description |
+|---|---|
+| `from`, `to` | Time range (required). |
+| `country`, `browser`, `os`, `device_type`, `url` | Optional exact-match filters (overview). |
+| `vital` | Optional vital name to series (vitals). |
+
+### `GET /rum/{app_id}/sessions`
+
+| Param | Description |
+|---|---|
+| `from`, `to` | Time range. |
+| `search` | Free-text search. |
+| `browser`, `os`, `country` | Exact-match filters. |
+| `has_error`, `has_replay` | Boolean filters. |
+| `limit` | Page size. Default 50, maximum 100. |
+| `offset` | Page offset. Default 0. |
+
+### `GET /rum/{app_id}/errors`
+
+| Param | Description |
+|---|---|
+| `since` | Start of the range (required); the end defaults to now. |
+| `resolved` | Filter by resolved state. |
+| `search` | Free-text search in error messages. |
+
+## Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/rum` | Create application. |
+| `GET` | `/rum` | List applications. |
+| `GET` / `PUT` / `DELETE` | `/rum/{app_id}` | Detail / update / delete. |
+| `POST` | `/rum/{app_id}/rotate-token` | Rotate the client token. |
+| `GET` | `/rum/{app_id}/config` | SDK config (filters + privacy). |
+| `POST` / `GET` | `/rum/{app_id}/filters` | Create / list session filters. |
+| `PUT` / `DELETE` | `/rum/{app_id}/filters/{filter_id}` | Update / delete a filter. |
+| `POST` / `GET` | `/rum/{app_id}/releases` | Create / list source-map releases. |
+| `POST` | `/rum/{app_id}/releases/{version}/sourcemaps` | Upload a source map for a release. |
+| `DELETE` | `/rum/{app_id}/releases/{version}` | Delete a release. |
+| `GET` | `/rum/{app_id}/overview` | Aggregate overview (vitals averages, top pages, top errors, breakdowns). |
+| `GET` | `/rum/{app_id}/vitals` | Vital timeseries (p50/p75/p95). |
+| `GET` | `/rum/{app_id}/sessions` | Session list. |
+| `GET` | `/rum/{app_id}/sessions/{session_id}` | Session detail with events. |
+| `GET` | `/rum/{app_id}/errors` | Error groups. |
+| `GET` | `/rum/{app_id}/errors/{fingerprint}` | Error detail, timeline, affected sessions. |
+| `GET` | `/rum/{app_id}/replay/{session_id}` | Replay segment URLs. See [Replay reference](/observability/replay/reference/). |
+
+## See also
+
+- [RUM overview](/observability/rum/overview/) for the concept and capture tiers.
+- [Session filters](/observability/rum/how-to/session-filters/) for activation patterns.
+- [SDK reference](/sdk/reference/) for init options and the browser API.

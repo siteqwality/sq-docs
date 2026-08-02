@@ -1,0 +1,125 @@
+---
+title: Incident reference
+description: Every field on an incident and its updates, with status enums and the full endpoint list.
+last_verified: 2026-08-01
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The full request schemas live in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet.
+
+## Incident object
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | uuid | Incident ID. |
+| `title` | string | Short, scannable label. |
+| `severity` | enum | `minor`, `major`, or `critical`. |
+| `status` | enum | Customer-facing progress. See [status enum](#status-enum). |
+| `responder_status` | enum | Internal responder state. See [responder status](#responder-status-enum). |
+| `status_page_id` | uuid \| null | Set when the incident is published to a status page. |
+| `service_id` | uuid \| null | Optional service tag. |
+| `affected_http_job_ids` | uuid[] | HTTP monitors this incident is about. |
+| `acknowledged_at` | rfc3339 \| null | When a responder acknowledged. |
+| `acknowledged_by` | uuid \| null | Who acknowledged. |
+| `resolved_at` | rfc3339 \| null | When the incident resolved. |
+| `created_at` | rfc3339 | When the incident opened. |
+| `updates` | object[] | Chronological incident updates (below). |
+
+### Incident update
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | uuid | Update ID. |
+| `status` | enum | The status this update moved the incident to. |
+| `message` | string | Written update text. |
+| `created_at` | rfc3339 | When posted. |
+
+## Status enum
+
+| Value | Meaning |
+|---|---|
+| `investigating` | Cause not yet known. |
+| `identified` | Cause known, fix in progress. |
+| `monitoring` | Fix rolled out, watching. |
+| `resolved` | Done. The only non-active status. |
+
+## Responder status enum
+
+| Value | Meaning |
+|---|---|
+| `triggered` | No one has claimed the incident. Escalation keeps paging. |
+| `acknowledged` | A responder owns it. Escalation stops. |
+| `resolved` | Responder work is done. |
+
+## Request bodies
+
+### Create (`POST /incident` or `POST /status_page/{id}/incident`)
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `title` | string | yes | Incident title. |
+| `severity` | enum | yes | `minor` / `major` / `critical`. |
+| `message` | string | yes | Text of the first incident update. |
+| `status_page_id` | uuid | no | Publish to a status page at creation. |
+| `affected_http_job_ids` | uuid[] | no | Affected HTTP monitors. |
+| `service_id` | uuid | no | Service tag. |
+
+### Update (`PUT /incident/{incident_id}`)
+
+A full replace of the mutable fields, all required except `resolved_at`:
+
+| Field | Type | Description |
+|---|---|---|
+| `title` | string | New title. |
+| `severity` | enum | New severity. |
+| `status` | enum | New status. |
+| `resolved_at` | rfc3339 | Optional explicit resolution time. |
+
+### Post an update (`POST /incident/{incident_id}/update`)
+
+| Field | Type | Description |
+|---|---|---|
+| `status` | enum | Status to transition to. |
+| `message` | string | Update text. |
+
+### Acknowledge (`POST /incident/{incident_id}/acknowledge`)
+
+| Field | Type | Description |
+|---|---|---|
+| `acknowledged_by` | uuid | Optional when authenticated as a user (defaults to you). Required when calling with an API key. |
+
+### Publish (`POST /incident/{incident_id}/publish`)
+
+| Field | Type | Description |
+|---|---|---|
+| `status_page_id` | uuid | The status page to publish this incident to. |
+
+## Endpoints
+
+Standalone incidents:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/incident` | Create. |
+| `GET` | `/incident` | List, with `limit` / `offset` pagination. |
+| `GET` / `PUT` / `DELETE` | `/incident/{incident_id}` | Detail / update / delete. |
+| `POST` | `/incident/{incident_id}/acknowledge` | Acknowledge (stops escalation). |
+| `POST` | `/incident/{incident_id}/resolve` | Resolve. |
+| `POST` | `/incident/{incident_id}/update` | Post an incident update. |
+| `POST` | `/incident/{incident_id}/publish` | Publish to a status page. |
+
+Status-page-scoped incidents (same shapes, scoped to one page):
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` / `GET` | `/status_page/{status_page_id}/incident` | Create / list. |
+| `GET` / `PUT` / `DELETE` | `/status_page/{status_page_id}/incident/{incident_id}` | Detail / update / delete. |
+| `POST` | `/status_page/{status_page_id}/incident/{incident_id}/update` | Post an update. |
+
+## See also
+
+- [Incidents overview](/incident-management/incidents/overview/) for the lifecycle and the status vs responder-status distinction.
+- [Escalation policy reference](/incident-management/escalation/reference/) for what `triggered` sets in motion.
+- [API Reference](/api-reference/) for wire-level shapes.

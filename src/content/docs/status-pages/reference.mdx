@@ -1,0 +1,114 @@
+---
+title: Status page reference
+description: Every field on status pages, components, branding, custom domains, and scheduled maintenance.
+last_verified: 2026-08-01
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The full request schemas live in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for the `/status_page` endpoint family.
+
+## Status page
+
+| Field | Type | Description |
+|---|---|---|
+| `friendly_name` | string | The page name. The only writable field on the page object itself. |
+| `id` | uuid | Read-only. Page ID, also the default subdomain slug. |
+| `account_id` | uuid | Read-only. Owning account. |
+| `created_at` | rfc3339 | Read-only. |
+
+Branding, components, incidents, maintenance, and the custom domain are all nested resources (below).
+
+## Components (attached monitors)
+
+Attach an HTTP check with `POST /status_page/{status_page_id}/http_job/{http_job_id}` or a browser check with `POST /status_page/{status_page_id}/browser_check/{browser_check_id}`.
+
+| Field | Type | On | Description |
+|---|---|---|---|
+| `friendly_name` | string | create + update | Public-facing name shown on the page (independent of the monitor's internal name). |
+| `sla_target_percentage` | number \| null | update only | SLA target shown next to the component, e.g. `99.9`. Send `null` to clear. |
+
+The component's live status is the underlying monitor's status; there is no separate status field to set.
+
+## Branding
+
+`PUT /status_page/{status_page_id}/branding`. All fields optional; omitted fields keep their value.
+
+| Field | Type | Constraint | Description |
+|---|---|---|---|
+| `page_title` | string | max 100 chars | Browser-tab and page title. |
+| `default_theme` | enum | `light` \| `dark` \| `system` | Theme for first-time visitors. |
+| `primary_color` | string | `#rrggbb` | Primary brand color. |
+| `accent_color` | string | `#rrggbb` | Accent color. |
+| `header_text` | string | max 500 chars | Text above the component list. |
+| `footer_text` | string | max 500 chars | Text below the component list. |
+| `meta_description` | string | max 160 chars | SEO / OG description. |
+| `custom_css` | string | max 50 KB | Injected stylesheet. |
+| `white_label` | bool | paid plans | Removes SiteQwality attribution. |
+| `logo_s3_key` / `favicon_s3_key` / `og_image_s3_key` | string | from upload flow | Set after uploading the asset (below). |
+
+### Asset upload flow
+
+1. `POST /status_page/{id}/branding/upload` with `{ "file_type": "logo" | "favicon" | "og_image", "content_type": "...", "file_size_bytes": n }`.
+2. The response contains a presigned `upload_url`, the resulting `s3_key`, and `expires_in_seconds`.
+3. `PUT` the file to `upload_url`, then `PUT /branding` with the returned key in the matching `*_s3_key` field.
+4. Remove an asset with `DELETE /status_page/{id}/branding/asset/{asset_type}`.
+
+Public responses expose CDN URLs (`logo_url`, `favicon_url`, `og_image_url`), never S3 keys.
+
+## Custom domain
+
+`POST /status_page/{status_page_id}/custom_domain` with `{ "domain": "status.example.com" }`. Creating one requires a verified email address; reads and deletes do not.
+
+| Field | Type | Description |
+|---|---|---|
+| `domain` | string | Your domain, lowercased. No scheme prefix, no spaces. |
+| `status` | enum | `pending_validation`, `provisioning`, `active`, `failed`, `deleting`. |
+| `cname_target` | string | The intermediate CNAME to point your domain at: `<status_page_id>.custom.siteqwality.com`. |
+| `acm_validation.name` / `.value` | string | The DNS validation CNAME record to create while `status` is `pending_validation`. |
+| `failure_reason` | string \| null | Populated when `status` is `failed`. |
+| `created_at` / `updated_at` | rfc3339 | Timestamps. |
+
+See the [custom domain guide](/status-pages/how-to/custom-domain/) for the DNS walkthrough.
+
+## Scheduled maintenance
+
+Customer-facing planned-downtime entries under `/status_page/{status_page_id}/maintenance`. These render on the page; to silence internal paging use [maintenance windows](/incident-management/maintenance/reference/).
+
+| Field | Type | On | Description |
+|---|---|---|---|
+| `title` | string | create + update | Maintenance title. |
+| `body` | string \| null | create + update | Longer description. |
+| `scheduled_start_at` | rfc3339 | create + update | Planned start. |
+| `scheduled_end_at` | rfc3339 | create + update | Planned end. |
+| `affected_http_job_ids` | uuid[] | create + update | Which components the maintenance covers. |
+| `status` | enum | update only | `scheduled`, `in_progress`, or `completed`. New entries start as `scheduled`. |
+
+## Incidents on a page
+
+Incidents published to a page (via `status_page_id` at creation, or `POST /incident/{id}/publish`) render with their updates. Field-by-field: [Incident reference](/incident-management/incidents/reference/).
+
+## Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` / `GET` | `/status_page` | Create / list pages. |
+| `PUT` / `DELETE` | `/status_page/{status_page_id}` | Rename / delete a page. |
+| `GET` | `/status_page/{id}/http_job` | List attached HTTP checks. |
+| `POST` / `PUT` / `DELETE` | `/status_page/{id}/http_job/{http_job_id}` | Attach / update / detach an HTTP check. |
+| `GET` | `/status_page/{id}/browser_check` | List attached browser checks. |
+| `POST` / `PUT` / `DELETE` | `/status_page/{id}/browser_check/{browser_check_id}` | Attach / update / detach a browser check. |
+| `POST` / `GET` | `/status_page/{id}/incident` | Create / list page incidents. |
+| `POST` / `GET` | `/status_page/{id}/maintenance` | Create / list scheduled maintenance. |
+| `PUT` / `DELETE` | `/status_page/{id}/maintenance/{maintenance_id}` | Update / delete maintenance. |
+| `GET` / `PUT` | `/status_page/{id}/branding` | Read / update branding. |
+| `POST` | `/status_page/{id}/branding/upload` | Presigned asset upload. |
+| `DELETE` | `/status_page/{id}/branding/asset/{asset_type}` | Remove an asset. |
+| `POST` / `GET` / `DELETE` | `/status_page/{id}/custom_domain` | Provision / read / remove the custom domain. |
+
+## See also
+
+- [Status pages overview](/status-pages/overview/) for the three-layer model.
+- [Custom domain guide](/status-pages/how-to/custom-domain/) for DNS setup.
+- [API Reference](/api-reference/) for wire-level shapes.
