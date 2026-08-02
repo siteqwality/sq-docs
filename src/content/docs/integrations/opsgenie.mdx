@@ -1,0 +1,103 @@
+---
+title: OpsGenie integration
+description: Create OpsGenie alerts from monitor failures and close them automatically on recovery, keyed by alias.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+The OpsGenie integration creates an alert when a monitor goes down and closes that same alert when the monitor recovers. Pairing is done through the alert **alias**, which SiteQwality derives from the monitor and the outage.
+
+## What you need
+
+An **API key** from an OpsGenie API integration.
+
+<Steps>
+
+1. In OpsGenie, go to **Settings → Integrations**.
+
+2. Add an **"API"** integration.
+
+3. Copy its **API Key**.
+
+</Steps>
+
+## Connect it
+
+In the dashboard, **Integrations → Add Integrations → OpsGenie**. Name it, paste the key into **API Key**, and click **Add**. Or via the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/integration/opsgenie \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Acme OpsGenie",
+    "api_key": "<opsgenie-api-integration-key>"
+  }'
+```
+
+Both fields are required and must be non-empty. The key is not verified against OpsGenie at save time.
+
+The API key is a secret. `GET /integration` returns `"details": {}` for OpsGenie integrations rather than echoing it back.
+
+## Create a channel
+
+```bash
+curl -X POST https://api.siteqwality.com/notification \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notification_group_id": "<your-group-id>",
+    "type": "opsgenie",
+    "details": { "opsgenie_integration_id": "<opsgenie-integration-id>" }
+  }'
+```
+
+`opsgenie_integration_id` is the only field. There is no per-channel priority setting; see [priority](#priority) below.
+
+## Create and close
+
+Down and up events share one alias built from the monitor ID and the ID of the state transition that opened:
+
+```
+sq-http-<monitor-id>-<state-transition-id>
+sq-browser-<browser-check-id>-<state-transition-id>
+```
+
+- **Monitor goes down** → `POST /v2/alerts` with `message: "Monitor DOWN: <name>"`, a description carrying the URL and failure reason, and that alias.
+- **Monitor recovers** → `POST /v2/alerts/<alias>/close?identifierType=alias`, with the recovery message attached as the close note.
+
+OpsGenie deduplicates open alerts by alias, so repeated failures within one outage update a single alert rather than stacking. A separate outage later produces a different state transition, and therefore a new alert.
+
+Alert messages longer than 130 characters are truncated to fit the OpsGenie limit.
+
+### Priority
+
+Priority is fixed and not configurable per channel:
+
+| Event | Priority |
+|---|---|
+| Monitor or browser check down | `P1` |
+| Recovery (close) | none sent |
+| Domain expiry warning | `P3` |
+
+<Aside type="caution" title="Domain expiry alerts do not auto-close">
+Domain and DNS expiry warnings are **create-only**: no recovery event exists for them. They key on the DNS job plus the expiry date (`sq-dns-expiry-<job-id>-YYYY-MM-DD`), so repeated warnings for the same date collapse into one alert, but nothing ever closes it.
+
+Close those alerts in OpsGenie yourself. Renewing the domain does not close them, and since renewal moves the expiry date, the next warning creates a **new** alert while the old one stays open.
+</Aside>
+
+## Delivery behavior
+
+A failed send is retried up to 3 times in-process, which is safe because the alias makes both calls idempotent. If all 3 fail, the notifier fails the event so it gets retried rather than dropping the alert quietly.
+
+## Limitations
+
+- The endpoint is the US instance, `api.opsgenie.com`. The EU instance is not configurable.
+- OpsGenie channels fire for **HTTP monitors, browser checks, and DNS/domain expiry**. TLS expiry and cron/heartbeat monitors only support email, SMS, and Slack today; an OpsGenie channel on a group used by those monitor types is skipped.
+
+## See also
+
+<LinkCard title="Channels reference" description="Full opsgenie channel detail shape." href="/incident-management/notifications/channels/#opsgenie" />
+<LinkCard title="PagerDuty" description="The same lifecycle model, different provider." href="/integrations/pagerduty/" />

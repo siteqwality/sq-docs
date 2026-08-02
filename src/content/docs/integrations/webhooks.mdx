@@ -1,13 +1,17 @@
 ---
 title: Webhook integrations
-description: Send a JSON POST to your own URL on every notification — for ServiceNow, OpsGenie, custom dashboards, anything.
-last_verified: 2026-05-03
+description: Send a JSON POST to your own URL on every notification, for ServiceNow, custom dashboards, internal buses, anything.
+last_verified: 2026-08-02
 owner: jj
 ---
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-A **webhook integration** is the universal escape hatch. If we don't have a native integration for the tool you use, the webhook integration POSTs incident JSON to a URL you control — wire it into ServiceNow, OpsGenie, an internal Slack-replacement, your audit log, anything.
+A **webhook integration** is the universal escape hatch. If we don't have a native integration for the tool you use, the webhook integration POSTs incident JSON to a URL you control: wire it into ServiceNow, an internal Slack-replacement, your audit log, anything.
+
+<Aside type="tip">
+[PagerDuty](/integrations/pagerduty/) and [OpsGenie](/integrations/opsgenie/) are now native integrations, and they close their alerts automatically when a monitor recovers. Prefer those over a hand-rolled webhook bridge.
+</Aside>
 
 ## Set up
 

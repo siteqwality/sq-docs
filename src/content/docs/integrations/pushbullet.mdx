@@ -1,0 +1,76 @@
+---
+title: Pushbullet integration
+description: Push monitor alerts to your devices via Pushbullet, using an account access token.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+Pushbullet pushes alerts to every device signed into your Pushbullet account. Alerts arrive as note pushes with the monitor status as the title.
+
+## What you need
+
+An **access token** from your Pushbullet account.
+
+<Steps>
+
+1. In Pushbullet, go to **Settings → Account**.
+
+2. **Create Access Token.**
+
+3. Copy the token.
+
+</Steps>
+
+## Connect it
+
+In the dashboard, **Integrations → Add Integrations → Pushbullet**. Paste the token into **Access Token** and click **Add**. Or via the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/integration/pushbullet \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "My devices",
+    "access_token": "<pushbullet-access-token>"
+  }'
+```
+
+Both fields are required and must be non-empty. The token is not verified against Pushbullet at save time.
+
+The token is a secret: `GET /integration` returns `"details": {}` for Pushbullet, and the token is redacted from the stored delivery record.
+
+<Aside type="caution">
+A Pushbullet account access token grants full access to the account, not just the ability to push. Create it on an account you are comfortable dedicating to alerting.
+</Aside>
+
+## Create a channel
+
+```bash
+curl -X POST https://api.siteqwality.com/notification \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notification_group_id": "<your-group-id>",
+    "type": "pushbullet",
+    "details": { "pushbullet_integration_id": "<pushbullet-integration-id>" }
+  }'
+```
+
+## Message format
+
+Each alert is a Pushbullet **note** push: a title carrying the monitor and its new status, and a body with the detail. There is no priority concept in Pushbullet, so outages and recoveries arrive identically as far as your device is concerned.
+
+## Delivery behavior
+
+Like Pushover, Pushbullet sends are **not** retried in-process, because a re-send would appear as a duplicate push. A single attempt is made; on failure the notifier fails the event so it is retried at the queue level. A lost alert is never silently dropped, but a duplicate push is possible.
+
+## Limitations
+
+Pushbullet channels fire for **HTTP monitors, browser checks, and DNS/domain expiry**. TLS expiry and cron/heartbeat monitors only support email, SMS, and Slack today. Page-speed alerts also do not support Pushbullet.
+
+## See also
+
+<LinkCard title="Channels reference" description="Full pushbullet channel detail shape." href="/incident-management/notifications/channels/#pushbullet" />
+<LinkCard title="Pushover" description="Push alerts with priority control." href="/integrations/pushover/" />
