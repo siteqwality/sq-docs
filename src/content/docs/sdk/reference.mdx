@@ -24,11 +24,11 @@ await SiteQwalityRUM.init({ applicationId: '...', clientToken: '...' });
 | `service` | string | none | Logical service name, stored in the SDK's context. |
 | `version` | string | none | App version. Attached to every error event and used for [source-map](/observability/rum/how-to/source-maps/) matching. |
 | `env` | string | none | Environment label (`prod`, `staging`, ...), stored in the SDK's context. |
-| `apiBase` | string | `https://api.siteqwality.com` | Override for the config-fetch API. |
-| `ingestBase` | string | `https://rum.siteqwality.com` | Override for the RUM ingest endpoints. |
+| `apiBase` | string | none | Deprecated and unused. Remote config is fetched from `ingestBase`; the option is kept for backwards compatibility. |
+| `ingestBase` | string | `https://rum.siteqwality.com` | Override for the RUM ingest host (event delivery and config fetch). |
 | `replayBase` | string | `https://replay.siteqwality.com` | Override for the replay segment endpoint. |
 
-`init` is idempotent: a second call while an instance exists is a no-op. On init the SDK fetches its server-side config (session filters + privacy settings) from `{apiBase}/v1/rum/config/{applicationId}` and refreshes it every 5 minutes.
+`init` is idempotent: a second call while an instance exists is a no-op. On init the SDK fetches its server-side config (session filters + privacy settings) from `GET {ingestBase}/v1/config`, authenticated by the client token, and refreshes it every 5 minutes. The fetch has a 5 second timeout and never throws: on any failure (network error, non-2xx, unexpected response shape) the SDK falls back to safe defaults, meaning no session filters and `mask_inputs: true` / `mask_text: false`. A failed refresh keeps the last known config.
 
 ## Public methods
 

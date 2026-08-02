@@ -58,9 +58,9 @@ Managed under `/rum/{app_id}/releases`. See [Source maps](/observability/rum/how
 |---|---|---|
 | `version` | string | Release version, 1 to 255 characters. Must match the `version` passed to the SDK's `init`. |
 
-## SDK config endpoint
+## SDK config
 
-`GET /rum/{app_id}/config` returns what the SDK fetches at init and refreshes every 5 minutes:
+The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/config`, authenticated by the client token, at init and every 5 minutes after. The dashboard API exposes the same payload at `GET /rum/{app_id}/config` (session-authed):
 
 | Field | Description |
 |---|---|
