@@ -1,0 +1,102 @@
+---
+title: Customer audit log
+description: Every change made through the dashboard or API, with who made it, readable for the last 90 days.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+The audit log answers "who changed this, and when". Every mutating request made against your account is recorded with the actor, the action, the request path and status, the source IP, and the user agent.
+
+Find it under **Account → Audit Log**. Only account **owners** can read it, because it exposes other members' actions and IP addresses.
+
+## What is and is not recorded
+
+**Recorded:** every authenticated `POST`, `PUT`, `PATCH` and `DELETE` against your account, whoever made it and whichever credential they used.
+
+**Not recorded:**
+
+- **Reads.** `GET` requests are never logged. Nothing tells you who *looked* at something, only who changed it.
+- **Unauthenticated requests**, including ones whose credentials were rejected.
+- **SiteQwality staff actions**, which live in a separate internal audit log. Staff acting *as* one of your users through impersonation do appear here, marked as such.
+
+A request that authenticates and then fails validation **is** recorded, with the resulting status. That is intentional: a rejected attempt to delete a monitor is worth seeing.
+
+## Actor types
+
+| Actor type | Meaning |
+|---|---|
+| `session` | A logged-in team member. `actor_user_id` identifies them. |
+| `m2m` | An [M2M API client](/enterprise/api-clients/). `actor_m2m_client_id` identifies it. |
+| `api_key` | A static API key. |
+| `impersonated_staff` | A SiteQwality staff member acting as one of your users. `impersonated_by` records which staff member. |
+| `system` | Reserved. Nothing produces it today. |
+
+## Reading the log
+
+Each entry carries:
+
+| Field | Description |
+|---|---|
+| `occurred_at` | When, in UTC. |
+| `actor_type`, `actor_user_id`, `actor_m2m_client_id`, `impersonated_by` | Who. |
+| `action` | The path with UUIDs removed, dot-joined. |
+| `target_kind`, `target_id` | The resource type and, when the path had one, its ID. |
+| `http_method`, `http_path`, `http_status` | The raw request and its outcome. |
+| `request_ip`, `user_agent` | Where from. |
+
+`action` is derived from the path, so it groups related calls without the verb. Some real examples:
+
+| Request | `action` |
+|---|---|
+| `POST /http/job` | `http.job` |
+| `DELETE /http/job/{id}` | `http.job` |
+| `POST /incident/{id}/acknowledge` | `incident.acknowledge` |
+| `POST /account/m2m_client` | `account.m2m_client` |
+
+The verb lives in `http_method`, so filter on both when you want "who deleted a monitor" rather than "who touched monitors".
+
+## Query it
+
+```bash
+curl -G https://api.siteqwality.com/account/audit_log \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "action=http.job" \
+  --data-urlencode "actor_type=m2m" \
+  --data-urlencode "since=2026-07-15T00:00:00Z" \
+  --data-urlencode "limit=200"
+```
+
+| Param | Default | Notes |
+|---|---|---|
+| `actor_user_id` | none | Exact UUID. |
+| `actor_type` | none | One of the five above. |
+| `action` | none | **Exact match**, not a prefix. |
+| `target_kind` | none | Exact match. |
+| `target_id` | none | Exact UUID. |
+| `since`, `until` | last 90 days | RFC 3339. |
+| `limit` | 100 | Clamped to 1..1000. |
+
+Entries come back newest first.
+
+<Aside type="caution" title="There is no cursor pagination">
+The only way to reach older entries is to move the `since` and `until` window. If a query returns exactly `limit` rows, assume there are more and narrow the range.
+</Aside>
+
+## The 90-day read window
+
+Reads are clamped to the **last 90 days**. A `since` older than that is silently pulled forward, and omitting `since` gives you exactly 90 days.
+
+Worth being precise about what that does and does not mean: **rows older than 90 days are not deleted**. Nothing purges the audit log today. The window is a read limit, not a retention policy, and a longer-term retention story is still an open product decision. If you have a compliance requirement to keep this data beyond 90 days, export what you need on a schedule rather than assuming either that it is gone or that it will stay forever.
+
+## Reliability
+
+Audit writes are best-effort. If a write fails, the underlying request still succeeds and the failure is logged internally rather than surfaced to you.
+
+That means the log is an excellent record and not a guaranteed-complete ledger. It is designed so that auditing can never take your account down.
+
+## See also
+
+<LinkCard title="M2M API clients" description="The actor type you will see most from automation." href="/enterprise/api-clients/" />
+<LinkCard title="CSV exports" description="Getting data out for longer-term storage." href="/enterprise/csv-exports/" />

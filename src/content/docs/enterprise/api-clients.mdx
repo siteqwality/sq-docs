@@ -1,0 +1,165 @@
+---
+title: M2M API clients
+description: OAuth2 client-credentials access with scoped permissions, one-time secrets, rotation, and immediate revocation.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+An **M2M API client** is a credential for automation. Unlike an [API key](/getting-started/account-and-team/#generate-api-keys), which is a long-lived bearer token with full account access, a client exchanges a secret for a short-lived token and can be restricted to exactly the resources it needs.
+
+Reach for a client when a deploy pipeline, a Terraform run, or an internal service needs API access and you want the blast radius to be small and the credential rotatable.
+
+## Create one
+
+In the dashboard, **Account → API Clients → New client**. Name it after what uses it, then tick the scopes it needs.
+
+```bash
+curl -X POST https://api.siteqwality.com/account/m2m_client/ \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Deploy pipeline",
+    "description": "Creates maintenance windows during releases",
+    "scopes": ["read:monitors", "write:incidents"]
+  }'
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `name` | yes | 1 to 128 characters after trimming. |
+| `description` | no | Free text. |
+| `scopes` | yes | Non-empty. Every entry must be a documented scope. |
+
+The response carries the client and, **exactly once**, the secret:
+
+```json
+{
+  "data": {
+    "client": {
+      "id": "<siteqwality-uuid>",
+      "client_id": "<oauth-client-id>",
+      "name": "Deploy pipeline",
+      "scopes": ["read:monitors", "write:incidents"],
+      "created_at": "2026-08-02T09:00:00Z",
+      "last_rotated_at": null
+    },
+    "client_secret": "<shown once, never again>",
+    "token_endpoint": "https://api.stytch.com/v1/public/<project>/oauth2/token"
+  }
+}
+```
+
+<Aside type="danger" title="The secret is shown once and is never stored">
+SiteQwality does not keep a copy of the secret in any form. If you lose it, the only path forward is to rotate, which invalidates the old one.
+
+Put it into your secrets manager before you close the response.
+</Aside>
+
+Creating a client requires the **owner** role and a verified email address. Listing clients does not.
+
+An account can hold **20 active clients**. Revoke an unused one to make room.
+
+## Get a token, then call the API
+
+Authentication is a standard OAuth2 client-credentials exchange against the `token_endpoint` the API returned. Do not hardcode that URL; read it from the create or list response.
+
+<Steps>
+
+1. **Exchange the secret for an access token.**
+
+   ```bash
+   curl -X POST "$TOKEN_ENDPOINT" \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "grant_type=client_credentials" \
+     -d "client_id=$CLIENT_ID" \
+     -d "client_secret=$CLIENT_SECRET" \
+     -d "scope=read:monitors write:incidents"
+   ```
+
+   You get back an `access_token`. Scopes are space-separated.
+
+2. **Call the SiteQwality API with it**, exactly like any other bearer token.
+
+   ```bash
+   curl https://api.siteqwality.com/http/jobs \
+     -H "Authorization: Bearer $ACCESS_TOKEN"
+   ```
+
+3. **Refresh when it expires.** Tokens are short-lived by design; request a new one rather than caching indefinitely.
+
+</Steps>
+
+<Aside type="note">
+The token endpoint is operated by our identity provider, not by SiteQwality, so the exact response fields follow the OAuth2 client-credentials standard rather than anything SiteQwality defines. The `token_endpoint` value in the API response is always the authoritative URL for your environment.
+</Aside>
+
+## Scopes
+
+Scopes are `read:<family>` or `write:<family>`. Nine families exist:
+
+| Family | Covers |
+|---|---|
+| `monitors` | HTTP, TLS, DNS, cron and browser checks |
+| `incidents` | Incidents, escalation policies, on-call schedules, maintenance windows |
+| `notifications` | Notification channels, groups, integrations |
+| `status_pages` | Status pages and their components |
+| `logs` | Log query, parsers, saved views |
+| `metrics` | Metric query endpoints |
+| `traces` | Trace search and detail |
+| `rum` | RUM applications and analytics |
+| `dashboards` | Dashboards and widgets |
+
+`write` covers `POST`, `PUT`, `PATCH` and `DELETE`. Everything else is `read`. **Granting `write` does not imply `read`**; if a client needs both, grant both.
+
+<Aside type="caution" title="Anything outside those nine families is refused">
+Scope checking is fail-closed. Account management, billing, authentication, staff endpoints, webhooks, per-user settings and services are **not** covered by any family, so an M2M client gets a `403` on them no matter what scopes it holds.
+
+That includes managing API clients themselves, which is deliberate: a client can never mint another client. Use a session or an API key for those operations.
+
+One consequence worth knowing: metric saved views are also unreachable, because no family maps to them today. Log saved views are reachable under `logs`.
+</Aside>
+
+Two errors distinguish the cases:
+
+| Response | Meaning |
+|---|---|
+| `403 Insufficient scopes` | The family is mapped but this client lacks the scope. |
+| `403 This endpoint is not available to M2M API clients` | The surface is not covered by any family. |
+
+## Rotate a secret
+
+```bash
+curl -X POST https://api.siteqwality.com/account/m2m_client/$CLIENT_ID/rotate_secret \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+Rotation is **immediate and has no overlap window**. The moment the call returns, the old secret stops working and the new one is shown once. Deploy the new secret before you rotate, not after.
+
+Owner role required. Rotating a revoked client returns `404`.
+
+## Revoke a client
+
+```bash
+curl -X DELETE https://api.siteqwality.com/account/m2m_client/$CLIENT_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+Revocation takes effect against the SiteQwality API **immediately**. Every M2M request is checked against the local client record, so an already-issued token stops being accepted on its very next request.
+
+The token itself remains technically valid at the identity provider until it expires naturally, so treat revocation as "this client can no longer reach SiteQwality" rather than "this token has been destroyed everywhere".
+
+Revoking twice is harmless. Owner role required.
+
+## Other behavior worth knowing
+
+- A revoked client, a soft-deleted account, or an unknown client all produce `401`.
+- A suspended account can still read through a client, but mutations return `403`.
+- Every mutating call a client makes is recorded in the [audit log](/enterprise/audit-log/) with actor type `m2m` and the client's ID.
+- There is no "fetch one client" endpoint; list them and filter.
+
+## See also
+
+<LinkCard title="Customer audit log" description="See what your clients actually did." href="/enterprise/audit-log/" />
+<LinkCard title="Account and team setup" description="API keys, roles, and the simpler credential." href="/getting-started/account-and-team/" />

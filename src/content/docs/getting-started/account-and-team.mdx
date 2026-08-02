@@ -73,6 +73,12 @@ Anything you can do in the dashboard, you can do via the API. Generate a key und
 
 Keys are scoped to the account, not the user. Revoke immediately if leaked.
 
+<Aside type="tip">
+An API key can do everything the account can. For automation that should be limited to specific resources, or that a third party operates, use an [M2M API client](/enterprise/api-clients/) instead: scoped permissions, short-lived tokens, built-in rotation, and immediate revocation.
+</Aside>
+
+Whichever you use, every change either one makes is recorded in the [audit log](/enterprise/audit-log/).
+
 ## Configure billing
 
 <Steps>

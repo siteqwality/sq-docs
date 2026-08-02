@@ -1,0 +1,65 @@
+---
+title: Enterprise
+description: Scoped API credentials, a customer-facing audit trail, CSV exports, and monthly SLA attainment reporting.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+Four capabilities aimed at teams who have to answer to someone else: a security reviewer, an auditor, a customer with a contract, or a board.
+
+<CardGrid>
+  <LinkCard
+    title="M2M API clients"
+    description="OAuth2 client-credentials access with per-family scopes, one-time secrets, rotation and immediate revocation."
+    href="/enterprise/api-clients/"
+  />
+  <LinkCard
+    title="Customer audit log"
+    description="Every change made through the dashboard or API, with the actor, the request and the source IP."
+    href="/enterprise/audit-log/"
+  />
+  <LinkCard
+    title="CSV exports"
+    description="Raw check results, per-monitor uptime summaries, and log query results as downloadable CSV."
+    href="/enterprise/csv-exports/"
+  />
+  <LinkCard
+    title="SLA reports"
+    description="Monthly uptime attainment against a target, per monitor or across the account."
+    href="/enterprise/sla-reports/"
+  />
+</CardGrid>
+
+## Which credential should automation use?
+
+| | API key | M2M client |
+|---|---|---|
+| Shape | Long-lived bearer token | Secret exchanged for short-lived tokens |
+| Access | Everything the account can do | Only the scopes you grant |
+| Revocation | Delete the key | Revoke the client, effective immediately |
+| Rotation | Create a new key, delete the old | Built in, no overlap window |
+| Audit trail | Recorded as `api_key` | Recorded as `m2m` with the client ID |
+
+An API key is the right tool for a quick script or a one-off. An [M2M client](/enterprise/api-clients/) is the right tool for anything long-lived, anything a third party operates, and anything where "what could this credential do if it leaked?" is a question you would rather have a narrow answer to.
+
+## Answering the common questions
+
+| Question | Where to look |
+|---|---|
+| "Who deleted that monitor?" | [Audit log](/enterprise/audit-log/), filtered by `action` and `http_method`. |
+| "Did we meet 99.9% last quarter?" | [SLA reports](/enterprise/sla-reports/) with `months=3`. |
+| "Can you send us the raw check data?" | [CSV exports](/enterprise/csv-exports/). |
+| "What can this integration actually touch?" | The client's [scopes](/enterprise/api-clients/#scopes). |
+
+<Aside type="note">
+Two boundaries worth knowing up front: the audit log records **changes, not reads**, and its read window is the last 90 days. SLA figures come from a daily rollup that refreshes at 03:00 UTC, so the current day is usually missing. Both are covered in detail on their own pages.
+</Aside>
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Account and team setup" description="Roles, API keys, and billing." href="/getting-started/account-and-team/" />
+  <LinkCard title="API Reference" description="Wire-level request and response shapes." href="/api-reference/" />
+</CardGrid>

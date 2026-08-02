@@ -328,6 +328,17 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'Enterprise',
+					collapsed: true,
+					items: [
+						{ label: 'Overview', slug: 'enterprise/overview' },
+						{ label: 'M2M API clients', slug: 'enterprise/api-clients' },
+						{ label: 'Customer audit log', slug: 'enterprise/audit-log' },
+						{ label: 'CSV exports', slug: 'enterprise/csv-exports' },
+						{ label: 'SLA reports', slug: 'enterprise/sla-reports' },
+					],
+				},
+				{
 					label: 'SDK Reference',
 					collapsed: true,
 					items: [

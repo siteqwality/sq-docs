@@ -1,0 +1,85 @@
+---
+title: SLA reports
+description: Monthly uptime attainment against a target, per monitor or across the account.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+An SLA report answers "did we hit our uptime commitment last month?" for each UTC calendar month, per monitor, with a clear met or breached verdict.
+
+Find it on the **SLA** tab of any HTTP monitor, or pull the whole account at once through the API.
+
+## Read one
+
+```bash
+# One monitor
+curl -G "https://api.siteqwality.com/http/job/$JOB_ID/sla" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "months=6"
+
+# Every monitor
+curl -G "https://api.siteqwality.com/monitors/sla" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "months=6"
+```
+
+`months` defaults to **3** and is clamped to the range 1 to 24. Out-of-range values are clamped rather than rejected, so `months=99` quietly gives you 24. The dashboard offers 3, 6 and 12, defaulting to 6.
+
+Each month returns:
+
+| Field | Meaning |
+|---|---|
+| `month` | `YYYY-MM`, newest first. |
+| `uptime_percentage` | Uptime for the month, or `null` with no data. |
+| `days_with_data` | How many days actually contributed. |
+| `target` | The target this month was judged against. |
+| `attained` | `true`, `false`, or `null` with no data. |
+
+The account-wide report adds `breached_months` per monitor, counting months where `attained` is `false`. Months with no data are not counted as breaches.
+
+## Where the target comes from
+
+| `target_source` | Meaning |
+|---|---|
+| `status_page` | Taken from an SLA target you set on a status page. |
+| `default` | No target configured, so the default **99.9%** applies. |
+
+The target is configured on the monitor's row in a status page, not on the monitor itself. If a monitor appears on several status pages with different targets, the **highest** (strictest) one wins.
+
+<Aside type="caution">
+A status page lets you set an SLA target on browser checks too, but browser checks do not appear in SLA reports at all. That target is stored and never used.
+</Aside>
+
+## How the number is calculated
+
+This is the part worth reading before you put a figure in front of a customer.
+
+**Month uptime is the unweighted average of that month's daily uptime percentages.** Every day with data counts equally, whatever its traffic. A day with a handful of checks moves the monthly figure exactly as much as a fully sampled day, so a partial day at the start of monitoring, or a day when a monitor was paused for most of it, can pull the month around more than you would expect. Check `days_with_data` when a number looks surprising.
+
+It is not a request-weighted or minutes-of-downtime figure.
+
+Other rules:
+
+- **Days with no data are excluded**, not treated as 0% or 100%.
+- **A month with no data at all** returns `uptime_percentage: null` and `attained: null` rather than a breach.
+- **Attainment is inclusive.** Exactly 99.900% against a 99.9% target is attained.
+- Months are **UTC calendar months**, so the newest month is always month-to-date.
+
+<Aside type="caution" title="Today is usually missing">
+SLA figures come from a daily rollup that **refreshes once a day at 03:00 UTC**. The current UTC day has no row until that refresh runs, and before 03:00 UTC yesterday is missing too.
+
+So the current month is always slightly behind, and an outage that happened this morning will not appear in the SLA report until tomorrow. It is visible immediately in the monitor's own check history. For contractual reporting, run the report a day after month end.
+</Aside>
+
+## Limitations
+
+- **HTTP monitors only.** Browser, cron, DNS and TLS monitors have no SLA report.
+- **JSON only.** There is no SLA CSV or PDF export. The [monitor uptime CSV](/enterprise/csv-exports/#monitor-uptime-summary) is the closest thing and uses the same daily-average convention.
+- **No scheduled or emailed reports.** Reports are pull-only.
+
+## See also
+
+<LinkCard title="CSV exports" description="Uptime summaries and raw check results." href="/enterprise/csv-exports/" />
+<LinkCard title="Status pages" description="Where the SLA target is configured." href="/status-pages/reference/" />
