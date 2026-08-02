@@ -51,7 +51,7 @@ The response includes `id`, `account_id`, and the inferred ping URL: `https://pi
 Add a single line to the **end** of your job, after the work has succeeded.
 
 ```bash
-# Bash — at the end of nightly_backup.sh
+# Bash (at the end of nightly_backup.sh)
 PING_URL="https://ping.siteqwality.com/<account-id>/<cron-job-id>"
 
 if pg_dump $DB > backup.sql && aws s3 cp backup.sql s3://backups/; then
@@ -84,7 +84,7 @@ async function ping() {
   try {
     await fetch(PING_URL, { method: "POST" });
   } catch {
-    // intentional swallow — don't let ping failures break the job
+    // intentional swallow so ping failures don't break the job
   }
 }
 

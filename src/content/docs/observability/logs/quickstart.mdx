@@ -1,6 +1,6 @@
 ---
 title: Logs quickstart
-description: Send a log, search it, save the search as a view — in 5 minutes.
+description: Send a log, search it, and save the search as a view in 5 minutes.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -86,7 +86,7 @@ Returns `{logs: [...], total: N}`.
 
 ## 4. Save the search
 
-In the dashboard's Logs Explorer, after applying your filters click **Save view**, name it `Billing errors — prod`. It now appears in the **Saved views** sidebar; share with your team by toggling **Shared**.
+In the dashboard's Logs Explorer, after applying your filters click **Save view**, name it `Billing errors (prod)`. It now appears in the **Saved views** sidebar; share with your team by toggling **Shared**.
 
 Or via the API:
 
@@ -95,7 +95,7 @@ curl -X POST https://api.siteqwality.com/log_saved_views \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Billing errors — prod",
+    "name": "Billing errors (prod)",
     "description": "All errors from billing-api in prod",
     "is_shared": true,
     "filters": {
@@ -130,7 +130,7 @@ class SqHandler(logging.Handler):
         )
 ```
 
-**Ship via your existing log pipeline** (Vector, Fluent Bit, Filebeat) — point it at `https://logs.siteqwality.com/v1/ingest` with the API key in the Authorization header.
+**Ship via your existing log pipeline** (Vector, Fluent Bit, Filebeat). Point it at `https://logs.siteqwality.com/v1/ingest` with the API key in the Authorization header.
 
 For high-volume apps, batch via NDJSON: stick to `Content-Type: application/x-ndjson` and submit one JSON object per line, up to ~1MB per request.
 

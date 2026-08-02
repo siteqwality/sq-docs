@@ -1,6 +1,6 @@
 ---
 title: Uptime monitoring
-description: Five check types — HTTP, SSL/TLS, DNS, cron heartbeats, and full-browser synthetic — running on a schedule from one or more regions.
+description: Five check types (HTTP, SSL/TLS, DNS, cron heartbeats, and full-browser synthetic) running on a schedule from one or more regions.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -21,9 +21,9 @@ Every uptime monitor in SiteQwality follows the same lifecycle: configure → ru
 
 - **You have a URL that should be `200 OK`.** Use [HTTP checks](/uptime-monitoring/http-checks/overview/). You can also opt-in to a paired TLS check (cert expiry) and DNS check (resolver health) on the same monitor.
 - **You only care about cert expiry, not whether the site is up.** Use [SSL/TLS checks](/uptime-monitoring/ssl-tls-checks/overview/). Otherwise, just enable the TLS sub-check on your HTTP monitor.
-- **You only care about DNS, not HTTP.** Use [DNS checks](/uptime-monitoring/dns-checks/overview/) — useful for apex domains where there's no HTTP server.
-- **You have a cron job that should run every N minutes.** Use a [cron heartbeat](/uptime-monitoring/cron-checks/overview/) — your job pings SiteQwality at the end of each successful run; SiteQwality alerts when it doesn't.
-- **You need to validate a multi-step user flow.** Use [browser checks](/uptime-monitoring/browser-checks/overview/) — write a Playwright script, SiteQwality runs it on schedule and captures a HAR + video on failure.
+- **You only care about DNS, not HTTP.** Use [DNS checks](/uptime-monitoring/dns-checks/overview/). They're useful for apex domains where there's no HTTP server.
+- **You have a cron job that should run every N minutes.** Use a [cron heartbeat](/uptime-monitoring/cron-checks/overview/). Your job pings SiteQwality at the end of each successful run, and SiteQwality alerts when it doesn't.
+- **You need to validate a multi-step user flow.** Use [browser checks](/uptime-monitoring/browser-checks/overview/). You write a Playwright script and SiteQwality runs it on schedule, capturing a HAR + video on failure.
 
 ## Cross-cutting concerns
 
@@ -31,10 +31,10 @@ Every uptime monitor in SiteQwality follows the same lifecycle: configure → ru
 
 By default checks run from `aws-us-east-1`. Multi-region is paid; available regions:
 
-- `aws-us-east-1` — N. Virginia
-- `aws-us-east-2` — Ohio
-- `aws-us-west-1` — N. California
-- `aws-eu-west-2` — London
+- `aws-us-east-1`: N. Virginia
+- `aws-us-east-2`: Ohio
+- `aws-us-west-1`: N. California
+- `aws-eu-west-2`: London
 
 Set `min_healthy_regions` to control how many regions must report healthy before the monitor's overall status is considered healthy. Set it equal to the region count for unanimity, or to 1 to tolerate any single-region blip.
 
@@ -43,13 +43,13 @@ Set `min_healthy_regions` to control how many regions must report healthy before
 | Check type | Minimum interval (free) | Minimum interval (paid) |
 |---|---|---|
 | HTTP | 60 s | 30 s |
-| Cron heartbeat | n/a | n/a — driven by your job's ping cadence |
+| Cron heartbeat | n/a | n/a (driven by your job's ping cadence) |
 | Browser | 5 min | 5 min |
 | TLS, DNS (paired with HTTP) | inherits HTTP | inherits HTTP |
 
 ### Tags
 
-Every monitor accepts a `tags: string[]` field. Use tags consistently — `service:api`, `env:prod`, `team:platform` — and you can:
+Every monitor accepts a `tags: string[]` field. Use tags consistently (`service:api`, `env:prod`, `team:platform`) and you can:
 
 - Match [maintenance windows](/incident-management/maintenance/overview/) to silence by tag.
 - Filter dashboards and alerts by tag.
@@ -57,12 +57,12 @@ Every monitor accepts a `tags: string[]` field. Use tags consistently — `servi
 
 ### Services (logical grouping)
 
-Beyond tags, you can attach a monitor to a *service* (`service_id`). Services are higher-level groupings — see **Services** in the dashboard.
+Beyond tags, you can attach a monitor to a *service* (`service_id`). Services are higher-level groupings. See **Services** in the dashboard.
 
 ## See also
 
 <CardGrid>
-  <LinkCard title="HTTP checks" description="The most common monitor — request a URL, assert on the response." href="/uptime-monitoring/http-checks/overview/" />
+  <LinkCard title="HTTP checks" description="The most common monitor. Request a URL, assert on the response." href="/uptime-monitoring/http-checks/overview/" />
   <LinkCard title="SSL/TLS checks" description="Track cert expiry on its own or paired with HTTP." href="/uptime-monitoring/ssl-tls-checks/overview/" />
   <LinkCard title="DNS checks" description="Verify resolver answers for any record type." href="/uptime-monitoring/dns-checks/overview/" />
   <LinkCard title="Cron checks" description="Receive heartbeats from your scheduled jobs." href="/uptime-monitoring/cron-checks/overview/" />

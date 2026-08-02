@@ -25,14 +25,14 @@ If your logs arrive as plain strings (`Apache combined`, syslog, key/value pairs
 
 A parser has:
 
-- `name` — display label.
-- `parse_type` — one of the above.
-- `parse_config` — type-specific config (regex pattern, CSV headers, kv separator).
-- `field_mapping` — map extracted fields to the canonical log fields (`level`, `host`, etc.).
-- `detect_pattern` — optional regex; only logs matching this run through the parser.
-- `source_filter` — optional source name; only logs from this source run through the parser.
-- `priority` — when multiple parsers match, lower number runs first.
-- `enabled` — toggle on/off without deleting.
+- `name`: display label.
+- `parse_type`: one of the above.
+- `parse_config`: type-specific config (regex pattern, CSV headers, kv separator).
+- `field_mapping`: maps extracted fields to the canonical log fields (`level`, `host`, etc.).
+- `detect_pattern`: optional regex; only logs matching this run through the parser.
+- `source_filter`: optional source name; only logs from this source run through the parser.
+- `priority`: when multiple parsers match, lower number runs first.
+- `enabled`: toggle on/off without deleting.
 
 ## Example: Apache combined
 

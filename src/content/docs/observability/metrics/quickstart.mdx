@@ -36,7 +36,7 @@ curl -X POST https://metrics.siteqwality.com/metrics \
 A `202 Accepted` means the metrics were queued. Datapoints land in ClickHouse within ~10 seconds.
 
 <Aside type="tip">
-The ingest endpoint accepts up to 1000 metrics per request. Batch where you can — fewer requests = lower API gateway costs and faster ingestion.
+The ingest endpoint accepts up to 1000 metrics per request. Batch where you can. Fewer requests = lower API gateway costs and faster ingestion.
 </Aside>
 
 ## 2. Send some more so we have a series
@@ -59,7 +59,7 @@ for i in {1..30}; do
 done
 ```
 
-This gives you 30 points over 2.5 minutes — enough to render a chart.
+This gives you 30 points over 2.5 minutes, enough to render a chart.
 
 ## 3. Query the metric
 

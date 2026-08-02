@@ -1,6 +1,6 @@
 ---
 title: Configure session filters
-description: Activate detail collection and replay only for sessions that match interesting conditions — keeps cost down.
+description: Activate detail collection and replay only for sessions that match interesting conditions, so costs stay down.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -21,12 +21,12 @@ This is the core cost-control mechanism: capture every user lightly, and only th
 
 Each filter has:
 
-- `name` — display label.
-- `filter_type` — one of the above.
-- `conditions` — type-specific config.
-- `capture_replay` — if `true`, also activate session replay (loads the rrweb chunk).
-- `enabled` — toggle off without deleting.
-- `priority` — when multiple filters could match, lowest priority wins (today, all matching filters activate).
+- `name`: display label.
+- `filter_type`: one of the above.
+- `conditions`: type-specific config.
+- `capture_replay`: if `true`, also activate session replay (loads the rrweb chunk).
+- `enabled`: toggle off without deleting.
+- `priority`: when multiple filters could match, lowest priority wins (today, all matching filters activate).
 
 ## Examples
 
@@ -37,7 +37,7 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Error sessions — capture detail",
+    "name": "Error sessions (capture detail)",
     "filter_type": "error",
     "conditions": {},
     "capture_replay": false,
@@ -55,7 +55,7 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Error sessions — replay",
+    "name": "Error sessions (replay)",
     "filter_type": "error",
     "conditions": {},
     "capture_replay": true,
@@ -84,7 +84,7 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
 
 Result: any session with LCP > 2.5s gets replay.
 
-### "Custom — match logged-in admin users"
+### "Custom: match logged-in admin users"
 
 ```bash
 curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
@@ -100,26 +100,26 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
   }'
 ```
 
-Custom filter conditions are a free-form JSON object — the dashboard builder gives you a UI; via API you compose them by key/value matches against session metadata.
+Custom filter conditions are a free-form JSON object. The dashboard builder gives you a UI for them; via API you compose them by key/value matches against session metadata.
 
 ## Sampling vs filtering
 
 Both reduce volume. The difference:
 
-- **Sampling** is random — keep N% of sessions regardless of content.
-- **Filtering** is targeted — keep sessions matching a condition.
+- **Sampling** is random, keeping N% of sessions regardless of content.
+- **Filtering** is targeted, keeping only the sessions that match a condition.
 
-SiteQwality currently uses filtering, not sampling. For "I want 1% of all sessions replayed at random" the workaround today is a `custom` filter that matches based on a hash of the session ID — talk to support for the canonical pattern.
+SiteQwality currently uses filtering, not sampling. For "I want 1% of all sessions replayed at random" the workaround today is a `custom` filter that matches based on a hash of the session ID. Talk to support for the canonical pattern.
 
 ## Recommended starting filter set
 
 For a production SaaS:
 
-1. **Error sessions — replay** (capture_replay: true). All errored sessions get the full picture.
-2. **Slow LCP — capture detail** (capture_replay: false). LCP > 4s; gets click targets and resource timings to diagnose.
-3. **Admin/internal sessions — replay** (capture_replay: true). For when staff trip over a bug.
+1. **Error sessions (replay)**, capture_replay: true. All errored sessions get the full picture.
+2. **Slow LCP (capture detail)**, capture_replay: false. LCP > 4s; gets click targets and resource timings to diagnose.
+3. **Admin/internal sessions (replay)**, capture_replay: true. For when staff trip over a bug.
 
-Keep total active replay volume low — replay segments are large and storage adds up.
+Keep total active replay volume low. Replay segments are large and storage adds up.
 
 <Aside type="tip">
 The SDK fetches the filter list at session start. Changes apply to **new sessions**, not in-flight ones. Account-level changes propagate within ~5 minutes thanks to a small in-memory cache on the SDK config endpoint.

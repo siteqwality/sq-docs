@@ -16,7 +16,7 @@ SiteQwality's notifications system has four objects and they often get confused.
 | **Contact method** | user (personal) | One way to reach me | "My phone for SMS" |
 | **Notification rule** | user (personal) | Per-urgency delivery preferences for me | "High urgency? SMS at 0min, call at 5min" |
 
-The first two are account-wide; the last two are personal — every team member configures their own. The two layers are decoupled on purpose: the team picks "where this monitor's alerts go" once; each engineer picks "how I personally want to be paged."
+The first two are account-wide; the last two are personal, and every team member configures their own. The two layers are decoupled on purpose: the team picks "where this monitor's alerts go" once; each engineer picks "how I personally want to be paged."
 
 ## Channels (notifications)
 
@@ -27,7 +27,7 @@ A *channel* is a single delivery destination. Each channel has a `type` and `det
 | `email` | `email_address` |
 | `sms` | `country_code` (int), `phone_number` |
 | `slack` | `integration_id` (a Slack integration UUID), `channel` (`#ops`) |
-| `webhook` | `integration_id` (a webhook integration UUID — the URL is on the integration) |
+| `webhook` | `integration_id` (a webhook integration UUID, with the URL held on the integration) |
 | `telegram` | `telegram_integration_id` |
 | `discord` | `discord_integration_id` |
 | `microsoft_teams` | `teams_integration_id` |
@@ -55,7 +55,7 @@ A *notification group* is the bag of channels you attach to a monitor. Two extra
 
 The delay is the cleanest way to suppress noise: if a check fails for one tick and recovers, no notification fires.
 
-A monitor can attach to multiple groups (cap of 10 per monitor) — useful when you want a single check to alert both an internal team and a customer-facing channel.
+A monitor can attach to multiple groups (cap of 10 per monitor), which is useful when you want a single check to alert both an internal team and a customer-facing channel.
 
 ## Contact methods (per user)
 

@@ -12,13 +12,13 @@ A **dashboard** is a named collection of widgets pinned to a layout, with a shar
 ## When to use dashboards
 
 - One canonical "is everything OK?" view per service.
-- Incident war-rooms — pin every relevant signal in one place.
-- Executive summaries — top-line business KPIs from your metric pipeline.
+- Incident war-rooms, with every relevant signal pinned in one place.
+- Executive summaries built from top-line business KPIs in your metric pipeline.
 
 ## When NOT to use them
 
-- For ad-hoc exploration — use the per-pillar Explorers (Logs, Metrics, Traces).
-- For alerting — alerts live in the [incident management](/incident-management/overview/) layer, not on a chart.
+- For ad-hoc exploration. Use the per-pillar Explorers (Logs, Metrics, Traces) instead.
+- For alerting. Alerts live in the [incident management](/incident-management/overview/) layer, not on a chart.
 
 ## Anatomy
 
@@ -39,7 +39,7 @@ A **dashboard** is a named collection of widgets pinned to a layout, with a shar
 | `table` | Tabular grid (group-by results, top-N lists). |
 | `log_stream` | Live-tailing log feed with filters. |
 | `monitor_status` | Status grid for a list of monitors. |
-| `text` | Markdown text — annotations, runbook links, headers. |
+| `text` | Markdown text for annotations, runbook links, and headers. |
 
 ## Data sources
 
@@ -54,7 +54,7 @@ A **dashboard** is a named collection of widgets pinned to a layout, with a shar
 
 ## Widget layout
 
-Each widget has a `layout: {x, y, w, h}` on a 12-column grid. Default is `{x: 0, y: 0, w: 6, h: 4}` — half-width, 4 rows tall. Drag to reorder in the dashboard editor.
+Each widget has a `layout: {x, y, w, h}` on a 12-column grid. Default is `{x: 0, y: 0, w: 6, h: 4}`, which is half-width and 4 rows tall. Drag to reorder in the dashboard editor.
 
 ## Time range hierarchy
 
@@ -64,10 +64,10 @@ Each widget has a `layout: {x, y, w, h}` on a 12-column grid. Default is `{x: 0,
 
 ## Auto-refresh
 
-Set `auto_refresh_seconds` to poll every N seconds. Useful for war-room dashboards on a wall TV. Don't set it on dashboards that drive expensive aggregations — refreshing every 30 seconds across 20 metric widgets is real load on ClickHouse.
+Set `auto_refresh_seconds` to poll every N seconds. Useful for war-room dashboards on a wall TV. Don't set it on dashboards that drive expensive aggregations. Refreshing every 30 seconds across 20 metric widgets is real load on ClickHouse.
 
 <Aside type="tip">
-Dashboards are per-account, not per-user. There's no privacy boundary — every team member sees every dashboard. Use `description` and naming conventions to make it clear when a dashboard is owned by a specific team.
+Dashboards are per-account, not per-user. There's no privacy boundary, so every team member sees every dashboard. Use `description` and naming conventions to make it clear when a dashboard is owned by a specific team.
 </Aside>
 
 ## See also

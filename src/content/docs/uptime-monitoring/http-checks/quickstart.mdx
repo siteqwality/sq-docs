@@ -12,13 +12,13 @@ By the end of this guide you'll have an HTTP check running every 10 minutes agai
 ## Prerequisites
 
 - A SiteQwality account ([sign up free](https://app.siteqwality.com)).
-- An API key — generate one in **Settings → API keys**. Export it as an env var:
+- An API key. Generate one in **Settings → API keys**, then export it as an env var:
 
   ```bash
   export SITEQWALITY_API_KEY="sq_live_..."
   ```
 
-- A URL to monitor. Use `https://mock.codes/200` to follow along — it always returns `200 OK`.
+- A URL to monitor. Use `https://mock.codes/200` to follow along, since it always returns `200 OK`.
 
 ## Create the check
 
@@ -35,7 +35,7 @@ By the end of this guide you'll have an HTTP check running every 10 minutes agai
    - **Method:** `GET`
    - **Run interval:** `Every 10 minutes`
 
-3. **Pick a notification group** (or create one — email is the fastest channel to test).
+3. **Pick a notification group** (or create one). Email is the fastest channel to test.
 
 4. **Click Create.**
 
@@ -68,7 +68,7 @@ The check runs immediately and shows up in your monitors list. The first result 
 
 2. **Read back the response.**
 
-   The API returns a `201 Created` with the full HTTP-job object including its `id`. Save the `id` — you'll use it to fetch results, update settings, or delete the check later.
+   The API returns a `201 Created` with the full HTTP-job object including its `id`. Save the `id`. You'll use it to fetch results, update settings, or delete the check later.
 
 3. **(Optional) Attach a notification group.**
 

@@ -12,31 +12,31 @@ The basic pattern is one line of curl, but production cron jobs need a bit more 
 ## 1. Always ping at the end, after success
 
 ```bash
-# Wrong — pings even on partial failure
+# Wrong: pings even on partial failure
 do_thing
 curl $PING_URL
 
-# Right — pings only on success
+# Right: pings only on success
 if do_thing; then
   curl $PING_URL
 fi
 ```
 
-Pinging at the start gives you "started" signal but masks "started but crashed" — usually you want the success variant.
+Pinging at the start gives you "started" signal but masks "started but crashed". Usually you want the success variant.
 
 If you need both signals, run two separate cron checks (one for "job started," one for "job completed") and ping each at the appropriate time.
 
 ## 2. Never let the ping fail the job
 
-The ping is a notification, not part of the job's correctness. If the network is flaky, the job still succeeded — don't let `curl` exit non-zero from the ping line cause your job's exit code to lie.
+The ping is a notification, not part of the job's correctness. If the network is flaky, the job still succeeded, so don't let `curl` exit non-zero from the ping line cause your job's exit code to lie.
 
 ```bash
-# Bash — || true makes failures non-fatal
+# Bash: || true makes failures non-fatal
 curl -fsS --max-time 10 --retry 3 "$PING_URL" || true
 ```
 
 ```python
-# Python — try/except swallows
+# Python: try/except swallows
 try:
     requests.post(PING_URL, timeout=10)
 except requests.RequestException:
@@ -48,7 +48,7 @@ except requests.RequestException:
 The ping endpoint is fast (~50ms p95) but can briefly fail during deploys.
 
 - **Timeout:** 10 seconds is plenty.
-- **Retries:** 2 or 3 with brief backoff. Don't retry indefinitely — that wedges the job.
+- **Retries:** 2 or 3 with brief backoff. Don't retry indefinitely, since that wedges the job.
 - **Backoff:** linear or exponential up to ~30s total budget.
 
 ```bash
@@ -68,7 +68,7 @@ curl ...
 
 ## 5. Treat the ping URL as a secret
 
-The URL contains your account ID and the cron job ID. Anyone who knows it can ping (and silence) the check. Store it in your secrets manager (Vault, AWS Secrets Manager, GitHub Actions secrets) — not in shell scripts checked into git.
+The URL contains your account ID and the cron job ID. Anyone who knows it can ping (and silence) the check. Store it in your secrets manager (Vault, AWS Secrets Manager, GitHub Actions secrets), not in shell scripts checked into git.
 
 ## 6. Distinguish your jobs in the receipt headers
 
@@ -90,7 +90,7 @@ A cron check answers "did this job run on schedule?" It's not a substitute for a
 - Use **metrics** with alert thresholds for queue depth, error rate, etc.
 - Use **logs** for the audit trail of what the job actually did.
 
-The cron check is purely "did the ping arrive in time" — keep it pure.
+The cron check is purely "did the ping arrive in time". Keep it pure.
 
 <Aside type="tip">
 A common pattern: wrap your cron job in a script that `set -e`s, runs the work, and pings at the end. Keep the ping in the wrapper, not in the job's own code, so swapping out the monitoring tool doesn't require touching app code.

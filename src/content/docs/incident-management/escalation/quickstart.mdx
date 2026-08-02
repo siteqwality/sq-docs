@@ -16,7 +16,7 @@ By the end of this guide you'll have an escalation policy that:
 
 ## Prerequisites
 
-- An on-call schedule already created — see [On-call quickstart](/incident-management/on-call/quickstart/).
+- An on-call schedule already created. See [On-call quickstart](/incident-management/on-call/quickstart/).
 - The user UUIDs of the secondary engineer and the manager (`GET /account/info`).
 
 ## 1. Create the policy
@@ -68,7 +68,7 @@ Save the returned `id`.
 <TabItem label="API">
 
 ```bash
-# Level 1 — page the on-call schedule
+# Level 1: page the on-call schedule
 curl -X POST https://api.siteqwality.com/escalation_policy/$POLICY_ID/level \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
@@ -77,7 +77,7 @@ curl -X POST https://api.siteqwality.com/escalation_policy/$POLICY_ID/level \
     "target_schedule_ids": ["'$SCHEDULE_ID'"]
   }'
 
-# Level 2 — page secondary user
+# Level 2: page secondary user
 curl -X POST https://api.siteqwality.com/escalation_policy/$POLICY_ID/level \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
@@ -86,7 +86,7 @@ curl -X POST https://api.siteqwality.com/escalation_policy/$POLICY_ID/level \
     "target_user_ids": ["44444444-aaaa-4bbb-9ccc-bbbbbbbbbbbb"]
   }'
 
-# Level 3 — page eng manager
+# Level 3: page eng manager
 curl -X POST https://api.siteqwality.com/escalation_policy/$POLICY_ID/level \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \

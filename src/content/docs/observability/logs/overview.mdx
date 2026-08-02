@@ -11,14 +11,14 @@ A **log** is a discrete event with a timestamp, level, message, and arbitrary st
 
 ## When to use logs
 
-- For **discrete events** with rich context — what happened, who triggered it, what state was the system in.
+- For **discrete events** with rich context: what happened, who triggered it, what state the system was in.
 - For the audit trail of "what happened at 14:32:17.345?"
 - When you need to grep through error context to find a pattern.
 
 ## When NOT to use logs
 
-- For "how many?" — emit a [metric](/observability/metrics/overview/). Counting logs is slow; counting metrics is the point.
-- For "why was this request slow?" — use [traces](/observability/traces/overview/). Logs alone don't show causality.
+- For "how many?", emit a [metric](/observability/metrics/overview/). Counting logs is slow; counting metrics is the point.
+- For "why was this request slow?", use [traces](/observability/traces/overview/). Logs alone don't show causality.
 
 ## Ingest
 
@@ -44,14 +44,14 @@ curl -X POST https://logs.siteqwality.com/v1/ingest \
 
 Three accepted body shapes:
 
-- **Single JSON object** — one log entry.
-- **JSON array** — multiple log entries in one request.
-- **NDJSON** (`Content-Type: application/x-ndjson`) — one JSON entry per line. Best for shipping pipelines.
+- **Single JSON object**: one log entry.
+- **JSON array**: multiple log entries in one request.
+- **NDJSON** (`Content-Type: application/x-ndjson`): one JSON entry per line. Best for shipping pipelines.
 
 Optional headers:
 
-- `X-Log-Source: <name>` — sets `source` field on every log in the request.
-- `X-Log-Parser: <parser-id>` — apply a specific [parser](/observability/logs/how-to/parsers/) to every log.
+- `X-Log-Source: <name>` sets the `source` field on every log in the request.
+- `X-Log-Parser: <parser-id>` applies a specific [parser](/observability/logs/how-to/parsers/) to every log.
 
 A `202 Accepted` means the logs were queued.
 
@@ -74,13 +74,13 @@ A `202 Accepted` means the logs were queued.
 
 Logs are queried via `GET /logs/query` with these params:
 
-- `start_time`, `end_time` — RFC 3339 window (defaults to last 1h).
-- `level` — comma-separated levels (`error,warn`).
-- `source`, `env`, `host` — exact filters.
-- `search` — full-text search of `message`.
-- `metadata_search` — full-text search of `metadata` field values.
-- `tags` — JSON-encoded `{key: value}` filter.
-- `excluded` — JSON-encoded same-shape exclusion.
+- `start_time`, `end_time`: RFC 3339 window (defaults to last 1h).
+- `level`: comma-separated levels (`error,warn`).
+- `source`, `env`, `host`: exact filters.
+- `search`: full-text search of `message`.
+- `metadata_search`: full-text search of `metadata` field values.
+- `tags`: JSON-encoded `{key: value}` filter.
+- `excluded`: JSON-encoded same-shape exclusion.
 - `sort_field` (`timestamp`), `sort_order` (`asc|desc`), `limit`, `offset`.
 
 The dashboard's **Logs Explorer** is the friendliest interface; it composes these params for you. For programmatic access (CI, scripts), call the API directly.
@@ -99,10 +99,10 @@ Returns logs since the cursor, plus a new cursor to use on the next poll. Poll e
 
 `GET /logs/insights` returns ML-derived alerts:
 
-- **Error spike** — sudden increase in `error` level vs baseline.
-- **New error** — a never-seen-before error message.
-- **Silent source** — a normally-chatty source has gone quiet.
-- **Top errors** — most frequent error messages in the window.
+- **Error spike**: sudden increase in `error` level vs baseline.
+- **New error**: a never-seen-before error message.
+- **Silent source**: a normally-chatty source has gone quiet.
+- **Top errors**: most frequent error messages in the window.
 
 Each insight comes with severity (`info`, `medium`, `high`) and a pre-built filter you can click into the Logs Explorer to investigate.
 
@@ -111,7 +111,7 @@ Each insight comes with severity (`info`, `medium`, `high`) and a pre-built filt
 Logs are billed per GB ingested + retention. The dashboard's **Settings → Billing → Usage** shows current month-to-date.
 
 <Aside type="tip">
-The cheapest log is the one you don't send. Set log levels appropriately in production — `info` and above. Use [metrics](/observability/metrics/overview/) for "how many" counters instead of logging every event.
+The cheapest log is the one you don't send. Set log levels appropriately in production (`info` and above). Use [metrics](/observability/metrics/overview/) for "how many" counters instead of logging every event.
 </Aside>
 
 ## See also

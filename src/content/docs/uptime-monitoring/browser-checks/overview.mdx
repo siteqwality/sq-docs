@@ -22,13 +22,13 @@ A **browser check** is a synthetic monitor that runs a Playwright script in a re
 
 ## When NOT to use them
 
-- For "is my API up?" — use [HTTP checks](/uptime-monitoring/http-checks/overview/). Browser checks cost ~30× more compute and are slower.
-- For "is my page fast for real users?" — use [RUM](/observability/rum/overview/). Browser checks measure synthetic latency from one IP, not your users' experience.
+- For "is my API up?" use [HTTP checks](/uptime-monitoring/http-checks/overview/). Browser checks cost ~30× more compute and are slower.
+- For "is my page fast for real users?" use [RUM](/observability/rum/overview/). Browser checks measure synthetic latency from one IP, not your users' experience.
 - For low-priority pages. Reserve browser checks for the 5–10 most important user flows.
 
 ## How it works
 
-1. You write a Playwright script — JavaScript that drives the browser using the `page` API and `step()` helpers.
+1. You write a Playwright script in JavaScript, driving the browser with the `page` API and `step()` helpers.
 2. SiteQwality runs your script in headless Chromium on Lambda on the schedule (`5m`, `10m`, `15m`, `30m`, `1h`).
 3. Each step's pass/fail, duration, and a screenshot are captured.
 4. On every run, a HAR file (full network log) and a video are uploaded to S3.
@@ -122,7 +122,7 @@ This is a browser-check limitation only. **HTTP checks really do run from all fo
 ## See also
 
 <CardGrid>
-  <LinkCard title="Quickstart" description="A working browser check in 10 minutes — login flow against a public demo." href="/uptime-monitoring/browser-checks/quickstart/" />
+  <LinkCard title="Quickstart" description="A working browser check in 10 minutes: a login flow against a public demo." href="/uptime-monitoring/browser-checks/quickstart/" />
   <LinkCard title="Reference" description="Step API, supported assertions, captured artifacts." href="/uptime-monitoring/browser-checks/reference/" />
   <LinkCard title="HTTP checks" description="The cheaper alternative for plain endpoint health." href="/uptime-monitoring/http-checks/overview/" />
 </CardGrid>

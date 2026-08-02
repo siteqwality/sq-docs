@@ -136,11 +136,11 @@ curl https://api.siteqwality.com/browser_check/$CHECK_ID/results/$RESULT_ID/arti
 Browser scripts often need tuning before they're reliable:
 
 - **Wait for network idle** at navigation (`{ waitUntil: 'networkidle' }`) for SPAs.
-- **Use text selectors** (`text=Sign in`) over CSS classes — they survive design refactors.
-- **Wait for selectors before interacting** — `await page.waitForSelector(...)` then `await page.click(...)` is more robust than just `click()`.
-- **Set explicit timeouts on assertions** — `waitForSelector(..., { timeout: 10000 })` is clearer than relying on the default 30s.
+- **Use text selectors** (`text=Sign in`) over CSS classes. They survive design refactors.
+- **Wait for selectors before interacting.** `await page.waitForSelector(...)` then `await page.click(...)` is more robust than just `click()`.
+- **Set explicit timeouts on assertions.** `waitForSelector(..., { timeout: 10000 })` is clearer than relying on the default 30s.
 
-The dashboard's "Run now" button gives a quick iteration loop — edit script, save, click Run, see result.
+The dashboard's "Run now" button gives a quick iteration loop: edit script, save, click Run, see result.
 
 <Aside type="tip">
 For login flows in real apps, store the credentials in your secrets manager and reference them via your CI's environment when you `terraform apply` or `curl` the API. Don't bake real production secrets into the script field.

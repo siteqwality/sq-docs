@@ -18,9 +18,9 @@ import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
 ## When NOT to use RUM
 
-- For "is the site up?" — that's a [browser check](/uptime-monitoring/browser-checks/overview/) or HTTP check.
-- For backend performance — use [traces](/observability/traces/overview/).
-- For a single canary value — RUM is statistical (millions of points), not deterministic.
+- Answering "is the site up?" is a job for a [browser check](/uptime-monitoring/browser-checks/overview/) or an HTTP check.
+- Backend performance belongs in [traces](/observability/traces/overview/).
+- A single canary value won't come from RUM, which is statistical (millions of points), not deterministic.
 
 ## How it works
 
@@ -34,14 +34,14 @@ You install the `@siteqwality/rum` SDK in your front-end. It:
 
 The SDK is **two layers**:
 
-- **Always-on collection** of light measurements (web vitals, view counts, error counts) — sent on every session.
-- **Detail collection** (resource timings, individual error stacks, click targets) — activated only when a [session filter](/observability/rum/how-to/session-filters/) matches the session. Keeps cost down by not capturing every detail for every user.
+- **Always-on collection** of light measurements (web vitals, view counts, error counts), sent on every session.
+- **Detail collection** (resource timings, individual error stacks, click targets), activated only when a [session filter](/observability/rum/how-to/session-filters/) matches the session. Keeps cost down by not capturing every detail for every user.
 
 [Session replay](/observability/replay/overview/) is the third tier: pixel playback, activated only by replay-enabled session filters. See its own page.
 
 ## RUM application
 
-Each install of the SDK targets a **RUM application** — typically one per domain or one per major build. Each app has:
+Each install of the SDK targets a **RUM application**, typically one per domain or one per major build. Each app has:
 
 - A unique `application_id` and a public `client_token`.
 - A `domain` for the dashboard's "Open in app" links.
@@ -88,7 +88,7 @@ For static sites, drop in a script tag:
 </script>
 ```
 
-The CDN bundle code-splits — `rrweb` (replay engine) is loaded only when a replay-enabled filter activates, so it's free for users not being replayed.
+The CDN bundle code-splits. `rrweb` (replay engine) is loaded only when a replay-enabled filter activates, so it's free for users not being replayed.
 
 ## Tracking custom data
 
@@ -117,8 +117,8 @@ SiteQwalityRUM.addAction('checkout_step_2', { variant: 'A' });
 
 The SDK respects two privacy toggles set on the RUM application:
 
-- `mask_inputs` — replace input values with `***` before sending.
-- `mask_text` — replace user-visible text with `***` (for replay only).
+- `mask_inputs`: replace input values with `***` before sending.
+- `mask_text`: replace user-visible text with `***` (for replay only).
 
 Set these conservatively if you handle PII or financial data. See [replay privacy](/observability/replay/overview/#privacy).
 
