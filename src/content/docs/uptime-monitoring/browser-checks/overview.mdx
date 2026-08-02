@@ -1,7 +1,7 @@
 ---
 title: Browser checks
 description: Run a Playwright script in a real Chromium on a schedule. Captures HAR, video, web vitals, and console errors per run.
-last_verified: 2026-05-03
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -34,7 +34,7 @@ A **browser check** is a synthetic monitor that runs a Playwright script in a re
 4. On every run, a HAR file (full network log) and a video are uploaded to S3.
 5. Web vitals (LCP, FCP, CLS, TTFB) are extracted from the page and reported.
 6. Console errors and unhandled exceptions are captured.
-7. Status flips to `failed` when steps fail, with the same `pending_failure` debounce as other checks (transient failures don't immediately page).
+7. Status flips to `failed` when steps fail, and alerts fire on that first confirmed failure. Browser checks have no consecutive-failure debounce; the [`confirmation_threshold`](/uptime-monitoring/http-checks/how-to/confirmation-threshold/) knob is HTTP-only.
 
 The script runs inside a sandboxed `async` function with `page` (Playwright Page) and `step` (your wrapper for tracked steps) injected:
 
@@ -80,11 +80,44 @@ Available frequencies: `5m`, `10m`, `15m`, `30m`, `1h`. Browser checks are bille
 Browser checks are paid-only. Single-region runs are included on Pro plans; multi-region checks need a higher tier.
 </Aside>
 
+## Failure alerts carry the failed step and a screenshot
+
+When a browser check fails, the alert names the **first failed step** and links to the **screenshot captured at that step**, so you can often diagnose without opening the dashboard.
+
+This enrichment appears on **email and Slack** alerts. Other channels get the monitor name and error message only.
+
+Three things determine whether you get it:
+
+- **The failure must happen inside a `step()` call.** A script that throws at the top level, fails to navigate, or times out before any step runs produces no step results, so there is no step name and no screenshot. Wrap your actions in `step('name', async () => { ... })` if you want named failure context.
+- **The step must have a name.** An unnamed step yields no enrichment at all, including no screenshot link.
+- **Delayed alerts are not enriched.** If a notification group has `delay_send_after_minutes` set, the delayed alert arrives without the step name or screenshot. The immediate alert is the enriched one.
+
+<Aside type="caution" title="Screenshot links are short-lived">
+The screenshot URL in an alert is pre-signed with the alerting service's own temporary credentials, so it stops working when that credential session expires, typically within a few hours rather than days.
+
+Open it while triaging. After that, get the screenshot from the check's run detail in the dashboard, where it does not expire.
+</Aside>
+
+## Regions
+
+<Aside type="danger" title="Browser checks all run from US East today">
+The region selector accepts the same four values as HTTP checks, but **only one browser-runner exists in production, in `aws-us-east-1`**. Whichever regions you select:
+
+- the check executes in US East (Virginia);
+- the result is recorded against `aws-us-east-1`, which is where it genuinely ran, not the region you asked for;
+- selecting several regions produces **one** run and one result, not one per region;
+- `min_healthy_regions` is capped to the number of regions that can actually serve the check, so a 3-of-3 configuration is evaluated as 1-of-1. Without that cap such a monitor could never report healthy.
+
+`POST /browser_check/{id}/run` tells you the truth in its response: it reports the region the run actually executed in.
+
+This is a browser-check limitation only. **HTTP checks really do run from all four regions.**
+</Aside>
+
 ## Constraints
 
 - **Script size**: anything under 50KB. The script is stored in Postgres alongside the check config.
 - **Timeout**: `1`–`300` seconds per run. Includes browser startup; the user script gets `timeout - 30s`.
-- **Regions**: same list as HTTP checks (`aws-us-east-1`, `aws-us-east-2`, `aws-us-west-1`, `aws-eu-west-2`).
+- **Regions**: accepts `aws-us-east-1`, `aws-us-east-2`, `aws-us-west-1`, `aws-eu-west-2`, with the caveat above.
 
 ## See also
 

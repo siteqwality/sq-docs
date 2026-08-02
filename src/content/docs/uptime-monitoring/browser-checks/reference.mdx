@@ -1,7 +1,7 @@
 ---
 title: Browser check reference
 description: Settings, the step API, supported assertions, and captured artifacts.
-last_verified: 2026-05-03
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -17,20 +17,30 @@ The full request schema is in the auto-generated [API Reference](/api-reference/
 | `script` | string | required | The Playwright script body. Wrapped in an async IIFE; max ~50KB. |
 | `frequency` | enum | required | `5m`, `10m`, `15m`, `30m`, or `1h`. |
 | `timeout_seconds` | int | `60` | Max script runtime, 1–300. The actual user-script budget is `timeout - 30s`. |
-| `check_regions` | string[] | `["aws-us-east-1"]` | Regions to run from. Subset of [supported regions](#supported-regions). |
-| `min_healthy_regions` | int | `1` | Required healthy regions for overall status. Must be ≤ region count. |
+| `check_regions` | string[] | `["aws-us-east-1"]` | Regions to run from. Subset of [supported regions](#supported-regions). Every value currently resolves to `aws-us-east-1`, see the note there. |
+| `min_healthy_regions` | int | `1` | Required healthy regions for overall status. Must be ≤ region count, and is additionally capped at runtime to the number of regions that can actually serve the check. |
 | `group_notification_ids` | uuid[] | `[]` | Notification groups; cap of 10. |
 | `state` | enum | `active` | `active` or `paused`. Paused checks don't run. |
 | `tags` | string[] | `[]` | Free-form labels for filtering and maintenance windows. |
 | `service_id` | uuid \| null | `null` | Optional logical service grouping. |
-| `current_status` | enum | derived | `success`, `pending_failure`, `failed`. |
+| `current_status` | enum | derived | `success` or `failed`. A legacy `pending_failure` value exists in the enum but nothing sets it. |
 
 ## Supported regions
 
-- `aws-us-east-1` — N. Virginia
-- `aws-us-east-2` — Ohio
-- `aws-us-west-1` — N. California
-- `aws-eu-west-2` — London
+These four values are accepted by the API:
+
+| Value | Location |
+|---|---|
+| `aws-us-east-1` | N. Virginia, USA (default) |
+| `aws-us-east-2` | Ohio, USA |
+| `aws-us-west-1` | N. California, USA |
+| `aws-eu-west-2` | London, UK |
+
+<Aside type="danger" title="Only aws-us-east-1 has a browser runner today">
+A browser check requested for any other region falls back to the US East runner, and its result is recorded against `aws-us-east-1` because that is where it genuinely ran. Multiple selected regions collapse into a single run.
+
+See [regions](/uptime-monitoring/browser-checks/overview/#regions) for the full behavior, including how `min_healthy_regions` is capped. HTTP checks are unaffected and do run in all four.
+</Aside>
 
 ## The script API
 
@@ -127,7 +137,7 @@ The HAR and video URLs are presigned, expire in 1 hour, and are S3-direct (no pr
 | `GET` | `/browser_check/{id}` | Detail. |
 | `PUT` | `/browser_check/{id}` | Update (partial body). |
 | `DELETE` | `/browser_check/{id}` | Delete. |
-| `POST` | `/browser_check/{id}/run` | Trigger an immediate run. |
+| `POST` | `/browser_check/{id}/run` | Trigger an immediate run. The response reports the regions the run actually executed in, which may differ from the check's configured regions. |
 | `GET` | `/browser_check/{id}/results` | List recent results. |
 | `GET` | `/browser_check/{id}/results/{result_id}/artifact_url` | Presigned HAR + video URLs. |
 | `GET` | `/browser_check/{id}/vitals` | Aggregated web vitals over time. |
