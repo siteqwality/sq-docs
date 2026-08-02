@@ -1,20 +1,20 @@
 ---
 title: Maintenance windows
-description: Silence specific monitors during planned work — one-time or recurring — so deploys don't page on-call.
-last_verified: 2026-05-03
+description: Silence specific monitors during planned work, one-time or recurring, so deploys don't page on-call.
+last_verified: 2026-08-01
 owner: jj
 ---
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-A **maintenance window** is a time range during which monitors with matching tags don't open incidents and don't fire notifications. Checks still run — failures are still recorded — they just don't escalate to humans.
+A **maintenance window** is a time range during which monitors with matching tags don't page. Checks still run and failures are still recorded; they just don't reach humans while the window is active.
 
 Use maintenance windows for:
 
-- **Scheduled deploys** — the four-second blip during your zero-downtime rollout shouldn't page anyone.
-- **Database migrations** — the ten-second connection-pool restart isn't an outage.
-- **Vendor maintenance** — your CDN's scheduled maintenance shouldn't page you.
-- **Long-running batch jobs** — the queue spike during nightly ETL is expected.
+- **Scheduled deploys**: the four-second blip during your zero-downtime rollout shouldn't page anyone.
+- **Database migrations**: the ten-second connection-pool restart isn't an outage.
+- **Vendor maintenance**: your CDN's scheduled maintenance shouldn't page you.
+- **Long-running batch jobs**: the queue spike during nightly ETL is expected.
 
 ## Two types
 
@@ -36,7 +36,7 @@ A single `starts_at` / `ends_at` pair. Fire-and-forget for one specific deploy o
 
 A recurrence rule. Two flavors:
 
-**Daily** — same window every day:
+**Daily**, the same window every day:
 
 ```json
 {
@@ -52,12 +52,12 @@ A recurrence rule. Two flavors:
 }
 ```
 
-**Weekly** — same window on chosen days each week:
+**Weekly**, the same window on chosen days each week:
 
 ```json
 {
   "name": "Sunday maintenance window",
-  "tags": ["all"],
+  "tags": ["env:prod"],
   "schedule_type": "recurring",
   "timezone": "UTC",
   "recurrence": {
@@ -69,29 +69,31 @@ A recurrence rule. Two flavors:
 }
 ```
 
-`start_time` and `end_time` are 24-hour `HH:MM` in the window's `timezone` (defaults to `UTC`). Days are lowercase English names: `monday`, `tuesday`, … `sunday`.
+`start_time` and `end_time` are 24-hour `HH:MM` in the window's `timezone` (defaults to `UTC`). Days accept full English names (`monday` .. `sunday`) or three-letter abbreviations (`mon` .. `sun`), case-insensitively; anything else is rejected at creation.
 
 ## How tags match
 
-Each maintenance window has a list of `tags`. Monitors also have tags. A monitor is silenced when its tags overlap with any active window's tags.
+Each maintenance window has a list of `tags`. Monitors also have tags. A monitor is silenced when its tags **overlap** with an active window's tags, meaning at least one tag appears in both lists. That's the whole rule:
+
+- There is **no wildcard tag**. To silence everything, give every monitor a shared tag (for example `env:prod`) and put that tag on the window.
+- A window's `tags` must be non-empty (the API rejects an empty list).
+- A monitor with **no tags** never matches any window and is never silenced.
 
 Patterns we recommend:
 
-- `service:<name>` — silence everything in a service.
-- `env:<name>` — silence everything in an environment.
-- `type:cron` — silence all cron checks.
-
-The special tag `all` matches every monitor (`["all"]` → silence everything during the window).
+- `service:<name>` to silence everything in a service.
+- `env:<name>` to silence everything in an environment.
+- `type:cron` to silence all cron checks.
 
 ## What "silenced" means precisely
 
-During an active window:
+Suppression applies to monitor notifications that carry monitor context (HTTP and cron monitors). While a matching window is active:
 
 - **Checks still run on schedule.** Results are recorded.
-- **No new auto-incidents are opened** for matching monitors.
-- **No notifications fire** for any incident — including pre-existing incidents that were open before the window started.
+- **Failure notifications are held, not dropped.** They are stored and re-evaluated when the window's current occurrence ends, so a monitor that is still down after the window pages then.
+- **Recovery notifications are suppressed** and clear the held failure for that monitor, so a blip fully inside the window pages no one.
+- **Auto-created incidents still open** for services configured to open them; the maintenance window suppresses the monitor's notification fanout, not incident creation.
 - **Status pages keep showing live status** unless you also publish a [status page maintenance](/status-pages/overview/) entry.
-- **Existing incidents auto-resolve** if their underlying monitor recovers — the recovery path itself isn't suppressed.
 
 `is_currently_active` on the response tells you whether the window is in effect right now (computed against the server clock).
 
@@ -103,10 +105,10 @@ Easy to confuse:
 |---|---|---|
 | **Purpose** | Suppress paging | Tell customers "scheduled maintenance" |
 | **Effect** | Internal | External |
-| **Routes through** | Notification fanout (suppressed) | Status page rendering |
+| **Routes through** | Notification fanout (held/suppressed) | Status page rendering |
 | **Endpoint** | `/maintenance_windows` | `/status_page/{id}/maintenance` |
 
-You typically want both for a planned outage: the maintenance window so on-call doesn't get woken; the status page maintenance so customers see "Scheduled maintenance: 02:00–04:00 UTC" on the public page.
+You typically want both for a planned outage: the maintenance window so on-call doesn't get woken; the status page maintenance so customers see "Scheduled maintenance: 02:00-04:00 UTC" on the public page.
 
 ## See also
 

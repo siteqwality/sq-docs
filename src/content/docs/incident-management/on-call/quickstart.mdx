@@ -1,7 +1,7 @@
 ---
 title: On-call quickstart
 description: Build a weekly rotation with two engineers and confirm the right person is on call right now.
-last_verified: 2026-05-03
+last_verified: 2026-08-01
 owner: jj
 ---
 
@@ -40,7 +40,7 @@ curl -X POST https://api.siteqwality.com/on_call_schedule \
   }'
 ```
 
-Save the returned `id` — you'll attach a layer to it next.
+Save the returned `id`; you'll attach a layer to it next.
 
 </TabItem>
 </Tabs>
@@ -84,7 +84,7 @@ curl -X POST https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/layer \
 
 `handoff_day` is 0=Sunday … 6=Saturday. `handoff_time` is `HH:MM` in 24-hour format, interpreted in the schedule's timezone.
 
-`layer_number` is auto-assigned to the next free integer. Lower numbers have higher priority.
+`layer_number` is auto-assigned to the next free integer. Layers with a higher `layer_number` are evaluated first, so later-added layers shadow earlier ones during their effective windows.
 
 </TabItem>
 </Tabs>
@@ -104,7 +104,7 @@ curl https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-The response includes `layers` and `overrides`. To compute the current responder, walk the layers in order — the dashboard does this for you.
+The response includes `layers` and `overrides`. To compute the current responder, walk the layers from highest `layer_number` down; the dashboard does this for you.
 
 </TabItem>
 </Tabs>

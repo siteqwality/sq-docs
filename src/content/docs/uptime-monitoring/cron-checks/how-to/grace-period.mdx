@@ -1,28 +1,35 @@
 ---
 title: Understand the grace period
-description: How SiteQwality decides "late enough to alert" — and how to tune for jobs with variable runtime.
-last_verified: 2026-05-03
+description: How SiteQwality decides "late enough to alert", and how to tune for jobs with variable runtime.
+last_verified: 2026-08-01
 owner: jj
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-If your nightly backup ran at 02:00 yesterday and is currently running at 02:05 today, is it "late"? SiteQwality has to draw the line somewhere — that's the grace period.
+If your nightly backup ran at 02:00 yesterday and is currently running at 02:05 today, is it "late"? SiteQwality has to draw the line somewhere. This page explains where that line actually is.
 
 ## The current behavior
 
-A cron check is considered failing when:
+There is no separate scheduler sweeping all cron checks every minute. Each check gets its own evaluation schedule that fires at the same cadence as its `check_interval_seconds`. At each evaluation the check is considered failing when:
 
 ```
-now - last_received_at > check_interval_seconds × 2
+now - last_received_at > check_interval_seconds
 ```
 
-That is — **the implicit grace period is one full check interval**. A daily job (interval = 86400s) doesn't alert until 48 hours have passed without a ping. A 5-minute job alerts after 10 minutes of silence.
+(or when no ping has ever been received).
 
-This is conservative on purpose: most jobs vary by ±10% in runtime, and adding paging stress for "you're 2 minutes late" is more harm than help.
+The threshold is a single interval, but because the evaluation itself only runs once per interval, the *effective* detection delay depends on how the evaluation schedule lines up with your job's pings:
+
+- Best case: the evaluation lands just after the ping goes missing, and the check fails roughly **one interval** after the last successful ping.
+- Worst case: the evaluation lands just before the threshold trips, and the failure isn't seen until the next evaluation, roughly **two intervals** after the last successful ping.
+
+So a daily job (interval = 86400s) alerts somewhere between 24 and 48 hours after its last ping. A 5-minute job alerts after 5 to 10 minutes of silence. The same phase effect applies on recovery: a fresh ping flips the check back to healthy at the next evaluation, not instantly.
+
+This is conservative on purpose: most jobs vary by around 10% in runtime, and paging someone for "you're 2 minutes late" is more harm than help.
 
 <Aside type="caution">
-The 2× behavior is fixed today. Configurable grace periods are on the roadmap. Until then, set `check_interval_seconds` to your job's expected schedule and the grace period takes care of itself.
+The evaluation cadence and the one-interval threshold are fixed today. Configurable grace periods are on the roadmap. Until then, set `check_interval_seconds` to your job's expected schedule and the slack takes care of itself.
 </Aside>
 
 ## How to tune
@@ -32,7 +39,7 @@ The 2× behavior is fixed today. Configurable grace periods are on the roadmap. 
 If your job *must* finish within 5 minutes of its schedule:
 
 - Don't lower `check_interval_seconds` below the actual interval (that creates false positives).
-- Instead, alert on **runtime metrics** — emit a metric for job duration and alert when it crosses your threshold. The cron check stays as the catch-all for "didn't run at all."
+- Instead, alert on **runtime metrics**: emit a metric for job duration and alert when it crosses your threshold. The cron check stays as the catch-all for "didn't run at all."
 
 ### Job with very variable runtime
 
@@ -43,18 +50,18 @@ If your job sometimes takes 30 minutes and sometimes 6 hours:
 
 ### Job that runs every minute
 
-For high-frequency jobs (`check_interval_seconds` < 5min), the 2× grace can be too tight if the job ever has a hiccup. Consider:
+For high-frequency jobs (`check_interval_seconds` under 5 minutes), one-to-two intervals of slack can be too tight if the job ever has a hiccup. Consider:
 
 - Bumping the interval to 5 or 10 minutes and accepting some staleness in the alert.
 - Wrapping the job's pings in retry logic so a single network blip doesn't trigger the check.
 
 ## What about jobs that fail mid-run
 
-Cron checks don't know whether your job *succeeded* — only whether it pinged. If the job crashes after starting but before pinging, the next interval's check will catch it.
+Cron checks don't know whether your job *succeeded*, only whether it pinged. If the job crashes after starting but before pinging, a later evaluation will catch it.
 
 For finer-grained "did the job succeed?" tracking:
 
-- Have the job emit a metric — `job.runs.completed{name="nightly_backup", status="success"}` — and alert on the failure rate.
+- Have the job emit a metric, like `job.runs.completed{name="nightly_backup", status="success"}`, and alert on the failure rate.
 - Or have the job ping a *different* check on success vs. failure (you'll need two cron checks but the signal is precise).
 
 ## See also

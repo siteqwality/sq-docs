@@ -14,7 +14,7 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `name` | string | required | Schedule label, referenced from escalation levels. |
-| `timezone` | string | `UTC` | IANA timezone name stored on the schedule. |
+| `timezone` | string | `UTC` | IANA timezone name stored on the schedule. Layer handoffs are interpreted in it; an unrecognized value falls back to UTC at resolution time. |
 
 ## Layer
 
@@ -25,8 +25,8 @@ Created under `/on_call_schedule/{schedule_id}/layer`.
 | `layer_number` | int | `max(existing) + 1` | Layer position. Layers with a **higher** `layer_number` are evaluated first and shadow lower ones during their effective windows. |
 | `rotation_type` | enum | required | `daily`, `weekly`, or `custom`. |
 | `rotation_interval_days` | int | none | Days per handoff. Required for `custom` (a `custom` layer without it never resolves). Ignored for `daily` / `weekly`. |
-| `handoff_time` | string | required | `HH:MM` (24-hour) handoff time. Anchors the rotation. |
-| `handoff_day` | int | none | Stored on the layer; not currently used by the resolver. |
+| `handoff_time` | string | required | `HH:MM` (24-hour) handoff time, interpreted in the schedule's timezone. Anchors the rotation. |
+| `handoff_day` | int | none | Weekly layers only: weekday of the handoff, 0=Sunday .. 6=Saturday, in the schedule's timezone. Values outside 0..6 are rejected at creation. Ignored for `daily` / `custom`. |
 | `participants` | uuid[] | required | Ordered user list. The rotation walks it and wraps around. A layer with no participants never matches. |
 | `effective_from` | rfc3339 | none | Layer applies only from this instant. |
 | `effective_until` | rfc3339 | none | Layer stops applying at this instant. |
@@ -53,8 +53,9 @@ Created under `/on_call_schedule/{schedule_id}/override`. An override is a hard 
 
 1. **Overrides first.** If any override covers `T`, that user is on call. When overrides overlap, the most recently created one wins.
 2. **Layers next, highest `layer_number` first.** A layer is skipped when it has no participants or `T` is outside its `effective_from` / `effective_until` window.
-3. For the first matching layer, the on-call participant is computed from the time elapsed since the layer's anchor (its start date at `handoff_time`), divided by the rotation period, wrapped around `participants`.
-4. If nothing matches, the schedule has a coverage gap and resolves to no one.
+3. For the first matching layer, the on-call participant is computed from the number of full rotation periods since the layer's anchor handoff, wrapped around `participants`. The anchor is the layer's start date (its `effective_from`, else its creation date) at `handoff_time` in the **schedule's timezone**; periods are counted in local calendar days, so handoffs stay at `handoff_time` local across DST changes.
+4. A weekly layer with a `handoff_day` anchors on that weekday instead: coverage starts immediately at `effective_from` (the first participant serves a shortened first stint) and every handoff lands on the configured weekday at `handoff_time`.
+5. If nothing matches, the schedule has a coverage gap and resolves to no one.
 
 <Aside type="caution">
 A coverage gap resolves to no responder, and an escalation level targeting only that schedule pages nobody for that window. Keep a bottom layer without effective bounds as a catch-all.

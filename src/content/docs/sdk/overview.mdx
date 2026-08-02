@@ -1,7 +1,7 @@
 ---
 title: SDK Reference
-description: The @siteqwality/rum JavaScript SDK — RUM, replay, errors, and user actions from the browser.
-last_verified: 2026-05-03
+description: The @siteqwality/rum JavaScript SDK for RUM, replay, errors, and user actions from the browser.
+last_verified: 2026-08-01
 owner: jj
 ---
 
@@ -9,22 +9,22 @@ import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
 The SiteQwality client SDK is a single browser-side package: **`@siteqwality/rum`**. It collects [Real User Monitoring](/observability/rum/overview/) data and (when activated) [session replay](/observability/replay/overview/) segments.
 
-It is **not** a back-end ingestion library — for back-end metrics/logs/traces, ship via the OTel SDK or direct HTTP to the ingestion endpoints. See [Observability](/observability/overview/).
+It is **not** a back-end ingestion library. For back-end metrics/logs/traces, ship via the OTel SDK or direct HTTP to the ingestion endpoints. See [Observability](/observability/overview/).
 
 ## What it does
 
 | Capture | Always-on | Activated by filter |
 |---|---|---|
-| Web Vitals (LCP, FCP, CLS, INP, TTFB) | yes | — |
-| View counts, page loads | yes | — |
-| Aggregate error count | yes | — |
-| Aggregate action count | yes | — |
-| Individual error stacks | — | yes |
-| Click / keypress targets | — | yes |
-| Resource timings (fetch/XHR) | — | yes |
-| Long tasks (>50ms) | — | yes |
-| Distributed-trace IDs (traceparent injection) | yes | — |
-| DOM snapshots + mutations (rrweb) | — | yes (`capture_replay: true`) |
+| Web Vitals (LCP, FCP, CLS, INP, TTFB) | yes | no |
+| View counts, page loads | yes | no |
+| Individual error events (message, stack) | yes | no |
+| Aggregate error / action counts | yes | no |
+| Click / keypress targets | no | yes |
+| Resource timings (fetch/XHR) | no | yes |
+| Long tasks (>50ms) | no | yes |
+| DOM snapshots + mutations (rrweb) | no | yes (`capture_replay: true`) |
+
+The SDK does not inject `traceparent` headers or otherwise participate in distributed tracing. To correlate RUM sessions with back-end traces, propagate your own IDs via `setUser` / custom attributes.
 
 ## Install
 
@@ -52,14 +52,14 @@ await SiteQwalityRUM.init({
   version: '1.4.2',                  // app version (used for source-map matching)
   env: 'prod',                       // 'prod' | 'staging' | 'dev'
 
-  // Optional overrides — for self-hosted SiteQwality
+  // Optional overrides for self-hosted SiteQwality
   apiBase: 'https://api.siteqwality.com',
   ingestBase: 'https://rum.siteqwality.com',
   replayBase: 'https://replay.siteqwality.com',
 });
 ```
 
-`init` is idempotent — calling it twice is a no-op.
+`init` is idempotent; calling it twice is a no-op.
 
 ## Public methods
 
@@ -99,7 +99,7 @@ try {
 | Param | Type | Description |
 |---|---|---|
 | `error` | `Error` | Any JS Error. |
-| `context` | `Record<string, string>` | Optional free-form context. |
+| `context` | `Record<string, string>` | Accepted for forward compatibility; **not attached to the event today**. |
 
 ### `addAction(name, context?)`
 
@@ -112,7 +112,7 @@ SiteQwalityRUM.addAction('checkout_completed', { variant: 'A' });
 | Param | Type | Description |
 |---|---|---|
 | `name` | `string` | Action label. |
-| `context` | `Record<string, string>` | Optional metadata. |
+| `context` | `Record<string, string>` | Accepted for forward compatibility; **not attached to the event today**. |
 
 ## TypeScript types
 
@@ -124,10 +124,10 @@ import type { RumConfig, UserContext } from '@siteqwality/rum';
 
 Notable types:
 
-- `RumConfig` — `init` argument shape.
-- `UserContext` — `setUser` argument shape.
-- `RumMeasureEvent`, `RumDetailEvent`, `RumErrorEvent` — internal payload shapes (rarely needed).
-- `SessionFilterRule`, `SdkConfig` — server-fetched config shape.
+- `RumConfig`: `init` argument shape.
+- `UserContext`: `setUser` argument shape.
+- `RumMeasureEvent`, `RumDetailEvent`, `RumErrorEvent`: internal payload shapes (rarely needed).
+- `SessionFilterRule`, `SdkConfig`: server-fetched config shape.
 
 ## Pricing
 
@@ -135,12 +135,12 @@ The SDK is free; what costs is the data it sends. See [RUM pricing](/observabili
 
 ## Compatibility
 
-- Modern browsers — Chrome, Firefox, Safari, Edge (last 2 versions).
+- Modern browsers: Chrome, Firefox, Safari, Edge (last 2 versions).
 - ES2020+ output. The CDN bundle is an ES module (`<script type="module">`).
 - For older browsers, transpile via your bundler. The npm bundle is published as both ESM and CJS.
 
 <Aside type="caution">
-The SDK uses `crypto.randomUUID()`, `PerformanceObserver`, and `fetch` — all widely available since ~2020. There's no IE11 support.
+The SDK uses `crypto.randomUUID()`, `PerformanceObserver`, and `fetch`, all widely available since ~2020. There's no IE11 support.
 </Aside>
 
 ## See also

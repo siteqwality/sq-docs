@@ -1,7 +1,7 @@
 ---
 title: Incidents
 description: The record-and-timeline object that tracks an outage from "we noticed something" to "we're done."
-last_verified: 2026-05-03
+last_verified: 2026-08-01
 owner: jj
 ---
 
@@ -9,8 +9,8 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 An **incident** is the durable record of "something is broken." Every page, every escalation, every status-page update hangs off an incident. They're created two ways:
 
-1. **Auto** — when a monitor flips from healthy to failing, SiteQwality opens an incident with `auto_created: true`.
-2. **Manual** — when you create one in the dashboard or via `POST /incident`. Use this for non-monitor events ("partial Stripe outage breaking webhooks," "a cron job took down the queue").
+1. **Auto**: when a monitor flips from healthy to failing, SiteQwality opens an incident with `auto_created: true`.
+2. **Manual**: when you create one in the dashboard or via `POST /incident`. Use this for non-monitor events ("partial Stripe outage breaking webhooks," "a cron job took down the queue").
 
 Either way the lifecycle is the same.
 
@@ -19,14 +19,15 @@ Either way the lifecycle is the same.
 | Field | What it is |
 |---|---|
 | `title` | Short, scannable label. `"Elevated 5xx errors on /api/checkout"`. Show this in alerts. |
+| `auto_created` | `true` when a monitor state change opened the incident; `false` for manual ones. |
 | `severity` | `minor`, `major`, or `critical`. Drives display priority on status pages and dashboards. |
 | `status` | `investigating` → `identified` → `monitoring` → `resolved`. Forward-only in practice; see notes. |
 | `responder_status` | `triggered` (no one's looking), `acknowledged` (someone's on it), or `resolved`. |
 | `acknowledged_at` / `acknowledged_by` | Set when a responder acknowledges. Stops escalation. |
-| `affected_http_job_ids` | Which HTTP monitors this incident is about — drives which status-page components get a banner. |
+| `affected_http_job_ids` | Which HTTP monitors this incident is about; drives which status-page components get a banner. |
 | `service_id` | Optionally tag an incident to a service (a logical grouping of monitors). |
 | `status_page_id` | If set, the incident is published to that status page. |
-| `updates[]` | Chronological list of `IncidentUpdate`s — status transitions with a written message. |
+| `updates[]` | Chronological list of `IncidentUpdate`s: status transitions with a written message. |
 
 ## Status vs responder_status
 
@@ -35,7 +36,7 @@ Two parallel state machines that often confuse new users:
 - **`status`** is the *external* / *customer-facing* progress: "we're still investigating," "we know the cause," "fix is rolled out, we're watching." It's what shows on the status page.
 - **`responder_status`** is the *internal* / *responder* state: "no one's on this," "someone has it," "we're done." It's what drives escalation and ack tracking.
 
-A status page incident can be `status: monitoring` while still `responder_status: acknowledged` — meaning the customer-facing message is "we're keeping an eye on it" but a human is still actively babysitting.
+A status page incident can be `status: monitoring` while still `responder_status: acknowledged`, meaning the customer-facing message is "we're keeping an eye on it" but a human is still actively babysitting.
 
 ## Severity guidance
 
@@ -45,24 +46,24 @@ A status page incident can be `status: monitoring` while still `responder_status
 | `major` | Customer-facing feature broken for a subset of users; one region down with traffic still served from another. |
 | `critical` | Full outage; data loss; security incident. Wakes everyone up. |
 
-The severity field is informational — *it doesn't change escalation behavior*. To change who gets paged, use a different notification group or escalation policy. Severity drives sort order, color coding, and any filters you set up on the alerting fabric.
+The severity field is informational; *it doesn't change escalation behavior*. To change who gets paged, use a different notification group or escalation policy. Severity drives sort order, color coding, and any filters you set up on the alerting fabric.
 
 ## Lifecycle: a typical auto-created incident
 
 1. HTTP check `prod-api` flips from `success` to `failure` at 03:14:22.
-2. Incident opens automatically — `auto_created: true`, `status: investigating`, `responder_status: triggered`, `affected_http_job_ids: [<job_id>]`.
+2. Incident opens automatically with `auto_created: true`, `status: investigating`, `responder_status: triggered`, `affected_http_job_ids: [<job_id>]`.
 3. The check's notification group fires; channels get the page; targeted users' contact methods fire per their notification rules.
 4. The on-call engineer receives an SMS at 03:14:30. They open the dashboard and click **Acknowledge** at 03:15:10.
 5. `responder_status` flips to `acknowledged`. Escalation stops.
-6. They post an incident update at 03:18 — `status: identified`, message `"Database failover stuck. Manually promoting standby."`
+6. They post an incident update at 03:18: `status: identified`, message `"Database failover stuck. Manually promoting standby."`
 7. The fix lands at 03:24. The check goes green on the next tick.
-8. SiteQwality auto-resolves the incident — `status: resolved`, `responder_status: resolved`, `resolved_at` set.
+8. SiteQwality auto-resolves the incident: `status: resolved`, `responder_status: resolved`, `resolved_at` set.
 
 You can override any of these transitions manually if needed: the auto-resolution will be skipped if you've already moved the incident to `resolved` yourself.
 
 ## When to create manual incidents
 
-- A third-party service breaks something for your customers (Stripe, AWS, your CDN). The monitors don't know — but you do.
+- A third-party service breaks something for your customers (Stripe, AWS, your CDN). The monitors don't know, but you do.
 - A bug in production that doesn't manifest as a monitor failure (UI broken, auth flow broken for a subset of users).
 - Coordination of a complex outage across multiple teams. One canonical incident with a clear timeline beats six Slack threads.
 
@@ -70,7 +71,7 @@ For these, use `POST /incident` (standalone) or `POST /status_page/{id}/incident
 
 ## Acknowledgement
 
-Acknowledging an incident is **not** resolving it. Ack stops the page (so escalation won't keep paging), but the incident stays open until someone explicitly resolves it. This is intentional — the responder claims ownership, then has the time to actually fix the thing without their phone going off.
+Acknowledging an incident is **not** resolving it. Ack stops the page (so escalation won't keep paging), but the incident stays open until someone explicitly resolves it. This is intentional: the responder claims ownership, then has the time to actually fix the thing without their phone going off.
 
 ## See also
 

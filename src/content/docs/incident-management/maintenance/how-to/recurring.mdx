@@ -1,7 +1,7 @@
 ---
 title: Schedule recurring maintenance
 description: Daily and weekly maintenance windows for ongoing batch jobs, weekly deploys, and vendor maintenance windows.
-last_verified: 2026-05-03
+last_verified: 2026-08-01
 owner: jj
 ---
 
@@ -9,7 +9,7 @@ import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/compon
 
 Recurring maintenance windows fire on a schedule instead of a single timestamp pair. Two recurrence types are supported: `daily` and `weekly`.
 
-## Daily — same window every day
+## Daily: same window every day
 
 Useful for nightly batch jobs, regular cache warm-ups, or anything else that hits a known short window every 24 hours.
 
@@ -34,7 +34,7 @@ curl -X POST https://api.siteqwality.com/maintenance_windows \
 
 If `end_time < start_time`, the window crosses midnight: e.g. `start_time: "23:00"`, `end_time: "01:00"` runs from 11pm to 1am.
 
-## Weekly — chosen days each week
+## Weekly: chosen days each week
 
 Useful for weekly deploys, weekend-only maintenance, or vendor maintenance on a specific day.
 
@@ -44,7 +44,7 @@ curl -X POST https://api.siteqwality.com/maintenance_windows \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Sunday maintenance",
-    "tags": ["all"],
+    "tags": ["env:prod"],
     "schedule_type": "recurring",
     "timezone": "UTC",
     "recurrence": {
@@ -56,7 +56,7 @@ curl -X POST https://api.siteqwality.com/maintenance_windows \
   }'
 ```
 
-`days` is an array of lowercase English day names. Combine multiple:
+`days` is an array of day names, matched case-insensitively. Full English names (`monday` .. `sunday`) and three-letter abbreviations (`mon` .. `sun`) both work; anything else is rejected at creation. Combine multiple:
 
 ```json
 "days": ["saturday", "sunday"]
@@ -99,12 +99,12 @@ curl -X DELETE https://api.siteqwality.com/maintenance_windows/$WINDOW_ID \
 
 ## Common mistakes
 
-- **Forgetting the timezone.** UTC for "02:00" lands at 7pm Pacific — most teams want their actual local time.
-- **`tags: []`.** Empty tags is invalid (the API rejects it); an unscoped window doesn't make sense. Use `["all"]` if you really do want everything silenced.
+- **Forgetting the timezone.** UTC for "02:00" lands at 7pm Pacific, and most teams want their actual local time.
+- **`tags: []`.** Empty tags is invalid (the API rejects it); an unscoped window doesn't make sense. There is no wildcard tag: to silence everything, give every monitor a shared tag (like `env:prod`) and use that.
 - **Daily window crossing midnight.** Set `start_time > end_time` and the window correctly wraps. Don't try to model it as two separate windows.
 
 <Aside type="tip">
-For one-off events that happen on a known recurring schedule but only once or twice (e.g. a quarterly DB rotation), prefer a series of one-time windows over a recurring rule with `effective_until` — recurrences don't currently support a `until` clause.
+For one-off events that happen on a known recurring schedule but only once or twice (e.g. a quarterly DB rotation), prefer a series of one-time windows over a recurring rule with `effective_until`: recurrences don't currently support a `until` clause.
 </Aside>
 
 ## See also
