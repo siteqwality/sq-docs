@@ -1,0 +1,101 @@
+---
+title: Send OTLP over HTTP/protobuf
+description: Point an OpenTelemetry SDK at SiteQwality using the protobuf encoding most exporters default to.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+
+The traces endpoint accepts OTLP in **both** protobuf and JSON over HTTP. Most OpenTelemetry SDKs default to protobuf, so in practice you point the exporter at the endpoint, set the auth header, and you are done.
+
+```
+POST https://traces.siteqwality.com/v1/traces
+Authorization: Bearer <api-key>
+Content-Type: application/x-protobuf
+```
+
+A successful export returns `202 Accepted`.
+
+## Configure your SDK
+
+Most SDKs read standard environment variables, so no code change is needed.
+
+<Tabs syncKey="otel-endpoint">
+<TabItem label="Signal-specific">
+
+```bash
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="https://traces.siteqwality.com/v1/traces"
+export OTEL_EXPORTER_OTLP_TRACES_PROTOCOL="http/protobuf"
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer $SITEQWALITY_API_KEY"
+export OTEL_SERVICE_NAME="billing-api"
+```
+
+The signal-specific variable is used **verbatim**, so it must include the full `/v1/traces` path.
+
+</TabItem>
+<TabItem label="Base endpoint">
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT="https://traces.siteqwality.com"
+export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer $SITEQWALITY_API_KEY"
+export OTEL_SERVICE_NAME="billing-api"
+```
+
+With the base variable the SDK appends `/v1/traces` itself. Do not include the path here or you will export to `/v1/traces/v1/traces`.
+
+</TabItem>
+</Tabs>
+
+## Content types
+
+| Header | Handling |
+|---|---|
+| `application/x-protobuf` | Protobuf. **Use this one.** |
+| `application/json` | OTLP JSON. |
+
+Both produce identical stored spans. Parameters after a semicolon are ignored, so `application/x-protobuf; charset=utf-8` is fine.
+
+<Aside type="caution" title="Use application/x-protobuf, not application/protobuf">
+Both spellings appear in the wild. Only `application/x-protobuf` is declared as a binary media type at the gateway, so that is the one to configure. The other spelling risks the body being mangled in transit before anything can decode it.
+</Aside>
+
+## What is not supported
+
+Getting these wrong produces confusing failures, so they are worth stating plainly.
+
+- **gRPC is not supported.** This is an HTTP endpoint only. `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` will not work; use `http/protobuf`.
+- **Only traces.** There is no OTLP endpoint for logs or metrics. Use the [logs](/observability/logs/reference/#ingest) and [metrics](/observability/metrics/reference/#ingest-endpoint) ingest APIs for those.
+- **Compression is not handled.** Leave `OTEL_EXPORTER_OTLP_COMPRESSION` unset. A gzipped body cannot be decoded and the export is rejected.
+- **An empty export is rejected** with a `400`, rather than silently accepted.
+- **Instrumentation scope name and version are discarded.** Put anything you need to query on into span or resource attributes.
+
+## Batch sizing
+
+Each `ResourceSpans` group becomes one internal message with a **250 KiB** ceiling. The default OpenTelemetry batch size of 512 spans sits comfortably inside that.
+
+If you have raised `max_export_batch_size` substantially, or your spans carry unusually large attributes, bring it back down rather than debugging intermittent export failures.
+
+## Verify it worked
+
+Send some traffic, then look for the service:
+
+```bash
+curl -G https://api.siteqwality.com/traces/services \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "start_time=2026-08-02T00:00:00Z" \
+  --data-urlencode "end_time=2026-08-02T23:59:59Z"
+```
+
+Your `OTEL_SERVICE_NAME` should appear. If it does not, check that the exporter is not using gRPC and that the `Authorization` header actually reached the endpoint.
+
+<Aside type="note">
+Auth decisions are cached at the edge for up to 5 minutes, so a newly created or newly revoked API key can take that long to take effect on ingest.
+</Aside>
+
+## See also
+
+<LinkCard title="Traces reference" description="Span fields, attribute conventions, and search parameters." href="/observability/traces/reference/" />
+<LinkCard title="Correlate traces with logs" description="Jump from a span to the log lines it produced." href="/observability/traces/how-to/correlate-logs/" />
+<LinkCard title="Sampling" description="Reduce volume without losing signal." href="/observability/traces/how-to/sampling/" />

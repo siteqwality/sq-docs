@@ -1,7 +1,7 @@
 ---
 title: Traces reference
 description: Ingest endpoint, span attribute conventions, and search/detail endpoints.
-last_verified: 2026-05-03
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -10,7 +10,7 @@ owner: jj
 ```
 POST https://traces.siteqwality.com/v1/traces
 Authorization: Bearer <api-key>
-Content-Type: application/json | application/x-protobuf
+Content-Type: application/x-protobuf | application/json
 ```
 
 Body: standard OTLP `ExportTraceServiceRequest`. Most OTel SDK exporters handle the format for you.
@@ -92,7 +92,8 @@ These should be set once on the OTel SDK init (`Resource.create({...})`) and app
 | `min_duration_ms`, `max_duration_ms` | Range filter. |
 | `status` | `ok` or `error`. |
 | `search` | Free-text across span attributes. |
-| `limit` (default 50), `offset` | Pagination. |
+| `tags` | URL-encoded JSON object of span-attribute filters. See [tag filters](#tag-filters). |
+| `limit` (default 50, max 200), `offset` | Pagination. |
 | `sort_field`, `sort_order` | Order. |
 
 Response:
@@ -115,6 +116,42 @@ Response:
 }
 ```
 
+## Tag filters
+
+`tags` filters on **span attributes**. It takes a single URL-encoded JSON object, not repeated `key=value` pairs:
+
+```bash
+curl -G https://api.siteqwality.com/traces/search \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode 'tags={"http.method":"GET","peer.service":"payments-db"}'
+```
+
+In the dashboard this is the **Tag Filters** input on the Trace Explorer: type `http.method:GET` and press Enter to add a filter pill.
+
+Semantics, all of which matter:
+
+- **Multiple keys are ANDed.** Every pair must match.
+- **Exact, case-sensitive string equality.** No wildcards, no negation, no ranges.
+- **Values must be JSON strings.** `{"http.status_code": 200}` filters nothing; write `{"http.status_code": "200"}`.
+- **Malformed JSON is ignored rather than rejected.** A typo returns unfiltered results instead of an error, so if a filter appears to do nothing, check the JSON first.
+- **Span attributes only.** Resource attributes, including `service.name`, are not reachable this way. Use the dedicated `service_name` parameter for those.
+
+`tags` is accepted by both `GET /traces/search` and `GET /traces/timeline`.
+
+## Timeline percentiles
+
+`GET /traces/timeline` returns, per bucket: `time`, `total`, `error`, and the trace-duration percentiles `p50_ms`, `p95_ms` and `p99_ms`. The dashboard charts these as **Latency percentiles**.
+
+Read them precisely:
+
+- They measure **whole-trace duration** (earliest span start to latest span end), not individual span duration.
+- A trace is attributed to the bucket containing its **earliest span start**.
+- A trace counts as errored if **any** span in it has an error status.
+- They are approximate. The underlying quantile is sampled, which is right for charts and wrong for contractual reporting.
+- Empty buckets return zeros, so a flat zero line means no traces, not fast traces.
+
+Bucket width is derived from the time range and cannot be overridden.
+
 ## Adjacent endpoints
 
 | Method | Path | Purpose |
@@ -123,7 +160,7 @@ Response:
 | `GET` | `/traces/operations` | Distinct operations (optionally filtered by service). |
 | `GET` | `/traces/timeline` | Bucketed counts (total + errors) for charting. |
 | `GET` | `/traces/{trace_id}` | Full span tree. |
-| `GET` | `/traces/{trace_id}/logs` | Logs tagged with this trace_id. |
+| `GET` | `/traces/{trace_id}/logs` | Logs tagged with this trace_id. `span_id` filter, `limit` default 100 / max 500. See [correlating logs](/observability/traces/how-to/correlate-logs/). |
 | `GET` | `/traces/service-map` | Nodes + edges for the dependency graph. |
 
 ## See also

@@ -1,0 +1,77 @@
+---
+title: Save a metrics explorer view
+description: Store a metric query, its time range and its display mode, and optionally share it with your team.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+A **metric saved view** is a snapshot of the whole explorer state: the metric, aggregation, group-by, tag filters, resolution, time range, and the display mode. Load one and you are back exactly where you were, which beats rebuilding a query from memory during an incident.
+
+They work the same way [log saved views](/observability/logs/how-to/saved-views/) do, with a slightly smaller field set.
+
+## Save one
+
+In the metrics explorer, build the query you want, then use the **save** control at the end of the query bar. Give it a name, and decide whether to **share with team**:
+
+- **Shared off** means only you can see it.
+- **Shared on** means every member of the account can load it.
+
+The book icon next to it opens the list of saved views to load or delete.
+
+## Via the API
+
+```bash
+# Create
+curl -X POST https://api.siteqwality.com/metric_saved_views/ \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "API latency by host, last 24h",
+    "is_shared": true,
+    "filters": { "metricName": "http.request.duration", "displayMode": "percentiles" }
+  }'
+```
+
+| Verb | Path | Notes |
+|---|---|---|
+| `GET` | `/metric_saved_views/` | List. Newest first. |
+| `POST` | `/metric_saved_views/` | Create. Returns `201`. |
+| `GET` | `/metric_saved_views/{view_id}` | Fetch one. |
+| `PUT` | `/metric_saved_views/{view_id}` | Update. Omitted fields are left alone. |
+| `DELETE` | `/metric_saved_views/{view_id}` | Delete. Returns `204`. |
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `name` | string | required | Trimmed. An all-whitespace name is rejected with `400`. |
+| `is_shared` | bool | `false` | Visible to the whole account when true. |
+| `filters` | object | required | Free-form JSON. The server stores it without inspecting it. |
+
+`filters` is deliberately opaque: the dashboard puts its entire explorer state in there, so the shape can evolve without an API change. If you are writing views by hand, the practical approach is to save one from the UI and read back what it stored.
+
+The stored view returns `id`, `account_id`, `created_by_user_id`, `created_at`, `name`, `is_shared` and `filters`. There is no description field and no updated-at timestamp.
+
+## Who can do what
+
+| Action | Rule |
+|---|---|
+| See a view | Yours, or any shared view on the account. |
+| Update or delete | **Creator only**, even for shared views. |
+
+<Aside type="caution" title="Two API-access limits">
+**Static API keys can read views but cannot update or delete them.** Because a key is not a user, there is no creator to match against, so those calls are rejected with a `400`. A key does see every view on the account, shared or not.
+
+**[M2M clients](/enterprise/api-clients/) cannot use this endpoint at all.** No scope family covers metric saved views, and unmapped surfaces are refused with a `403`. Log saved views are reachable with `read:logs` and `write:logs`; the metrics equivalent has no counterpart today.
+</Aside>
+
+Two smaller points worth knowing:
+
+- **Names are not unique.** Nothing stops two views sharing a name, so pick descriptive ones.
+- **There is no cap** on how many views an account can store.
+
+## See also
+
+<LinkCard title="Histograms" description="The percentile and heatmap display modes a view can capture." href="/observability/metrics/how-to/histograms/" />
+<LinkCard title="Metrics reference" description="Query parameters and the endpoint list." href="/observability/metrics/reference/" />
+<LinkCard title="Log saved views" description="The same idea for logs." href="/observability/logs/how-to/saved-views/" />

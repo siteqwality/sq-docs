@@ -155,6 +155,11 @@ export default defineConfig({
 								{ label: 'Overview', slug: 'observability/metrics/overview' },
 								{ label: 'Quickstart', slug: 'observability/metrics/quickstart' },
 								{ label: 'Reference', slug: 'observability/metrics/reference' },
+								{
+									label: 'How-to guides',
+									collapsed: true,
+									autogenerate: { directory: 'observability/metrics/how-to' },
+								},
 							],
 						},
 						{

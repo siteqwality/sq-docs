@@ -1,0 +1,107 @@
+---
+title: Find patterns and analyse volume
+description: Cluster noisy log lines into templates with the Patterns tab, and read volume, sources and error rates on the Analytics tab.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+The Logs page has three tabs: **Search**, **Patterns**, and **Analytics**. Search answers "show me the matching lines". The other two answer "what is actually going on in here" without you having to guess a query first.
+
+## Patterns
+
+The **Patterns** tab clusters your log messages into templates by masking the parts that vary. Ten thousand lines like this:
+
+```
+Failed to charge card for user 4f9a3c21-... amount 9900 in 412ms
+```
+
+collapse into one row:
+
+```
+Failed to charge card for user {UUID} amount {NUM} in {NUM}ms
+```
+
+Each row shows how many times the template occurred, when it was first and last seen, and up to **three sample raw messages** when you expand it. **Investigate** applies the pattern as a search filter and drops you back into Search with matching lines.
+
+### What gets masked
+
+Six token types are replaced, in this order:
+
+| Token | Matches |
+|---|---|
+| `{UUID}` | Canonical dashed UUIDs |
+| `{IP}` | IPv4 addresses |
+| `{TIMESTAMP}` | ISO 8601 date-times |
+| `{HEX}` | `0x`-prefixed hex literals |
+| `{PATH}` | Slash-separated paths of two or more segments |
+| `{NUM}` | Integers and decimals |
+
+Runs of whitespace then collapse to a single space.
+
+Knowing what is **not** masked saves confusion: quoted strings, email addresses, hostnames, bare hex without a `0x` prefix, and IPv6 addresses all survive into the template. Those become part of what distinguishes one cluster from another, which is often useful and occasionally means one logical error splits into several rows.
+
+Digits inside an identifier are kept (`error123` stays), but a trailing unit is split off (`3000ms` becomes `{NUM}ms`).
+
+### Defaults and limits
+
+| Setting | Value |
+|---|---|
+| Levels clustered | `error` and `warn`, unless you select others |
+| Patterns returned | 20 by default, 50 maximum |
+| Distinct messages examined | 1000, by frequency |
+
+<Aside type="caution" title="Clustering sees the top 1000 distinct messages, not every line">
+Patterns are built in two stages: the store groups by exact message text and returns the **1000 most frequent** distinct messages, then those are normalised and clustered.
+
+If your window contains more than 1000 distinct messages, the long tail is invisible to this tab, and the `messages_examined` figure in the response counts distinct messages considered, not log lines scanned. Narrow the time range or add filters when you are hunting something rare.
+</Aside>
+
+The default of clustering only `error` and `warn` is deliberate: `info` and `debug` lines are so varied that they produce weak clusters and bury the signal. Widen it when you have a reason to.
+
+### Via the API
+
+```bash
+curl -G https://api.siteqwality.com/logs/patterns \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "start_time=2026-08-02T00:00:00Z" \
+  --data-urlencode "end_time=2026-08-02T12:00:00Z" \
+  --data-urlencode "level=error" \
+  --data-urlencode "limit=20"
+```
+
+It accepts the same filters as `GET /logs/query` (`level`, `source`, `env`, `host`, `search`, `metadata_search`, `tags`, `excluded`) plus `limit`. Each returned pattern carries `template`, `count`, `first_seen`, `last_seen`, `samples`, and `investigate_search`.
+
+## Analytics
+
+The **Analytics** tab runs a fixed set of aggregations over whatever filters are active. It answers the questions you would otherwise write five queries for.
+
+| Panel | What it shows |
+|---|---|
+| Log volume over time | Stacked counts by level, bucketed automatically |
+| Volume by source | The 10 busiest sources |
+| Top hosts by errors | The 10 hosts with the most `error` lines, and their totals |
+| Error rate by hour of day (UTC) | Errors as a percentage of all lines, per hour of the day |
+
+Two things to keep in mind when reading it:
+
+- **"Error" means the level is exactly `error`.** A line logged at `fatal`, or at `ERROR` in different casing, is not counted.
+- **The hour-of-day chart is UTC**, not your local timezone. A spike at "hour 14" is 14:00 UTC.
+
+Bucket width for the volume chart is chosen from the time range, from 1 minute for a one-hour window up to 1 day for anything beyond two weeks. It is not adjustable.
+
+```bash
+curl -G https://api.siteqwality.com/logs/analytics \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "start_time=2026-08-01T00:00:00Z" \
+  --data-urlencode "end_time=2026-08-02T00:00:00Z"
+```
+
+Unlike Patterns, Analytics has no level default: with no `level` filter it counts every level.
+
+## See also
+
+<LinkCard title="Logs reference" description="Query parameters and the full endpoint list." href="/observability/logs/reference/" />
+<LinkCard title="Parsers" description="Turn unstructured lines into fields so patterns get sharper." href="/observability/logs/how-to/parsers/" />
+<LinkCard title="Saved views" description="Keep a filter set you return to." href="/observability/logs/how-to/saved-views/" />
