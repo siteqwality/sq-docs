@@ -24,6 +24,7 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | `acknowledged_at` | rfc3339 \| null | When a responder acknowledged. |
 | `acknowledged_by` | uuid \| null | Who acknowledged. |
 | `resolved_at` | rfc3339 \| null | When the incident resolved. |
+| `auto_created` | bool | `true` when a monitor state change opened the incident; `false` for manual ones. |
 | `created_at` | rfc3339 | When the incident opened. |
 | `updates` | object[] | Chronological incident updates (below). |
 

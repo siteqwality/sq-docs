@@ -5,8 +5,6 @@ last_verified: 2026-08-01
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
 The full request schemas live in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for `/maintenance_windows`.
 
 ## Request settings
@@ -39,11 +37,7 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 |---|---|---|
 | `type` | enum | `daily` or `weekly`. |
 | `start_time` / `end_time` | string | 24-hour `HH:MM` in the window's `timezone`. An `end_time` earlier than `start_time` wraps past midnight (e.g. `23:00` to `01:00`). |
-| `days` | string[] | Weekly only; must be non-empty. Three-letter day abbreviations, case-insensitive: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`. |
-
-<Aside type="caution">
-Day values are the three-letter abbreviations. Full names like `"sunday"` pass request validation but never match a day, producing a window that silently never activates.
-</Aside>
+| `days` | string[] | Weekly only; must be non-empty. Day names, case-insensitive: full English names (`monday` .. `sunday`) or three-letter abbreviations (`mon` .. `sun`). Anything else is rejected with a 400. |
 
 ## Read-only fields
 
