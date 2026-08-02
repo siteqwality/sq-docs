@@ -1,7 +1,7 @@
 ---
 title: Incident reference
 description: Every field on an incident and its updates, with status enums and the full endpoint list.
-last_verified: 2026-08-01
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -110,6 +110,7 @@ Standalone incidents:
 | `POST` | `/incident/{incident_id}/resolve` | Resolve. |
 | `POST` | `/incident/{incident_id}/update` | Post an incident update. |
 | `POST` | `/incident/{incident_id}/publish` | Publish to a status page. |
+| `GET` | `/incident/action/{token}` | Signed [one-click acknowledge or resolve](/incident-management/incidents/how-to/one-click-actions/). Token-authenticated, no session needed, 24 hour expiry. |
 
 Status-page-scoped incidents (same shapes, scoped to one page):
 
