@@ -1,26 +1,26 @@
 ---
 title: Traces
-description: OpenTelemetry-compatible distributed tracing — span trees showing where a request spent its time across services.
+description: OpenTelemetry-compatible distributed tracing, with span trees showing where a request spent its time across services.
 last_verified: 2026-08-02
 owner: jj
 ---
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-A **trace** is the path of one logical request through your system. It's made of **spans** — each span is one unit of work (an HTTP request, a database query, a cache lookup) with a start time, end time, status, and structured attributes.
+A **trace** is the path of one logical request through your system. It's made of **spans**. Each span is one unit of work (an HTTP request, a database query, a cache lookup) with a start time, end time, status, and structured attributes.
 
 Use traces to answer "where did this request spend its time?" and "what did it talk to?"
 
 ## When to use traces
 
-- Diagnosing tail latency: a request that takes 3 seconds — which service is at fault?
+- Diagnosing tail latency: when a request takes 3 seconds, which service is at fault?
 - Debugging cross-service errors: an upstream returns 500; trace shows the downstream call that returned 503.
 - Visualizing service dependencies you didn't know you had.
 
 ## When NOT to use traces
 
-- For "how many requests per second" — that's a [metric](/observability/metrics/overview/).
-- For full payload bodies — those are [logs](/observability/logs/overview/) (you can correlate via `trace_id`).
+- Use a [metric](/observability/metrics/overview/) for "how many requests per second".
+- Use [logs](/observability/logs/overview/) for full payload bodies (you can correlate them via `trace_id`).
 
 ## How it works
 
@@ -84,12 +84,12 @@ The dashboard renders this as an interactive graph.
 - The RUM SDK injects a `traceparent` header on outgoing fetch/XHR requests, allowing browser → backend trace stitching.
 
 <Aside type="tip">
-For the most useful traces, instrument **at service boundaries** (incoming and outgoing HTTP, database calls, message queue ops). Don't instrument every internal function — the noise drowns the signal.
+For the most useful traces, instrument **at service boundaries** (incoming and outgoing HTTP, database calls, message queue ops). Don't instrument every internal function. The noise drowns the signal.
 </Aside>
 
 ## Pricing
 
-Traces are billed per span ingested + retention. Sampling is your friend — see [sampling how-to](/observability/traces/how-to/sampling/).
+Traces are billed per span ingested + retention. Sampling is your friend. See the [sampling how-to](/observability/traces/how-to/sampling/).
 
 ## See also
 

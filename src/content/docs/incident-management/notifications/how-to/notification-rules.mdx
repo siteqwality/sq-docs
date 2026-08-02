@@ -51,7 +51,7 @@ curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
 Three rules, increasing delays:
 
 ```bash
-# 0 min — SMS me
+# 0 min: SMS me
 curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
@@ -62,7 +62,7 @@ curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
     "position": 0
   }'
 
-# 5 min — call me
+# 5 min: call me
 curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
@@ -73,7 +73,7 @@ curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
     "position": 1
   }'
 
-# 15 min — email me
+# 15 min: email me
 curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
@@ -85,7 +85,7 @@ curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
   }'
 ```
 
-`position` is sort order within the urgency. Useful for the dashboard — the firing logic just walks rules by their `delay_minutes`.
+`position` is sort order within the urgency. Useful for the dashboard, since the firing logic just walks rules by their `delay_minutes`.
 
 ## Recommended low-urgency stack
 
@@ -103,7 +103,7 @@ curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
   }'
 ```
 
-Or skip the rule entirely — without a low-urgency rule the user is silently skipped from low-urgency pages.
+Or skip the rule entirely. Without a low-urgency rule the user is silently skipped from low-urgency pages.
 
 ## How the stack interacts with escalation
 
@@ -113,7 +113,7 @@ Escalation policy timeouts and personal-rule delays are **independent timers**. 
 |---|---|
 | 0 min | Escalation level fires you. Your rule at 0 min fires (SMS). |
 | 5 min | Your rule at 5 min fires (call). Still no ack. |
-| 5 min | Escalation policy advances to level 2 — pages the next person. |
+| 5 min | Escalation policy advances to level 2 and pages the next person. |
 | 15 min | Your rule at 15 min fires (email). |
 
 You'll keep getting your full personal stack even after escalation has moved on. Acknowledging the incident at any point stops everything.
@@ -125,11 +125,11 @@ You'll keep getting your full personal stack even after escalation has moved on.
 - **Email is the catcher's mitt.** A 15-minute email rule means "if I missed everything, at least the message is in my inbox."
 
 <Aside type="tip">
-On a paid plan? Add `slack_dm` as a contact method too. It's quieter than SMS but more visible than email — a good middle option for "I want to know but don't need to wake up."
+On a paid plan? Add `slack_dm` as a contact method too. It's quieter than SMS but more visible than email, a good middle option for "I want to know but don't need to wake up."
 </Aside>
 
 ## See also
 
 <LinkCard title="Notifications overview" description="The full four-object model." href="/incident-management/notifications/overview/" />
-<LinkCard title="Channels reference" description="Account-level channels — different from contact methods." href="/incident-management/notifications/channels/" />
+<LinkCard title="Channels reference" description="Account-level channels (different from contact methods)." href="/incident-management/notifications/channels/" />
 <LinkCard title="Escalation policies" description="What triggers your personal rules in the first place." href="/incident-management/escalation/overview/" />

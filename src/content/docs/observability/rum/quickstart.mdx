@@ -20,7 +20,7 @@ By the end of this guide you'll have the RUM SDK installed in a web app, a sessi
 
 2. **Name:** `Web app` (or whatever's descriptive). **Domain:** `https://app.example.com`. Save.
 
-3. The next screen shows the **`application_id`** and **`client_token`** — copy both. The `client_token` is public and ships in your bundle; the `application_id` is also public.
+3. The next screen shows the **`application_id`** and **`client_token`**. Copy both. The `client_token` is public and ships in your bundle; the `application_id` is also public.
 
 </Steps>
 
@@ -108,7 +108,7 @@ Load your app in a fresh browser. The SDK starts a session immediately and posts
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-**RUM → Sessions** — your session appears at the top with web vitals, page count, and error count.
+In **RUM → Sessions**, your session appears at the top with web vitals, page count, and error count.
 
 </TabItem>
 <TabItem label="API">
@@ -150,10 +150,10 @@ try {
 
 ## 6. Set up source maps (production)
 
-Minified JS errors aren't very useful. Upload source maps so stacks resolve to original source — see [Source maps how-to](/observability/rum/how-to/source-maps/).
+Minified JS errors aren't very useful. Upload source maps so stacks resolve to original source. See the [Source maps how-to](/observability/rum/how-to/source-maps/).
 
 <Aside type="tip">
-For heavy SPAs, set `service` and `version` carefully — `version` should change on every deploy so the dashboard can split RUM data by deploy. Pair this with source-map uploads keyed to the same `version` and you get clean per-deploy regression detection.
+For heavy SPAs, set `service` and `version` carefully. `version` should change on every deploy so the dashboard can split RUM data by deploy. Pair this with source-map uploads keyed to the same `version` and you get clean per-deploy regression detection.
 </Aside>
 
 ## What's next

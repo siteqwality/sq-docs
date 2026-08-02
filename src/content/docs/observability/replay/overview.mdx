@@ -7,19 +7,19 @@ owner: jj
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-**Session Replay** reconstructs a user's session as a video — every page view, every DOM mutation, every click, every keystroke (with privacy controls). Use it for the "what did the user actually do?" debugging that no amount of metrics or logs can answer.
+**Session Replay** reconstructs a user's session as a video: every page view, every DOM mutation, every click, every keystroke (with privacy controls). Use it for the "what did the user actually do?" debugging that no amount of metrics or logs can answer.
 
 ## When to use replay
 
 - A user reports a bug you can't reproduce.
 - You're investigating an error and want to see the exact path that triggered it.
 - You're studying a confusing UX flow and want to watch real users navigate it.
-- A customer asks "why was I charged twice?" — you can replay the actual checkout.
+- A customer asks "why was I charged twice?" You can replay the actual checkout.
 
 ## When NOT to use replay
 
-- For aggregate analytics — that's RUM's measurement layer.
-- As your only data source — replay is heavy and only captured for filter-matched sessions. The other observability pillars are still your high-level monitoring.
+- For aggregate analytics. That's RUM's measurement layer.
+- As your only data source. Replay is heavy and only captured for filter-matched sessions. The other observability pillars are still your high-level monitoring.
 
 ## How it works
 
@@ -28,7 +28,7 @@ Replay is built on [rrweb](https://www.rrweb.io). The recorder:
 1. Snapshots the initial DOM.
 2. Records every mutation (additions, deletions, attribute changes).
 3. Records every input event (clicks, scrolls, typing).
-4. Records network requests (visually — you see the loading state).
+4. Records network requests (visually, so you see the loading state).
 5. Batches and ships these as **segments** to `https://replay.siteqwality.com`.
 
 Playback in the dashboard:
@@ -42,16 +42,16 @@ Playback in the dashboard:
 
 Replay is **off by default**. It activates only for sessions matching a [session filter](/observability/rum/how-to/session-filters/) with `capture_replay: true`.
 
-Once activated for a session, replay records from the activation moment onward — not from session start. So an errored session might have replay starting halfway through, when the error fired.
+Once activated for a session, replay records from the activation moment onward, not from session start. So an errored session might have replay starting halfway through, when the error fired.
 
-For sessions where you want replay from the very beginning, use the `error` filter with `capture_replay: true` — the SDK starts recording on the first error, but the rrweb library was already buffering, so playback typically includes the few seconds before the error.
+For sessions where you want replay from the very beginning, use the `error` filter with `capture_replay: true`. The SDK starts recording on the first error, but the rrweb library was already buffering, so playback typically includes the few seconds before the error.
 
 ## Privacy
 
 Replay is a privacy-sensitive feature. Two SDK-level controls (set on the RUM application):
 
-- **`mask_inputs`** — replace input values with `***` in the recording. Critical for password fields, credit card forms.
-- **`mask_text`** — replace user-visible text with `***`. Use when displaying customer names, financial figures, etc.
+- **`mask_inputs`**: replace input values with `***` in the recording. Critical for password fields, credit card forms.
+- **`mask_text`**: replace user-visible text with `***`. Use when displaying customer names, financial figures, etc.
 
 Per-element overrides:
 
@@ -69,12 +69,12 @@ Per-element overrides:
 The `rr-mask` / `rr-unmask` / `rr-block` class names are inherited from rrweb conventions.
 
 <Aside type="caution">
-Default to safer (more masking) and selectively unmask. For PCI/HIPAA-sensitive apps, audit replays before relying on them — and consider whether replay is appropriate at all.
+Default to safer (more masking) and selectively unmask. For PCI/HIPAA-sensitive apps, audit replays before relying on them, and consider whether replay is appropriate at all.
 </Aside>
 
 ## Pricing
 
-Replay is paid. Sessions with replay are billed per recorded session and per stored MB. Set conservative session filters — do not "replay everyone."
+Replay is paid. Sessions with replay are billed per recorded session and per stored MB. Set conservative session filters. Do not "replay everyone."
 
 ## Limits
 

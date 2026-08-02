@@ -85,12 +85,12 @@ POST body is JSON with the incident, the triggering monitor, and account context
 Your endpoint should:
 
 - Return any 2xx within 5 seconds. SiteQwality treats anything else as a failure.
-- Be idempotent — the same event can be retried on receiver failure.
+- Be idempotent, since the same event can be retried on receiver failure.
 - Accept large bodies (incidents with many updates can be 10–50KB).
 
 ## Securing the receiver
 
-The webhook URL is the auth — anyone who knows it can POST. Treat the URL as a secret.
+The webhook URL is the auth, so anyone who knows it can POST. Treat the URL as a secret.
 
 For stronger guarantees, embed a shared secret in the URL:
 

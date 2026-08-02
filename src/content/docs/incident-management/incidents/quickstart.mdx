@@ -1,6 +1,6 @@
 ---
 title: Incidents quickstart
-description: Open, update, acknowledge, and resolve an incident in five minutes — via the dashboard or API.
+description: Open, update, acknowledge, and resolve an incident in five minutes, from the dashboard or the API.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -22,7 +22,7 @@ By the end of this guide you'll have created a manual incident, posted a couple 
    - **Title:** `Investigating elevated 5xx errors on the API`.
    - **Severity:** `major`.
    - **Initial message:** `Several monitors reported failures starting around 14:30 UTC. We're investigating.`
-   - **Affected monitors:** select your `prod-api` monitor (optional — drives status-page banner).
+   - **Affected monitors:** select your `prod-api` monitor. Optional, but it drives the status-page banner.
 
 3. Click **Create**.
 
@@ -75,7 +75,7 @@ curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/update \
 </TabItem>
 </Tabs>
 
-Posting an update with a new `status` advances the incident's overall status. Don't skip statuses — go `investigating` → `identified` → `monitoring` → `resolved`.
+Posting an update with a new `status` advances the incident's overall status. Don't skip statuses. Go `investigating` → `identified` → `monitoring` → `resolved`.
 
 ## 3. Acknowledge
 
@@ -112,8 +112,8 @@ When the underlying issue is fixed, resolve.
 
 Either:
 
-- **Post an update** with `status: resolved` and a closing message — recommended, captures context.
-- Or click the **Resolve** button — quick, no message.
+- **Post an update** with `status: resolved` and a closing message. This is the recommended path: it captures context.
+- Or click the **Resolve** button for a quick close with no message.
 
 </TabItem>
 <TabItem label="API">
@@ -143,11 +143,11 @@ curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/resolve \
 Both paths set `status: resolved`, `responder_status: resolved`, and `resolved_at`.
 
 <Aside type="tip">
-For monitor-driven incidents, you don't usually call `POST /resolve` — the monitor's recovery does it for you. Manually resolving an auto-created incident before the monitor recovers won't suppress future re-opens; the monitor and the incident lifecycle are linked but not fused.
+For monitor-driven incidents, you don't usually call `POST /resolve`, because the monitor's recovery does it for you. Manually resolving an auto-created incident before the monitor recovers won't suppress future re-opens; the monitor and the incident lifecycle are linked but not fused.
 </Aside>
 
 ## What's next
 
-<LinkCard title="Manual incidents — when and how" description="Patterns for non-monitor-driven incidents." href="/incident-management/incidents/how-to/manual-incidents/" />
+<LinkCard title="Manual incidents: when and how" description="Patterns for non-monitor-driven incidents." href="/incident-management/incidents/how-to/manual-incidents/" />
 <LinkCard title="On-call schedules" description="Set up who responds in the first place." href="/incident-management/on-call/overview/" />
 <LinkCard title="Escalation policies" description="What happens if the on-call doesn't ack." href="/incident-management/escalation/overview/" />

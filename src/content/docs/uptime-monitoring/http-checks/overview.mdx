@@ -7,7 +7,7 @@ owner: jj
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-An **HTTP check** sends a request to a URL on a schedule, asserts on the response, and notifies you when something is wrong. They're the most common kind of monitor — start here if you're checking that a website, API, or webhook endpoint is up.
+An **HTTP check** sends a request to a URL on a schedule, asserts on the response, and notifies you when something is wrong. They're the most common kind of monitor, so start here if you're checking that a website, API, or webhook endpoint is up.
 
 ## When to use HTTP checks
 
@@ -29,9 +29,9 @@ Every HTTP check has a **schedule** (default: every 10 minutes; minimum 30 secon
 
 A single HTTP check can also automatically provision a paired:
 
-- [**TLS check**](../../ssl-tls-checks/overview/) — tracks the certificate's expiry and chain.
-- [**DNS check**](../../dns-checks/overview/) — tracks the registrable domain's resolver answers.
-- [**Page-speed check**](#) — runs Lighthouse against the URL on a slower schedule.
+- [**TLS check**](../../ssl-tls-checks/overview/): tracks the certificate's expiry and chain.
+- [**DNS check**](../../dns-checks/overview/): tracks the registrable domain's resolver answers.
+- [**Page-speed check**](#): runs Lighthouse against the URL on a slower schedule.
 
 These are opt-in via the `monitor_tls`, `monitor_dns`, and `monitor_page_speed` flags at create time.
 
@@ -52,5 +52,5 @@ Full field-by-field reference: see the auto-generated [`POST /http/job`](/api-re
 <CardGrid>
 	<LinkCard title="Quickstart" description="Create your first HTTP check in 5 minutes." href="../quickstart/" />
 	<LinkCard title="Settings reference" description="Every field on an HTTP check, explained." href="../reference/" />
-	<LinkCard title="API: Create HTTP monitor" description="POST /http/job — the underlying endpoint." href="/api-reference/operations/create_http_job/" />
+	<LinkCard title="API: Create HTTP monitor" description="The underlying POST /http/job endpoint." href="/api-reference/operations/create_http_job/" />
 </CardGrid>

@@ -11,7 +11,7 @@ By the end of this guide you'll have replay activated for any session that throw
 
 ## Prerequisites
 
-- A RUM application set up — see [RUM quickstart](/observability/rum/quickstart/).
+- A RUM application set up. See the [RUM quickstart](/observability/rum/quickstart/).
 - The SDK installed in your app.
 
 ## 1. Set privacy defaults on the application
@@ -23,7 +23,7 @@ By the end of this guide you'll have replay activated for any session that throw
 
 1. **RUM → Applications → your app → Settings → Privacy.**
 
-2. Enable **Mask inputs**. (Almost always a yes — your customers shouldn't see other customers' typed passwords.)
+2. Enable **Mask inputs**. (Almost always a yes, since your customers shouldn't see other customers' typed passwords.)
 
 3. Enable **Mask text** if your app displays sensitive content (financial info, PII).
 
@@ -60,7 +60,7 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Errored sessions — replay",
+    "name": "Errored sessions (replay)",
     "filter_type": "error",
     "conditions": {},
     "capture_replay": true,
@@ -84,7 +84,7 @@ The SDK detects the error, activates the replay recorder, and starts shipping se
 
 <Steps>
 
-1. **RUM → Sessions** — find your session (it has the error indicator).
+1. In **RUM → Sessions**, find your session (it has the error indicator).
 
 2. Click the session, then click **Replay** at the top.
 
@@ -114,7 +114,7 @@ Before rolling out replay broadly:
 - [ ] Sensitive text (PII, financial figures, health info) is wrapped in `<div class="rr-mask">` or behind a `mask_text: true` global setting.
 - [ ] Pages with payment forms have `<div class="rr-block">` on the form (don't record at all).
 - [ ] Your privacy policy mentions session replay if you collect from EU/CA customers (GDPR/CCPA).
-- [ ] Replay-enabled session filters are scoped — don't replay every session, just interesting ones.
+- [ ] Replay-enabled session filters are scoped. Don't replay every session, just the interesting ones.
 
 ## What's next
 

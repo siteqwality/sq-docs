@@ -21,14 +21,14 @@ Total time: about five minutes.
 
 1. Go to [app.siteqwality.com/signup](https://app.siteqwality.com/signup).
 
-2. Sign up with Google or email + password. Both create a fresh account in the free tier — no credit card required.
+2. Sign up with Google or email + password. Both create a fresh account in the free tier. No credit card required.
 
 3. You'll land on the empty dashboard. The left sidebar has every product area; the right column has the "Add your first monitor" prompt that walks you through the same flow as this guide.
 
 </Steps>
 
 <Aside type="tip" title="Notifications are already wired up">
-On signup, SiteQwality automatically creates a default notification group with your admin email as the destination. New monitors are attached to it by default — so you can skip notification setup for now and your first incident will email you. To customize (add Slack, change the email, route different monitors to different groups), see [Notifications](/incident-management/notifications/overview/).
+On signup, SiteQwality automatically creates a default notification group with your admin email as the destination. New monitors are attached to it by default, so you can skip notification setup for now and your first incident will email you. To customize (add Slack, change the email, route different monitors to different groups), see [Notifications](/incident-management/notifications/overview/).
 </Aside>
 
 ## 2. Create the HTTP check
@@ -45,7 +45,7 @@ On signup, SiteQwality automatically creates a default notification group with y
    - **URL:** `https://mock.codes/200`
    - **Method:** `GET`
    - **Run interval:** `Every 10 minutes` (the free-plan minimum is 60 seconds; we use 10 minutes here so the demo doesn't spam your inbox)
-   - Leave **Notification groups** on its default — your account's auto-created group is pre-selected.
+   - Leave **Notification groups** on its default. Your account's auto-created group is pre-selected.
    - Leave everything else as default.
 
 3. Click **Create**. The check runs immediately; the first result appears within a few seconds.
@@ -74,7 +74,7 @@ curl -X POST https://api.siteqwality.com/http/job \
   }'
 ```
 
-You'll get back a `201 Created` with the full job object. Save the `id` — you'll use it to fetch results, update the check, or delete it later.
+You'll get back a `201 Created` with the full job object. Save the `id`, since you'll use it to fetch results, update the check, or delete it later.
 
 Omitting `group_notification_ids` attaches the monitor to your account's auto-created default group, so the email lands in your inbox without further setup. To target a specific group, pass its UUID in `group_notification_ids` (`GET /notification_group/list` to enumerate).
 
@@ -98,7 +98,7 @@ Omitting `group_notification_ids` attaches the monitor to your account's auto-cr
 </Steps>
 
 <Aside type="tip">
-If the email never arrives, check your spam folder and confirm the channel email matches your inbox. SiteQwality only retries failed sends a few times — the [Notification channels reference](/incident-management/notifications/channels/) covers the gotchas.
+If the email never arrives, check your spam folder and confirm the channel email matches your inbox. SiteQwality only retries failed sends a few times. The [Notification channels reference](/incident-management/notifications/channels/) covers the gotchas.
 </Aside>
 
 ## What just happened
@@ -107,7 +107,7 @@ If the email never arrives, check your spam folder and confirm the channel email
 - The result was compared against the assertions on the monitor (status code in the success list, no body keyword search).
 - A change in monitor status (success → failure) opened an **incident** automatically.
 - The incident's `notification group` was looked up, fanned out to its `notification channels`, and each channel rendered the alert in its own format.
-- When the URL recovered, the same path ran in reverse — the incident was marked resolved and a recovery message went out.
+- When the URL recovered, the same path ran in reverse, marking the incident resolved and sending a recovery message.
 
 You can wire this up much further: on-call schedules pick *who* gets the page, escalation policies decide what to do if no one acknowledges, and a status page can publish the incident publicly. All of that is in [Incident Management](/incident-management/overview/).
 

@@ -1,6 +1,6 @@
 ---
 title: SSL/TLS checks
-description: Track certificate expiry, chain validity, and host-mismatch errors — standalone or paired with an HTTP check.
+description: Track certificate expiry, chain validity, and host-mismatch errors, either standalone or paired with an HTTP check.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -21,9 +21,9 @@ TLS checks are **paired with an HTTP check** today. Set `monitor_tls: true` when
 
 The TLS check's `current_status` reflects the most recent handshake outcome:
 
-- **Healthy** — cert valid, hostname matches, chain trusted, expiry > 14 days away.
-- **Pending failure** — handshake failed in one tick; flips to fail after another.
-- **Failed** — chain invalid, hostname mismatch, or cert expired.
+- **Healthy**: cert valid, hostname matches, chain trusted, expiry > 14 days away.
+- **Pending failure**: handshake failed in one tick; flips to fail after another.
+- **Failed**: chain invalid, hostname mismatch, or cert expired.
 
 `expiry_date` is recorded so the dashboard can render a countdown. Standard advance-warning periods (30 days, 14 days, 7 days) trigger increasingly severe notifications.
 
@@ -34,7 +34,7 @@ You don't need a separate TLS monitor for every HTTPS endpoint. Enable `monitor_
 ## What it doesn't do (today)
 
 - **Standalone TLS checks** (without an HTTP host) aren't currently supported. Track via the API roadmap.
-- **CT log checks** — confirming new certs appear in Certificate Transparency logs — aren't yet supported.
+- **CT log checks** (confirming new certs appear in Certificate Transparency logs) aren't yet supported.
 - **Custom expiry-warning thresholds** are inherited from the HTTP check's notification group.
 
 ## See also

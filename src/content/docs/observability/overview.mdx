@@ -1,6 +1,6 @@
 ---
 title: Observability
-description: Metrics, logs, traces, RUM, and session replay — five pillars on one query fabric, billed per seat instead of per gigabyte.
+description: Five pillars (metrics, logs, traces, RUM, and session replay) on one query fabric, billed per seat instead of per gigabyte.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -40,13 +40,13 @@ SiteQwality's observability suite has five pillars. They share the same time pic
 
 | Question | Tool |
 |---|---|
-| "How many errors in the last hour?" | **Metrics** — alertable, fast, cheap. |
-| "What was the error message at 14:32?" | **Logs** — the full payload is there. |
-| "Why was that one request slow?" | **Traces** — see the call graph. |
-| "What was the LCP for users in Brazil?" | **RUM** — geographically segmented. |
-| "What did the user click before the error?" | **Replay** — watch them. |
+| "How many errors in the last hour?" | **Metrics**. Alertable, fast, cheap. |
+| "What was the error message at 14:32?" | **Logs**. The full payload is there. |
+| "Why was that one request slow?" | **Traces**. See the call graph. |
+| "What was the LCP for users in Brazil?" | **RUM**. Geographically segmented. |
+| "What did the user click before the error?" | **Replay**. Watch them. |
 
-If you find yourself reaching for **logs** to answer "how many" — that's a metric. Emit one. If you reach for **metrics** to answer "what was the actual value" — that's a log. Cross-emit.
+If you find yourself reaching for **logs** to answer "how many", that's a metric. Emit one. If you reach for **metrics** to answer "what was the actual value", that's a log. Cross-emit.
 
 ## Ingestion
 
@@ -66,7 +66,7 @@ Backends:
 
 ## Pricing
 
-The observability pillars are **paid features** beyond the included free tier. Pricing is based on seats and ingestion volume — see **Settings → Billing → Plans**.
+The observability pillars are **paid features** beyond the included free tier. Pricing is based on seats and ingestion volume. See **Settings → Billing → Plans**.
 
 <Aside type="caution">
 Specific quotas (events/month, retention windows) are evolving. The dashboard's **Settings → Billing → Usage** page is the source of truth.

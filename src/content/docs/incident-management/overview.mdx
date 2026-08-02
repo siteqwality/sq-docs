@@ -1,13 +1,13 @@
 ---
 title: Incident Management
-description: Incidents, on-call rotations, escalation policies, multi-channel notifications, and maintenance windows — the full responder workflow.
+description: The full responder workflow, from incidents and on-call rotations to escalation policies, multi-channel notifications, and maintenance windows.
 last_verified: 2026-05-03
 owner: jj
 ---
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-When a monitor breaks at 3am, five things have to happen — fast and in the right order:
+When a monitor breaks at 3am, five things have to happen fast, and in the right order:
 
 1. **An incident is opened** that records what's broken and when.
 2. **Someone is identified** as the on-call responder.
@@ -15,7 +15,7 @@ When a monitor breaks at 3am, five things have to happen — fast and in the rig
 4. **If they don't ack**, the page escalates to the next person.
 5. **No one gets paged for known maintenance.**
 
-SiteQwality's incident management module wires these five together. You can use any of them in isolation — incidents without on-call, manual incidents with no monitors, notification channels with no on-call schedule — but the value compounds when they work together.
+SiteQwality's incident management module wires these five together. You can use any of them in isolation (incidents without on-call, manual incidents with no monitors, notification channels with no on-call schedule), but the value compounds when they work together.
 
 ## The five building blocks
 
@@ -42,7 +42,7 @@ SiteQwality's incident management module wires these five together. You can use 
   />
   <LinkCard
     title="Maintenance windows"
-    description="Silence specific monitors during planned work — one-time or recurring."
+    description="Silence specific monitors during planned work. One-time or recurring."
     href="/incident-management/maintenance/overview/"
   />
 </CardGrid>
@@ -88,6 +88,6 @@ The split between **notification groups** (account-level "where this monitor's a
 
 ## See also
 
-- [Maintenance windows](/incident-management/maintenance/overview/) — silence monitors during deploys.
-- [Status pages](/status-pages/overview/) — publish incidents externally.
-- [Integrations](/integrations/overview/) — connect Slack, Teams, Discord, Telegram, webhooks.
+- [Maintenance windows](/incident-management/maintenance/overview/): silence monitors during deploys.
+- [Status pages](/status-pages/overview/): publish incidents externally.
+- [Integrations](/integrations/overview/): connect Slack, Teams, Discord, Telegram, webhooks.

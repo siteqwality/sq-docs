@@ -7,7 +7,7 @@ owner: jj
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-A **metric** is a numeric time-series — a value plus a timestamp plus a set of tags. Use metrics for anything you'd put on a chart: request counts, error rates, latencies, queue depths, business KPIs.
+A **metric** is a numeric time-series made of a value, a timestamp, and a set of tags. Use metrics for anything you'd put on a chart: request counts, error rates, latencies, queue depths, business KPIs.
 
 ## When to use metrics
 
@@ -17,7 +17,7 @@ A **metric** is a numeric time-series — a value plus a timestamp plus a set of
 
 ## When NOT to use metrics
 
-- For one-off events with rich context — that's a [log](/observability/logs/overview/).
+- For one-off events with rich context. That's a [log](/observability/logs/overview/).
 - For arbitrary, high-cardinality data (per-user IDs, full URLs). Tag explosion will hurt query performance and your bill.
 
 ## Three metric types
@@ -93,15 +93,15 @@ Tags are arbitrary key/value strings. Use them consistently:
 
 When querying:
 
-- `avg`, `min`, `max`, `sum` — work on any metric type.
-- `p50`, `p95`, `p99` — only on histograms.
-- `rate` — only on counters; computes per-second rate over the bucket.
+- `avg`, `min`, `max`, `sum` work on any metric type.
+- `p50`, `p95`, `p99` work only on histograms.
+- `rate` works only on counters, computing a per-second rate over the bucket.
 
 Group by any tag to split the series. Filter by any tag to scope.
 
 ## Pricing notes
 
-Metrics ingestion is billed per data point per month. Histograms count as one data point regardless of bucket count. There's a hard cap of **1000 metrics per ingest request** — batch larger payloads into multiple requests.
+Metrics ingestion is billed per data point per month. Histograms count as one data point regardless of bucket count. There's a hard cap of **1000 metrics per ingest request**, so batch larger payloads into multiple requests.
 
 ## See also
 

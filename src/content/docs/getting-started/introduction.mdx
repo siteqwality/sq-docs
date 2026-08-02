@@ -1,13 +1,13 @@
 ---
 title: Welcome to SiteQwality
-description: A unified platform for uptime monitoring, observability, on-call, and public status — without paying Datadog prices.
+description: A unified platform for uptime monitoring, observability, on-call, and public status, without paying Datadog prices.
 last_verified: 2026-05-03
 owner: jj
 ---
 
 import { Card, CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-SiteQwality combines the four tools every engineering team duct-tapes together — uptime monitoring, observability (metrics + logs + traces + RUM), on-call paging, and a public status page — into a single product, billed per seat instead of per gigabyte.
+Every engineering team duct-tapes the same four tools together: uptime monitoring, observability (metrics + logs + traces + RUM), on-call paging, and a public status page. SiteQwality combines all four into a single product, billed per seat instead of per gigabyte.
 
 If you're tired of stitching Pingdom + Datadog + PagerDuty + Statuspage and watching the invoices climb in lock-step with your traffic, you're in the right place.
 
@@ -15,7 +15,7 @@ If you're tired of stitching Pingdom + Datadog + PagerDuty + Statuspage and watc
 
 <CardGrid>
   <Card title="Uptime monitoring" icon="approve-check">
-    HTTP, SSL/TLS, DNS, cron heartbeats, and full-browser synthetic checks — every 30 seconds, from any of our regions.
+    HTTP, SSL/TLS, DNS, cron heartbeats, and full-browser synthetic checks, run every 30 seconds from any of our regions.
   </Card>
   <Card title="Observability" icon="bars">
     Metrics, logs, traces, RUM, and session replay. One query language across all five.
@@ -32,12 +32,12 @@ If you're tired of stitching Pingdom + Datadog + PagerDuty + Statuspage and watc
 
 Each product area has the same shape:
 
-- **Overview** — what the feature is, when to reach for it, how it relates to the rest of the platform.
-- **Quickstart** — the fastest copy-pasteable path to first success.
-- **How-to guides** — task-shaped recipes ("rotate an on-call schedule," "add a custom domain to a status page").
-- **Reference** — every field on every object, with defaults and constraints.
+- **Overview**: what the feature is, when to reach for it, and how it relates to the rest of the platform.
+- **Quickstart**: the fastest copy-pasteable path to first success.
+- **How-to guides**: task-shaped recipes ("rotate an on-call schedule," "add a custom domain to a status page").
+- **Reference**: every field on every object, with defaults and constraints.
 
-The [API Reference](/api-reference/) is auto-generated from the live Rust handlers — so it's always in sync with what the API actually does.
+The [API Reference](/api-reference/) is auto-generated from the live Rust handlers, so it's always in sync with what the API actually does.
 
 ## Where to start
 
@@ -49,7 +49,7 @@ The [API Reference](/api-reference/) is auto-generated from the live Rust handle
   />
   <LinkCard
     title="Concepts and glossary"
-    description="Monitor, check, incident, on-call, escalation, notification group — the words you'll see across the docs, defined."
+    description="The words you'll see across the docs, defined: monitor, check, incident, on-call, escalation, and notification group."
     href="/getting-started/concepts/"
   />
   <LinkCard
@@ -66,7 +66,7 @@ The [API Reference](/api-reference/) is auto-generated from the live Rust handle
 
 ## A note on plans
 
-Most features in these docs work on the free plan. A few — sub-minute check intervals, multi-region checks, custom status-page domains, session replay — are paid. Where that's the case the relevant page calls it out in an `Aside`.
+Most features in these docs work on the free plan. A few are paid: sub-minute check intervals, multi-region checks, custom status-page domains, and session replay. Where that's the case the relevant page calls it out in an `Aside`.
 
 <Aside type="tip">
 Need help picking a plan, or want to see a demo before signing up? Email <a href="mailto:hello@siteqwality.com">hello@siteqwality.com</a>.

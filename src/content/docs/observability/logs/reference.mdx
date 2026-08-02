@@ -21,12 +21,12 @@ Three body shapes:
 |---|---|
 | `application/json` | Single JSON object **or** array of objects. |
 | `application/x-ndjson` | One JSON object per newline. |
-| `text/plain` | Raw text — runs through the configured parser if a `source` matches. |
+| `text/plain` | Raw text. Runs through the configured parser if a `source` matches. |
 
 Optional headers:
 
-- `X-Log-Source: <name>` — applies `source` to every entry in this request.
-- `X-Log-Parser: <parser-id>` — applies a specific parser to every entry.
+- `X-Log-Source: <name>` applies `source` to every entry in this request.
+- `X-Log-Parser: <parser-id>` applies a specific parser to every entry.
 
 ## Log entry fields
 
@@ -114,6 +114,6 @@ Response:
 
 ## See also
 
-- [Logs overview](/observability/logs/overview/) — concepts.
-- [Parsers](/observability/logs/how-to/parsers/) — extract structure from raw text.
-- [API Reference](/api-reference/) — wire-level shapes.
+- [Logs overview](/observability/logs/overview/) for concepts.
+- [Parsers](/observability/logs/how-to/parsers/) to extract structure from raw text.
+- [API Reference](/api-reference/) for wire-level shapes.

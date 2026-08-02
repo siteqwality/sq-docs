@@ -52,7 +52,7 @@ curl -X POST https://api.siteqwality.com/notification \
 
 - One integration per Discord channel. Create multiple integrations for multiple destinations.
 - Discord webhooks are subject to Discord's rate limits (5 requests/2sec/channel). Heavy alert volume may queue.
-- Webhook URLs are secrets — anyone with the URL can post to the channel. Rotate (delete + recreate) if leaked.
+- Webhook URLs are secrets, since anyone with the URL can post to the channel. Rotate (delete + recreate) if leaked.
 
 ## See also
 

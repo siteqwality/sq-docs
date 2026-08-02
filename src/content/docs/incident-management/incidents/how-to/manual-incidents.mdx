@@ -15,14 +15,14 @@ Set `service_id` on the create request and the incident runs the service's escal
 
 ## When to create one manually
 
-- **A third-party dependency broke something user-visible.** Stripe is degraded, AWS is throttling, your CDN is intermittently 502-ing. Your monitors might be showing a partial signal — but you have first-hand evidence.
+- **A third-party dependency broke something user-visible.** Stripe is degraded, AWS is throttling, your CDN is intermittently 502-ing. Your monitors might be showing a partial signal, but you have first-hand evidence.
 - **A bug surfaced in production that no monitor catches.** UI broken for a specific browser, auth flow broken only for SSO users.
 - **Coordinating a multi-team outage.** One canonical incident beats five Slack threads.
-- **Pre-announced maintenance went sideways.** A deploy you'd protected with a [maintenance window](/incident-management/maintenance/overview/) actually broke something — the maintenance window suppressed the auto-incident, so create one manually.
+- **Pre-announced maintenance went sideways.** A deploy you'd protected with a [maintenance window](/incident-management/maintenance/overview/) actually broke something. The maintenance window suppressed the auto-incident, so create one manually.
 
 ## When *not* to
 
-- Don't manually create an incident for an outage a monitor will catch in 60 seconds anyway. The auto-incident will be cleaner — fewer race conditions with `responder_status` and `affected_http_job_ids`.
+- Don't manually create an incident for an outage a monitor will catch in 60 seconds anyway. The auto-incident will be cleaner, since it has fewer race conditions with `responder_status` and `affected_http_job_ids`.
 - Don't create an incident as a stand-in for a Slack message. If you don't intend to publish it on a status page or trigger paging, just message the team directly.
 
 ## Two flavors of manual incident
@@ -122,7 +122,7 @@ After resolving, especially for `major` and `critical` incidents:
 - Link the postmortem doc in a final incident update so it's preserved on the timeline.
 
 <Aside type="tip">
-The full update history is preserved on the incident object — `GET /incident/{id}` returns it sorted chronologically. Useful when generating retro / postmortem docs.
+The full update history is preserved on the incident object. `GET /incident/{id}` returns it sorted chronologically. Useful when generating retro / postmortem docs.
 </Aside>
 
 ## See also

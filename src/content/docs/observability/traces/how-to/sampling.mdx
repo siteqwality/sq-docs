@@ -7,16 +7,16 @@ owner: jj
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-A high-traffic service can produce millions of spans per hour. Most of them are uninteresting — successful requests that all look the same. **Sampling** is the standard answer: send a representative subset, keep cost manageable, retain the ability to debug.
+A high-traffic service can produce millions of spans per hour. Most of them are uninteresting, just successful requests that all look the same. **Sampling** is the standard answer: send a representative subset, keep cost manageable, retain the ability to debug.
 
 ## Two flavors
 
 ### Head-based sampling
 
-Decision made at trace start. Cheap, deterministic, but blind to outcome — you might sample away the one slow trace.
+Decision made at trace start. Cheap, deterministic, but blind to outcome, so you might sample away the one slow trace.
 
 ```javascript
-// OpenTelemetry — sample 10% of traces
+// OpenTelemetry: sample 10% of traces
 const { NodeSDK } = require('@opentelemetry/sdk-node');
 const { TraceIdRatioBasedSampler } = require('@opentelemetry/sdk-trace-base');
 
@@ -31,7 +31,7 @@ Use head sampling for sustained-high-volume services where you can afford to los
 
 ### Tail-based sampling
 
-Decision made after the trace completes. Expensive (you have to buffer everything until you decide), but smart — keep all errors, all slow traces, plus a sample of normal ones.
+Decision made after the trace completes. Expensive (you have to buffer everything until you decide) but smart, because it keeps all errors, all slow traces, plus a sample of normal ones.
 
 OpenTelemetry has a [tail sampling collector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor) that runs as a sidecar / daemon between your apps and SiteQwality:
 

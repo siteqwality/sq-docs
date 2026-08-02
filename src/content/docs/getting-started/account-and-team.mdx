@@ -16,21 +16,21 @@ Once you have an account, there are a handful of one-time setup steps that pay o
 1. Open **Settings → Team**.
 
 2. Click **Invite user**, enter their email, and choose a role:
-   - **Owner** — full access, including billing.
-   - **Admin** — full access except billing.
-   - **Member** — can view everything and edit monitors/incidents, but can't modify team or billing.
+   - **Owner**: full access, including billing.
+   - **Admin**: full access except billing.
+   - **Member**: can view everything and edit monitors/incidents, but can't modify team or billing.
 
 3. The invite email contains a link they click to sign up. Pending invites stay listed under **Settings → Team** with a **Resend** and **Revoke** button.
 
 </Steps>
 
 <Aside type="caution">
-There's no per-seat trial — every invited user counts toward your plan's seat limit immediately on accepting. Revoke unused invites before inviting more.
+There's no per-seat trial. Every invited user counts toward your plan's seat limit immediately on accepting, so revoke unused invites before inviting more.
 </Aside>
 
 ## Set up your contact methods
 
-A *contact method* is **how you personally** can be reached — your email, your phone for SMS, your phone for calls, your Slack DM. Distinct from a notification *channel*, which is account-level.
+A *contact method* is **how you personally** can be reached, whether that's your email, your phone for SMS, your phone for calls, or your Slack DM. Distinct from a notification *channel*, which is account-level.
 
 Each user manages their own contact methods under **Settings → My profile → Contact methods**. Available types:
 
@@ -43,8 +43,8 @@ Each user manages their own contact methods under **Settings → My profile → 
 
 Once contact methods exist, set up **notification rules** to define which method fires for which urgency:
 
-- *High* urgency — incidents from monitors, escalation pages, anything that should wake you up.
-- *Low* urgency — informational, status-only.
+- *High* urgency: incidents from monitors, escalation pages, anything that should wake you up.
+- *Low* urgency: informational, status-only.
 
 A rule has an urgency, a contact method, and an optional `delay_minutes`. Stack multiple rules at increasing delays for personal escalation: SMS at 0 min, phone call at 5 min, email at 15 min.
 
@@ -60,7 +60,7 @@ Anything you can do in the dashboard, you can do via the API. Generate a key und
 
 2. Name it after where it'll be used (`local-dev`, `terraform-prod`, `ci`). One key per use case so you can rotate them independently.
 
-3. Copy the value (`sq_live_...`) when shown — it's only displayed once. Store it in your secrets manager.
+3. Copy the value (`sq_live_...`) when shown. It's only displayed once, so store it in your secrets manager.
 
 4. Use it as a Bearer token:
 
@@ -91,7 +91,7 @@ Whichever you use, every change either one makes is recorded in the [audit log](
 
 </Steps>
 
-Usage-relevant counters (monitor count, ingested logs/metrics/traces volume, RUM session count) live under **Settings → Billing → Usage**. Hard limits are enforced at the API layer — you'll get a `403 Forbidden` if a request would push you over.
+Usage-relevant counters (monitor count, ingested logs/metrics/traces volume, RUM session count) live under **Settings → Billing → Usage**. Hard limits are enforced at the API layer, so you'll get a `403 Forbidden` if a request would push you over.
 
 ## Set up integrations early
 

@@ -59,9 +59,9 @@ await step('Open homepage', async () => {
 - A step that throws fails. Subsequent steps are skipped.
 - A screenshot is captured after every step (pass or fail).
 
-### `page` — Playwright Page
+### `page` (Playwright Page)
 
-The full Playwright API is available — anything documented at https://playwright.dev/docs/api/class-page works.
+The full Playwright API is available. Anything documented at https://playwright.dev/docs/api/class-page works.
 
 Common helpers:
 
@@ -77,7 +77,7 @@ const url = page.url();
 
 ### Common assertion patterns
 
-Browser checks don't have a separate assertion DSL — assertions are just JavaScript that throws.
+Browser checks don't have a separate assertion DSL. Assertions are just JavaScript that throws.
 
 ```javascript
 // Wait for an element
@@ -144,5 +144,5 @@ The HAR and video URLs are presigned, expire in 1 hour, and are S3-direct (no pr
 
 ## See also
 
-- [Browser check overview](/uptime-monitoring/browser-checks/overview/) — concept and trade-offs.
-- [Quickstart](/uptime-monitoring/browser-checks/quickstart/) — first-script walkthrough.
+- [Browser check overview](/uptime-monitoring/browser-checks/overview/): concept and trade-offs.
+- [Quickstart](/uptime-monitoring/browser-checks/quickstart/): first-script walkthrough.

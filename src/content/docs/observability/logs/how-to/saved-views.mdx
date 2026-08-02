@@ -9,9 +9,9 @@ import { Aside, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
 
 A **saved view** is a named, reusable filter set on the Logs Explorer. Use them for:
 
-- "All errors in billing prod" — the search the on-call opens during pages.
+- "All errors in billing prod" (the search the on-call opens during pages).
 - "Slow queries (>1s) on the search service."
-- "Logs with `metadata.user_id = X`" — for one-off customer support investigations.
+- "Logs with `metadata.user_id = X`" (for one-off customer support investigations).
 
 ## Create
 
@@ -28,7 +28,7 @@ curl -X POST https://api.siteqwality.com/log_saved_views \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Billing errors — prod",
+    "name": "Billing errors (prod)",
     "description": "All error-level logs from billing-api in prod, last 24h",
     "is_shared": true,
     "filters": {
@@ -55,17 +55,17 @@ A shared view is editable by any account member. Update with `PUT /log_saved_vie
 
 For shared views, prefix with a category for sortability:
 
-- `[Errors] Billing — prod`
-- `[Errors] Auth — prod`
+- `[Errors] Billing (prod)`
+- `[Errors] Auth (prod)`
 - `[Slow] Search > 1s`
 - `[Audit] Admin actions`
 - `[Customer] usr_<known-customer>`
 
 ## Maintenance
 
-- **Delete unused views** — they accumulate. Quarterly cleanup is healthy.
-- **Bump filter time windows** — saved views store the relative time range (`last 1h`, `last 24h`). Re-save to update.
-- **Don't bake in user IDs** — for one-off customer investigations, run the filter in Explorer; don't save a permanent view per customer.
+- **Delete unused views.** They accumulate, so a quarterly cleanup is healthy.
+- **Bump filter time windows.** Saved views store the relative time range (`last 1h`, `last 24h`). Re-save to update.
+- **Don't bake in user IDs.** For one-off customer investigations, run the filter in Explorer; don't save a permanent view per customer.
 
 <Aside type="tip">
 A common pattern: add a saved view for every paging notification. The pager link drops the on-call into a pre-filtered view of the relevant logs, no clicking around at 3am.

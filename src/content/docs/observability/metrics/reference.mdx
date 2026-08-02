@@ -56,11 +56,11 @@ Free-form `string → string`. Tags are indexed for query filtering; cardinality
 
 **Reasonable**: `service`, `env`, `region`, `endpoint`, `status_class`, `queue`, `team`.
 
-**Risky**: `user_id`, `request_id`, `full_url`, `session_id`, `email` — anything unique per request.
+**Risky**: `user_id`, `request_id`, `full_url`, `session_id`, `email`, and anything else unique per request.
 
 **Default tags** (added server-side at ingest):
 
-- `account_id` — derived from API key.
+- `account_id` is derived from the API key.
 
 ## Query endpoints
 
@@ -121,6 +121,6 @@ Response:
 
 ## See also
 
-- [Metrics overview](/observability/metrics/overview/) — types, conventions.
-- [Quickstart](/observability/metrics/quickstart/) — first-metric walkthrough.
-- [API Reference](/api-reference/) — wire-level shapes.
+- [Metrics overview](/observability/metrics/overview/) covers the types and conventions.
+- [Quickstart](/observability/metrics/quickstart/) walks through your first metric.
+- [API Reference](/api-reference/) has the wire-level shapes.

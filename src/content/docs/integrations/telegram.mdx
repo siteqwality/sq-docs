@@ -34,7 +34,7 @@ For group chats, add the bot to the group first, then send the `/start <code>` c
 Or driven via API:
 
 ```bash
-# Step 1 — start the setup
+# Step 1: start the setup
 curl -X POST https://api.siteqwality.com/integration/telegram/start \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
@@ -42,11 +42,11 @@ curl -X POST https://api.siteqwality.com/integration/telegram/start \
 The response includes the `setup_code`. After the user messages the bot:
 
 ```bash
-# Step 2 — poll until chat_id is set
+# Step 2: poll until chat_id is set
 curl https://api.siteqwality.com/integration/telegram/get_setup_state \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 
-# Step 3 — finalize once chat_id is non-null
+# Step 3: finalize once chat_id is non-null
 curl -X POST https://api.siteqwality.com/integration/telegram \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \

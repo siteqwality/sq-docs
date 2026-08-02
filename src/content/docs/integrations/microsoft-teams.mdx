@@ -52,14 +52,14 @@ curl -X POST https://api.siteqwality.com/notification \
   }'
 ```
 
-The destination is implicit in the integration's webhook URL — you don't specify a channel separately.
+The destination is implicit in the integration's webhook URL, so you don't specify a channel separately.
 
 ## Multiple channels
 
 For multiple Teams destinations, create one integration per destination (each with its own webhook URL). Then create one notification per integration.
 
 <Aside type="caution">
-Teams incoming webhooks are being deprecated by Microsoft in favor of the Workflows app — the URL format may change. Watch their announcements; SiteQwality will follow the migration.
+Teams incoming webhooks are being deprecated by Microsoft in favor of the Workflows app, and the URL format may change. Watch their announcements; SiteQwality will follow the migration.
 </Aside>
 
 ## See also

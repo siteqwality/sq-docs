@@ -37,7 +37,7 @@ TLS expiry and cron/heartbeat monitors support only `email`, `sms`, and `slack`.
 ```
 
 - Validated against a basic email regex.
-- No verification step — anything that parses as an email is accepted.
+- No verification step, so anything that parses as an email is accepted.
 - Sender is `alerts@siteqwality.com`. Whitelist it to avoid spam folders.
 - Subject line includes monitor name + status; body includes a deep link to the incident.
 
@@ -74,7 +74,7 @@ SMS delivery is best-effort. International routing can be flaky; for critical pa
 }
 ```
 
-- Requires a Slack integration first — see [Integrations → Slack](/integrations/overview/).
+- Requires a Slack integration first. See [Integrations → Slack](/integrations/overview/).
 - `channel` accepts `#name` or a Slack channel ID. Bot must be invited to private channels.
 - Messages render as rich blocks with status color, monitor name, recent results, and an "Acknowledge" interactive button.
 
@@ -87,7 +87,7 @@ SMS delivery is best-effort. International routing can be flaky; for critical pa
 }
 ```
 
-- The URL lives on the integration object (`/integration/webhook`), not the channel — so multiple channels can share one URL with different downstream meaning.
+- The URL lives on the integration object (`/integration/webhook`), not the channel, so multiple channels can share one URL with different downstream meaning.
 - Payload is a JSON POST with the incident object + monitor context.
 
 Sample webhook body (truncated):
@@ -242,6 +242,6 @@ Not all channels behave the same when a send fails. This matters when you are ch
 
 ## See also
 
-- [Notifications overview](/incident-management/notifications/overview/) — the four-object mental model.
-- [Integrations](/integrations/overview/) — set up Slack, Teams, Discord, Telegram, webhooks.
-- [API Reference](/api-reference/) — full request/response shapes.
+- [Notifications overview](/incident-management/notifications/overview/): the four-object mental model.
+- [Integrations](/integrations/overview/): set up Slack, Teams, Discord, Telegram, webhooks.
+- [API Reference](/api-reference/): full request/response shapes.

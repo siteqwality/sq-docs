@@ -1,6 +1,6 @@
 ---
 title: DNS checks
-description: Verify a domain resolves correctly across resolvers and record types — paired with an HTTP check today.
+description: Verify a domain resolves correctly across resolvers and record types, paired with an HTTP check today.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -26,11 +26,11 @@ Like TLS, DNS checks today are **paired with an HTTP check**. Set `monitor_dns: 
 
 The check resolves the domain on a regular schedule and flips status:
 
-- **Healthy** — resolution succeeded with sane records.
-- **Pending failure** — one tick failed; the next confirms.
-- **Failed** — multiple consecutive resolution failures.
+- **Healthy**: resolution succeeded with sane records.
+- **Pending failure**: one tick failed; the next confirms.
+- **Failed**: multiple consecutive resolution failures.
 
-The check uses public resolvers (a mix to avoid single-resolver bias). The `domain` field is the registrable domain extracted from the HTTP check's URL — `https://www.example.com/path` → `example.com`.
+The check uses public resolvers (a mix to avoid single-resolver bias). The `domain` field is the registrable domain extracted from the HTTP check's URL (`https://www.example.com/path` → `example.com`).
 
 ## When NOT to use DNS checks
 
@@ -38,7 +38,7 @@ The check uses public resolvers (a mix to avoid single-resolver bias). The `doma
 - For **per-resolver canary tests** (Cloudflare 1.1.1.1, Google 8.8.8.8, your ISP), this isn't supported in the current release.
 
 <Aside type="caution">
-The DNS check today is intentionally simple — "does this domain resolve to *something*?" — not "does it resolve to *exactly this*?" If you need stronger record-level guarantees, run a custom HTTP check that triggers a script you control.
+The DNS check today is intentionally simple. It answers "does this domain resolve to *something*?", not "does it resolve to *exactly this*?" If you need stronger record-level guarantees, run a custom HTTP check that triggers a script you control.
 </Aside>
 
 ## See also
