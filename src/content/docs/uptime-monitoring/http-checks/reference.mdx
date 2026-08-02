@@ -84,9 +84,9 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | Value | Behavior |
 |---|---|
 | `auto` | Prefer HTTP/2 via ALPN, fall back to HTTP/1.1 (default). |
-| `http_1_1` | Force HTTP/1.1 only. Best for some CDN / bot-management edges. |
-| `http_2` | Require HTTP/2; the check fails if it cannot be negotiated. |
-| `http_2_with_fallback` | Explicit prefer-h2-with-fallback. Same transport behavior as `auto` today. |
+| `http1_1` | Force HTTP/1.1 only. Best for some CDN / bot-management edges. |
+| `http2` | Require HTTP/2; the check fails if it cannot be negotiated. |
+| `http2_with_fallback` | Explicit prefer-h2-with-fallback. Same transport behavior as `auto` today. |
 
 The negotiated version actually observed on each run is recorded on the check result.
 
