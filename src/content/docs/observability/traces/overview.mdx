@@ -32,7 +32,7 @@ Authorization: Bearer <api-key>
 Content-Type: application/json | application/x-protobuf
 ```
 
-The body shape is the standard OTLP `ExportTraceServiceRequest`. Most language SDKs handle this for you.
+The body shape is the standard OTLP `ExportTraceServiceRequest`. Most language SDKs handle this for you, and most default to protobuf, which is supported. See [sending OTLP over HTTP/protobuf](/observability/traces/how-to/otlp-protobuf/) for the exporter settings and the limits worth knowing (gRPC is not supported, and compression must stay off).
 
 Span attributes follow OTel semantic conventions: `http.method`, `http.status_code`, `db.system`, `service.name`, etc. Custom attributes are accepted on every span.
 
@@ -95,6 +95,8 @@ Traces are billed per span ingested + retention. Sampling is your friend — see
 
 <CardGrid>
   <LinkCard title="Quickstart" description="Send your first trace via the OTLP HTTP exporter." href="/observability/traces/quickstart/" />
+  <LinkCard title="OTLP over protobuf" description="Point an OpenTelemetry SDK at SiteQwality, and what is not supported." href="/observability/traces/how-to/otlp-protobuf/" />
+  <LinkCard title="Correlate with logs" description="Jump from a span to the log lines it produced." href="/observability/traces/how-to/correlate-logs/" />
   <LinkCard title="Sampling" description="Reduce volume without losing signal." href="/observability/traces/how-to/sampling/" />
   <LinkCard title="Reference" description="Span attribute conventions, search params." href="/observability/traces/reference/" />
   <LinkCard title="Logs" description="The other half of debugging." href="/observability/logs/overview/" />
