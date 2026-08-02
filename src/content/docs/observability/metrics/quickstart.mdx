@@ -1,7 +1,7 @@
 ---
 title: Metrics quickstart
 description: Send your first metric via curl, see it on a chart in 5 minutes.
-last_verified: 2026-05-03
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -12,7 +12,7 @@ By the end of this guide you'll have sent a counter and a gauge from your laptop
 ## 1. Send a metric
 
 ```bash
-curl -X POST https://metrics.siteqwality.com/v1/ingest \
+curl -X POST https://metrics.siteqwality.com/metrics \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -46,7 +46,7 @@ A single point isn't a chart. Loop:
 ```bash
 for i in {1..30}; do
   VALUE=$((RANDOM % 100))
-  curl -X POST https://metrics.siteqwality.com/v1/ingest \
+  curl -X POST https://metrics.siteqwality.com/metrics \
     -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
     -H "Content-Type: application/json" \
     -d "{ \"metrics\": [{
@@ -121,7 +121,7 @@ For ad-hoc instrumentation:
 ```python
 import os, time, requests
 
-API = "https://metrics.siteqwality.com/v1/ingest"
+API = "https://metrics.siteqwality.com/metrics"
 KEY = os.environ["SITEQWALITY_API_KEY"]
 
 def send_counter(name, value=1, tags=None):

@@ -93,6 +93,11 @@ export default defineConfig({
 								{ label: 'Overview', slug: 'uptime-monitoring/http-checks/overview' },
 								{ label: 'Quickstart', slug: 'uptime-monitoring/http-checks/quickstart' },
 								{ label: 'Reference', slug: 'uptime-monitoring/http-checks/reference' },
+								{
+									label: 'How-to guides',
+									collapsed: true,
+									autogenerate: { directory: 'uptime-monitoring/http-checks/how-to' },
+								},
 							],
 						},
 						{
@@ -150,6 +155,11 @@ export default defineConfig({
 								{ label: 'Overview', slug: 'observability/metrics/overview' },
 								{ label: 'Quickstart', slug: 'observability/metrics/quickstart' },
 								{ label: 'Reference', slug: 'observability/metrics/reference' },
+								{
+									label: 'How-to guides',
+									collapsed: true,
+									autogenerate: { directory: 'observability/metrics/how-to' },
+								},
 							],
 						},
 						{
@@ -308,7 +318,24 @@ export default defineConfig({
 						{ label: 'Microsoft Teams', slug: 'integrations/microsoft-teams' },
 						{ label: 'Discord', slug: 'integrations/discord' },
 						{ label: 'Telegram', slug: 'integrations/telegram' },
+						{ label: 'Google Chat', slug: 'integrations/google-chat' },
+						{ label: 'Mattermost', slug: 'integrations/mattermost' },
+						{ label: 'PagerDuty', slug: 'integrations/pagerduty' },
+						{ label: 'OpsGenie', slug: 'integrations/opsgenie' },
+						{ label: 'Pushover', slug: 'integrations/pushover' },
+						{ label: 'Pushbullet', slug: 'integrations/pushbullet' },
 						{ label: 'Webhooks', slug: 'integrations/webhooks' },
+					],
+				},
+				{
+					label: 'Enterprise',
+					collapsed: true,
+					items: [
+						{ label: 'Overview', slug: 'enterprise/overview' },
+						{ label: 'M2M API clients', slug: 'enterprise/api-clients' },
+						{ label: 'Customer audit log', slug: 'enterprise/audit-log' },
+						{ label: 'CSV exports', slug: 'enterprise/csv-exports' },
+						{ label: 'SLA reports', slug: 'enterprise/sla-reports' },
 					],
 				},
 				{

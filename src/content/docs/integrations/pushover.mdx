@@ -1,0 +1,81 @@
+---
+title: Pushover integration
+description: Push downtime alerts to your phone via Pushover, with outages sent at high priority.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+Pushover delivers push notifications to your own devices without SMS costs. SiteQwality sends outage alerts at high priority so they bypass quiet hours, and recoveries at normal priority.
+
+## What you need
+
+Two values, both from Pushover.
+
+<Steps>
+
+1. **User Key.** Shown on your [Pushover dashboard](https://pushover.net) as soon as you log in. A group key works too.
+
+2. **App Token.** Create an **Application** in Pushover and copy its API token. Pushover requires the message to be attributed to an application, so this is not optional.
+
+</Steps>
+
+## Connect it
+
+In the dashboard, **Integrations → Add Integrations → Pushover**. Fill in **User Key** and **App Token**, then click **Add**. Or via the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/integration/pushover \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Ops phones",
+    "user_key": "<pushover-user-or-group-key>",
+    "app_token": "<pushover-application-api-token>"
+  }'
+```
+
+All three fields are required and must be non-empty. Neither credential is verified against Pushover at save time.
+
+Both are secrets: `GET /integration` returns `"details": {}` for Pushover, and both values are redacted from the stored delivery record.
+
+## Create a channel
+
+```bash
+curl -X POST https://api.siteqwality.com/notification \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notification_group_id": "<your-group-id>",
+    "type": "pushover",
+    "details": { "pushover_integration_id": "<pushover-integration-id>" }
+  }'
+```
+
+## Priority
+
+Priority is set automatically per event type and is not configurable:
+
+| Event | Pushover priority |
+|---|---|
+| Monitor down | `1` (high, bypasses your quiet hours) |
+| Monitor recovered | `0` (normal) |
+| Domain expiry warning | `0` (normal) |
+
+Priority `2` (emergency, requires acknowledgement) is deliberately not used, because it needs retry and expiry parameters plus acknowledgement handling that SiteQwality does not implement.
+
+## Delivery behavior
+
+Pushover sends are **not** retried in-process, because re-sending is not idempotent and would show up as a duplicate push on your phone. A single attempt is made; if it fails, the notifier fails the event so the delivery is retried at the queue level.
+
+The practical consequence: a transient Pushover failure can still produce a duplicate push, but a lost alert is not silently swallowed.
+
+## Limitations
+
+Pushover channels fire for **HTTP monitors, browser checks, and DNS/domain expiry**. TLS expiry and cron/heartbeat monitors only support email, SMS, and Slack today. Page-speed alerts also do not support Pushover.
+
+## See also
+
+<LinkCard title="Channels reference" description="Full pushover channel detail shape." href="/incident-management/notifications/channels/#pushover" />
+<LinkCard title="Pushbullet" description="The other push-to-device option." href="/integrations/pushbullet/" />

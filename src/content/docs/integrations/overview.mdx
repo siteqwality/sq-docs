@@ -1,7 +1,7 @@
 ---
 title: Integrations
-description: Connect SiteQwality to Slack, Microsoft Teams, Discord, Telegram, and arbitrary webhooks for notification delivery.
-last_verified: 2026-05-03
+description: Connect SiteQwality to Slack, Teams, Discord, Telegram, PagerDuty, OpsGenie, Google Chat, Mattermost, Pushover, Pushbullet, and arbitrary webhooks.
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -14,15 +14,42 @@ The split exists because:
 - One integration → many channels. One Slack workspace integration can fan into 20 different channels (`#ops`, `#deploys`, `#alerts-billing`, ...).
 - Credentials are reusable. You connect Slack once via OAuth; you don't re-enter the workspace every time you want a new channel.
 
-## Available integrations
+## Chat and messaging
 
 <CardGrid>
-  <LinkCard title="Slack" description="OAuth-installed app. Posts rich blocks to any channel; supports interactive Acknowledge buttons." href="/integrations/slack/" />
+  <LinkCard title="Slack" description="OAuth-installed app. Posts rich blocks to any channel; supports interactive Acknowledge and Resolve buttons." href="/integrations/slack/" />
   <LinkCard title="Microsoft Teams" description="Incoming webhook URL from a Teams channel connector. Posts Adaptive Cards." href="/integrations/microsoft-teams/" />
   <LinkCard title="Discord" description="Incoming webhook URL from a Discord channel. Posts embeds." href="/integrations/discord/" />
   <LinkCard title="Telegram" description="Bot-based via setup-code flow. Direct messages or group chats." href="/integrations/telegram/" />
+  <LinkCard title="Google Chat" description="Incoming webhook URL for a space. Posts card messages." href="/integrations/google-chat/" />
+  <LinkCard title="Mattermost" description="Incoming webhook URL, self-hosted or Cloud. Posts Slack-style attachments." href="/integrations/mattermost/" />
+</CardGrid>
+
+## On-call and paging
+
+<CardGrid>
+  <LinkCard title="PagerDuty" description="Events API v2. Outages trigger an incident; recoveries resolve the same incident automatically." href="/integrations/pagerduty/" />
+  <LinkCard title="OpsGenie" description="Alerts API. Outages create an alert; recoveries close it automatically by alias." href="/integrations/opsgenie/" />
+</CardGrid>
+
+## Push to your devices
+
+<CardGrid>
+  <LinkCard title="Pushover" description="User key plus an application token. Outages arrive at high priority." href="/integrations/pushover/" />
+  <LinkCard title="Pushbullet" description="Account access token. Note pushes to every signed-in device." href="/integrations/pushbullet/" />
+</CardGrid>
+
+## Anything else
+
+<CardGrid>
   <LinkCard title="Webhooks" description="Generic outbound webhook URL. POSTs incident JSON to your endpoint." href="/integrations/webhooks/" />
 </CardGrid>
+
+<Aside type="note" title="Not every channel works with every monitor type">
+PagerDuty, OpsGenie, Google Chat, Mattermost, Pushover, and Pushbullet fire for **HTTP monitors, browser checks, and DNS/domain expiry**. TLS expiry and cron/heartbeat monitors support only email, SMS, and Slack today, and a channel of an unsupported type on those monitors is skipped rather than erroring.
+
+[Page-speed alerts](/uptime-monitoring/http-checks/how-to/page-speed-alerts/) are narrower still: email, SMS, Slack, webhook, Discord, and Teams only.
+</Aside>
 
 ## How integrations and channels relate
 

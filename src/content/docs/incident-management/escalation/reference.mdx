@@ -1,7 +1,7 @@
 ---
 title: Escalation policy reference
 description: Every field on an escalation policy and its levels, with defaults and constraints.
-last_verified: 2026-05-03
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -14,18 +14,29 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `name` | string | required | Human label, shown in dashboards and per-incident views. |
-| `repeat_count` | int | `0` | After exhausting all levels, how many full passes to run before giving up. `0` = stop. Set to at least `1` to avoid silent drop-offs. |
+| `repeat_count` | int | `3` | How many full passes through the levels to run before giving up. See [repeat cycles](/incident-management/escalation/overview/#repeat-cycles). Not range-validated. |
 
 ## Escalation level
 
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `level_number` | int | next-free | Sort order within the policy. Lower runs first. Auto-assigned to `max(existing) + 1` if omitted. |
-| `timeout_minutes` | int | required | How long to wait for any responder ack at this level before advancing. Whole minutes only. |
+| `timeout_minutes` | int | required | How long to wait for any responder ack at this level before advancing. Whole minutes only. Not range-validated. |
 | `target_user_ids` | uuid[] | `[]` | Page these specific users. Each user's notification rules + contact methods determine the actual delivery. |
 | `target_schedule_ids` | uuid[] | `[]` | Page whoever is on-call in these on-call schedules at firing time. |
 
-At least one of `target_user_ids` or `target_schedule_ids` must be non-empty — a level with no targets does nothing.
+A level with no resolvable targets pages nobody, but it still waits out its timeout and still advances.
+
+## Level numbering rules
+
+The engine starts at the level numbered exactly `1` and then looks for `2`, `3`, and so on. Two failure modes follow, and neither reports an error:
+
+- **No level `1`.** The policy never pages at all.
+- **A gap** (levels `1` and `3`, say). Level 1 pages, then the policy looks for level `2`, finds nothing, and stalls. No further timeout is scheduled.
+
+Omitting `level_number` on create auto-assigns `max + 1`, which is always safe. If you have set numbers by hand, use the [reorder endpoint](#reorder-endpoint) to renumber to a clean `1..N`.
+
+Duplicate `level_number` values are accepted, but only the first matching level is ever paged.
 
 ## Step types — practical recipes
 
@@ -84,7 +95,34 @@ Reserve for `critical` incidents that have already burned through 30+ minutes wi
 { "level_ids": ["<id-1>", "<id-2>", "<id-3>"] }
 ```
 
-The array must contain exactly the existing levels — no adds, no removes.
+The array must contain exactly the existing levels: no adds, no removes. It rewrites every `level_number` to a contiguous `1..N`, which is the safe way to repair a policy with gaps.
+
+## How targets are paged
+
+A level's targets are resolved and de-duplicated, then each user is paged through **their own** notification rules for the incident's urgency.
+
+| Incident severity | Urgency used |
+|---|---|
+| `critical` | high |
+| `major` | high |
+| `minor` | low |
+
+This mapping is fixed and cannot be overridden per policy. A targeted user with no rule matching that urgency is not paged at all, which is the most common reason a level appears to do nothing.
+
+Two further limits on delivery, both worth knowing before you design a chain:
+
+- `phone_call` contact methods have no transport and are skipped at send time.
+- A contact method's `verified` flag is not checked before paging.
+
+See [notifications](/incident-management/notifications/overview/#contact-methods-per-user) for both.
+
+## Escalation state values
+
+| Value | Meaning |
+|---|---|
+| `active` | Cycling through levels. |
+| `acknowledged` | Acked or resolved. Paging stopped and pending schedules deleted. |
+| `exhausted` | Repeat cycles are used up. Level cycling stopped, but a per-user delayed page that was already scheduled can still fire. |
 
 ## See also
 

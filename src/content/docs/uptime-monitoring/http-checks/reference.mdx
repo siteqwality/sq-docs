@@ -1,7 +1,7 @@
 ---
 title: HTTP check reference
 description: Every field on an HTTP check, with defaults, validation limits, and status meanings.
-last_verified: 2026-08-01
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -21,6 +21,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `timeout_ms` | int | required | Per-request timeout in milliseconds. Maximum `60000`. |
 | `check_regions` | string[] | `["aws-us-east-1"]` | Regions the check runs from. Omitted or empty falls back to the default. See [regions](#check-regions). |
 | `min_healthy_regions` | int | `1` | Minimum regions that must pass for the check to count as healthy. At least `1`, at most the number of `check_regions`. |
+| `confirmation_threshold` | int | `1` | Consecutive failed checks required before the monitor transitions to `failed` and alerts. `1` to `10`. See [requiring N failed checks](/uptime-monitoring/http-checks/how-to/confirmation-threshold/). |
 | `follow_redirects` | bool | `true` | Follow HTTP redirects before evaluating the response. |
 | `request_body` | string | none | Body sent with the request. |
 | `content_type` | enum | none | `Content-Type` of the request body. See [content types](#content-types). |
@@ -66,9 +67,9 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 
 | Status | Meaning |
 |---|---|
-| `success` | Most recent check passed all assertions. |
-| `pending_failure` | One check failed; the next run confirms. Suppresses alerts on transient blips. |
-| `failed` | Confirmed failure. Notifications fire. |
+| `success` | The monitor is not in a confirmed failure. A monitor whose recent checks have failed but not yet met its `confirmation_threshold` stays `success`. |
+| `failed` | Confirmed failure. Notifications fire and an incident opens. |
+| `pending_failure` | Legacy value. Nothing sets it today; debouncing is handled by [`confirmation_threshold`](/uptime-monitoring/http-checks/how-to/confirmation-threshold/). Treat it as `success` if you encounter it on an old record. |
 
 ## Check regions
 

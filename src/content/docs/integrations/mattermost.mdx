@@ -1,0 +1,84 @@
+---
+title: Mattermost integration
+description: Send monitor alerts to a Mattermost channel as Slack-style attachments, using an incoming webhook.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+The Mattermost integration posts to a channel through an incoming webhook, using Mattermost's Slack-compatible attachment format. It works with self-hosted and Cloud instances alike, since the webhook URL is yours.
+
+## What you need
+
+<Steps>
+
+1. In Mattermost, go to **Integrations → Incoming Webhooks**.
+
+2. **Add Incoming Webhook**, pointed at the channel you want alerts in.
+
+3. Copy the URL. It looks like `https://your-mattermost.example.com/hooks/...`.
+
+</Steps>
+
+## Connect it
+
+In the dashboard, **Integrations → Add Integrations → Mattermost**. Name it, paste the URL into **Webhook URL**, and click **Add**. Or via the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/integration/mattermost \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Acme Mattermost",
+    "url": "https://your-mattermost.example.com/hooks/xxxxxxxx"
+  }'
+```
+
+The request field is `url`; the stored and returned field is `mattermost_webhook_url`. Both fields are required and must be non-empty, and the URL is not validated or tested at save time.
+
+<Aside type="caution" title="The webhook URL is readable after saving">
+The Mattermost webhook URL is **echoed back in full** by `GET /integration` and recorded verbatim on each delivery record. Anyone with read access to your integrations can post to that channel. Regenerate the webhook in Mattermost if that access changes.
+</Aside>
+
+## Create a channel
+
+```bash
+curl -X POST https://api.siteqwality.com/notification \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notification_group_id": "<your-group-id>",
+    "type": "mattermost",
+    "details": { "mattermost_integration_id": "<mattermost-integration-id>" }
+  }'
+```
+
+## Message format
+
+Messages post as `SiteQwality` with a Slack-style attachment: a colored bar, a title, and fields for the monitor details.
+
+| Event | Color |
+|---|---|
+| Monitor down | red (`#ff0000`) |
+| Monitor recovered | green (`#36a64f`) |
+| Domain expiry warning | amber (`#ffcc00`) |
+
+## Delivery behavior
+
+<Aside type="caution" title="Failed sends are not retried beyond three attempts">
+Mattermost rides the shared platform-webhook transport, which retries 3 times and then **records the failure and gives up**. The message is lost and nothing fails loudly; it shows as a `provider_error` on the delivery record.
+
+If your Mattermost server is behind a VPN or occasionally unreachable, pair this with a second channel for anything you cannot afford to miss.
+</Aside>
+
+Each attempt has a 15 second timeout, and any non-2xx response counts as a failure.
+
+## Limitations
+
+Mattermost channels fire for **HTTP monitors, browser checks, and DNS/domain expiry**. TLS expiry and cron/heartbeat monitors only support email, SMS, and Slack today; a Mattermost channel on a group used by those monitor types is skipped.
+
+## See also
+
+<LinkCard title="Channels reference" description="Full mattermost channel detail shape." href="/incident-management/notifications/channels/#mattermost" />
+<LinkCard title="Google Chat" description="The same transport, card-style messages." href="/integrations/google-chat/" />

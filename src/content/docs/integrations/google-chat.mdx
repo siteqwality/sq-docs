@@ -1,0 +1,82 @@
+---
+title: Google Chat integration
+description: Post monitor alerts as Google Chat cards to a space, using an incoming webhook URL.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+The Google Chat integration posts alerts into a space as `cardsV2` messages. It needs one thing: the space's incoming webhook URL.
+
+## What you need
+
+<Steps>
+
+1. In Google Chat, open the **space** you want alerts in.
+
+2. **Apps & integrations → Webhooks → Add webhook.**
+
+3. Copy the URL. It looks like `https://chat.googleapis.com/v1/spaces/...`.
+
+</Steps>
+
+## Connect it
+
+In the dashboard, **Integrations → Add Integrations → Google Chat**. Name it, paste the URL into **Webhook URL**, and click **Add**. Or via the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/integration/google_chat \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Acme Google Chat",
+    "url": "https://chat.googleapis.com/v1/spaces/..."
+  }'
+```
+
+Note the request field is `url`, while the stored and returned field is `google_chat_webhook_url`.
+
+Both fields are required and must be non-empty. Nothing validates that the value is a URL at all, let alone a working one, so a typo shows up as a failed notification rather than an error at save time.
+
+<Aside type="caution" title="The webhook URL is readable after saving">
+A Google Chat webhook URL contains its own auth token in the query string. Unlike the PagerDuty and OpsGenie credentials, it is **echoed back in full** by `GET /integration`, and it is also recorded verbatim in the delivery record for each send.
+
+Treat anyone with read access to your account's integrations as holding the ability to post into that space, and rotate the webhook in Google Chat if that access changes.
+</Aside>
+
+## Create a channel
+
+```bash
+curl -X POST https://api.siteqwality.com/notification \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notification_group_id": "<your-group-id>",
+    "type": "google_chat",
+    "details": { "google_chat_integration_id": "<google-chat-integration-id>" }
+  }'
+```
+
+## Message format
+
+Messages render as a Google Chat card with a header and a body section carrying the monitor name, URL, and status. Recovery messages use the same card shape.
+
+## Delivery behavior
+
+<Aside type="caution" title="Failed sends are not retried beyond three attempts">
+Google Chat rides the shared platform-webhook transport, which retries 3 times and then **records the failure and gives up**. The notification is lost, and nothing fails loudly: you will see it as a `provider_error` on the delivery record, not as a retry.
+
+This is weaker than PagerDuty, OpsGenie, Pushover, and Pushbullet, all of which escalate an exhausted send so it gets retried. If Google Chat is your only alerting path for something that matters, pair it with a second channel.
+</Aside>
+
+Each attempt has a 15 second timeout, and any non-2xx response counts as a failure.
+
+## Limitations
+
+Google Chat channels fire for **HTTP monitors, browser checks, and DNS/domain expiry**. TLS expiry and cron/heartbeat monitors only support email, SMS, and Slack today; a Google Chat channel on a group used by those monitor types is skipped.
+
+## See also
+
+<LinkCard title="Channels reference" description="Full google_chat channel detail shape." href="/incident-management/notifications/channels/#google-chat" />
+<LinkCard title="Mattermost" description="The same transport, Slack-style attachments." href="/integrations/mattermost/" />

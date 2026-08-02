@@ -1,13 +1,17 @@
 ---
 title: Create manual incidents
-description: When to open an incident by hand and how to do it cleanly via the API or dashboard.
-last_verified: 2026-05-03
+description: When to open an incident by hand, how to do it cleanly, and how to make it page your on-call.
+last_verified: 2026-08-02
 owner: jj
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
 Most incidents are auto-created by monitors. Sometimes they aren't, and you want one anyway. This page covers the patterns where manual creation is the right move, and the cleanest way to do it.
+
+<Aside type="tip" title="Manual incidents page exactly like automatic ones">
+Set `service_id` on the create request and the incident runs the service's escalation policy: same levels, same timeouts, same repeat cycles, same one-click acknowledgement. See [making it page someone](#making-it-page-someone).
+</Aside>
 
 ## When to create one manually
 
@@ -70,6 +74,36 @@ Even on manual incidents, set `affected_http_job_ids` if monitors *do* exist for
 }
 ```
 
+## Making it page someone
+
+A manual incident only pages when it has a `service_id`, and that [service](/getting-started/concepts/) has an escalation policy attached. Add it at creation:
+
+```bash
+curl -X POST https://api.siteqwality.com/incident \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Stripe webhooks intermittently failing",
+    "severity": "major",
+    "message": "Seeing ~5% failure rate on inbound Stripe webhooks. Investigating.",
+    "service_id": "<service-id>"
+  }'
+```
+
+From there it behaves exactly like a monitor-opened incident: level 1 of the service's policy fires immediately, the timeout is scheduled, and acknowledging (from the dashboard, a [one-click link](/incident-management/incidents/how-to/one-click-actions/), or a Slack button) cancels the escalation.
+
+The service's broadcast targets, if it has any, are also notified.
+
+<Aside type="caution" title="Silent no-paging is the common mistake">
+Three situations produce an incident that quietly pages nobody, and none of them return an error:
+
+- **No `service_id`.** The incident is created and nothing else happens.
+- **The service has no escalation policy.** Broadcast targets still fire, but nobody is paged.
+- **The `service_id` belongs to a different account.** It is accepted at write time and then never resolves.
+
+If a manual incident did not page, check the service first.
+</Aside>
+
 ## Severity guidance for manual incidents
 
 | Use case | Severity |
@@ -78,7 +112,7 @@ Even on manual incidents, set `affected_http_job_ids` if monitors *do* exist for
 | Login broken for a subset of users | `major` |
 | Full outage, billing affected, security event | `critical` |
 
-The severity is mostly informational — it drives display order, color, and any custom filters. It doesn't change escalation behavior on its own; for that, use a different notification group.
+Severity drives display order, color, and filters. It also picks the **urgency** used when paging: `critical` and `major` page at high urgency, `minor` at low. Each targeted responder's own [notification rules](/incident-management/notifications/overview/#notification-rules) for that urgency decide which of their contact methods fire, so a `minor` incident can legitimately reach a different set of devices than a `critical` one.
 
 ## Following up
 

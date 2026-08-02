@@ -1,0 +1,115 @@
+---
+title: Chart histograms as percentiles or a heatmap
+description: Send Prometheus-style bucketed histograms and read them back as p50/p90/p95/p99 lines or a distribution heatmap.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+A histogram metric records a **distribution** rather than a single number. Once you send one, the metrics explorer can render it two ways beyond the usual line chart:
+
+- **Percentiles** plots p50, p90, p95 and p99 over time.
+- **Heatmap** plots the whole distribution, with bucket ranges on one axis and time on the other, so you can see a bimodal shape that a p95 line hides.
+
+Pick either from the **View** control in the query bar. Both modes need a histogram-type metric; a gauge or counter has no distribution to draw.
+
+## Send a histogram
+
+Histograms use Prometheus-style cumulative buckets. Each bucket's `count` is the number of observations **at or below** its `le` bound, so counts only ever increase across the array.
+
+```bash
+curl -X POST https://metrics.siteqwality.com/metrics \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "metrics": [
+      {
+        "type": "histogram",
+        "name": "http.request.duration",
+        "timestamp": "2026-08-02T12:00:00Z",
+        "buckets": [
+          { "le": "0.1",  "count": 24  },
+          { "le": "0.5",  "count": 55  },
+          { "le": "1.0",  "count": 78  },
+          { "le": "+Inf", "count": 100 }
+        ],
+        "sum": 43.21,
+        "count": 100,
+        "unit": "seconds",
+        "tags": { "host": "web-1", "env": "prod" }
+      }
+    ]
+  }'
+```
+
+Rules the ingest endpoint enforces, each a `400` for the whole batch if broken:
+
+| Rule | Detail |
+|---|---|
+| Buckets must not be empty | At least one bucket. |
+| The last bucket must be `+Inf` | Spelled exactly `+Inf`. `inf`, `Inf` and `+inf` are all rejected. |
+| Bounds must ascend strictly | No duplicates, no out-of-order bounds. |
+| Max 1000 metrics per request | Batch larger payloads. |
+| Name charset | `^[a-zA-Z0-9._]+$`. No hyphens, colons or slashes. |
+
+`sum` and `count` are required alongside the buckets. `timestamp` defaults to ingest time; `unit` and `tags` are optional. A successful call returns `202 Accepted` and the write happens asynchronously.
+
+<Aside type="caution" title="Bucket layout decides your percentile accuracy">
+Percentiles are computed by linearly interpolating **inside** the bucket a quantile lands in, exactly as Prometheus does. That means the resolution of your p99 is bounded entirely by where you put your bounds.
+
+If p99 lands between `le=1.0` and `le=5.0`, the answer is somewhere in that four-second-wide guess. Put bounds close together around the latency you actually care about, and add a high bound above your worst realistic case: a quantile that falls in the `+Inf` bucket reports the highest finite bound, so a percentile pegged exactly at your top bound usually means the real value is above it.
+</Aside>
+
+## Read it back
+
+```bash
+curl -G https://api.siteqwality.com/metrics/histogram \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "metric_name=http.request.duration" \
+  --data-urlencode "start_time=2026-08-02T00:00:00Z" \
+  --data-urlencode "end_time=2026-08-02T12:00:00Z" \
+  --data-urlencode "resolution=5m"
+```
+
+| Param | Default | Notes |
+|---|---|---|
+| `metric_name` | required | |
+| `start_time` | one hour before `end_time` | Strict RFC 3339. |
+| `end_time` | now | Strict RFC 3339. |
+| `resolution` | `auto` | `auto`, `1m`, `5m`, `1h`, `6h`. Anything else silently falls back to `auto`. |
+| `filters` | none | JSON object of tag filters. |
+
+One response drives both views:
+
+```json
+{
+  "bounds": ["0.1", "0.5", "1", "+Inf"],
+  "buckets": [
+    {
+      "timestamp": "2026-08-02T12:00:00Z",
+      "counts": [24, 31, 23, 22],
+      "total": 100,
+      "sum": 43.21,
+      "p50": 0.42, "p90": 0.87, "p95": 0.93, "p99": 0.99
+    }
+  ],
+  "unit": "seconds",
+  "interval_seconds": 300
+}
+```
+
+`counts` are per-bucket (not cumulative) so a heatmap can render them directly. The percentile fields drive the percentile view.
+
+## Things that will surprise you
+
+- **Intervals with no data are absent, not zero.** A gap in the response means nothing was recorded, and the chart shows a gap rather than a floor.
+- **Percentiles are per interval and cannot be averaged.** Each bucket's percentiles come from that interval's own merged distribution. Averaging p99 across intervals is not a meaningful p99.
+- **Histogram data is retained for 90 days.**
+- **Keep one bucket layout per metric name.** Rows for the same metric are merged bucket-by-bucket per interval. If two services emit the same metric name with different bounds, one layout wins and the merged result is not meaningful. Give them different names or a distinguishing tag.
+- **Timestamps here are second-precision.** Do not rely on sub-second alignment when correlating with other charts.
+
+## See also
+
+<LinkCard title="Metrics reference" description="Ingest shape, naming rules, and every query endpoint." href="/observability/metrics/reference/" />
+<LinkCard title="Saved views" description="Keep a histogram query and its display mode." href="/observability/metrics/how-to/saved-views/" />

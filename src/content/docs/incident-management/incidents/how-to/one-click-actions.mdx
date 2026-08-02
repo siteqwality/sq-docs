@@ -1,0 +1,71 @@
+---
+title: Acknowledge from the alert itself
+description: Signed one-click links in email and SMS, and interactive Acknowledge and Resolve buttons in Slack.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+The fastest acknowledgement is the one that does not require finding a laptop. Incident pages carry action controls in the alert itself, so a responder can stop the escalation from their phone.
+
+## What each channel carries
+
+| Channel | Acknowledge | Resolve |
+|---|---|---|
+| Email | signed link | signed link |
+| SMS | signed link | not included |
+| Slack | interactive button | interactive button |
+| Webhook | `ack_url` and `resolve_url` in the payload | included |
+
+Acting through any of these does exactly what the API endpoints do, including cancelling the escalation and deleting any pending delayed pages.
+
+## Signed links in email and SMS
+
+Each link is a signed, single-purpose URL of the form `https://api.siteqwality.com/incident/action/<token>`. The token carries the incident, the account, the acting user, and an expiry, all covered by an HMAC signature.
+
+Opening one returns a small confirmation page in the browser. There is no login step: the signature is the credential.
+
+**Links expire 24 hours after the message is sent.** The clock starts at send time, not at incident creation, so a resend gives a fresh 24 hours.
+
+| What you see | Meaning |
+|---|---|
+| Incident acknowledged | Done. Escalation paging has stopped. |
+| Incident resolved | Done. |
+| Already acknowledged / Already resolved | Someone beat you to it. No harm done. |
+| Link expired | Past 24 hours. Use the dashboard. |
+| Invalid link | The token was truncated or altered. Mail clients that rewrite URLs are the usual cause. |
+
+<Aside type="tip">
+Because the link works without a session, treat it like a password. Anyone who can read the alert can acknowledge the incident, which is the point: forwarding the page to a colleague genuinely hands off the ability to act. It only ever affects the one incident it was minted for.
+</Aside>
+
+Two practical notes:
+
+- **SMS carries the acknowledge link only.** The signed URL is long, so an SMS page can span multiple segments and bill accordingly. If that matters more than one-tap acknowledgement, route pages through email or a push channel instead.
+- **Suspended accounts can still acknowledge and resolve.** Both the signed links and the acknowledge and resolve endpoints are deliberately exempt from suspension blocking, so an account can always silence its own pager.
+
+## Interactive buttons in Slack
+
+Slack incident messages render as blocks with the service, severity, status, and affected monitors, plus two buttons:
+
+- **Acknowledge**
+- **Resolve**
+
+Clicking one performs the action and then **replaces the original message** with a version showing what happened and who did it, so the channel has a single, current record instead of a thread of stale buttons. The buttons are removed at that point.
+
+For the button to attribute the action to the right person, the clicking user needs a Slack DM contact method carrying their Slack user ID. Without that mapping, the click is rejected and the incident is not changed.
+
+<Aside type="note">
+Slack messages use buttons rather than signed links, so nothing in a Slack channel expires after 24 hours. Slack's own interaction window applies instead: the message replacement stops working roughly 30 minutes after the click, though the acknowledgement itself still lands.
+</Aside>
+
+## If the links are missing
+
+When the signing secret is not configured, alerts fall back to a plain dashboard link to the incident and no signed links are minted. Visiting the action endpoint in that state returns a "Links not available" page telling you to use the dashboard. This is deliberate: a link that cannot be verified is never issued.
+
+## See also
+
+<LinkCard title="Incidents overview" description="Status versus responder status, and the lifecycle." href="/incident-management/incidents/overview/" />
+<LinkCard title="Escalation policies" description="What acknowledging actually stops." href="/incident-management/escalation/overview/" />
+<LinkCard title="Slack integration" description="Installing the app and creating channels." href="/integrations/slack/" />

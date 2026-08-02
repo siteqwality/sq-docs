@@ -1,7 +1,7 @@
 ---
 title: Channels reference
-description: Every notification channel type — email, SMS, Slack, Teams, Discord, Telegram, webhook — with required fields and gotchas.
-last_verified: 2026-05-03
+description: Every notification channel type, from email and SMS to PagerDuty, OpsGenie, Google Chat, Mattermost, Pushover, and Pushbullet.
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -14,12 +14,18 @@ Every channel has:
 ```json
 {
   "notification_group_id": "<group-uuid>",
-  "type": "email|sms|slack|webhook|telegram|discord|microsoft_teams",
+  "type": "email|sms|slack|webhook|telegram|discord|microsoft_teams|pagerduty|opsgenie|google_chat|mattermost|pushover|pushbullet",
   "details": { ... }    // type-specific fields
 }
 ```
 
 This page documents `details` for each type.
+
+<Aside type="caution" title="Channel support varies by monitor type">
+The six newest types (`pagerduty`, `opsgenie`, `google_chat`, `mattermost`, `pushover`, `pushbullet`) deliver for **HTTP monitors, browser checks, and DNS/domain expiry**.
+
+TLS expiry and cron/heartbeat monitors support only `email`, `sms`, and `slack`. A channel of an unsupported type sitting in a group attached to those monitors is **skipped silently**: nothing errors and no alert arrives. If a cron monitor needs to page someone, put an email, SMS, or Slack channel in its group.
+</Aside>
 
 ## Email
 
@@ -134,6 +140,99 @@ Sample webhook body (truncated):
 
 - Teams integration uses an incoming webhook URL from a Teams channel connector.
 - Messages render as Adaptive Cards with status color.
+
+## PagerDuty
+
+```json
+{
+  "type": "pagerduty",
+  "details": {
+    "pagerduty_integration_id": "<pagerduty-integration-uuid>",
+    "pagerduty_severity": "critical"
+  }
+}
+```
+
+- `pagerduty_severity` is optional and defaults to `critical`. Values: `critical`, `error`, `warning`, `info`.
+- Outages trigger a PagerDuty incident; recoveries resolve the same one via a shared dedup key.
+- Domain expiry warnings always send at `warning` regardless of this setting, and never auto-resolve.
+- See [Integrations → PagerDuty](/integrations/pagerduty/).
+
+## OpsGenie
+
+```json
+{
+  "type": "opsgenie",
+  "details": { "opsgenie_integration_id": "<opsgenie-integration-uuid>" }
+}
+```
+
+- No per-channel priority field. Outages are `P1`, domain expiry warnings are `P3`.
+- Recoveries close the alert by alias. Domain expiry alerts never close on their own.
+- See [Integrations → OpsGenie](/integrations/opsgenie/).
+
+## Google Chat
+
+```json
+{
+  "type": "google_chat",
+  "details": { "google_chat_integration_id": "<google-chat-integration-uuid>" }
+}
+```
+
+- The integration holds a space incoming webhook URL, which is readable back through `GET /integration`.
+- Messages render as Google Chat cards.
+- Sends that fail 3 times are recorded and dropped rather than retried further. See [Integrations → Google Chat](/integrations/google-chat/).
+
+## Mattermost
+
+```json
+{
+  "type": "mattermost",
+  "details": { "mattermost_integration_id": "<mattermost-integration-uuid>" }
+}
+```
+
+- The integration holds an incoming webhook URL, readable back through `GET /integration`.
+- Messages render as Slack-style attachments with a status color.
+- Same 3-attempts-then-drop behavior as Google Chat. See [Integrations → Mattermost](/integrations/mattermost/).
+
+## Pushover
+
+```json
+{
+  "type": "pushover",
+  "details": { "pushover_integration_id": "<pushover-integration-uuid>" }
+}
+```
+
+- The integration holds both a user (or group) key and an application API token.
+- Outages send at priority `1` (bypasses quiet hours); recoveries and expiry warnings at `0`.
+- See [Integrations → Pushover](/integrations/pushover/).
+
+## Pushbullet
+
+```json
+{
+  "type": "pushbullet",
+  "details": { "pushbullet_integration_id": "<pushbullet-integration-uuid>" }
+}
+```
+
+- The integration holds an account access token.
+- Messages arrive as note pushes on every signed-in device.
+- See [Integrations → Pushbullet](/integrations/pushbullet/).
+
+## Delivery guarantees by channel
+
+Not all channels behave the same when a send fails. This matters when you are choosing which channel to trust for a critical page.
+
+| Channels | On failure |
+|---|---|
+| PagerDuty, OpsGenie | 3 in-process attempts (safe, the calls are idempotent), then the event is failed and retried. |
+| Email, SMS, Slack, Telegram, Pushover, Pushbullet | 1 attempt, then the event is failed and retried. Duplicates are possible; lost alerts are not silent. |
+| Discord, Microsoft Teams, Google Chat, Mattermost | 3 attempts, then the failure is **recorded and the message is dropped**. Nothing retries it. |
+| Customer webhooks | 3 attempts, then the failure is recorded and dropped. |
 
 ## Common pitfalls
 

@@ -1,7 +1,7 @@
 ---
 title: Escalation policies
-description: Ordered chains of "page these targets, wait, then escalate" — with timeouts, repeats, and on-call schedule integration.
-last_verified: 2026-05-03
+description: Ordered chains of "page these targets, wait, then escalate", with timeouts, repeat cycles, and on-call schedule integration.
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -9,14 +9,24 @@ import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
 An **escalation policy** is the rule for *what to do if no one acknowledges an incident*. It's an ordered list of levels; each level fires its targets, waits its timeout, and if no acknowledgement arrives, the next level fires.
 
-You attach an escalation policy to an incident-routing path (typically via a notification group → escalation policy chain). When the incident opens, the policy starts at level 1; each level transition advances or restarts based on timeouts.
+## What starts an escalation
+
+An escalation runs when an incident that has a `service_id` opens, and that [service](/getting-started/concepts/) has an `escalation_policy_id` set. That is the only wiring: the policy is attached to the service, not to the monitor and not to the notification group.
+
+This applies equally to incidents a monitor opened automatically and to incidents you [created by hand](/incident-management/incidents/how-to/manual-incidents/). An incident with no `service_id`, or whose service has no policy, never escalates.
+
+<Aside type="caution" title="Levels must start at 1 and have no gaps">
+The engine looks for the level numbered exactly `1` to start, then walks `2`, `3`, and so on. A policy whose lowest level is `2` never pages anyone, and a policy with levels `1` and `3` pages level 1 and then stalls: nothing matches level `2`, so no further timeout is scheduled.
+
+Adding levels through the API without an explicit `level_number` auto-assigns `max + 1`, which is always safe. If you have edited numbers by hand, `PUT /escalation_policy/{policy_id}/level/reorder` renumbers everything to a clean `1..N`.
+</Aside>
 
 ## Anatomy
 
 | Field | What it is |
 |---|---|
 | `name` | Human label. `"Primary on-call escalation"`. |
-| `repeat_count` | After exhausting all levels, how many full passes to run. `0` means stop. |
+| `repeat_count` | How many full passes through the levels to run. Defaults to `3`. |
 | `levels[]` | Ordered list of `EscalationLevel`s. |
 
 Each level:
@@ -63,7 +73,26 @@ Incident opens
    repeat or stop (per repeat_count)
 ```
 
-If anyone acks at any level, the policy stops dead. The acked incident keeps existing — the responder works the fix.
+Each level does three things in order: resolve its targets (on-call schedules resolve at firing time, so handoffs work transparently), page each resolved user through their own [notification rules](/incident-management/notifications/overview/#notification-rules), and schedule a one-shot timeout for `timeout_minutes` later. When that timeout fires, the policy advances.
+
+A level with no resolvable targets still schedules its timeout and still advances. It just pages nobody.
+
+## Acknowledging stops it
+
+Acknowledging or resolving the incident cancels the escalation: its state moves to `acknowledged` and any pending timeout and per-user delay schedules are deleted. The incident itself keeps existing, and the responder works the fix.
+
+Every route into acknowledgement does this, so it does not matter how the responder answers:
+
+- `POST /incident/{id}/acknowledge` and `POST /incident/{id}/resolve`
+- the [one-click links](/incident-management/incidents/how-to/one-click-actions/) in email and SMS
+- the **Acknowledge** and **Resolve** buttons in Slack
+- automatic recovery, when the monitor that opened the incident comes back
+
+<Aside type="caution" title="An exhausted policy can still page once more">
+`exhausted` only stops the **level cycling**. If a responder had a per-user rule with a `delay_minutes` that was already scheduled, that delayed page still fires while the incident remains unacknowledged.
+
+Acknowledging or resolving is the only thing that suppresses those. Waiting for the policy to exhaust is not.
+</Aside>
 
 ## Targets vs notification groups
 
@@ -74,11 +103,32 @@ Two different mechanisms with overlapping vibes:
 
 A monitor's alert always fires its notification group. The group can include channels that further trigger an escalation policy. In practice: the group sends a Slack ping for visibility; the escalation policy is what actually pages the on-call.
 
-## Repeat behavior
+## Repeat cycles
 
-`repeat_count: 0` means "after exhausting all levels, give up." That's almost never what you want. Set it to at least `1` or `2` so the policy keeps re-paging until acked.
+`repeat_count` is **how many full passes through the levels the policy makes**, and it defaults to `3`.
 
-After a full repeat, the policy starts over at level 1. Setting `repeat_count: 999` effectively means "page forever until acked."
+Walking the last level's timeout takes the policy back to level 1 and counts one completed pass. When the completed passes reach `repeat_count`, the escalation becomes `exhausted` and stops paging.
+
+| `repeat_count` | Behavior |
+|---|---|
+| `3` (default) | Three full passes through every level, then stop. |
+| `1` | One pass. The last level's timeout exhausts the policy. |
+| `0` | **Degenerate.** Level 1 pages, and the first timeout exhausts the policy immediately. It never reaches level 2. |
+| large | Keeps cycling. There is no enforced maximum. |
+
+<Aside type="caution">
+`repeat_count: 0` does not mean "one pass and stop". It means the policy gives up at the very first timeout, so only level 1 ever pages. If you want a single pass through every level, set `1`.
+</Aside>
+
+## Escalation state
+
+Each incident carries one escalation state, visible on the incident:
+
+| State | Meaning |
+|---|---|
+| `active` | Cycling through levels. |
+| `acknowledged` | Someone acked or resolved. Paging stopped, pending schedules deleted. |
+| `exhausted` | Ran out of repeat cycles without an acknowledgement. Level cycling has stopped. |
 
 ## When to use multiple policies
 

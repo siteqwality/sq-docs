@@ -1,0 +1,97 @@
+---
+title: Get alerted when page speed drops
+description: How Lighthouse performance-score crossings fire alerts and recoveries through your monitor's notification groups.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Turning on `monitor_page_speed` provisions a paired page-speed check that runs Google PageSpeed Insights against your URL every 6 hours. Beyond charting the scores, it alerts when the **Lighthouse performance score crosses a threshold**, and again when it crosses back.
+
+## Turn it on
+
+Set `monitor_page_speed` on the HTTP check, either through **Monitor Page Speed** in the Advanced section of the monitor form, or through the API:
+
+```bash
+curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "monitor_page_speed": true }'
+```
+
+A **Page Speed Insights** tab appears on the monitor once the first result lands. Read the latest result with `GET /http/job/{job_id}/page_speed` and the series with `GET /http/job/{job_id}/page_speed/history`.
+
+## What triggers an alert
+
+Alerting is **transition-only**. Each run compares the previous run's performance score against the current one:
+
+| Previous score | Current score | Result |
+|---|---|---|
+| at or above threshold | below threshold | **Degraded** alert fires |
+| below threshold | at or above threshold | **Recovered** alert fires |
+| both below | | nothing |
+| both at or above | | nothing |
+
+Two consequences worth internalising:
+
+- A score sitting **exactly at** the threshold counts as healthy. The comparison is strictly "below".
+- A monitor that stays degraded does **not** re-alert every 6 hours. You get one alert on the way down and one on the way back up.
+
+The very first page-speed run has no previous score to compare against, so it never alerts however bad the score is.
+
+## The threshold
+
+| Field | Value |
+|---|---|
+| `performance_threshold` | `0.5` |
+
+<Aside type="caution" title="The threshold is fixed at 0.5 today">
+`performance_threshold` is stored per page-speed check and returned by `GET /http/job/{job_id}/page_speed`, but **there is no endpoint or dashboard field to change it**. Every monitor uses the default `0.5`.
+
+So in practice: you are alerted when the Lighthouse performance score drops below **50 out of 100**, and again when it climbs back to 50 or above.
+</Aside>
+
+The value is on Lighthouse's native `0.0` to `1.0` scale. Alert text converts it for display, so `0.5` shows as `50/100`.
+
+Only the **performance** category is compared. SEO, accessibility, and best-practices scores are collected and charted, but nothing alerts on them.
+
+## Where the alert goes
+
+Page-speed alerts fan out through the **parent HTTP monitor's notification groups**. There is no separate page-speed routing: whatever `group_notification_ids` the HTTP check has, the page-speed alert uses.
+
+<Aside type="caution" title="Not every channel type is supported">
+Page-speed alerts deliver over **email, SMS, Slack, webhook, Discord, and Microsoft Teams** only.
+
+Telegram, PagerDuty, OpsGenie, Google Chat, Mattermost, Pushover, and Pushbullet channels are skipped. If a monitor's group contains only those types, its page-speed alerts go nowhere. Add an email or Slack channel to the group if you want page-speed coverage.
+</Aside>
+
+## What it does not do
+
+A page-speed crossing is a notification and nothing more. It does **not**:
+
+- open an incident, so it never pages an on-call rotation or triggers an escalation policy;
+- record a state transition, so it never affects uptime percentage or SLA reports;
+- appear on a status page;
+- change the HTTP monitor's own status.
+
+If the site is slow but still returning 200s, your uptime stays at 100%. That is intended: page speed is a quality signal, not an availability one.
+
+## Maintenance windows
+
+Page-speed alerts are covered by the same [maintenance windows](/incident-management/maintenance/overview/) as the parent monitor, matched on the HTTP check's tags.
+
+Inside a window, a degraded alert is **held** until the window ends and then released. If the score recovers before the window ends, the held alert is dropped and no recovery alert is sent either, which is the correct outcome: nothing needed your attention.
+
+Page-speed holds are tracked separately from the HTTP monitor's own held alerts, so a held page-speed alert can never displace a held downtime alert for the same monitor.
+
+## Practical notes
+
+- Checks run on a fixed **6 hour** schedule. This is not configurable, and it means a regression can be up to 6 hours old before you hear about it.
+- The check calls Google's PageSpeed Insights API. Rate limits and transient 5xx responses from Google are retried on the next scheduled run rather than surfacing as a failure.
+- SiteQwality does not send a `strategy` parameter, so the analysis runs with Google's own default. There is no mobile or desktop toggle.
+
+## See also
+
+<LinkCard title="HTTP check reference" description="monitor_page_speed and the page-speed endpoints." href="/uptime-monitoring/http-checks/reference/" />
+<LinkCard title="Maintenance windows" description="How held alerts are released." href="/incident-management/maintenance/overview/" />

@@ -1,0 +1,123 @@
+---
+title: CSV exports
+description: Export raw check results, a per-monitor uptime summary, or log query results, with the row caps that apply.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Three endpoints return CSV attachments for offline analysis, board reporting, or feeding a warehouse. All three are `GET`, all three return `text/csv; charset=utf-8` with a `Content-Disposition` filename, and all three work with any credential that can read the underlying data.
+
+| Export | Endpoint | Row cap |
+|---|---|---|
+| Check results | `GET /http/job/{job_id}/results/export` | 50,000 |
+| Monitor uptime summary | `GET /monitors/export` | none |
+| Log query results | `GET /logs/export` | 10,000 |
+
+## Check results
+
+Every recorded check run for one HTTP monitor, oldest first.
+
+```bash
+curl -G "https://api.siteqwality.com/http/job/$JOB_ID/results/export" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "from=2026-07-01T00:00:00Z" \
+  --data-urlencode "to=2026-08-01T00:00:00Z" \
+  -o checks.csv
+```
+
+In the dashboard this is the **Export CSV** button in the monitor header, which exports the range currently selected.
+
+Columns, in order:
+
+```
+timestamp, region, status, http_code, total_ms,
+dns_ms, tcp_connect_ms, tls_ms, ttfb_ms, download_ms, failure_reason
+```
+
+`from` and `to` are optional: `to` defaults to now, `from` to 30 days before it. `from` must be before `to` or you get a `400`.
+
+<Aside type="note">
+The per-phase timing columns (`dns_ms`, `tcp_connect_ms`, `tls_ms`, `ttfb_ms`, `download_ms`) are empty for results recorded before mid-2026, when the current check transport shipped. `total_ms` is populated throughout.
+</Aside>
+
+## Monitor uptime summary
+
+One row per HTTP monitor, summarising the range.
+
+```bash
+curl -G "https://api.siteqwality.com/monitors/export" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "from=2026-07-01T00:00:00Z" \
+  --data-urlencode "to=2026-08-01T00:00:00Z" \
+  -o monitors-uptime.csv
+```
+
+Columns, in order:
+
+```
+monitor_id, name, url, state, uptime_percentage,
+avg_response_time_ms, days_with_data, range_from, range_to
+```
+
+This one is uncapped, because the row count is bounded by how many monitors you have.
+
+Two things to read carefully:
+
+- **HTTP monitors only**, despite the endpoint name. Browser, cron, DNS and TLS monitors are not included. Paused monitors are, with empty metrics.
+- **`uptime_percentage` is the unweighted average of daily uptime percentages**, the same convention the [SLA report](/enterprise/sla-reports/) uses. It comes from a daily rollup that refreshes at 03:00 UTC, so the current day is usually missing.
+
+## Log query results
+
+The same filters as `GET /logs/query`, exported instead of paged.
+
+```bash
+curl -G "https://api.siteqwality.com/logs/export" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "start_time=2026-08-01T00:00:00Z" \
+  --data-urlencode "end_time=2026-08-02T00:00:00Z" \
+  --data-urlencode "level=error" \
+  -o logs.csv
+```
+
+In the dashboard this is **Export CSV** in the Logs page header, which uses whatever filters are active.
+
+Columns, in order:
+
+```
+timestamp, level, source, host, env, message, tags, metadata
+```
+
+`tags` and `metadata` are compact JSON; empty objects render as blank cells. `limit` and `offset` are ignored, since the export is not paginated. Sorting follows `sort_field` and `sort_order`, defaulting to newest first.
+
+<Aside type="caution">
+The logs export has **no default time range**. Without `start_time` and `end_time` it matches your entire retention window, which almost always exceeds the cap. Always pass a range.
+</Aside>
+
+## When you exceed a cap
+
+Both capped exports **count the matching rows first**. If the count is over the cap, you get a `400` before any data is generated, with a message telling you the actual count:
+
+```
+Range matches 91240 rows; the export cap is 50000. Narrow the date range.
+```
+
+```
+Filters match 24500 rows; the export cap is 10000. Narrow the time range or filters.
+```
+
+Nothing is truncated silently. You never receive a partial file believing it is complete, which is the failure mode these caps exist to prevent.
+
+To get more data, split the request into smaller windows and concatenate the results, keeping one header row.
+
+## Why the caps exist
+
+Exports are generated and returned in a single request, and that response has a hard size ceiling of roughly 6 MB imposed by the serverless platform. The caps are sized against that: check-result rows are compact, so 50,000 fit; log rows carry free-text messages and JSON metadata and are far larger, so the ceiling arrives sooner.
+
+A larger asynchronous export path is the intended follow-up if these caps become limiting.
+
+## See also
+
+<LinkCard title="SLA reports" description="Monthly attainment, from the same daily rollup." href="/enterprise/sla-reports/" />
+<LinkCard title="Logs reference" description="Every filter the log export accepts." href="/observability/logs/reference/" />

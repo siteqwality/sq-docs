@@ -1,7 +1,7 @@
 ---
 title: Notifications
-description: Channels, groups, contact methods, and rules — the four-layer system for routing alerts to the right person via the right tool.
-last_verified: 2026-05-03
+description: Channels, groups, contact methods, and rules. The four-layer system for routing alerts to the right person via the right tool.
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -31,8 +31,16 @@ A *channel* is a single delivery destination. Each channel has a `type` and `det
 | `telegram` | `telegram_integration_id` |
 | `discord` | `discord_integration_id` |
 | `microsoft_teams` | `teams_integration_id` |
+| `pagerduty` | `pagerduty_integration_id`, optional `pagerduty_severity` |
+| `opsgenie` | `opsgenie_integration_id` |
+| `google_chat` | `google_chat_integration_id` |
+| `mattermost` | `mattermost_integration_id` |
+| `pushover` | `pushover_integration_id` |
+| `pushbullet` | `pushbullet_integration_id` |
 
-Channels for `slack`, `webhook`, `telegram`, `discord`, and `microsoft_teams` reference an [integration](/integrations/overview/) — set those up first in **Settings → Integrations**.
+Every type except `email` and `sms` references an [integration](/integrations/overview/); set those up first under **Integrations**.
+
+See the [channels reference](/incident-management/notifications/channels/) for the per-type `details` shape, the delivery guarantees table, and which monitor types each channel supports.
 
 Channels live inside a notification group; you don't attach raw channels to monitors.
 
@@ -56,13 +64,17 @@ Each user defines how they personally can be reached, under **Settings → My pr
 | Type | Detail |
 |---|---|
 | `email` | An email address (auto-populated with sign-up address). |
-| `sms` | A verified phone number. |
-| `phone_call` | Same number, dialed for high-urgency pages. |
+| `sms` | A phone number. |
+| `phone_call` | Same number. **Not delivered today**, see below. |
 | `slack_dm` | DM via the Slack integration. |
 
-Contact methods are *not* attached to monitors. They power escalation paging — when an escalation level targets `target_user_ids`, that user's notification rules determine which contact methods fire.
+Contact methods are *not* attached to monitors. They power escalation paging: when an escalation level targets `target_user_ids`, that user's notification rules determine which contact methods fire.
 
-`verified` indicates the user has confirmed the destination (e.g. SMS confirmation code). Unverified contact methods don't deliver.
+<Aside type="caution" title="Two honest limits on contact methods">
+**`phone_call` does not deliver.** The type exists and you can create rules against it, but the escalation engine has no phone-call transport, so a rule pointing at a `phone_call` contact method is skipped at send time. Do not rely on it as your last-resort escalation step; use SMS or a push channel instead.
+
+**`verified` is not enforced at paging time.** The flag records whether the user confirmed the destination, but escalation paging does not check it before sending. An unverified SMS number will be attempted.
+</Aside>
 
 ## Notification rules (per user)
 
@@ -70,15 +82,19 @@ Personal preferences for "if I'm being paged at urgency X, fire this contact met
 
 ```json
 [
-  { "urgency": "high", "contact_method_id": "<sms-id>",  "delay_minutes": 0,  "position": 0 },
-  { "urgency": "high", "contact_method_id": "<call-id>", "delay_minutes": 5,  "position": 1 },
-  { "urgency": "high", "contact_method_id": "<email-id>","delay_minutes": 15, "position": 2 }
+  { "urgency": "high", "contact_method_id": "<sms-id>",     "delay_minutes": 0,  "position": 0 },
+  { "urgency": "high", "contact_method_id": "<slack-dm-id>","delay_minutes": 5,  "position": 1 },
+  { "urgency": "high", "contact_method_id": "<email-id>",   "delay_minutes": 15, "position": 2 }
 ]
 ```
 
-That's: SMS me immediately, call my phone if I haven't ack'd in 5 minutes, email me if I haven't ack'd in 15.
+That's: SMS me immediately, Slack DM me if I haven't acked in 5 minutes, email me if I haven't acked in 15.
 
-`urgency` is `high` or `low`. Configure rules per urgency level.
+`urgency` is `high` or `low`, and it is derived from the incident's severity rather than chosen: `critical` and `major` page at **high** urgency, `minor` pages at **low**. A user with no rule matching the incident's urgency is simply not paged.
+
+`delay_minutes` defaults to `0` and is not range-validated. A rule with a delay becomes a scheduled one-shot, and when it fires the system re-checks that the incident is still triggered, the escalation has not been acknowledged, and the rule still exists. Anything that changed in the meantime cancels the send, so a delayed rule cannot page you about an incident you already acked.
+
+`position` orders the rules in the list; it does not stagger them. Every matching rule fires in the same pass, each waiting only its own `delay_minutes`.
 
 ## How a page actually fires
 
@@ -95,7 +111,7 @@ That's: SMS me immediately, call my phone if I haven't ack'd in 5 minutes, email
 
 ## Pricing
 
-Email, Slack, webhook, Discord, Teams, and Telegram are included on every plan. SMS and phone call delivery cost real money (Twilio pass-through) and are billed per page on paid plans.
+Email, Slack, webhook, Discord, Teams, Telegram, PagerDuty, OpsGenie, Google Chat, Mattermost, Pushover, and Pushbullet are included on every plan. SMS delivery costs real money (Twilio pass-through) and is billed per page on paid plans.
 
 ## See also
 

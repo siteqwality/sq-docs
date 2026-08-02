@@ -1,0 +1,129 @@
+---
+title: Require N failed checks before alerting
+description: Use confirmation_threshold to alert only after several consecutive failed checks, and understand how it composes with regions and retries.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
+
+By default an HTTP check pages you the moment one check fails. That is the right setting for a monitor you trust. For a noisy target (a flaky third-party dependency, an endpoint behind an aggressive bot-management edge) you may want SiteQwality to see the failure more than once before it wakes anyone up.
+
+`confirmation_threshold` is that knob. Set it to `N` and the monitor only transitions to `failed` after **N consecutive failed checks**.
+
+## Set it
+
+<Steps>
+
+1. **Open the monitor** and set **Confirmation threshold** on the HTTP check form, or send the field through the API.
+
+   ```bash
+   curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
+     -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{ "confirmation_threshold": 3 }'
+   ```
+
+2. **Work out what it costs you in detection time.** The alert fires on the Nth failed check itself, so:
+
+   ```
+   time to alert after the first failed check = (N - 1) × interval
+   worst-case detection latency from the outage starting = N × interval
+   ```
+
+   A 60 second monitor at threshold `3` alerts about 2 minutes after the first failed check, and at worst 3 minutes after the site actually went down.
+
+</Steps>
+
+| Field | Type | Default | Range |
+|---|---|---|---|
+| `confirmation_threshold` | int | `1` | `1` to `10`, inclusive |
+
+`1` is the default for new monitors and the value every monitor created before this shipped was backfilled with, so nothing changed for existing checks. Out-of-range values are rejected with `400` and the message `Invalid confirmation_threshold`. There is no plan gate: the field works on every plan, including free.
+
+<Aside type="caution" title="The maximum is slow on purpose">
+Threshold `10` on a free-tier monitor at the 5 minute interval floor is **45 minutes** to the first page. Pick the threshold against the interval, not in isolation.
+</Aside>
+
+## Unconfirmed failures are still recorded
+
+This is the part worth being precise about. The threshold gates the **state transition**, not the check.
+
+Every check writes its result no matter what. A failed-but-unconfirmed check still lands in the check results, the per-phase performance record, and the per-region status. It shows as a failure in **Recent checks**, and it still drags down the 24 hour uptime ratio, the daily rollup, and therefore [SLA reports](/enterprise/sla-reports/).
+
+What waits for confirmation:
+
+- the flip to `failed` status;
+- notification fan-out to every channel in the monitor's groups;
+- delayed-notifier staging (`delay_send_after_minutes` and `resend_every_minutes`);
+- automatic incident creation, and the escalation that hangs off it;
+- the downtime window used by `GET /http/job/{job_id}/uptime_percentage`.
+
+That last one has a visible consequence: because the downtime window opens at confirmation time, an incident's recorded duration is up to `(N - 1) × interval` shorter than the raw check history suggests. Both numbers are correct, they measure different things. Uptime as a ratio of checks counts every failed check; uptime as a duration counts confirmed downtime.
+
+<Aside type="note">
+Alert payloads are byte-identical whatever the threshold. An email or SMS will not say "after 3 consecutive failures", because the notification carries no such field.
+</Aside>
+
+## Recovery is never delayed
+
+One successful check with a healthy region quorum closes the state transition immediately. All-clear notifications and automatic incident resolution are never threshold-gated, in either direction. The threshold only ever slows down bad news.
+
+## How it composes with the other two failure filters
+
+Three independent layers sit between a network blip and your phone. They run in this order.
+
+```
+1. transport retry     inside a single check
+        ↓
+2. region quorum       decides whether one check evaluation counts as failed
+        ↓
+3. confirmation        counts consecutive failed evaluations
+```
+
+### 1. Transport retry, inside one check
+
+The check runner retries fast transient transport failures in-process before it records anything: up to **2 retries** (3 attempts total), 300 ms apart, abandoned once the check has spent 10 seconds.
+
+Only transport-level reasons are retried: connection reset, TLS failure, TCP connect failure, DNS failure, and generic connection failure. **Timeouts are deliberately not retried**, and neither is any deterministic response failure (a wrong status code, a missing keyword, an unexpected final URL).
+
+A check that fails once and succeeds on retry is recorded as a plain success. It never becomes a failed result, so it also resets any confirmation streak.
+
+### 2. Region quorum
+
+For a multi-region monitor, `min_healthy_regions` decides whether a single evaluation counts as failed: the check is healthy when at least that many of its configured regions are passing.
+
+### 3. Confirmation threshold
+
+The threshold then counts how many consecutive checks that quorum verdict has held for. The quorum decides *whether a check failed*; the threshold decides *how many failed checks in a row you need*.
+
+For the default single-region monitor this is exactly "the last N checks all failed".
+
+For a multi-region monitor it is measured in scheduler ticks, and the streak length is the largest number of checks any single configured region contributed to it. Two details follow from that, and both are intentional:
+
+- A configured region that reported nothing in the window counts as **not healthy**, not as absent.
+- Any moment at which the quorum was healthy resets the streak, including a single region recovering between two other regions' failures.
+
+<Aside type="tip">
+If the thing you actually want is "do not page me for a blip that clears within a minute", `delay_send_after_minutes` on the [notification group](/incident-management/notifications/overview/#notification-groups) is often the better tool: it delays the page but still opens the incident on the first failure. Use `confirmation_threshold` when you want the monitor to genuinely not consider itself down yet.
+</Aside>
+
+## What it does not cover
+
+`confirmation_threshold` is an HTTP-check setting only. Browser checks, cron and heartbeat checks, DNS checks, and TLS checks alert on the first failure and have no equivalent knob today.
+
+The TLS, DNS, and page-speed monitors that get provisioned alongside an HTTP check do **not** inherit the parent's threshold.
+
+Maintenance windows are unaffected. They are evaluated when a notification is sent, which is downstream of everything on this page.
+
+## Under the hood
+
+There is no counter column. The streak is re-derived on each failed check from the monitor's most recent check results, so a success anywhere in the window resets it with nothing to race on and nothing to reset by hand.
+
+Threshold `1` short-circuits before that lookup runs, so the default configuration costs no extra queries.
+
+## See also
+
+<LinkCard title="HTTP check reference" description="Every field on an HTTP check, with defaults and limits." href="/uptime-monitoring/http-checks/reference/" />
+<LinkCard title="Notification groups" description="delay_send_after_minutes and resend_every_minutes." href="/incident-management/notifications/overview/" />
+<LinkCard title="Incidents" description="What opens when a confirmed failure lands." href="/incident-management/incidents/overview/" />

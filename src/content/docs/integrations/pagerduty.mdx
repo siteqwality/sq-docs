@@ -1,0 +1,101 @@
+---
+title: PagerDuty integration
+description: Send monitor alerts to PagerDuty Events API v2, with recoveries auto-resolving the incident they opened.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+
+The PagerDuty integration posts to the **Events API v2**. A monitor going down triggers a PagerDuty incident; the same monitor recovering resolves it automatically, because both events carry the same dedup key.
+
+## What you need
+
+An **Integration Key** (also called a routing key) from a PagerDuty service.
+
+<Steps>
+
+1. In PagerDuty, open the **service** you want SiteQwality to page.
+
+2. **Integrations → add an "Events API V2" integration.**
+
+3. Copy its **Integration Key**.
+
+</Steps>
+
+## Connect it
+
+In the dashboard, **Integrations → Add Integrations → PagerDuty**. Give it a name, paste the key into **Integration Key (Events API v2)**, and click **Add**. Or via the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/integration/pagerduty \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Acme PagerDuty",
+    "routing_key": "<events-api-v2-integration-key>"
+  }'
+```
+
+Both fields are required and must be non-empty. The key is not validated against PagerDuty at save time, so a typo surfaces as a failed notification later, not as an error here.
+
+The routing key is a secret: it is stored encrypted at rest and `GET /integration` returns `"details": {}` for PagerDuty integrations rather than echoing it back.
+
+## Create a channel
+
+```bash
+curl -X POST https://api.siteqwality.com/notification \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notification_group_id": "<your-group-id>",
+    "type": "pagerduty",
+    "details": {
+      "pagerduty_integration_id": "<pagerduty-integration-id>",
+      "pagerduty_severity": "critical"
+    }
+  }'
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `pagerduty_integration_id` | yes | The integration UUID. |
+| `pagerduty_severity` | no | `critical` (default), `error`, `warning`, or `info`. |
+
+## Trigger and resolve
+
+Every down/up pair shares one dedup key built from the monitor ID and the ID of the state transition that opened:
+
+```
+sq-http-<monitor-id>-<state-transition-id>
+sq-browser-<browser-check-id>-<state-transition-id>
+```
+
+- **Monitor goes down** → `event_action: "trigger"`, summary `Monitor DOWN: <name>`, source set to the monitor URL, plus `custom_details` carrying the monitor, URL, and failure reason.
+- **Monitor recovers** → `event_action: "resolve"` with the same dedup key and nothing else. PagerDuty closes the incident it opened.
+
+Because the key includes the state transition, a *second* outage of the same monitor opens a *new* PagerDuty incident rather than reopening the old one. Repeated triggers within one outage collapse onto the same incident.
+
+Summaries longer than 1024 characters are truncated to fit the Events API limit.
+
+<Aside type="caution" title="Domain expiry alerts do not auto-close">
+DNS and domain-expiry warnings are **trigger-only**: there is no recovery event for them, so they key on the DNS job plus the expiry date (`sq-dns-expiry-<job-id>-YYYY-MM-DD`). Repeated warnings about the same expiry date collapse into one PagerDuty incident, but nothing ever resolves it.
+
+You have to close those incidents in PagerDuty yourself. Renewing the domain does not close them, and because renewal changes the expiry date, the next warning opens a **new** incident while the old one stays open.
+
+Expiry warnings always send at severity `warning`, ignoring the channel's configured severity.
+</Aside>
+
+## Delivery behavior
+
+A failed send is retried up to 3 times in-process. This is safe because the dedup key makes the call idempotent. If all 3 attempts fail, the notifier fails the whole event so it is retried again rather than dropping the page silently.
+
+## Limitations
+
+- The endpoint is the global `events.pagerduty.com`. The EU service region is not configurable.
+- PagerDuty channels fire for **HTTP monitors, browser checks, and DNS/domain expiry**. TLS expiry and cron/heartbeat monitors only support email, SMS, and Slack today; a PagerDuty channel attached to a group used by those monitor types is skipped.
+
+## See also
+
+<LinkCard title="Channels reference" description="Full pagerduty channel detail shape." href="/incident-management/notifications/channels/#pagerduty" />
+<LinkCard title="OpsGenie" description="The same lifecycle model, different provider." href="/integrations/opsgenie/" />

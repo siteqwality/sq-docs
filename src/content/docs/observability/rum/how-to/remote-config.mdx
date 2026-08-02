@@ -1,0 +1,99 @@
+---
+title: Change SDK behaviour without redeploying
+description: How the browser SDK fetches its configuration, what you can change remotely, and how long changes take to reach live sessions.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+The RUM SDK does not carry its capture rules in your bundle. It fetches them from SiteQwality at startup and refreshes them periodically, so you can change what gets captured without shipping a new build.
+
+## What is served
+
+```
+GET https://rum.siteqwality.com/v1/config
+Authorization: Bearer <client_token>
+```
+
+The same public client token the SDK already holds authenticates the request, and the application is identified from that token rather than from a parameter.
+
+```json
+{
+  "data": {
+    "application_id": "<uuid>",
+    "filters": [
+      {
+        "id": "<uuid>",
+        "name": "Sessions with errors",
+        "filter_type": "error",
+        "conditions": { "has_error": true },
+        "capture_replay": true,
+        "enabled": true,
+        "priority": 0,
+        "created_at": "2026-08-01T10:00:00Z"
+      }
+    ],
+    "settings": {
+      "privacy": { "mask_inputs": true, "mask_text": false }
+    }
+  }
+}
+```
+
+Only **enabled** filters are sent. Disabling one in the dashboard removes it from the payload entirely rather than shipping it with a flag.
+
+`priority` is stored and returned but is not currently used to order evaluation. Filters are evaluated as a set, and a session activates if **any** of them matches.
+
+## What you can change remotely
+
+Three things, and it is worth being clear about the boundary:
+
+| Change | Effect |
+|---|---|
+| Add, edit or disable a [session filter](/observability/rum/how-to/session-filters/) | Controls whether detail capture turns on for a session |
+| Set `capture_replay` on a filter | Controls whether [session replay](/observability/replay/overview/) starts |
+| Change `mask_inputs` / `mask_text` | Controls replay masking |
+
+**What you cannot change remotely:** there are no sample rates in the configuration, and no global kill switch. Flush intervals, batch sizes and session timeouts are fixed in the SDK. Endpoint hosts can only be set locally in `init()`.
+
+If you need to stop collection entirely, disable every filter to stop detail and replay capture, and remove the `init()` call to stop the always-on measurements.
+
+## Where you set it
+
+| What | Where |
+|---|---|
+| Privacy settings | **RUM → Settings → Privacy**, or `PUT /rum/{app_id}` with `settings.privacy` |
+| Session filters | **RUM → Filters**, or the `/rum/{app_id}/filters` endpoints |
+
+Defaults if you set nothing: `mask_inputs` is **on**, `mask_text` is **off**, and there are no filters, meaning no detail capture and no replay.
+
+## How long changes take to land
+
+<Aside type="note" title="Budget about ten minutes, and understand the latches">
+Two delays stack. The SDK refreshes its configuration on a **5 minute** cycle, and the authorisation decision for the config request is cached at the edge for up to a further **5 minutes**.
+
+More importantly, **activation is one-way within a session**. Once detail capture or replay has turned on for a session, it stays on for the rest of that session; a later config refresh cannot turn it back off. Replay masking is applied when recording starts, so changing it does not re-apply to a recorder that is already running.
+
+So a tightening change ("stop capturing this") applies to *new* sessions, not to sessions already in flight. Plan privacy changes accordingly.
+</Aside>
+
+## Filter conditions
+
+The condition keys the SDK evaluates:
+
+| `filter_type` | Condition keys | Matches when |
+|---|---|---|
+| `error` | `has_error` | The session has thrown at least one error. |
+| `slow_performance` | `lcp_gt_ms`, `cls_gt` | LCP or CLS exceeds the threshold. |
+| `custom` | `has_user`, `min_actions` | A user is identified, and/or the action count is reached. |
+
+Evaluation happens in the browser against the running session, so a session that turns bad partway through activates partway through.
+
+Note that an `error` filter fires on **any** error in the session, regardless of what its conditions say.
+
+## See also
+
+<LinkCard title="Session filters" description="Designing the filters this config delivers." href="/observability/rum/how-to/session-filters/" />
+<LinkCard title="SDK reference" description="Init options and public methods." href="/sdk/reference/" />
+<LinkCard title="Session replay" description="What capture_replay turns on." href="/observability/replay/overview/" />
