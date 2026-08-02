@@ -1,7 +1,7 @@
 ---
 title: RUM (Real User Monitoring)
-description: Web vitals, errors, user actions, resource timing — collected from real browsers via the JS SDK, optionally with session replay.
-last_verified: 2026-05-03
+description: Web vitals, errors, user actions, resource timing, collected from real browsers via the JS SDK, optionally with session replay.
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -122,11 +122,19 @@ The SDK respects two privacy toggles set on the RUM application:
 
 Set these conservatively if you handle PII or financial data. See [replay privacy](/observability/replay/overview/#privacy).
 
+## Session dimensions
+
+Every session carries `browser`, `os`, `device_type` and `country`, so you can segment vitals and errors without instrumenting anything. The first three are parsed from the User-Agent server side.
+
+Two honest caveats before you build a report on them: **country is effectively empty today** for browser traffic, because nothing in front of the ingest endpoint supplies a geo header, and there was **no backfill**, so sessions recorded before this shipped have no browser, OS or device value. See [segmenting by dimension](/observability/rum/how-to/dimensions/).
+
 ## See also
 
 <CardGrid>
   <LinkCard title="Quickstart" description="Install the SDK in your app, see your first session." href="/observability/rum/quickstart/" />
   <LinkCard title="Source maps" description="Symbolicate JS errors with original source code." href="/observability/rum/how-to/source-maps/" />
+  <LinkCard title="Dimensions" description="Segment by browser, OS, device and country." href="/observability/rum/how-to/dimensions/" />
   <LinkCard title="Session filters" description="Activate detail capture and replay only when needed." href="/observability/rum/how-to/session-filters/" />
+  <LinkCard title="Remote config" description="Change capture behaviour without redeploying." href="/observability/rum/how-to/remote-config/" />
   <LinkCard title="Session Replay" description="Pixel playback of user sessions." href="/observability/replay/overview/" />
 </CardGrid>

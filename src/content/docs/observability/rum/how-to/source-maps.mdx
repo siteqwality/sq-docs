@@ -1,7 +1,7 @@
 ---
 title: Upload source maps
-description: Symbolicate minified JS errors in the dashboard by uploading source maps per release.
-last_verified: 2026-05-03
+description: Symbolicate minified production JS errors by uploading source maps against a release.
+last_verified: 2026-08-02
 owner: jj
 ---
 
@@ -15,7 +15,7 @@ TypeError: Cannot read properties of undefined (reading 'name')
   at d (https://app.example.com/assets/main.4f9a3.js:1:38215)
 ```
 
-Useless. After uploading source maps, the dashboard renders:
+Useless. With them, the same error is stored as:
 
 ```
 TypeError: Cannot read properties of undefined (reading 'name')
@@ -23,51 +23,87 @@ TypeError: Cannot read properties of undefined (reading 'name')
   at App (src/App.tsx:78:5)
 ```
 
-## How it works
+Source maps are included on every plan, including free.
 
-Each version of your app has a **release** in SiteQwality. Source maps are uploaded against that release. When errors flow in tagged with a matching `version`, the dashboard resolves stacks against the uploaded maps.
+## How the matching works
+
+Three things have to line up, and this is where almost every failed setup goes wrong:
+
+1. Your SDK sends a **`version`** with each error.
+2. A **release** exists with that exact version string.
+3. A source map is uploaded under that release with a **`filename` equal to the minified bundle name that appears in the stack trace**.
+
+That third one is the trap. `filename` is not the name of the `.map` file. It is the name of the **JavaScript bundle** the error came from.
+
+When resolving a frame, SiteQwality tries the frame's file reference verbatim, then its basename with any directory, query string and fragment stripped, then that basename with `.map` appended. So for a frame pointing at `https://app.example.com/assets/main.4f9a3.js`, uploading with `filename: "main.4f9a3.js"` is the reliable choice.
 
 ## 1. Tag your bundle with a version
-
-In your SDK init:
 
 ```javascript
 SiteQwalityRUM.init({
   applicationId: 'abc123',
   clientToken: 'pub_def456',
-  version: '1.4.2',  // or process.env.GIT_SHA, or release tag
+  version: '1.4.2',  // or process.env.GIT_SHA, or a release tag
 });
 ```
 
-Use whatever version scheme you have. The same string must be used both at init time and at upload time.
+<Aside type="caution">
+The version is matched **byte for byte**. `v1.4.2` and `1.4.2` are different releases. Errors sent with no `version` at all are never symbolicated.
+</Aside>
 
 ## 2. Create the release
 
 ```bash
-curl -X POST https://api.siteqwality.com/rum/$APP_ID/releases \
+curl -X POST "https://api.siteqwality.com/rum/$APP_ID/releases" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "version": "1.4.2" }'
 ```
 
-`version` must match what the SDK sends.
+`version` is required, trimmed, and at most 255 characters. Uploading to a release that does not exist returns `404`, so this step comes first.
 
-## 3. Upload source maps
+## 3. Upload each map
 
-For each `.js.map` file produced by your bundler:
+Uploading is **two steps**: ask for an upload URL, then send the file to it.
 
-```bash
-curl -X POST "https://api.siteqwality.com/rum/$APP_ID/releases/1.4.2/sourcemaps" \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -F "sourcemap=@dist/assets/main.4f9a3.js.map" \
-  -F "filename=main.4f9a3.js"
-```
+<Steps>
 
-`filename` is the original bundle name (without the source-map extension). The dashboard uses this to match incoming errors to the right map.
+1. **Request an upload URL**, naming the minified bundle:
+
+   ```bash
+   curl -X POST "https://api.siteqwality.com/rum/$APP_ID/releases/1.4.2/sourcemaps" \
+     -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{ "filename": "main.4f9a3.js" }'
+   ```
+
+   The response gives you an upload URL and how long it is valid for:
+
+   ```json
+   {
+     "data": {
+       "upload_url": "https://...",
+       "s3_key": "abc123/1.4.2/main.4f9a3.js",
+       "expires_in_seconds": 300
+     }
+   }
+   ```
+
+2. **PUT the map file to that URL** within **5 minutes**:
+
+   ```bash
+   curl -X PUT "$UPLOAD_URL" \
+     -H "Content-Type: application/json" \
+     --data-binary @dist/assets/main.4f9a3.js.map
+   ```
+
+   The `Content-Type` must match what you asked for. If you omit `content_type` in step 1 it defaults to `application/json`, which is correct for a `.map` file.
+
+</Steps>
+
+Re-uploading the same `filename` to the same release replaces the previous map.
 
 ## Automate in CI
-
-Wire the upload into your build pipeline:
 
 ```yaml
 # .github/workflows/deploy.yml
@@ -76,49 +112,78 @@ Wire the upload into your build pipeline:
 
 - name: Create RUM release
   run: |
-    curl -X POST https://api.siteqwality.com/rum/$APP_ID/releases \
+    curl -fsS -X POST "https://api.siteqwality.com/rum/$APP_ID/releases" \
       -H "Authorization: Bearer ${{ secrets.SITEQWALITY_API_KEY }}" \
+      -H "Content-Type: application/json" \
       -d "{\"version\":\"$GITHUB_SHA\"}"
 
 - name: Upload source maps
   run: |
     for map in dist/assets/*.js.map; do
-      file=$(basename "$map" .map)
-      curl -X POST "https://api.siteqwality.com/rum/$APP_ID/releases/$GITHUB_SHA/sourcemaps" \
+      bundle=$(basename "$map" .map)
+      url=$(curl -fsS -X POST \
+        "https://api.siteqwality.com/rum/$APP_ID/releases/$GITHUB_SHA/sourcemaps" \
         -H "Authorization: Bearer ${{ secrets.SITEQWALITY_API_KEY }}" \
-        -F "sourcemap=@$map" \
-        -F "filename=$file"
+        -H "Content-Type: application/json" \
+        -d "{\"filename\":\"$bundle\"}" | jq -r '.data.upload_url')
+      curl -fsS -X PUT "$url" \
+        -H "Content-Type: application/json" \
+        --data-binary "@$map"
     done
 ```
 
-Make sure your `init({ version })` call uses the same `$GITHUB_SHA` (or whatever you tag with).
+Make sure your `init({ version })` uses the same `$GITHUB_SHA`.
+
+## Symbolication happens once, at ingest
+
+This is the most important behavioural detail, and it has real consequences.
+
+Errors are symbolicated **when they arrive**, not when you view them. That means:
+
+- **Uploading a map does not fix errors that already arrived.** Errors ingested before the map existed keep their minified stack permanently. There is no re-processing.
+- **Upload maps as part of the deploy that ships the bundle**, before real traffic produces errors. A map uploaded an hour late leaves an hour of unreadable errors.
+- **Your error groups will split at the cutover.** Errors are grouped by a fingerprint computed over the stack, so the same bug appears as one group before symbolication starts working and a different group afterwards. Expect this once, the first time you set it up.
+
+## When it does not work
+
+<Aside type="caution" title="Failures are silent">
+If no matching map is found, if the map was never actually uploaded, or if a frame cannot be resolved, the raw line is kept and **nothing tells you**. There is no "source map missing" warning in the API or the dashboard.
+
+The way to check is empirical: trigger an error in a deployed build and look at whether the stored stack shows original file names.
+</Aside>
+
+Common causes, roughly in order of likelihood:
+
+| Symptom | Cause |
+|---|---|
+| Nothing is symbolicated | The SDK is not sending `version`, or it does not match the release exactly. |
+| Nothing is symbolicated | `filename` was the `.map` name, or a full URL that does not match the frame. Use the bundle basename. |
+| Nothing is symbolicated | The upload URL expired before the `PUT` ran, so the record exists but the file does not. |
+| Some frames resolve, others do not | Normal for a stack spanning several bundles. Upload a map for each. |
+| Frames from Firefox or Safari users stay minified | Frame parsing targets V8-style stack syntax, which is what Chromium and Node produce. Other engines' formats pass through unchanged. |
+
+There is no endpoint for listing the maps you have uploaded, so when debugging a setup, re-uploading is cheaper than trying to inspect state.
 
 ## Cleanup
 
-Old releases can be deleted to free storage:
-
 ```bash
-curl -X DELETE https://api.siteqwality.com/rum/$APP_ID/releases/0.9.1 \
+curl -X DELETE "https://api.siteqwality.com/rum/$APP_ID/releases/0.9.1" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-A reasonable policy: keep the last 30 releases (or the last 90 days) and delete older ones.
+This removes the release and its map records. The stored map files themselves are not deleted, and there is no limit on how many releases or maps you can keep, so this is housekeeping rather than a necessity.
 
-## Don't ship source maps in production
+## Don't ship source maps publicly
 
-Your bundler probably writes `//# sourceMappingURL=main.4f9a3.js.map` at the bottom of each bundle. If your build pipeline also publishes the `.map` files publicly, anyone can de-minify your code.
+Your bundler probably writes `//# sourceMappingURL=main.4f9a3.js.map` at the bottom of each bundle. If your pipeline also publishes the `.map` files, anyone can de-minify your code.
 
-To keep source maps **private** (uploaded to SiteQwality, not published):
+To keep maps private (uploaded to SiteQwality, not published):
 
-- For Vite: `build.sourcemap = 'hidden'`.
-- For Webpack: `devtool: 'hidden-source-map'`.
-- For Rollup: `output.sourcemap = 'hidden'`.
+- Vite: `build.sourcemap = 'hidden'`
+- Webpack: `devtool: 'hidden-source-map'`
+- Rollup: `output.sourcemap = 'hidden'`
 
-This generates the maps but doesn't write the `sourceMappingURL` comment. Browsers won't try to fetch them; SiteQwality has them via the upload.
-
-<Aside type="tip">
-The SDK is open and inspectable — but your business logic probably isn't. `hidden-source-map` is the right default for production.
-</Aside>
+These generate the maps without writing the `sourceMappingURL` comment. Browsers won't fetch them; SiteQwality has them via the upload.
 
 ## See also
 

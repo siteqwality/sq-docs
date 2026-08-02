@@ -1,0 +1,98 @@
+---
+title: Segment by browser, OS, device and country
+description: How RUM derives its session dimensions, which endpoints filter and break down by them, and what is genuinely populated today.
+last_verified: 2026-08-02
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+RUM sessions carry four context dimensions, so you can ask questions like "is LCP worse on mobile?" or "which browser is throwing this error?" without instrumenting anything yourself.
+
+## Where each value comes from
+
+| Dimension | Derived from |
+|---|---|
+| `browser` | The User-Agent, parsed server side |
+| `os` | The User-Agent, parsed server side |
+| `device_type` | The User-Agent, parsed server side |
+| `country` | An edge geo header on the request |
+
+Your SDK payload can also set any of these explicitly, and an explicit value always wins over the parsed one. That is the escape hatch if you already know better than a User-Agent string does.
+
+### Values you will see
+
+**`device_type`** is a closed set: `desktop`, `mobile`, `tablet`, `bot`, or empty.
+
+**`os`** normalises to `Windows`, `macOS`, `iOS`, `Android` or `Linux` where it can, and otherwise passes through whatever was detected, so less common values do appear.
+
+**`browser`** covers the mainstream engines: `Chrome`, `Firefox`, `Safari`, `Edge`, `Opera` and similar. Requests from HTTP libraries such as curl or scripted clients are deliberately left **empty** rather than polluting the browser breakdown with tool names.
+
+**`country`** is an uppercase ISO 3166-1 alpha-2 code such as `US` or `DE`. Anything that is not exactly two letters is discarded, so `USA` or `United States` will not be stored.
+
+Unknown values are stored as an **empty string**, not the literal text `unknown`. The dashboard renders that bucket as `(unknown)`.
+
+<Aside type="caution" title="Country is effectively empty today">
+Country is only populated when a CDN or edge layer in front of the RUM ingest endpoint adds a viewer-country header. The current ingest topology does not have one, so **for browser SDK traffic the country dimension is empty in practice** and a country breakdown will be almost entirely `(unknown)`.
+
+The dimension works, the plumbing to fill it does not exist yet. Don't build a report around geography until that changes, or set `country` explicitly in your payload if you can determine it yourself.
+</Aside>
+
+<Aside type="caution" title="There is no backfill">
+Browser, OS and device were not being recorded before this shipped. Those historical rows are **permanently empty** and nothing re-parses them.
+
+Comparing a breakdown across the cutover will show a large `(unknown)` block for the earlier period. That is missing data, not a change in your traffic. Pick time ranges that start after the change when you want a clean picture.
+</Aside>
+
+## Filtering and breaking down
+
+Filters are **exact, case-sensitive** matches on the stored value: `Chrome`, not `chrome`; `US`, not `us`.
+
+### Overview
+
+```bash
+curl -G "https://api.siteqwality.com/rum/$APP_ID/overview" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "from=2026-08-01T00:00:00Z" \
+  --data-urlencode "to=2026-08-02T00:00:00Z" \
+  --data-urlencode "browser=Chrome" \
+  --data-urlencode "device_type=mobile"
+```
+
+`from` and `to` are required. Optional filters: `country`, `browser`, `os`, `device_type`, and `url` (a substring match).
+
+The response includes two breakdowns:
+
+| Breakdown | Depth |
+|---|---|
+| `country_breakdown` | Top 20 by session count |
+| `browser_breakdown` | Top 10 by session count |
+
+There is **no OS or device breakdown**. Those two dimensions are filter-only, so to compare them you filter and read the resulting totals.
+
+### Sessions
+
+```bash
+curl -G "https://api.siteqwality.com/rum/$APP_ID/sessions" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "from=2026-08-01T00:00:00Z" \
+  --data-urlencode "to=2026-08-02T00:00:00Z" \
+  --data-urlencode "os=iOS" \
+  --data-urlencode "has_error=true"
+```
+
+Accepts `browser`, `os` and `country`, plus `search`, `has_error`, `has_replay`, `limit` (default 50, max 100) and `offset`.
+
+**`device_type` is not a filter here**, although every returned session does carry its `device_type` value. Filter on it via the overview endpoint, or filter client-side.
+
+## A limitation worth knowing
+
+These dimensions live on **session measurements only**. Individual error and detail events do not carry them.
+
+In practice that means you segment sessions by browser or device, and reach errors through those sessions, rather than filtering an error list directly by browser.
+
+## See also
+
+<LinkCard title="RUM reference" description="Application, filter, and analytics endpoints." href="/observability/rum/reference/" />
+<LinkCard title="Session filters" description="Activate detail capture and replay selectively." href="/observability/rum/how-to/session-filters/" />
+<LinkCard title="Source maps" description="Make the errors in those sessions readable." href="/observability/rum/how-to/source-maps/" />
