@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SiteQwality API",
-    "description": "Public REST API for SiteQwality — uptime monitoring, observability, incidents, and status pages.",
+    "description": "Public REST API for SiteQwality: uptime monitoring, observability, incidents, and status pages.",
     "contact": {
       "name": "SiteQwality Support",
       "url": "https://siteqwality.com",
@@ -26,10 +26,21 @@
           "API Keys"
         ],
         "summary": "List API keys for the authenticated account.",
+        "description": "Secrets are never returned: only the stored prefix/suffix fragments, the\nkey type, any scopes, and the lifecycle timestamps. Revoked keys are\nomitted; expired ones are included so the customer can see why a key\nstopped working rather than watching it silently disappear.\n\nThe response stays a bare array, unchanged in shape from before hashing,\nso a dashboard build that predates this deploy still renders the list.",
         "operationId": "list_api_keys",
         "responses": {
           "200": {
-            "description": "API keys"
+            "description": "API keys, without secrets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeySummary"
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -49,6 +60,7 @@
           "API Keys"
         ],
         "summary": "Create a new API key for the authenticated account.",
+        "description": "The response contains the full secret. This is the ONLY time it is ever\nshown: only its SHA-256 is stored, so it cannot be retrieved again, only\nrotated.\n\n`key_type` defaults to `full` when omitted, which is exactly what every\nkey did before this endpoint grew types. The dashboard sends `ingest`\nexplicitly, because a key destined for a log-forwarder config should not\nalso be able to delete monitors.",
         "operationId": "create_api_key",
         "requestBody": {
           "content": {
@@ -62,7 +74,17 @@
         },
         "responses": {
           "200": {
-            "description": "Newly minted API key (only returned once)"
+            "description": "Newly minted API key; the secret is only returned once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyWithSecretResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid name, scopes or expiry, or key cap reached"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -83,7 +105,8 @@
         "tags": [
           "API Keys"
         ],
-        "summary": "Delete an API key.",
+        "summary": "Revoke an API key.",
+        "description": "The route and verb are unchanged, so the dashboard's existing delete\nbutton keeps working, but the row is now kept and stamped `revoked_at`\ninstead of being deleted. Revocation takes effect immediately: both the\ncustomer API and the ingest authorizers check `revoked_at` on every\nrequest. Keeping the row preserves the audit history of a credential that\nmay have been used to change things.\n\nRevoked keys disappear from `GET /account/api_key`, which is exactly what\na delete looked like before.\n\nDeliberately idempotent: an unknown or already-revoked id still returns\n200. The M2M equivalent 404s on an unknown id, but this endpoint has\nalways returned 200 for one (the DELETE simply matched no rows), and a\ncaller that has been relying on that must not start seeing errors.",
         "operationId": "delete_api_key",
         "parameters": [
           {
@@ -99,13 +122,10 @@
         ],
         "responses": {
           "200": {
-            "description": "API key deleted"
+            "description": "API key revoked (or was already)"
           },
           "401": {
             "description": "Missing or invalid authentication"
-          },
-          "404": {
-            "description": "API key not found"
           },
           "500": {
             "description": "Internal server error"
@@ -116,6 +136,1363 @@
             "bearer_auth": []
           }
         ]
+      }
+    },
+    "/account/api_key/{api_key_id}/rotate": {
+      "post": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Rotate an API key: mint a replacement and revoke the predecessor, in one\ntransaction.",
+        "description": "Because the secret is hashed at rest there is no \"reveal it again\", so\nrotation is how a customer recovers from a lost or leaked key. The new key\ninherits the old one's name, type, scopes, and expiry, so a rotated\ncredential drops straight into the same config slot.\n\nThe old secret stops working the moment this returns; there is no grace\nperiod. A caller that needs overlap should instead create a second key,\ndeploy it, then revoke the first.",
+        "operationId": "rotate_api_key",
+        "parameters": [
+          {
+            "name": "api_key_id",
+            "in": "path",
+            "description": "API key identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New key; the secret is only returned once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyWithSecretResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "API key not found or already revoked"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/audit_log": {
+      "get": {
+        "tags": [
+          "Audit Log"
+        ],
+        "summary": "Customer-facing audit log: every mutating API request on the account with\nits actor (user session, M2M client, API key, or impersonating staff),\nnewest first. Reads are capped to the last 90 days. Owner role required,\nsince the log exposes other members' actions and request IPs.",
+        "operationId": "list_audit_log",
+        "responses": {
+          "200": {
+            "description": "Audit log entries (last 90 days)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerAuditLogListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner or admin role"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/email_status": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Returns the authenticated user's email-verification + MFA state from Stytch.",
+        "operationId": "email_status",
+        "responses": {
+          "200": {
+            "description": "Email verification state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/m2m_client/": {
+      "get": {
+        "tags": [
+          "M2M API Clients"
+        ],
+        "summary": "List the account's active M2M API clients. Secrets are never included;\nthey are only shown at create/rotate time.",
+        "operationId": "list_m2m_clients",
+        "responses": {
+          "200": {
+            "description": "Active M2M clients",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/M2MClientListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "M2M API Clients"
+        ],
+        "summary": "Create an M2M API client. The response contains the full client secret.\nThis is the ONLY time it is ever shown; it is not stored anywhere.",
+        "operationId": "create_m2m_client",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateM2MClientRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Client created; the secret is only returned once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/M2MClientWithSecretResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid name or scopes, or client cap reached"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner or admin role"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/m2m_client/{m2m_client_id}": {
+      "delete": {
+        "tags": [
+          "M2M API Clients"
+        ],
+        "summary": "Revoke an M2M API client. The local row is revoked FIRST (that is what\ncuts access, because the auth middleware rejects tokens for revoked rows\nimmediately), then the Stytch client is deleted best-effort. A Stytch\ncleanup failure is logged at ERROR (routed to the internal error\nnotifier) but does not fail the request: access is already cut.",
+        "operationId": "delete_m2m_client",
+        "parameters": [
+          {
+            "name": "m2m_client_id",
+            "in": "path",
+            "description": "M2M client identifier (local id, not the Stytch client_id)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client revoked"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner or admin role"
+          },
+          "404": {
+            "description": "Client not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/m2m_client/{m2m_client_id}/rotate_secret": {
+      "post": {
+        "tags": [
+          "M2M API Clients"
+        ],
+        "summary": "Rotate an M2M client's secret. Runs Stytch's start + complete in one\ncall: the old secret stops validating immediately and the new one is\nreturned exactly once. If completing fails after start, the rotation is\ncancelled best-effort so the old secret keeps working and the client can\nretry.",
+        "operationId": "rotate_m2m_client_secret",
+        "parameters": [
+          {
+            "name": "m2m_client_id",
+            "in": "path",
+            "description": "M2M client identifier (local id, not the Stytch client_id)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New secret; only returned once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/M2MClientWithSecretResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner or admin role"
+          },
+          "404": {
+            "description": "Client not found or revoked"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/scim/connection": {
+      "get": {
+        "tags": [
+          "SCIM"
+        ],
+        "summary": "Get the account's SCIM connection. Never carries the bearer token, only\nits last four characters.",
+        "operationId": "get_scim_connection",
+        "responses": {
+          "200": {
+            "description": "The account's SCIM connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScimConnectionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner role, or the plan does not include SCIM"
+          },
+          "404": {
+            "description": "No SCIM connection configured"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "SCIM"
+        ],
+        "summary": "Create the account's SCIM connection. The response carries the SCIM base\nURL and the bearer token; the token is shown ONCE and is never stored or\nretrievable again, only rotated.",
+        "operationId": "create_scim_connection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateScimConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Connection created; the bearer token is only returned once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScimConnectionWithTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid display name"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner role, or the plan does not include SCIM"
+          },
+          "409": {
+            "description": "A SCIM connection already exists for this account"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "SCIM"
+        ],
+        "summary": "Delete the account's SCIM connection. Stytch goes first here (unlike the\nSSO delete): while the Stytch connection exists the IdP can still push\ndirectory changes, and killing that is the point of the operation. The\nlocal row is removed either way so the dashboard reflects reality.",
+        "operationId": "delete_scim_connection",
+        "responses": {
+          "200": {
+            "description": "Connection deleted"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner role, or the plan does not include SCIM"
+          },
+          "404": {
+            "description": "No SCIM connection configured"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/scim/connection/rotate_token": {
+      "post": {
+        "tags": [
+          "SCIM"
+        ],
+        "summary": "Rotate the SCIM bearer token. Runs Stytch's start + complete in one call\n(same shape as the M2M secret rotation): the old token stops working\nimmediately and the new one is returned exactly once. If completing fails\nafter start, the rotation is cancelled best-effort so the IdP keeps\nsyncing with its current token.",
+        "operationId": "rotate_scim_token",
+        "responses": {
+          "200": {
+            "description": "New bearer token; only returned once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScimConnectionWithTokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner role, or the plan does not include SCIM"
+          },
+          "404": {
+            "description": "No SCIM connection configured"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/methods": {
+      "get": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Get the authenticated member's available sign-in methods.",
+        "operationId": "get_security_methods",
+        "responses": {
+          "200": {
+            "description": "Sign-in methods overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityMethodsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/oauth/{provider}": {
+      "delete": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Disconnect an OAuth provider from the authenticated member.",
+        "description": "`github` returns 404 until Branch C lands the GitHub OAuth integration.",
+        "operationId": "disconnect_oauth_provider",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "description": "OAuth provider id (currently \"google\")",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider disconnected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuritySimpleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "404": {
+            "description": "Provider not connected, or not supported yet"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/passkeys/register/complete": {
+      "post": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Complete a passkey registration.",
+        "operationId": "passkey_register_complete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyRegisterCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Passkey registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyRegisterCompleteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/passkeys/register/start": {
+      "post": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Begin a passkey registration. Returns the WebAuthn creation-options blob.",
+        "operationId": "passkey_register_start",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyRegisterStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "WebAuthn creation options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyRegisterStartResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/passkeys/{id}": {
+      "delete": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Delete a passkey by id.",
+        "operationId": "passkey_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "WebAuthn registration id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Passkey removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuritySimpleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/password": {
+      "delete": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Remove the member's password. Magic-link auth is always available, so the\naccount never becomes locked out from this. We still verify the\nauthenticated session before proceeding.",
+        "operationId": "delete_password",
+        "responses": {
+          "200": {
+            "description": "Password removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuritySimpleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/password/change": {
+      "post": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Change a password. Verifies the current password before applying the new one.",
+        "operationId": "change_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Password changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuritySimpleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid new password"
+          },
+          "401": {
+            "description": "Current password is incorrect"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/password/set": {
+      "post": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Set a password on an account that doesn't have one yet (magic-link / OAuth signups).",
+        "operationId": "set_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Password set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuritySimpleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid password"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/totp": {
+      "delete": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Disable TOTP for the authenticated member.",
+        "operationId": "totp_delete",
+        "responses": {
+          "200": {
+            "description": "TOTP disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuritySimpleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/totp/complete": {
+      "post": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Verify a TOTP code and complete enrollment.",
+        "operationId": "totp_complete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "TOTP enrollment complete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuritySimpleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid TOTP code"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/totp/start": {
+      "post": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Begin TOTP enrollment. Returns the otpauth:// URL, secret, and recovery codes.",
+        "operationId": "totp_start",
+        "responses": {
+          "200": {
+            "description": "TOTP enrollment payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpStartResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/sso/saml/connection": {
+      "get": {
+        "tags": [
+          "SSO"
+        ],
+        "summary": "Get the account's SAML SSO connection, enriched with the live Stytch\nobject so the UI can display the ACS URL / audience URI the customer\nneeds at their IdP and the currently configured IdP values.",
+        "description": "If Stytch is unreachable or no longer knows the connection, the local row\nis returned on its own rather than failing the page.",
+        "operationId": "get_saml_connection",
+        "responses": {
+          "200": {
+            "description": "The account's SSO connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SamlConnectionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner role, or the plan does not include SSO"
+          },
+          "404": {
+            "description": "No SSO connection configured"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "SSO"
+        ],
+        "summary": "Update the account's SAML SSO connection. The IdP side can be configured\neither from a metadata URL (Stytch fetches entity id, SSO URL, and\ncertificate) or field by field; supplying both applies the metadata URL\nfirst and then the explicit fields.",
+        "operationId": "update_saml_connection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSamlConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Connection updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SamlConnectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid field values"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner role, or the plan does not include SSO"
+          },
+          "404": {
+            "description": "No SSO connection configured"
+          },
+          "409": {
+            "description": "The email domain is claimed by another connection"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "SSO"
+        ],
+        "summary": "Create the account's SAML SSO connection. The response carries the\nservice-provider values (ACS URL, audience URI) the customer configures\nat their IdP; the connection stays `pending` until the IdP side is filled\nin via the update endpoint.",
+        "operationId": "create_saml_connection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSamlConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Connection created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SamlConnectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid display name or email domain"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner role, or the plan does not include SSO"
+          },
+          "409": {
+            "description": "A connection already exists for this account"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "SSO"
+        ],
+        "summary": "Delete the account's SAML SSO connection. The local row goes first so the\npublic SSO-start lookup stops resolving immediately even if the Stytch\ncall fails; the Stytch delete is then best-effort.",
+        "operationId": "delete_saml_connection",
+        "responses": {
+          "200": {
+            "description": "Connection deleted"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner role, or the plan does not include SSO"
+          },
+          "404": {
+            "description": "No SSO connection configured"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/users/{user_id}/role": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Set a team member's role.",
+        "operationId": "update_user_role",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Local user id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Role updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateUserRoleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown role, or the target is the primary account user"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner role"
+          },
+          "404": {
+            "description": "User not found in this account"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/auth/email/resend-verification": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Re-send the email verification magic link to the authenticated user.",
+        "operationId": "resend_verification",
+        "responses": {
+          "200": {
+            "description": "Verification email queued"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/auth/magic-link/authenticate": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Complete a magic link authentication. If the email belongs to an existing\naccount, signs the user in. Otherwise provisions a new SiteQwality account,\nStytch organization, Stripe customer, default notification group, and\nwelcome email. This is the same shape as `/signup` minus the password.",
+        "operationId": "authenticate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MagicLinkAuthenticateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired magic link"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/auth/magic-link/send": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Send a discovery magic link to the given email. Works for both existing\nusers (signs them in) and new users (provisioning happens on click via\n`/auth/magic-link/authenticate`).",
+        "operationId": "send",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MagicLinkSendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Magic link sent (or claimed sent, so account existence is not leaked)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MagicLinkSendResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/auth/methods": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Look up which authentication methods exist for an email. The response shape is\nconstant-time-ish: we always return 200 with the same body shape regardless of\nwhether the email exists, to slow account enumeration.",
+        "operationId": "methods",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Auth methods (always 200 even if email unknown)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthMethodsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/auth/sso/start": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Resolve an email address to its account's SSO start URL, if that domain\nhas an active SAML connection. Always 200; `redirect_url` is null when\nthere is nothing to start.",
+        "operationId": "start",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsoStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Redirect URL, or null when the domain has no active SSO connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SsoStartResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
       }
     },
     "/browser_check/": {
@@ -189,6 +1566,12 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "Monitor limit reached for the account's plan"
+          },
+          "403": {
+            "description": "Browser check limit reached for this account"
           },
           "500": {
             "description": "Internal server error"
@@ -277,6 +1660,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Browser check limit reached for this account"
           },
           "404": {
             "description": "Browser monitor not found"
@@ -597,6 +1983,9 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "402": {
+            "description": "Monitor limit reached for the account's plan"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -684,6 +2073,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "Heartbeat monitor limit reached (reactivating a paused monitor)"
           },
           "404": {
             "description": "Heartbeat monitor not found"
@@ -952,6 +2344,18 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "Filter by tags",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         ],
         "responses": {
@@ -1050,6 +2454,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Custom dashboards require a paid plan"
           },
           "500": {
             "description": "Internal server error"
@@ -1296,10 +2703,13 @@
             }
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid request body or widget limit reached"
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Custom dashboards require a paid plan"
           },
           "404": {
             "description": "Dashboard not found"
@@ -1838,6 +3248,9 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "402": {
+            "description": "Incident responder limit reached"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -1976,6 +3389,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "Monitor limit reached for the account's plan"
           },
           "403": {
             "description": "Feature requires a paid plan"
@@ -2413,6 +3829,183 @@
         ]
       }
     },
+    "/http/job/{job_id}/recent-checks": {
+      "get": {
+        "tags": [
+          "HTTP Monitors"
+        ],
+        "summary": "List the most recent HTTP check results for a monitor, including headers,\nresponse body, request/response metadata, and failure reason.",
+        "description": "Mirrors what the \"Incident Report\" tab shows for each transition row, but\ncovers every check, success or failure.",
+        "operationId": "list_recent_http_job_check_results",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "description": "HTTP monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of recent check results to return (default 25, max 100).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent HTTP check results, newest first"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/http/job/{job_id}/results/export": {
+      "get": {
+        "tags": [
+          "HTTP Monitors"
+        ],
+        "summary": "Export a monitor's check results as CSV (chronological). Columns:\ntimestamp, region, status, http_code, total_ms, dns_ms, tcp_connect_ms,\ntls_ms, ttfb_ms, download_ms, failure_reason.",
+        "operationId": "export_http_job_results",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "description": "HTTP monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "RFC3339 lower bound (default: 30 days ago)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "RFC3339 upper bound (default: now)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file (text/csv attachment)",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid range or more than 50,000 rows in range"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "HTTP monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/http/job/{job_id}/sla": {
+      "get": {
+        "tags": [
+          "SLA Reports"
+        ],
+        "summary": "Monthly SLA attainment for one HTTP monitor: uptime (from the daily\nperformance rollup) vs the monitor's SLA target. The target comes from\nthe monitor's status-page links when configured (strictest wins), else\ndefaults to 99.9. The current month is partial; a month with no check\ndata has `attained = null`.",
+        "operationId": "get_http_job_sla",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "description": "HTTP monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "months",
+            "in": "query",
+            "description": "Calendar months to report (default 3, max 24)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Monthly SLA attainment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpJobSlaResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "HTTP monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/http/job/{job_id}/uptime_percentage": {
       "get": {
         "tags": [
@@ -2709,6 +4302,52 @@
         ]
       }
     },
+    "/incident/action/{token}": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "One-click incident acknowledge/resolve via a signed link from email, SMS,\nor webhook payloads. Unauthenticated: the HMAC token is the credential.",
+        "operationId": "incident_action_link",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Signed incident action token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Action applied (HTML confirmation page)",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "400": {
+            "description": "Invalid or expired link",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "404": {
+            "description": "Incident not found",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "503": {
+            "description": "Action links not configured",
+            "content": {
+              "text/html": {}
+            }
+          }
+        }
+      }
+    },
     "/incident/{incident_id}": {
       "get": {
         "tags": [
@@ -2894,6 +4533,64 @@
           },
           "404": {
             "description": "Incident not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/incident/{incident_id}/publish": {
+      "post": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Publish an incident to a status page.",
+        "description": "Links the incident to the status page so it renders publicly. Publishing the\nsame incident to the same page twice is a no-op rather than an error.",
+        "operationId": "publish_incident",
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "description": "Incident identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishIncidentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Incident published",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Incident or status page not found"
           },
           "500": {
             "description": "Internal server error"
@@ -3095,6 +4792,82 @@
         ]
       }
     },
+    "/integration/google_chat/": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Add a Google Chat webhook integration.",
+        "operationId": "add_google_chat_integration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddGoogleChatIntegrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Google Chat integration added"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/integration/mattermost/": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Add a Mattermost webhook integration.",
+        "operationId": "add_mattermost_integration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddMattermostIntegrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mattermost integration added"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/integration/microsoft_teams/": {
       "post": {
         "tags": [
@@ -3115,6 +4888,158 @@
         "responses": {
           "200": {
             "description": "Teams integration added"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/integration/opsgenie/": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Add an OpsGenie integration (Alerts API key).",
+        "operationId": "add_opsgenie_integration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddOpsGenieIntegrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "OpsGenie integration added"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/integration/pagerduty/": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Add a PagerDuty integration (Events API v2 routing key).",
+        "operationId": "add_pagerduty_integration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPagerDutyIntegrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "PagerDuty integration added"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/integration/pushbullet/": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Add a Pushbullet integration (access token).",
+        "operationId": "add_pushbullet_integration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPushbulletIntegrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Pushbullet integration added"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/integration/pushover/": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Add a Pushover integration (user key + app token).",
+        "operationId": "add_pushover_integration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPushoverIntegrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Pushover integration added"
           },
           "400": {
             "description": "Invalid request body"
@@ -3263,7 +5188,7 @@
         "tags": [
           "Integrations"
         ],
-        "summary": "Begin Telegram integration setup — issues a one-time setup code the user enters into the bot.",
+        "summary": "Begin Telegram integration setup. Issues a one-time setup code the user enters into the bot.",
         "operationId": "start_add_telegram_integration",
         "responses": {
           "200": {
@@ -3835,6 +5760,203 @@
         ]
       }
     },
+    "/login/sso": {
+      "put": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Complete an SSO login: exchange the `token` Stytch appended to the login\nredirect (`stytch_token_type=sso`) for a session.",
+        "description": "Stytch runs the whole IdP dance, so there is no SAML parsing here. The\nlocal user mirror must already exist (created at invite time or by the\nSCIM webhook); a member without one is refused rather than auto-created,\nwhich keeps seat accounting and the account linkage in one place.",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsoAuthenticateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid SSO token, or no local user for this member"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/logs/analytics": {
+      "get": {
+        "tags": [
+          "Logs"
+        ],
+        "summary": "Get analytics aggregations for the logs dashboard: volume by source, top\nhosts by errors, volume by level, error rate by hour of day, and volume\nover time stacked by level.",
+        "operationId": "get_analytics",
+        "responses": {
+          "200": {
+            "description": "Logs analytics aggregations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/logs/export": {
+      "get": {
+        "tags": [
+          "Logs"
+        ],
+        "summary": "Export log query results as CSV using the exact same filters as\n`GET /logs/query` (start_time, end_time, level, source, env, host,\nsearch, metadata_search, tags, excluded). `limit`/`offset` are ignored:\nthe export returns the whole filtered set up to the cap, and refuses\nwith a 400 when the set is larger.",
+        "operationId": "export_logs",
+        "parameters": [
+          {
+            "name": "start_time",
+            "in": "query",
+            "description": "RFC3339 lower bound",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "description": "RFC3339 upper bound",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "description": "Comma-separated levels",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "Comma-separated sources",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "env",
+            "in": "query",
+            "description": "Comma-separated environments",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "host",
+            "in": "query",
+            "description": "Comma-separated hosts",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Full-text search",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metadata_search",
+            "in": "query",
+            "description": "Metadata search",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "Tag filters",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "excluded",
+            "in": "query",
+            "description": "Exclusion filters",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file (text/csv attachment)",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "More than 10,000 rows match the filters"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/logs/facets": {
       "get": {
         "tags": [
@@ -3910,6 +6032,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InsightsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/logs/patterns": {
+      "get": {
+        "tags": [
+          "Logs"
+        ],
+        "summary": "Get recurring log patterns, clustered by normalised message template.",
+        "operationId": "get_patterns",
+        "responses": {
+          "200": {
+            "description": "Clustered log patterns",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatternsResponse"
                 }
               }
             }
@@ -4386,6 +6540,225 @@
         ]
       }
     },
+    "/metric_saved_views/": {
+      "get": {
+        "tags": [
+          "Metric Saved Views"
+        ],
+        "summary": "List saved metric views for the user/account.",
+        "operationId": "list_saved_views",
+        "responses": {
+          "200": {
+            "description": "Saved views"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Metric Saved Views"
+        ],
+        "summary": "Create a saved metric view.",
+        "operationId": "create_saved_view",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMetricSavedView"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Saved view created"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/metric_saved_views/{view_id}": {
+      "get": {
+        "tags": [
+          "Metric Saved Views"
+        ],
+        "summary": "Get a saved metric view by ID.",
+        "operationId": "get_saved_view",
+        "parameters": [
+          {
+            "name": "view_id",
+            "in": "path",
+            "description": "Saved view identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved view"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Saved view not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Metric Saved Views"
+        ],
+        "summary": "Update a saved metric view.",
+        "operationId": "update_saved_view",
+        "parameters": [
+          {
+            "name": "view_id",
+            "in": "path",
+            "description": "Saved view identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMetricSavedView"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Saved view updated"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Saved view not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Metric Saved Views"
+        ],
+        "summary": "Delete a saved metric view.",
+        "operationId": "delete_saved_view",
+        "parameters": [
+          {
+            "name": "view_id",
+            "in": "path",
+            "description": "Saved view identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved view deleted"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Saved view not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/metrics/histogram": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "Query histogram metric data: percentile time series plus the raw bucket\nmatrix for heatmap rendering.",
+        "operationId": "query_metric_histogram",
+        "responses": {
+          "200": {
+            "description": "Histogram query result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricHistogramResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/metrics/names": {
       "get": {
         "tags": [
@@ -4578,6 +6951,226 @@
         ]
       }
     },
+    "/monitors": {
+      "get": {
+        "tags": [
+          "Monitors Overview"
+        ],
+        "summary": "One filtered, sorted, paged view of every monitor on the account: HTTP\nchecks, heartbeats and browser checks together.",
+        "description": "`total` is the size of the whole filtered set, not the length of `items`.\n\nThis exists because the three monitor types cannot be paged separately and\nmerged in the client. `GET /monitors/list` applies `limit` and `offset` to\n`http_jobs` and `cron_jobs` independently, so `limit=10` can return twenty\nrows and one offset means two different things; browser checks were not in\nthat endpoint at all and were merged in from an unfiltered list. A client\nasking for \"the next page\" of the combined array therefore asked for an\noffset that existed in none of the three sources, got nothing back, and\nconcluded there was no more data while monitors it had never shown sat in\nthe gap.\n\n`/monitors/list` is unchanged: it is a documented public API surface.",
+        "operationId": "list_all_monitors",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size. Clamped to 1..=100.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Row offset into the filtered result set.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "text",
+            "in": "query",
+            "description": "Free-text search over name and URI.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "`success`, `failed` or `pending_failure`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "`active` or `paused`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "sort_field",
+            "in": "query",
+            "description": "Column to sort by. Unrecognized values fall back to the default order.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "description": "`asc` or `desc`. Ignored without `sort_field`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "Repeatable. A monitor matches when it carries every requested tag.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of monitors of every type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonitorsPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/monitors/attention": {
+      "get": {
+        "tags": [
+          "Monitors Overview"
+        ],
+        "summary": "List prioritized attention items for the dashboard: unresolved\nincidents, down monitors, expiring TLS certificates and domains, and\nmonitors trending slow.",
+        "operationId": "get_attention_items",
+        "responses": {
+          "200": {
+            "description": "Prioritized attention items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttentionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/monitors/export": {
+      "get": {
+        "tags": [
+          "Monitors"
+        ],
+        "summary": "Export an uptime summary per HTTP monitor as CSV. Uptime is the average\nof daily uptime percentages from the daily performance rollup over the\nrequested range (the same math the status page uses). Row count is\nbounded by the account's monitor count, so no row cap applies.",
+        "operationId": "export_monitors_summary",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "RFC3339 lower bound (default: 30 days ago)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "RFC3339 upper bound (default: now)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file (text/csv attachment)",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid range"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/monitors/list": {
       "get": {
         "tags": [
@@ -4664,16 +7257,139 @@
         ]
       }
     },
+    "/monitors/recent-checks": {
+      "post": {
+        "tags": [
+          "Monitors Overview"
+        ],
+        "summary": "Response-time samples for a whole page of monitors, keyed by monitor id.",
+        "description": "The dashboard drew one sparkline per row and fetched each one with its own\n`GET /http/job/{id}/recent`. A fifty-row page was fifty requests, roughly\nhalf of them heartbeat and browser-check ids sent to an HTTP-job endpoint\nthat could only ever answer with an empty array, each one having taken a\nreader connection to say so. At five hundred monitors that is a\nself-inflicted outage.\n\nIds that are not HTTP monitors, or that belong to another account, are\nabsent from the response rather than present-and-empty. The caller reads\nthe map by id and treats a missing key as \"no series\", which is exactly\nwhat a heartbeat or a browser check has.",
+        "operationId": "get_recent_checks_batch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecentChecksBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response-time samples keyed by monitor id"
+          },
+          "400": {
+            "description": "Too many monitor ids in one request"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/monitors/response-time-series": {
+      "get": {
+        "tags": [
+          "Monitors Overview"
+        ],
+        "summary": "Get account-wide HTTP response-time aggregates (avg + p95) for the last\n24 hours in 15-minute buckets, feeding the dashboard trends chart.",
+        "operationId": "get_response_time_series",
+        "responses": {
+          "200": {
+            "description": "24h response-time series in 15-minute buckets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseTimeSeriesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/monitors/sla": {
+      "get": {
+        "tags": [
+          "SLA Reports"
+        ],
+        "summary": "Account-wide monthly SLA report: every HTTP monitor with its attainment\nper calendar month and breach flags. Targets come from status-page links\nwhere configured (strictest wins), else the 99.9 default.",
+        "operationId": "get_account_sla_report",
+        "parameters": [
+          {
+            "name": "months",
+            "in": "query",
+            "description": "Calendar months to report (default 3, max 24)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Per-monitor monthly SLA attainment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSlaReportResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/monitors/totals": {
       "get": {
         "tags": [
           "Monitors Overview"
         ],
-        "summary": "Get aggregate counts of monitors and their statuses for the account.",
+        "summary": "Get aggregate counts of monitors and their statuses for the account,\nplus 24h uptime and response-time aggregates with previous-24h values\nfor trend deltas.",
         "operationId": "get_monitor_totals",
         "responses": {
           "200": {
-            "description": "Account-wide monitor totals"
+            "description": "Account-wide monitor totals with 24h aggregates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountMonitorTotals"
+                }
+              }
+            }
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -5375,6 +8091,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "Incident responder limit reached"
           },
           "500": {
             "description": "Internal server error"
@@ -7407,6 +10126,9 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Branding customization requires a paid plan"
+          },
           "404": {
             "description": "Status page not found"
           },
@@ -7515,6 +10237,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Branding asset uploads require a paid plan"
           },
           "500": {
             "description": "Internal server error"
@@ -7840,6 +10565,12 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Custom domains require a paid plan"
+          },
+          "404": {
+            "description": "Status page not found"
           },
           "500": {
             "description": "Internal server error"
@@ -9332,10 +12063,201 @@
           }
         ]
       }
+    },
+    "/webhook/stytch": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Stytch webhook receiver: syncs IdP/SCIM directory changes into the local\nusers table.",
+        "operationId": "webhook",
+        "requestBody": {
+          "description": "Stytch webhook event payload",
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Event accepted (processed, skipped, or a known redelivery)"
+          },
+          "401": {
+            "description": "Missing or invalid webhook signature"
+          },
+          "500": {
+            "description": "Processing failed; Stytch should retry"
+          },
+          "503": {
+            "description": "Webhook signing secret is not configured"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AccountMonitorTotals": {
+        "type": "object",
+        "description": "Account-wide monitor totals with optional 24h aggregates.\n\nThe aggregate fields (uptime, response times, and their previous-24h\ncounterparts for trend deltas) are omitted from the JSON when no HTTP\nperformance data exists in the window.",
+        "required": [
+          "total",
+          "online",
+          "down",
+          "paused",
+          "by_type"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "online": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "down": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paused": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "by_type": {
+            "$ref": "#/components/schemas/MonitorTotalsByType",
+            "description": "The same four counts split per monitor type.\n\nAdditive: the four fields above are unchanged, and still mean every\nmonitor type added together. This exists so a per-type counter tile\ncan read an account-wide number instead of counting the rows of one\npage of the (paged) monitor list. Never omitted, and never partial."
+          },
+          "uptime_24h": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Aggregate uptime percentage across all HTTP checks over the last 24h."
+          },
+          "avg_response_time_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Average HTTP response time (ms) over the last 24h."
+          },
+          "p95_response_time_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "95th-percentile HTTP response time (ms) over the last 24h."
+          },
+          "prev_uptime_24h": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Aggregate uptime percentage for the previous 24h window (24-48h ago)."
+          },
+          "prev_avg_response_time_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Average HTTP response time (ms) for the previous 24h window."
+          },
+          "prev_p95_response_time_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "95th-percentile HTTP response time (ms) for the previous 24h window."
+          }
+        }
+      },
+      "AccountSlaMonitor": {
+        "type": "object",
+        "description": "One monitor in the account SLA report.",
+        "required": [
+          "http_job_id",
+          "uri",
+          "target",
+          "target_source",
+          "breached_months",
+          "months"
+        ],
+        "properties": {
+          "http_job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "uri": {
+            "type": "string"
+          },
+          "target": {
+            "type": "number",
+            "format": "double"
+          },
+          "target_source": {
+            "type": "string"
+          },
+          "breached_months": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of months in the report window with `attained == false`.",
+            "minimum": 0
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlaMonth"
+            },
+            "description": "Newest month first, aligned with the response's `months` labels."
+          }
+        }
+      },
+      "AccountSlaReportResponse": {
+        "type": "object",
+        "description": "Response for `GET /monitors/sla`.",
+        "required": [
+          "months",
+          "default_target",
+          "monitors"
+        ],
+        "properties": {
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Month labels newest first, e.g. [\"2026-08\", \"2026-07\", ...]."
+          },
+          "default_target": {
+            "type": "number",
+            "format": "double",
+            "description": "Target applied when a monitor has none configured."
+          },
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountSlaMonitor"
+            }
+          }
+        }
+      },
       "AcknowledgeIncidentRequest": {
         "type": "object",
         "properties": {
@@ -9381,6 +12303,38 @@
           }
         }
       },
+      "AddGoogleChatIntegrationRequest": {
+        "type": "object",
+        "required": [
+          "friendly_name",
+          "url"
+        ],
+        "properties": {
+          "friendly_name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "description": "Incoming webhook URL of the Google Chat space."
+          }
+        }
+      },
+      "AddMattermostIntegrationRequest": {
+        "type": "object",
+        "required": [
+          "friendly_name",
+          "url"
+        ],
+        "properties": {
+          "friendly_name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "description": "Incoming webhook URL of the Mattermost channel."
+          }
+        }
+      },
       "AddMicrosoftTeamsIntegrationRequest": {
         "type": "object",
         "required": [
@@ -9393,6 +12347,75 @@
           },
           "url": {
             "type": "string"
+          }
+        }
+      },
+      "AddOpsGenieIntegrationRequest": {
+        "type": "object",
+        "required": [
+          "friendly_name",
+          "api_key"
+        ],
+        "properties": {
+          "friendly_name": {
+            "type": "string"
+          },
+          "api_key": {
+            "type": "string",
+            "description": "Alerts API key of the OpsGenie API integration."
+          }
+        }
+      },
+      "AddPagerDutyIntegrationRequest": {
+        "type": "object",
+        "required": [
+          "friendly_name",
+          "routing_key"
+        ],
+        "properties": {
+          "friendly_name": {
+            "type": "string"
+          },
+          "routing_key": {
+            "type": "string",
+            "description": "Events API v2 routing key (integration key) of the PagerDuty service."
+          }
+        }
+      },
+      "AddPushbulletIntegrationRequest": {
+        "type": "object",
+        "required": [
+          "friendly_name",
+          "access_token"
+        ],
+        "properties": {
+          "friendly_name": {
+            "type": "string"
+          },
+          "access_token": {
+            "type": "string",
+            "description": "Pushbullet account access token."
+          }
+        }
+      },
+      "AddPushoverIntegrationRequest": {
+        "type": "object",
+        "required": [
+          "friendly_name",
+          "user_key",
+          "app_token"
+        ],
+        "properties": {
+          "friendly_name": {
+            "type": "string"
+          },
+          "user_key": {
+            "type": "string",
+            "description": "Pushover user (or group) key."
+          },
+          "app_token": {
+            "type": "string",
+            "description": "API token of the Pushover application."
           }
         }
       },
@@ -9447,6 +12470,119 @@
           }
         }
       },
+      "AnalyticsQueryParams": {
+        "type": "object",
+        "properties": {
+          "start_time": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "end_time": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "level": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "env": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "host": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "search": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata_search": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tags": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "excluded": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "AnalyticsResponse": {
+        "type": "object",
+        "required": [
+          "volume_by_source",
+          "top_hosts_by_errors",
+          "volume_by_level",
+          "error_rate_by_hour",
+          "volume_over_time",
+          "interval_seconds"
+        ],
+        "properties": {
+          "volume_by_source": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceCount"
+            }
+          },
+          "top_hosts_by_errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HostErrors"
+            }
+          },
+          "volume_by_level": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelCount"
+            }
+          },
+          "error_rate_by_hour": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HourlyErrorRate"
+            }
+          },
+          "volume_over_time": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelineBucket"
+            }
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
       "ApiDiscordIntegrationDetails": {
         "type": "object",
         "required": [
@@ -9454,6 +12590,17 @@
         ],
         "properties": {
           "discord_webhook_url": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiGoogleChatIntegrationDetails": {
+        "type": "object",
+        "required": [
+          "google_chat_webhook_url"
+        ],
+        "properties": {
+          "google_chat_webhook_url": {
             "type": "string"
           }
         }
@@ -9474,8 +12621,147 @@
           },
           {
             "$ref": "#/components/schemas/ApiMicrosoftTeamsIntegrationDetails"
+          },
+          {
+            "$ref": "#/components/schemas/ApiPagerDutyIntegrationDetails"
+          },
+          {
+            "$ref": "#/components/schemas/ApiOpsGenieIntegrationDetails"
+          },
+          {
+            "$ref": "#/components/schemas/ApiGoogleChatIntegrationDetails"
+          },
+          {
+            "$ref": "#/components/schemas/ApiMattermostIntegrationDetails"
+          },
+          {
+            "$ref": "#/components/schemas/ApiPushoverIntegrationDetails"
+          },
+          {
+            "$ref": "#/components/schemas/ApiPushbulletIntegrationDetails"
           }
         ]
+      },
+      "ApiKeyStatus": {
+        "type": "string",
+        "description": "Lifecycle state of a key, derived rather than stored so it can never\ndisagree with the timestamps.",
+        "enum": [
+          "active",
+          "expired",
+          "revoked"
+        ]
+      },
+      "ApiKeySummary": {
+        "type": "object",
+        "description": "One API key in list responses. Never contains the secret: after creation\nthe secret exists only in the customer's hands.",
+        "required": [
+          "id",
+          "account_id",
+          "key_prefix",
+          "key_last_four",
+          "key_type",
+          "scopes",
+          "status",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "key_prefix": {
+            "type": "string",
+            "description": "First 8 characters of the secret, kept in plaintext for display."
+          },
+          "key_last_four": {
+            "type": "string",
+            "description": "Last 4 characters of the secret, kept in plaintext for display."
+          },
+          "key_type": {
+            "$ref": "#/components/schemas/ApiKeyType"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Empty means unrestricted."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApiKeyStatus"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_used_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "revoked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiKeyType": {
+        "type": "string",
+        "description": "What a customer API key is allowed to do.\n\nMirrors the Datadog split between an API key (telemetry push) and an\napplication key (full API access), collapsed into one credential with a\ntype so the ingest path and the management path can share a table.",
+        "enum": [
+          "ingest",
+          "full"
+        ]
+      },
+      "ApiKeyWithSecretResponse": {
+        "type": "object",
+        "description": "Response for create and rotate, the ONLY places a full secret ever\nappears. It is not stored and cannot be retrieved again.",
+        "required": [
+          "api_key",
+          "secret"
+        ],
+        "properties": {
+          "api_key": {
+            "$ref": "#/components/schemas/ApiKeySummary"
+          },
+          "secret": {
+            "type": "string",
+            "description": "The full secret. Shown exactly once; store it now."
+          }
+        }
+      },
+      "ApiMattermostIntegrationDetails": {
+        "type": "object",
+        "required": [
+          "mattermost_webhook_url"
+        ],
+        "properties": {
+          "mattermost_webhook_url": {
+            "type": "string"
+          }
+        }
       },
       "ApiMicrosoftTeamsIntegrationDetails": {
         "type": "object",
@@ -9487,6 +12773,22 @@
             "type": "string"
           }
         }
+      },
+      "ApiOpsGenieIntegrationDetails": {
+        "type": "object",
+        "description": "The API key is a secret, so the API shape is empty."
+      },
+      "ApiPagerDutyIntegrationDetails": {
+        "type": "object",
+        "description": "The routing key is a secret, so the API shape is empty (same treatment as\nthe Slack token)."
+      },
+      "ApiPushbulletIntegrationDetails": {
+        "type": "object",
+        "description": "The access token is a secret, so the API shape is empty."
+      },
+      "ApiPushoverIntegrationDetails": {
+        "type": "object",
+        "description": "The user key and app token are secrets, so the API shape is empty."
       },
       "ApiSlackIntegrationDetails": {
         "type": "object"
@@ -9516,6 +12818,143 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "AttentionItem": {
+        "type": "object",
+        "description": "A single actionable item on the dashboard \"Needs Attention\" list.",
+        "required": [
+          "type",
+          "title",
+          "created_at",
+          "link"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/AttentionItemType"
+          },
+          "title": {
+            "type": "string",
+            "description": "One-line human-readable description rendered verbatim by the UI."
+          },
+          "severity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Incident severity (`minor` / `major` / `critical`); incidents only."
+          },
+          "monitor_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The monitor this item points at, when it concerns a single monitor."
+          },
+          "monitor_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Display name for the affected monitor or domain."
+          },
+          "incident_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The incident this item points at; incidents only."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Reference instant for the item: when the incident started, when the\nmonitor went down, or when the cert/domain expires."
+          },
+          "link": {
+            "type": "string",
+            "description": "SPA-relative link to the detail page for this item."
+          }
+        }
+      },
+      "AttentionItemType": {
+        "type": "string",
+        "description": "Discriminates the kinds of items the dashboard \"Needs Attention\" list can\nsurface, in priority order (incidents first, slow monitors last).",
+        "enum": [
+          "incident",
+          "recent_failure",
+          "ssl_expiry",
+          "domain_expiry",
+          "slow_monitor"
+        ]
+      },
+      "AttentionResponse": {
+        "type": "object",
+        "description": "Response for `GET /monitors/attention`. `items` is capped; `total_count`\nreports how many qualified before the cap.",
+        "required": [
+          "items",
+          "total_count"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttentionItem"
+            }
+          },
+          "total_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "AuthMethodsResponse": {
+        "type": "object",
+        "description": "What auth methods are configured for a given email. Used by the email-first\nlogin UI to branch between password, magic link, and OAuth.",
+        "required": [
+          "exists",
+          "has_password",
+          "has_oauth_google",
+          "has_passkey"
+        ],
+        "properties": {
+          "exists": {
+            "type": "boolean",
+            "description": "`true` if a local account exists for this email."
+          },
+          "has_password": {
+            "type": "boolean",
+            "description": "`true` if the account can authenticate with a password."
+          },
+          "has_oauth_google": {
+            "type": "boolean",
+            "description": "`true` if the account has Google OAuth linked."
+          },
+          "has_passkey": {
+            "type": "boolean",
+            "description": "`true` if the account has a registered WebAuthn passkey.\nAlways `false` today, wired for the future passkey feature."
+          }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "description": "Unified authentication response returned by login, signup, and refresh endpoints.",
+        "required": [
+          "session_token",
+          "session_jwt",
+          "member"
+        ],
+        "properties": {
+          "session_token": {
+            "type": "string"
+          },
+          "session_jwt": {
+            "type": "string"
+          },
+          "member": {
+            "$ref": "#/components/schemas/MemberInfo"
           }
         }
       },
@@ -9622,6 +13061,21 @@
           "pending_failure"
         ]
       },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string"
+          },
+          "new_password": {
+            "type": "string"
+          }
+        }
+      },
       "ContactMethodType": {
         "type": "string",
         "enum": [
@@ -9650,12 +13104,43 @@
       },
       "CreateApiKeyRequest": {
         "type": "object",
+        "description": "Body for `POST /account/api_key`.",
         "properties": {
           "friendly_name": {
             "type": [
               "string",
               "null"
             ]
+          },
+          "key_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ApiKeyType",
+                "description": "Omitted means `full`.\n\nThis is deliberately NOT the dashboard's default (which is `ingest`,\nthe safer choice). The API default has to preserve the historical\nbehaviour, because a customer script that has been POSTing\n`{\"friendly_name\": \"...\"}` for years must keep getting a key that can\ndo what its keys have always done."
+              }
+            ]
+          },
+          "scopes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional scope restriction for a `full` key. Omitted or empty means\nunrestricted, which is how every existing key behaves. Must be drawn\nfrom the same `read:<family>` / `write:<family>` taxonomy as M2M\nclients. Rejected on an `ingest` key, which never reaches the scope\nchokepoint at all."
+          },
+          "expires_in_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Optional lifetime in days. Omitted means the key never expires, which\nmatches the Datadog model and is what every existing key does.",
+            "minimum": 0
           }
         }
       },
@@ -10057,6 +13542,25 @@
             "items": {
               "type": "string"
             }
+          },
+          "http_version": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HttpJobHttpVersion",
+                "description": "Preferred HTTP version. Defaults to `auto` when omitted."
+              }
+            ]
+          },
+          "confirmation_threshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Number of consecutive failed checks (1-10) required before the monitor\nis considered down and notifications are sent. Defaults to 1 (alert on\nthe first failed check)."
           }
         }
       },
@@ -10166,6 +13670,33 @@
           "field_mapping": {}
         }
       },
+      "CreateM2MClientRequest": {
+        "type": "object",
+        "description": "Body for `POST /account/m2m_client`.",
+        "required": [
+          "name",
+          "scopes"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable client name, e.g. \"CI deploy hook\"."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Granted scopes, e.g. `[\"read:monitors\", \"write:monitors\"]`. Must be\nnon-empty and drawn from the documented scope taxonomy."
+          }
+        }
+      },
       "CreateMaintenanceWindow": {
         "type": "object",
         "required": [
@@ -10207,6 +13738,25 @@
             "format": "date-time"
           },
           "recurrence": {}
+        }
+      },
+      "CreateMetricSavedView": {
+        "type": "object",
+        "required": [
+          "name",
+          "filters"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "is_shared": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "filters": {}
         }
       },
       "CreateNotificationGroupRequest": {
@@ -10309,7 +13859,8 @@
               "integer",
               "null"
             ],
-            "format": "int32"
+            "format": "int32",
+            "description": "Weekly layers only: weekday of the handoff, 0 = Sunday .. 6 = Saturday,\ninterpreted together with `handoff_time` in the schedule's timezone.\nIgnored for `daily` and `custom` rotations."
           },
           "participants": {
             "type": "array",
@@ -10412,6 +13963,26 @@
           }
         }
       },
+      "CreateSamlConnectionRequest": {
+        "type": "object",
+        "description": "Body for `POST /account/sso/saml/connection`.",
+        "required": [
+          "display_name"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "description": "Label shown in the dashboard and at Stytch, e.g. \"Okta\"."
+          },
+          "email_domain": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Email domain to claim for SSO discovery, e.g. `corp.example.com`.\nOptional at create; the connection is not startable from the login\nscreen until it is set AND the connection is active."
+          }
+        }
+      },
       "CreateSavedView": {
         "type": "object",
         "required": [
@@ -10435,6 +14006,25 @@
             ]
           },
           "filters": {}
+        }
+      },
+      "CreateScimConnectionRequest": {
+        "type": "object",
+        "description": "Body for `POST /account/scim/connection`.",
+        "required": [
+          "display_name"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "identity_provider": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional IdP hint, e.g. `okta` or `microsoft-entra`."
+          }
         }
       },
       "CreateServiceNotificationTargetRequest": {
@@ -10672,6 +14262,187 @@
           "end_date_time": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "CustomerAuditActorType": {
+        "type": "string",
+        "description": "Who performed an audited action. Mirrors `customer_audit_log.actor_type`.",
+        "enum": [
+          "session",
+          "m2m",
+          "api_key",
+          "impersonated_staff",
+          "system"
+        ]
+      },
+      "CustomerAuditLogEntry": {
+        "type": "object",
+        "description": "One row in the customer audit-log list response. `request_ip` is\nstringified for JSON transport (Postgres `INET` round-trips as\n`IpNetwork`).",
+        "required": [
+          "id",
+          "occurred_at",
+          "actor_type",
+          "action",
+          "http_method",
+          "http_path"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor_type": {
+            "type": "string"
+          },
+          "actor_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "actor_m2m_client_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "impersonated_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Staff user id when the action was performed under impersonation."
+          },
+          "action": {
+            "type": "string"
+          },
+          "target_kind": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "http_method": {
+            "type": "string"
+          },
+          "http_path": {
+            "type": "string"
+          },
+          "http_status": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "request_ip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "user_agent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CustomerAuditLogListParams": {
+        "type": "object",
+        "description": "Query parameters for `GET /account/audit_log`. All filters are optional;\n`since`/`until` are RFC3339 timestamps. Reads are always clamped to the\nlast [`CUSTOMER_AUDIT_LOG_READ_WINDOW_DAYS`] days.",
+        "properties": {
+          "actor_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "actor_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CustomerAuditActorType"
+              }
+            ]
+          },
+          "action": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target_kind": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "since": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "CustomerAuditLogListResponse": {
+        "type": "object",
+        "required": [
+          "entries",
+          "read_window_days"
+        ],
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerAuditLogEntry"
+            }
+          },
+          "read_window_days": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Days of history the endpoint serves; older rows are not returned."
           }
         }
       },
@@ -10929,6 +14700,28 @@
         },
         "additionalProperties": false
       },
+      "EmailStatus": {
+        "type": "object",
+        "required": [
+          "email_verified",
+          "mfa_enrolled",
+          "email"
+        ],
+        "properties": {
+          "email_verified": {
+            "type": "boolean",
+            "description": "Whether the caller's Stytch member email is verified.\nMagic-link and Google OAuth signups land verified; email + password\nsignups land unverified until the link in the welcome email is clicked."
+          },
+          "mfa_enrolled": {
+            "type": "boolean",
+            "description": "Whether the Stytch member has at least one MFA factor enrolled."
+          },
+          "email": {
+            "type": "string",
+            "description": "The email address Stytch has on file. Handy for the banner copy."
+          }
+        }
+      },
       "EscalationPolicyLevelResponse": {
         "type": "object",
         "required": [
@@ -11180,6 +14973,74 @@
           }
         }
       },
+      "GoogleChatNotificationDetails": {
+        "type": "object",
+        "required": [
+          "google_chat_integration_id"
+        ],
+        "properties": {
+          "google_chat_integration_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HostErrors": {
+        "type": "object",
+        "required": [
+          "host",
+          "error_count",
+          "total_count"
+        ],
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "error_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "HourlyErrorRate": {
+        "type": "object",
+        "description": "Error rate broken down by hour of day (0-23, UTC).",
+        "required": [
+          "hour",
+          "total",
+          "errors",
+          "rate"
+        ],
+        "properties": {
+          "hour": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "errors": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "rate": {
+            "type": "number",
+            "format": "double",
+            "description": "0.0-100.0 percentage"
+          }
+        }
+      },
       "HttpJobAuthType": {
         "type": "string",
         "enum": [
@@ -11196,6 +15057,82 @@
           "form_url_encoded",
           "text"
         ]
+      },
+      "HttpJobHttpVersion": {
+        "type": "string",
+        "description": "Preferred HTTP version for the check transport (isahc/libcurl).\nStored on the job; observed negotiated version is on `http_job_results.http_version`.",
+        "enum": [
+          "auto",
+          "http1_1",
+          "http2",
+          "http2_with_fallback"
+        ]
+      },
+      "HttpJobResponseTime": {
+        "type": "object",
+        "required": [
+          "status",
+          "created_at",
+          "response_time_ms"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/HttpJobResultStatus"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "response_time_ms": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "HttpJobResultStatus": {
+        "type": "string",
+        "enum": [
+          "success",
+          "failed"
+        ]
+      },
+      "HttpJobSlaResponse": {
+        "type": "object",
+        "description": "Response for `GET /http/job/{job_id}/sla`.",
+        "required": [
+          "http_job_id",
+          "target",
+          "target_source",
+          "months"
+        ],
+        "properties": {
+          "http_job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target": {
+            "type": "number",
+            "format": "double",
+            "description": "Effective SLA target percentage applied to every month."
+          },
+          "target_source": {
+            "type": "string",
+            "description": "Where the target came from: \"status_page\" when configured on a\nstatus-page link (strictest wins), else \"default\"."
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlaMonth"
+            },
+            "description": "Newest month first."
+          }
+        }
       },
       "HttpJobState": {
         "type": "string",
@@ -11314,6 +15251,7 @@
           "status",
           "responder_status",
           "created_at",
+          "auto_created",
           "updates",
           "affected_http_job_ids"
         ],
@@ -11372,6 +15310,10 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "auto_created": {
+            "type": "boolean",
+            "description": "True when the incident was opened automatically by a monitor state\nchange; false for incidents created manually."
           },
           "updates": {
             "type": "array",
@@ -11600,7 +15542,13 @@
           "webhook",
           "telegram",
           "discord",
-          "microsoft_teams"
+          "microsoft_teams",
+          "pagerduty",
+          "opsgenie",
+          "google_chat",
+          "mattermost",
+          "pushover",
+          "pushbullet"
         ]
       },
       "LevelCount": {
@@ -11661,6 +15609,48 @@
           },
           "tags": {},
           "metadata": {}
+        }
+      },
+      "LogPattern": {
+        "type": "object",
+        "required": [
+          "template",
+          "count",
+          "first_seen",
+          "last_seen",
+          "samples",
+          "investigate_search"
+        ],
+        "properties": {
+          "template": {
+            "type": "string",
+            "description": "Normalised message template, e.g. \"Connection timeout to {IP}:{NUM} after {NUM}ms\""
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total count of log entries matching this template in the query window",
+            "minimum": 0
+          },
+          "first_seen": {
+            "type": "string",
+            "description": "ISO 8601 timestamp of the earliest matching log in the window"
+          },
+          "last_seen": {
+            "type": "string",
+            "description": "ISO 8601 timestamp of the most recent matching log in the window"
+          },
+          "samples": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 3 raw message samples from the matching logs"
+          },
+          "investigate_search": {
+            "type": "string",
+            "description": "Pre-built search term for the \"Investigate\" button: a short unique\nsubstring extracted from the template (first non-placeholder token >= 4 chars)"
+          }
         }
       },
       "LogQueryParams": {
@@ -11834,6 +15824,136 @@
           }
         }
       },
+      "M2MClientListResponse": {
+        "type": "object",
+        "description": "Response for `GET /account/m2m_client`.",
+        "required": [
+          "clients",
+          "token_endpoint"
+        ],
+        "properties": {
+          "clients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/M2MClientSummary"
+            }
+          },
+          "token_endpoint": {
+            "type": "string",
+            "description": "OAuth2 client_credentials token endpoint for this environment."
+          }
+        }
+      },
+      "M2MClientSummary": {
+        "type": "object",
+        "description": "One M2M client in list responses. Never contains a secret; only the last\nfour characters Stytch retains for display.",
+        "required": [
+          "id",
+          "client_id",
+          "name",
+          "scopes",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "client_id": {
+            "type": "string",
+            "description": "Stytch client_id, the OAuth2 `client_id` used at the token endpoint."
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_rotated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "M2MClientWithSecretResponse": {
+        "type": "object",
+        "description": "Response for create and rotate, the ONLY places a full secret appears.\nThe secret is never stored and can never be retrieved again.",
+        "required": [
+          "client",
+          "client_secret",
+          "token_endpoint"
+        ],
+        "properties": {
+          "client": {
+            "$ref": "#/components/schemas/M2MClientSummary"
+          },
+          "client_secret": {
+            "type": "string",
+            "description": "Full client secret. Shown exactly once; store it now."
+          },
+          "token_endpoint": {
+            "type": "string",
+            "description": "OAuth2 client_credentials token endpoint for this environment."
+          }
+        }
+      },
+      "MagicLinkAuthenticateRequest": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "MagicLinkSendRequest": {
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "redirect_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "SPA URL the Stytch email link should redirect to. The SPA reads the\n`token` query param and POSTs it to `/auth/magic-link/authenticate`.\nDefaults to `${base_frontend_url}/auth/magic-link/callback`."
+          }
+        }
+      },
+      "MagicLinkSendResponse": {
+        "type": "object",
+        "required": [
+          "sent"
+        ],
+        "properties": {
+          "sent": {
+            "type": "boolean",
+            "description": "Always `true` in the success path. Frontend uses this as a \"check your\nemail\" trigger. It does not leak whether the user exists."
+          }
+        }
+      },
       "MaintenanceWindowResponse": {
         "type": "object",
         "required": [
@@ -11899,6 +16019,48 @@
           }
         }
       },
+      "MattermostNotificationDetails": {
+        "type": "object",
+        "required": [
+          "mattermost_integration_id"
+        ],
+        "properties": {
+          "mattermost_integration_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MemberInfo": {
+        "type": "object",
+        "description": "Full member info returned on every authentication response.",
+        "required": [
+          "email",
+          "organization_id",
+          "roles"
+        ],
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": "string"
+          },
+          "organization_id": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "MetricDataPoint": {
         "type": "object",
         "required": [
@@ -11912,6 +16074,130 @@
           "value": {
             "type": "number",
             "format": "double"
+          }
+        }
+      },
+      "MetricHistogramBucket": {
+        "type": "object",
+        "description": "One time bucket of aggregated histogram data.",
+        "required": [
+          "timestamp",
+          "counts",
+          "total",
+          "sum",
+          "p50",
+          "p90",
+          "p95",
+          "p99"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "string"
+          },
+          "counts": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            },
+            "description": "Per-bucket (non-cumulative) observation counts, aligned with `bounds`."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total number of observations in this time bucket.",
+            "minimum": 0
+          },
+          "sum": {
+            "type": "number",
+            "format": "double",
+            "description": "Sum of all observed values in this time bucket."
+          },
+          "p50": {
+            "type": "number",
+            "format": "double"
+          },
+          "p90": {
+            "type": "number",
+            "format": "double"
+          },
+          "p95": {
+            "type": "number",
+            "format": "double"
+          },
+          "p99": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "MetricHistogramParams": {
+        "type": "object",
+        "description": "Query parameters for the histogram endpoint.",
+        "required": [
+          "metric_name"
+        ],
+        "properties": {
+          "metric_name": {
+            "type": "string"
+          },
+          "start_time": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "end_time": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resolution": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "filters": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "MetricHistogramResponse": {
+        "type": "object",
+        "description": "Histogram query response: per-time-bucket percentiles plus the raw\nbucket-count matrix for heatmap rendering.",
+        "required": [
+          "bounds",
+          "buckets",
+          "unit",
+          "interval_seconds"
+        ],
+        "properties": {
+          "bounds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Upper-bound labels for the histogram buckets, in ascending order.\nThe last entry may be \"+Inf\"."
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricHistogramBucket"
+            }
+          },
+          "unit": {
+            "type": "string"
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -12234,6 +16520,117 @@
         },
         "additionalProperties": false
       },
+      "MonitorTotalsByType": {
+        "type": "object",
+        "description": "Account-wide monitor counts split by monitor type.\n\nAll three keys are ALWAYS present, including for a type the account has\nnone of, which is why this is a struct and not a map. A dashboard tile\nthat reads a missing key renders nothing at all, and \"nothing\" reads as a\nstuck loading state rather than as zero.",
+        "required": [
+          "http",
+          "cron",
+          "browser"
+        ],
+        "properties": {
+          "http": {
+            "$ref": "#/components/schemas/MonitorTypeTotals",
+            "description": "HTTP / uptime monitors."
+          },
+          "cron": {
+            "$ref": "#/components/schemas/MonitorTypeTotals",
+            "description": "Heartbeat (cron) monitors."
+          },
+          "browser": {
+            "$ref": "#/components/schemas/MonitorTypeTotals",
+            "description": "Synthetic browser checks."
+          }
+        }
+      },
+      "MonitorType": {
+        "type": "string",
+        "description": "Which table a unified monitor row came from.\n\nThe dashboard maps this straight onto the `_type` field its table and cell\nrenderers key off, and splits the page back into per-type slices with it.\nIt is the one field on the row that is never null.",
+        "enum": [
+          "http",
+          "cron",
+          "browser"
+        ]
+      },
+      "MonitorTypeTotals": {
+        "type": "object",
+        "description": "The four monitor counts for one monitor type.\n\nSame four numbers, same meaning, as the top level of\n`AccountMonitorTotals`, restricted to a single type.",
+        "required": [
+          "total",
+          "online",
+          "down",
+          "paused"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "online": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "down": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paused": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MonitorsPage": {
+        "type": "object",
+        "description": "One server-filtered, server-sorted page of the unified monitor list.",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnifiedMonitor"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of monitors matching the filters, across every page. This is\nwhat \"X-Y of N\" is built from; it is not the length of `items`."
+          }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "type",
+          "details",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/NotificationType"
+          },
+          "details": {
+            "$ref": "#/components/schemas/NotificationDetails"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "NotificationDetails": {
         "oneOf": [
           {
@@ -12256,8 +16653,80 @@
           },
           {
             "$ref": "#/components/schemas/MicrosoftTeamsNotificationDetails"
+          },
+          {
+            "$ref": "#/components/schemas/PagerDutyNotificationDetails"
+          },
+          {
+            "$ref": "#/components/schemas/OpsGenieNotificationDetails"
+          },
+          {
+            "$ref": "#/components/schemas/GoogleChatNotificationDetails"
+          },
+          {
+            "$ref": "#/components/schemas/MattermostNotificationDetails"
+          },
+          {
+            "$ref": "#/components/schemas/PushoverNotificationDetails"
+          },
+          {
+            "$ref": "#/components/schemas/PushbulletNotificationDetails"
           }
         ]
+      },
+      "NotificationGroupWithNotifications": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "friendly_name",
+          "created_at",
+          "notifications"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "friendly_name": {
+            "type": "string"
+          },
+          "delay_send_after_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "resend_every_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notification"
+            }
+          },
+          "numb_of_sites": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
       },
       "NotificationType": {
         "type": "string",
@@ -12268,8 +16737,30 @@
           "webhook",
           "telegram",
           "discord",
-          "microsoft_teams"
+          "microsoft_teams",
+          "pagerduty",
+          "opsgenie",
+          "google_chat",
+          "mattermost",
+          "pushover",
+          "pushbullet"
         ]
+      },
+      "OAuthProviderInfo": {
+        "type": "object",
+        "required": [
+          "provider",
+          "connected_email"
+        ],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "Provider identifier. Currently \"google\" (Branch C will add \"github\")."
+          },
+          "connected_email": {
+            "type": "string"
+          }
+        }
       },
       "OnCallOverrideResponse": {
         "type": "object",
@@ -12350,7 +16841,8 @@
               "integer",
               "null"
             ],
-            "format": "int32"
+            "format": "int32",
+            "description": "Weekly layers only: weekday of the handoff, 0 = Sunday .. 6 = Saturday,\ninterpreted together with `handoff_time` in the schedule's timezone."
           },
           "participants": {
             "type": "array",
@@ -12419,6 +16911,221 @@
             "items": {
               "$ref": "#/components/schemas/OnCallOverrideResponse"
             }
+          }
+        }
+      },
+      "OpsGenieNotificationDetails": {
+        "type": "object",
+        "required": [
+          "opsgenie_integration_id"
+        ],
+        "properties": {
+          "opsgenie_integration_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PagerDutyNotificationDetails": {
+        "type": "object",
+        "required": [
+          "pagerduty_integration_id"
+        ],
+        "properties": {
+          "pagerduty_integration_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pagerduty_severity": {
+            "$ref": "#/components/schemas/PagerDutySeverity",
+            "description": "Severity of trigger events sent through this notification. Defaults\nto `critical` when the caller omits it."
+          }
+        },
+        "additionalProperties": false
+      },
+      "PagerDutySeverity": {
+        "type": "string",
+        "description": "`payload.severity` on trigger events. The user picks this per\nnotification; DOWN alerts default to `critical`.",
+        "enum": [
+          "critical",
+          "error",
+          "warning",
+          "info"
+        ]
+      },
+      "PasskeyInfo": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "added_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "added_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PasskeyRegisterCompleteRequest": {
+        "type": "object",
+        "required": [
+          "public_key_credential",
+          "label"
+        ],
+        "properties": {
+          "public_key_credential": {
+            "type": "string",
+            "description": "Opaque JSON string from `navigator.credentials.create()`."
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "PasskeyRegisterCompleteResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "PasskeyRegisterStartRequest": {
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Human label for the passkey (e.g., \"iPhone 15 Pro\"). Stored on Stytch\nalongside the credential so users can identify their devices."
+          }
+        }
+      },
+      "PasskeyRegisterStartResponse": {
+        "type": "object",
+        "required": [
+          "public_key_credential_creation_options"
+        ],
+        "properties": {
+          "public_key_credential_creation_options": {
+            "type": "string",
+            "description": "Opaque JSON string. The browser passes this straight to\n`navigator.credentials.create()` after parsing."
+          }
+        }
+      },
+      "PatternsQueryParams": {
+        "type": "object",
+        "properties": {
+          "start_time": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "end_time": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "level": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Comma-separated levels; defaults to \"error,warn\" when absent or empty."
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "env": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "host": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "search": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata_search": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tags": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "excluded": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Max patterns to return; default 20, max 50.",
+            "minimum": 0
+          }
+        }
+      },
+      "PatternsResponse": {
+        "type": "object",
+        "required": [
+          "patterns",
+          "messages_examined",
+          "generated_at"
+        ],
+        "properties": {
+          "patterns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogPattern"
+            }
+          },
+          "messages_examined": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total distinct messages examined before clustering",
+            "minimum": 0
+          },
+          "generated_at": {
+            "type": "string"
           }
         }
       },
@@ -12498,6 +17205,61 @@
           }
         }
       },
+      "PublishIncidentRequest": {
+        "type": "object",
+        "required": [
+          "status_page_id"
+        ],
+        "properties": {
+          "status_page_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "PushbulletNotificationDetails": {
+        "type": "object",
+        "required": [
+          "pushbullet_integration_id"
+        ],
+        "properties": {
+          "pushbullet_integration_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PushoverNotificationDetails": {
+        "type": "object",
+        "required": [
+          "pushover_integration_id"
+        ],
+        "properties": {
+          "pushover_integration_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RecentChecksBatchRequest": {
+        "type": "object",
+        "description": "Request body for the batched sparkline endpoint.",
+        "required": [
+          "monitor_ids"
+        ],
+        "properties": {
+          "monitor_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Monitor ids to fetch response-time samples for. Ids that are not HTTP\nmonitors, or that belong to another account, are simply absent from\nthe response."
+          }
+        }
+      },
       "ReorderEscalationPolicyLevelsRequest": {
         "type": "object",
         "required": [
@@ -12539,6 +17301,53 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "ResponseTimeDataPoint": {
+        "type": "object",
+        "description": "One aggregate bucket on the dashboard response-time trends chart.",
+        "required": [
+          "timestamp",
+          "avg_ms",
+          "p95_ms"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Bucket start time."
+          },
+          "avg_ms": {
+            "type": "number",
+            "format": "double",
+            "description": "Average HTTP response time (ms) across all checks in the bucket."
+          },
+          "p95_ms": {
+            "type": "number",
+            "format": "double",
+            "description": "95th-percentile HTTP response time (ms) in the bucket."
+          }
+        }
+      },
+      "ResponseTimeSeriesResponse": {
+        "type": "object",
+        "description": "Response for `GET /monitors/response-time-series`: the last 24h of\naccount-wide response-time aggregates in fixed-width buckets. Buckets\nwith no checks are absent rather than zero-filled.",
+        "required": [
+          "data_points",
+          "interval_minutes"
+        ],
+        "properties": {
+          "data_points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResponseTimeDataPoint"
+            }
+          },
+          "interval_minutes": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Width of each bucket in minutes."
           }
         }
       },
@@ -13329,6 +18138,178 @@
           }
         }
       },
+      "SamlConnectionResponse": {
+        "type": "object",
+        "description": "SAML connection as returned to the dashboard. Combines our row (account\nlinkage, claimed domain) with the live Stytch object (SP-side values the\ncustomer pastes into the IdP, plus the configured IdP values).",
+        "required": [
+          "connection_id",
+          "display_name",
+          "status",
+          "has_certificate",
+          "created_at"
+        ],
+        "properties": {
+          "connection_id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "`pending` until the IdP side is configured, then `active`."
+          },
+          "email_domain": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "acs_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Service-provider values for the IdP side of the setup."
+          },
+          "audience_uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "idp_entity_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Configured IdP values (echoed back so the UI can show current state)."
+          },
+          "idp_sso_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "has_certificate": {
+            "type": "boolean",
+            "description": "Whether at least one verification certificate is on file."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ScimConnectionResponse": {
+        "type": "object",
+        "description": "SCIM connection as returned to the dashboard. Never carries the bearer\ntoken; only the last four characters.",
+        "required": [
+          "connection_id",
+          "display_name",
+          "status",
+          "created_at"
+        ],
+        "properties": {
+          "connection_id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "base_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "SCIM base URL the customer pastes into their IdP."
+          },
+          "bearer_token_last_four": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_rotated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ScimConnectionWithTokenResponse": {
+        "type": "object",
+        "description": "Create / rotate response: carries the bearer token exactly once.",
+        "required": [
+          "connection",
+          "bearer_token"
+        ],
+        "properties": {
+          "connection": {
+            "$ref": "#/components/schemas/ScimConnectionResponse"
+          },
+          "bearer_token": {
+            "type": "string",
+            "description": "Full bearer token. Shown once, never stored, never retrievable again."
+          }
+        }
+      },
+      "SecurityMethodsResponse": {
+        "type": "object",
+        "required": [
+          "has_password",
+          "oauth_providers",
+          "passkeys",
+          "totp_enabled"
+        ],
+        "properties": {
+          "has_password": {
+            "type": "boolean"
+          },
+          "password_set_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "oauth_providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OAuthProviderInfo"
+            }
+          },
+          "passkeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PasskeyInfo"
+            }
+          },
+          "totp_enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SecuritySimpleResponse": {
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      },
       "ServiceMapEdge": {
         "type": "object",
         "required": [
@@ -13561,6 +18542,56 @@
           }
         }
       },
+      "SetPasswordRequest": {
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "SlaMonth": {
+        "type": "object",
+        "description": "Attainment of one calendar month against the monitor's target.",
+        "required": [
+          "month",
+          "days_with_data",
+          "target"
+        ],
+        "properties": {
+          "month": {
+            "type": "string",
+            "description": "\"YYYY-MM\" (UTC calendar month; the newest month is partial)."
+          },
+          "uptime_percentage": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Average of daily uptime percentages, 3 decimals. `null` when the\nmonth has no check data."
+          },
+          "days_with_data": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "target": {
+            "type": "number",
+            "format": "double"
+          },
+          "attained": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`uptime >= target`; `null` when there is no data to judge."
+          }
+        }
+      },
       "SlackNotificationDetails": {
         "type": "object",
         "required": [
@@ -13670,6 +18701,44 @@
           "resource_attributes": {},
           "events": {},
           "links": {}
+        }
+      },
+      "SsoAuthenticateRequest": {
+        "type": "object",
+        "description": "Body for `POST /login/sso`, which completes the SSO redirect.",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "The `token` query param Stytch appends to the login redirect URL when\n`stytch_token_type=sso`."
+          }
+        }
+      },
+      "SsoStartRequest": {
+        "type": "object",
+        "description": "Body for `POST /auth/sso/start` (public, unauthenticated).",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "SsoStartResponse": {
+        "type": "object",
+        "description": "Response for `POST /auth/sso/start`.\n\nEnumeration-safe by construction: the shape is identical whether or not\nthe domain has SSO, and the status code is always 200. `redirect_url` is\n`null` when there is no startable connection, which covers \"no such\naccount\", \"account without SSO\", and \"SSO configured but not yet active\"\nwith one indistinguishable answer.",
+        "properties": {
+          "redirect_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Stytch SSO start URL to redirect the browser to, or `null`."
+          }
         }
       },
       "StatusPage": {
@@ -13804,7 +18873,7 @@
           },
           "acm_validation": {
             "$ref": "#/components/schemas/AcmValidationCname",
-            "description": "ACM DNS validation records — needed while status = \"pending_validation\""
+            "description": "ACM DNS validation records, needed while status = \"pending_validation\""
           },
           "failure_reason": {
             "type": [
@@ -14385,6 +19454,43 @@
           }
         }
       },
+      "TotpCompleteRequest": {
+        "type": "object",
+        "required": [
+          "totp_code"
+        ],
+        "properties": {
+          "totp_code": {
+            "type": "string",
+            "description": "6-digit code from the user's authenticator app."
+          }
+        }
+      },
+      "TotpStartResponse": {
+        "type": "object",
+        "required": [
+          "secret",
+          "qr_code_url",
+          "recovery_codes"
+        ],
+        "properties": {
+          "secret": {
+            "type": "string",
+            "description": "Base32-encoded TOTP secret (for \"enter manually\" UX)."
+          },
+          "qr_code_url": {
+            "type": "string",
+            "description": "`otpauth://` URL, rendered as a QR code on the client."
+          },
+          "recovery_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "One-time recovery codes. Shown once; never recoverable."
+          }
+        }
+      },
       "TraceDetailResponse": {
         "type": "object",
         "required": [
@@ -14565,6 +19671,13 @@
               "null"
             ]
           },
+          "tags": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "JSON-encoded span attribute filters, e.g. `{\"http.method\":\"GET\"}`."
+          },
           "limit": {
             "type": [
               "integer",
@@ -14698,7 +19811,10 @@
         "required": [
           "time",
           "total",
-          "error"
+          "error",
+          "p50_ms",
+          "p95_ms",
+          "p99_ms"
         ],
         "properties": {
           "time": {
@@ -14713,6 +19829,19 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          },
+          "p50_ms": {
+            "type": "number",
+            "format": "double",
+            "description": "Trace duration percentiles for traces starting in this bucket (ms).\nZero when the bucket has no traces."
+          },
+          "p95_ms": {
+            "type": "number",
+            "format": "double"
+          },
+          "p99_ms": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -14770,6 +19899,13 @@
               "string",
               "null"
             ]
+          },
+          "tags": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "JSON-encoded span attribute filters, e.g. `{\"http.method\":\"GET\"}`."
           }
         }
       },
@@ -14790,6 +19926,340 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "UnifiedMonitor": {
+        "type": "object",
+        "description": "One row of the unified monitor list.\n\nFields are emitted as explicit `null` rather than omitted when they do not\napply to the row's type. The dashboard reads several of them positionally\n(an absent `method` and a null `method` are not the same thing to it), and\nbulk edit spreads the whole row back into an update request, so a missing\nkey is a silently blanked setting rather than a cosmetic difference.",
+        "required": [
+          "id",
+          "monitor_type",
+          "current_status",
+          "state",
+          "created_at",
+          "monitor_tls",
+          "monitor_dns",
+          "monitor_page_speed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "monitor_type": {
+            "$ref": "#/components/schemas/MonitorType",
+            "description": "`http`, `cron` or `browser`."
+          },
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Display name. Browser checks store this as `name`; it is projected here\nso one column renderer serves all three types."
+          },
+          "current_status": {
+            "type": "string",
+            "description": "`success`, `failed` or (HTTP and browser only) `pending_failure`."
+          },
+          "state": {
+            "type": "string",
+            "description": "`active` or `paused`."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_status_change_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "uptime_24h": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Uptime percentage over the last 24h. HTTP monitors only, and null when\nthe monitor has no checks in the window."
+          },
+          "group_notifications": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/NotificationGroupWithNotifications"
+            },
+            "description": "Notification groups, resolved in one batched query for the whole page."
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "last_run_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "check_regions": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "min_healthy_regions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "timeout_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Milliseconds. Browser checks store seconds; the value is converted so\nthe Timeout column reads true for them instead of blanking."
+          },
+          "uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "method": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Explicitly null for heartbeats and browser checks. The dashboard's\nlegacy \"no method means heartbeat\" heuristic still exists as a\nfallback, so this must be present and null rather than omitted."
+          },
+          "run_interval_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "run_interval_thirty_seconds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "follow_redirects": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "final_uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "keyword_search": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "keyword_search_inverted": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "keyword_search_case_sensitive": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "keyword_search_regex": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "request_body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "content_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HttpJobContentType"
+              }
+            ]
+          },
+          "auth_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HttpJobAuthType"
+              }
+            ]
+          },
+          "auth_username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "auth_password": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "auth_bearer_token": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success_http_codes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "failure_http_codes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "custom_http_headers": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "tls_job_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "monitor_tls": {
+            "type": "boolean"
+          },
+          "dns_job_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "monitor_dns": {
+            "type": "boolean"
+          },
+          "page_speed_job_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "monitor_page_speed": {
+            "type": "boolean"
+          },
+          "http_version": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HttpJobHttpVersion"
+              }
+            ]
+          },
+          "confirmation_threshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "check_interval_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "last_received_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "frequency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Browser check cadence label (`5m`, `10m`, `15m`, `30m`, `1h`)."
+          },
+          "timeout_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -15180,6 +20650,25 @@
             "items": {
               "type": "string"
             }
+          },
+          "http_version": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HttpJobHttpVersion",
+                "description": "Preferred HTTP version for the check client."
+              }
+            ]
+          },
+          "confirmation_threshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Number of consecutive failed checks (1-10) required before the monitor\nis considered down and notifications are sent."
           }
         }
       },
@@ -15315,6 +20804,24 @@
             "format": "date-time"
           },
           "recurrence": {}
+        }
+      },
+      "UpdateMetricSavedView": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_shared": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "filters": {}
         }
       },
       "UpdateNotificationGroupRequest": {
@@ -15454,6 +20961,53 @@
               "null"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "UpdateSamlConnectionRequest": {
+        "type": "object",
+        "description": "Body for `PUT /account/sso/saml/connection`. Every field is optional;\nonly supplied fields are forwarded to Stytch.\n\nTwo ways to configure the IdP side: paste a `metadata_url` (Stytch fetches\nentity id, SSO URL, and certificate) or fill the three fields by hand.",
+        "properties": {
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email_domain": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "clear_email_domain": {
+            "type": "boolean",
+            "description": "Set true to release the claimed domain (disables SSO discovery)."
+          },
+          "metadata_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "idp_entity_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "idp_sso_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "x509_certificate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "PEM-encoded X.509 signing certificate from the IdP."
           }
         }
       },
@@ -15749,6 +21303,36 @@
           }
         }
       },
+      "UpdateUserRoleRequest": {
+        "type": "object",
+        "description": "Body for `POST /account/users/{user_id}/role`.",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "One of `admin`, `member`, `viewer`. `owner` is not assignable here:\nownership transfer is a separate operation."
+          }
+        }
+      },
+      "UpdateUserRoleResponse": {
+        "type": "object",
+        "description": "Response for the role update.",
+        "required": [
+          "user_id",
+          "role"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateWidgetRequest": {
         "type": "object",
         "properties": {
@@ -16023,6 +21607,22 @@
       "description": "Create and revoke API bearer tokens."
     },
     {
+      "name": "M2M API Clients",
+      "description": "OAuth2 client_credentials clients for programmatic API access with scoped permissions."
+    },
+    {
+      "name": "Audit Log",
+      "description": "Customer-facing audit trail of mutating API requests on the account."
+    },
+    {
+      "name": "SLA Reports",
+      "description": "Monthly uptime attainment against SLA targets."
+    },
+    {
+      "name": "Security",
+      "description": "Self-service authentication settings: passwords, OAuth providers, passkeys, TOTP."
+    },
+    {
       "name": "Incidents",
       "description": "Track and manage status-page and standalone incidents."
     },
@@ -16052,7 +21652,7 @@
     },
     {
       "name": "Integrations",
-      "description": "Slack, Discord, Teams, Telegram, and webhook integrations."
+      "description": "Slack, Discord, Teams, Telegram, PagerDuty, OpsGenie, Google Chat, Mattermost, Pushover, Pushbullet, and webhook integrations."
     },
     {
       "name": "Maintenance Windows",
@@ -16075,6 +21675,10 @@
       "description": "Saved log query views shared across the team."
     },
     {
+      "name": "Metric Saved Views",
+      "description": "Saved metric explorer views shared across the team."
+    },
+    {
       "name": "Metrics",
       "description": "Time-series metric exploration and aggregation."
     },
@@ -16093,6 +21697,14 @@
     {
       "name": "RUM Analytics",
       "description": "RUM dashboards: overview, vitals, sessions, errors, and replay."
+    },
+    {
+      "name": "SSO",
+      "description": "SAML single sign-on connection configuration."
+    },
+    {
+      "name": "SCIM",
+      "description": "SCIM directory-provisioning connection configuration."
     }
   ]
 }
