@@ -1,7 +1,7 @@
 ---
 title: HTTP check reference
 description: Every field on an HTTP check, with defaults, validation limits, and status meanings.
-last_verified: 2026-08-02
+last_verified: 2026-08-05
 owner: jj
 ---
 
@@ -116,8 +116,46 @@ The negotiated version actually observed on each run is recorded on the check re
 | `GET` | `/http/job/{job_id}/uptime_percentage` | Uptime percentage and incident count for a date range. |
 | `GET` | `/http/job/{job_id}/performance` | Per-phase timing (dns/tcp/tls/ttfb/download). |
 | `GET` | `/http/job/result/{job_result_id}/details` | Full detail for one recorded result. |
+| `GET` | `/http/job/result/{job_result_id}/body` | Pre-signed download for a failed check's full response body. |
+| `GET` | `/http/job/{job_id}/results/export` | Check results as CSV (timings and outcome, no bodies). |
 | `GET` | `/http/job/{job_id}/page_speed` | Latest page-speed result. |
 | `GET` | `/http/job/{job_id}/page_speed/history` | Page-speed history. |
+
+## Response bodies
+
+Every check records its outcome, status code and per-phase timings. The
+**response body is kept only when a check fails**, which is when you need it to
+tell a 500 from a blank page from a hijacked domain. A passing check's body is
+not stored.
+
+When a check fails, the result carries:
+
+- `response_body`: the first 8 KB of the response, for display.
+- `body_bytes`: the true size of the captured body. If it is larger than
+  `response_body`, the inline copy is the head of a bigger document.
+- `body_truncated`, `body_available`, `body_expired`: whether the snippet is
+  partial, whether the full body can be downloaded now, and whether one was
+  captured but has aged out of your plan's window.
+
+Call `GET /http/job/result/{job_result_id}/body` for a pre-signed URL to the
+complete body, valid for one hour. It answers `404` when no body was captured
+(a passing check) and `410` when one was captured but falls outside your
+retention window.
+
+A keyword assertion is evaluated against the live response while the check
+runs, never against the stored copy, so a keyword failure always carries the
+body that failed it even though the status code was `200`.
+
+### Retention
+
+| Plan | Failure bodies kept |
+|---|---|
+| Free | 5 days |
+| Any paid plan | 30 days |
+| On request | Up to 365 days |
+
+Retention is applied when a body is served, so upgrading immediately makes
+older captured bodies readable again rather than only affecting new checks.
 
 ## See also
 
