@@ -1,7 +1,7 @@
 ---
 title: Account and team setup
 description: Invite teammates, generate API keys, and set up the things that should exist before anything goes wrong.
-last_verified: 2026-05-03
+last_verified: 2026-08-06
 owner: jj
 ---
 
@@ -13,26 +13,29 @@ Once you have an account, there are a handful of one-time setup steps that pay o
 
 <Steps>
 
-1. Open **Settings → Team**.
+1. Open **Account → Users**.
 
-2. Click **Invite user**, enter their email, and choose a role:
-   - **Owner**: full access, including billing.
-   - **Admin**: full access except billing.
-   - **Member**: can view everything and edit monitors/incidents, but can't modify team or billing.
+2. Click **Invite User** and enter their email. The invite email contains a link they click to sign up; they join as a **Member**.
 
-3. The invite email contains a link they click to sign up. Pending invites stay listed under **Settings → Team** with a **Resend** and **Revoke** button.
+3. Pending invites stay listed in the same table with **Resend** and **Cancel** actions. Resend re-sends the original link; cancelling kills it.
+
+4. Once they've joined, the account owner can change their role from the dropdown in the Users table:
+   - **Owner**: everything, including billing, role assignment, and SSO/SCIM. This is the account's primary user; ownership is not transferable from the dashboard.
+   - **Admin**: team and credential management (invites, API keys, the audit log), everything except billing, roles, and SSO/SCIM.
+   - **Member**: full product access (monitors, incidents, dashboards), but no team, credential, or billing management. New users start here.
+   - **Viewer**: read-only. The one exception: a viewer who is on call can still acknowledge and resolve incidents.
 
 </Steps>
 
 <Aside type="caution">
-There's no per-seat trial. Every invited user counts toward your plan's seat limit immediately on accepting, so revoke unused invites before inviting more.
+Pending invites count toward your plan's seat limit immediately, not on acceptance, so cancel unused invites before inviting more.
 </Aside>
 
 ## Set up your contact methods
 
 A *contact method* is **how you personally** can be reached, whether that's your email, your phone for SMS, your phone for calls, or your Slack DM. Distinct from a notification *channel*, which is account-level.
 
-Each user manages their own contact methods under **Settings → My profile → Contact methods**. Available types:
+Each user manages their own contact methods under **Account → Contact Methods**. Available types:
 
 | Type | What it is |
 |---|---|
@@ -52,15 +55,15 @@ See the [Notification rules how-to](/incident-management/notifications/how-to/no
 
 ## Generate API keys
 
-Anything you can do in the dashboard, you can do via the API. Generate a key under **Settings → API keys**.
+Anything you can do in the dashboard, you can do via the API. Generate a key under **Account → API Keys**.
 
 <Steps>
 
-1. **Settings → API keys → New key.**
+1. **Account → API Keys → Create key.**
 
 2. Name it after where it'll be used (`local-dev`, `terraform-prod`, `ci`). One key per use case so you can rotate them independently.
 
-3. Copy the value (`sq_live_...`) when shown. It's only displayed once, so store it in your secrets manager.
+3. Copy the value when shown. It's only displayed once, so store it in your secrets manager.
 
 4. Use it as a Bearer token:
 
