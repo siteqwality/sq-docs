@@ -15,20 +15,21 @@ Once you have an account, there are a handful of one-time setup steps that pay o
 
 1. Open **Account → Users**.
 
-2. Click **Invite User** and enter their email. The invite email contains a link they click to sign up; they join as a **Member**.
+2. Click **Invite User**, enter their email, and pick the role they'll join with (defaults to **Member**). Inviting someone as Admin or Super Admin requires you to be a Super Admin yourself.
 
-3. Pending invites stay listed in the same table with **Resend** and **Cancel** actions. Resend re-sends the original link; cancelling kills it.
+3. Invites expire after **14 days**. Pending invites stay listed in the same table with **Resend** and **Cancel** actions: Resend re-sends the original link and resets the expiry clock (including for already-expired invites); cancelling kills the link.
 
-4. Once they've joined, the account owner can change their role from the dropdown in the Users table:
-   - **Owner**: everything, including billing, role assignment, and SSO/SCIM. This is the account's primary user; ownership is not transferable from the dashboard.
+4. Roles, changeable later by any Super Admin from the dropdown in the Users table:
+   - **Super Admin**: everything, including billing, role assignment, and SSO/SCIM. Multiple people can hold it. The account's original user is always a Super Admin and cannot be demoted or deleted.
    - **Admin**: team and credential management (invites, API keys, the audit log), everything except billing, roles, and SSO/SCIM.
    - **Member**: full product access (monitors, incidents, dashboards), but no team, credential, or billing management. New users start here.
-   - **Viewer**: read-only. The one exception: a viewer who is on call can still acknowledge and resolve incidents.
+   - **Auditor**: read-only across the product, plus access to the [audit log](/enterprise/audit-log/). For compliance reviewers who should see everything and touch nothing.
+   - **Viewer**: read-only. The one exception: a viewer who is on call can still acknowledge and resolve incidents. Viewers cannot read the audit log.
 
 </Steps>
 
 <Aside type="caution">
-Pending invites count toward your plan's seat limit immediately, not on acceptance, so cancel unused invites before inviting more.
+Pending invites count toward your plan's seat limit immediately, not on acceptance. Expired invites stop counting on their own, and cancelling frees the seat right away.
 </Aside>
 
 ## Set up your contact methods

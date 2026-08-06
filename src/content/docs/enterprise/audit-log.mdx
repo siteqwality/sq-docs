@@ -9,7 +9,7 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 
 The audit log answers "who changed this, and when". Every mutating request made against your account is recorded with the actor, the action, the request path and status, the source IP, and the user agent.
 
-Find it under **Account → Audit Log**. Only account **owners and admins** can read it, because it exposes other members' actions and IP addresses.
+Find it under **Account → Audit Log**. Only **super admins, admins, and auditors** can read it, because it exposes other members' actions and IP addresses.
 
 ## What is and is not recorded
 
@@ -68,8 +68,8 @@ curl -G https://api.siteqwality.com/account/audit_log \
   --data-urlencode "limit=200"
 ```
 
-<Aside type="caution" title="Owner or admin session required">
-The endpoint is gated on the owner or admin role, which only a logged-in user session carries. API keys and M2M clients get a `403`: a leaked automation credential must not be able to read every member's actions and IP addresses. Programmatic export for SIEM ingestion is on the roadmap.
+<Aside type="caution" title="Super admin, admin, or auditor session required">
+The endpoint is gated on the super admin, admin, or auditor role, which only a logged-in user session carries. API keys and M2M clients get a `403`: a leaked automation credential must not be able to read every member's actions and IP addresses. Programmatic export for SIEM ingestion is on the roadmap.
 </Aside>
 
 | Param | Default | Notes |
