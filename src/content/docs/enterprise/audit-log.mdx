@@ -1,7 +1,7 @@
 ---
 title: Customer audit log
 description: Every change made through the dashboard or API, with who made it, readable for the last 90 days.
-last_verified: 2026-08-02
+last_verified: 2026-08-06
 owner: jj
 ---
 
@@ -9,7 +9,7 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 
 The audit log answers "who changed this, and when". Every mutating request made against your account is recorded with the actor, the action, the request path and status, the source IP, and the user agent.
 
-Find it under **Account → Audit Log**. Only account **owners** can read it, because it exposes other members' actions and IP addresses.
+Find it under **Account → Audit Log**. Only account **owners and admins** can read it, because it exposes other members' actions and IP addresses.
 
 ## What is and is not recorded
 
@@ -17,11 +17,11 @@ Find it under **Account → Audit Log**. Only account **owners** can read it, be
 
 **Not recorded:**
 
-- **Reads.** `GET` requests are never logged. Nothing tells you who *looked* at something, only who changed it.
+- **Reads.** `GET` requests are never logged. Nothing tells you who *looked* at something, only who changed it. A handful of read endpoints that use `POST` purely to carry a request body (the dashboard's batch monitor lookup, the log-parser test preview) are treated as reads and excluded too.
 - **Unauthenticated requests**, including ones whose credentials were rejected.
 - **SiteQwality staff actions**, which live in a separate internal audit log. Staff acting *as* one of your users through impersonation do appear here, marked as such.
 
-A request that authenticates and then fails validation **is** recorded, with the resulting status. That is intentional: a rejected attempt to delete a monitor is worth seeing.
+A request that identifies its caller and is then denied **is** recorded, with the resulting status. That covers validation failures and permission denials alike: a viewer-role user attempting a delete, an API key used outside its scopes, or a write attempted while the account is suspended all appear with their `403`. A rejected attempt is worth seeing.
 
 ## Actor types
 
@@ -29,7 +29,7 @@ A request that authenticates and then fails validation **is** recorded, with the
 |---|---|
 | `session` | A logged-in team member. `actor_user_id` identifies them. |
 | `m2m` | An [M2M API client](/enterprise/api-clients/). `actor_m2m_client_id` identifies it. |
-| `api_key` | A static API key. |
+| `api_key` | A static API key. `actor_api_key_id` identifies which one, and `actor_api_key_name` carries its display name. Entries from before 2026-08-06 predate the column and have neither. |
 | `impersonated_staff` | A SiteQwality staff member acting as one of your users. `impersonated_by` records which staff member. |
 | `system` | Reserved. Nothing produces it today. |
 
@@ -40,11 +40,11 @@ Each entry carries:
 | Field | Description |
 |---|---|
 | `occurred_at` | When, in UTC. |
-| `actor_type`, `actor_user_id`, `actor_m2m_client_id`, `impersonated_by` | Who. |
-| `action` | The path with UUIDs removed, dot-joined. |
+| `actor_type`, `actor_user_id`, `actor_api_key_id`, `actor_api_key_name`, `actor_m2m_client_id`, `impersonated_by` | Who. |
+| `action` | The path with UUIDs (and free-form segments like RUM release versions) removed, dot-joined. |
 | `target_kind`, `target_id` | The resource type and, when the path had one, its ID. |
 | `http_method`, `http_path`, `http_status` | The raw request and its outcome. |
-| `request_ip`, `user_agent` | Where from. |
+| `request_ip`, `user_agent` | Where from. The IP is the connection our API gateway actually saw, not a client-supplied header, so it cannot be spoofed by the caller. |
 
 `action` is derived from the path, so it groups related calls without the verb. Some real examples:
 
@@ -61,18 +61,23 @@ The verb lives in `http_method`, so filter on both when you want "who deleted a 
 
 ```bash
 curl -G https://api.siteqwality.com/account/audit_log \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Authorization: Bearer $SESSION_JWT" \
   --data-urlencode "action=http.job" \
   --data-urlencode "actor_type=m2m" \
   --data-urlencode "since=2026-07-15T00:00:00Z" \
   --data-urlencode "limit=200"
 ```
 
+<Aside type="caution" title="Owner or admin session required">
+The endpoint is gated on the owner or admin role, which only a logged-in user session carries. API keys and M2M clients get a `403`: a leaked automation credential must not be able to read every member's actions and IP addresses. Programmatic export for SIEM ingestion is on the roadmap.
+</Aside>
+
 | Param | Default | Notes |
 |---|---|---|
 | `actor_user_id` | none | Exact UUID. |
+| `actor_api_key_id` | none | Exact UUID; narrows to one API key's actions. |
 | `actor_type` | none | One of the five above. |
-| `action` | none | **Exact match**, not a prefix. |
+| `action` | none | Exact match **or dot-prefix**: `http.job` also matches `http.job.regions`, never `http.jobs`. |
 | `target_kind` | none | Exact match. |
 | `target_id` | none | Exact UUID. |
 | `since`, `until` | last 90 days | RFC 3339. |
