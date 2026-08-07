@@ -1,0 +1,259 @@
+---
+title: Client accounts
+description: Create, plan, inspect and remove the client accounts under your partner account, from the console or the API.
+last_verified: 2026-08-06
+owner: jj
+---
+
+import { Steps, Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+A **client account** is one of your managed clients. You create it, you choose what it is entitled to, you build its monitors and its status page inside it, and you remove it when the engagement ends.
+
+In the dashboard the whole surface is **Clients** in the sidebar. Everything there is also an API call, which is what the rest of this page documents.
+
+Every endpoint below requires the **Admin** or **Super Admin** role and a session token. Machine credentials are refused; see [Roles and access](/partners/overview/#roles-and-access).
+
+## Create a client
+
+<Steps>
+
+1. **Create the account.**
+
+   ```bash
+   curl -X POST https://api.siteqwality.com/partner/accounts \
+     -H "Authorization: Bearer $SESSION_JWT" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "display_name": "Acme Corp",
+       "contact_email": "ops@acme.example",
+       "contact_name": "Ada Lovelace"
+     }'
+   ```
+
+   | Field | Required | Notes |
+   |---|---|---|
+   | `display_name` | yes | Your label for the client, up to 128 characters. Not shown to the client and not client-editable. |
+   | `contact_email` | yes | The client's real contact address. Must be unused across all of SiteQwality, and distinct from your other clients' contacts. |
+   | `contact_name` | no | Free text, up to 300 characters. |
+
+   The response is the client summary, and `account_id` is the value you will use everywhere else:
+
+   ```json
+   {
+     "data": {
+       "account_id": "0f3c9a1e-...",
+       "display_name": "Acme Corp",
+       "contact_email": "ops@acme.example",
+       "created_at": "2026-08-06T09:00:00Z",
+       "suspended": false,
+       "suspended_at": null,
+       "monitors": { "total": 0, "online": 0, "down": 0, "paused": 0 }
+     }
+   }
+   ```
+
+2. **Give it a bundle**, or it stays on the free tier. See [Set a client's bundle](#set-a-clients-bundle).
+
+3. **Build its monitoring** by [working inside the account](/partners/context-switching/) with `X-SQ-Account`.
+
+</Steps>
+
+### What creation does, and deliberately does not do
+
+| Does | Does not |
+|---|---|
+| Creates the account, its first user, a default notification group and an email channel pointed at `contact_email` | Send the contact a welcome email, or any email |
+| Creates an identity-provider organization so a later invite has somewhere to land | Invite anybody or create a session |
+| Records you as the account's partner | Create a payment method or a billing customer |
+
+The contact never asked us for an account, so we never write to them out of nowhere. Whether and when your client hears from SiteQwality is your call: invite them from inside the account when you want them to have a login, and they get an ordinary invitation at that point.
+
+<Aside type="note" title="The contact address is the alert destination">
+The default notification group alerts `contact_email`. That is the intended shape: an outage on your client's site reaches your client, not only you. If you would rather be the first to hear, change the notification group inside the client account before you build monitors, or add yourself alongside them.
+</Aside>
+
+### Why every client needs its own contact address
+
+A repeat contact address is refused with `409`, whether it already belongs to one of your clients or to any other SiteQwality account. Addresses are compared case-insensitively, so `Ada@Acme.example` collides with `ada@acme.example`.
+
+This is a pricing rule, not data hygiene. The partner rate is below what the same entitlements cost retail, so client accounts have to be actual distinct clients rather than five slots pointed at the same organization.
+
+### Errors
+
+| Response | Meaning |
+|---|---|
+| `400` | Missing or malformed field. The message names it. |
+| `402` | No client slot left on your plan. Remove a client or add slots. |
+| `403` | You are not an Admin, or your account is not in the partner program. |
+| `409` | That contact address is already in use, by one of your clients or by another SiteQwality account. |
+
+## List your clients
+
+```bash
+curl https://api.siteqwality.com/partner/accounts \
+  -H "Authorization: Bearer $SESSION_JWT"
+```
+
+Returns `{ "data": { "clients": [...] } }`, newest first, unpaged. Each row carries the same fields as the create response, including live monitor counts in the same state-aware sense [`GET /monitors/totals`](/api-reference/) uses: a paused monitor counts in `total` and `paused`, and in neither `online` nor `down`.
+
+Removed clients are absent. So are their monitor counts, which means the list is a fair basis for reconciling your invoice.
+
+## Set a client's bundle
+
+```bash
+curl -X PUT https://api.siteqwality.com/partner/accounts/$CLIENT_ID/plan \
+  -H "Authorization: Bearer $SESSION_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"bundle": "client_pro"}'
+```
+
+Two bundles exist. You pick one; you do not compose packs individually, because the wholesale rate is flat per client and each bundle is one of the two compositions that rate was priced against.
+
+| | `client_standard` | `client_pro` |
+|---|---|---|
+| Check executions | 500K/month | 500K/month |
+| Status page on the client's own domain | yes | yes |
+| White-labelled status page | yes | yes |
+| Synthetic browser checks | | 1,000 minutes/month |
+| RUM (Observe) | | 25K sessions/month |
+| RUM (Analyze) | | 1K sessions/month |
+| Session replay | | 1K sessions/month |
+
+`client_pro` is everything in `client_standard` plus the rows below it. A client with no bundle set is on the free tier.
+
+The response tells you what changed:
+
+```json
+{
+  "data": {
+    "account_id": "0f3c9a1e-...",
+    "bundle": "client_pro",
+    "packs": [ { "pack_id": "...", "product": "uptime", "name": "500K Check Executions" } ],
+    "granted": 4,
+    "cancelled": 0
+  }
+}
+```
+
+<Aside type="tip" title="Safe to call repeatedly">
+Setting the bundle a client is already on grants nothing, cancels nothing and moves no billing date: `granted` and `cancelled` both come back `0`. A console or a script that re-asserts the intended state on every run is fine.
+</Aside>
+
+Two things this never touches. Anything the client bought retail on their own account stays, and so does anything our staff granted them. Only the bundle's own entitlements are added and removed.
+
+An unknown bundle name is a `422`.
+
+## Check a client's usage
+
+```bash
+curl https://api.siteqwality.com/partner/accounts/$CLIENT_ID/usage \
+  -H "Authorization: Bearer $SESSION_JWT"
+```
+
+Per-product counters for that client, in the product's customer-facing unit, matching exactly what the client would see on their own billing page.
+
+```json
+{
+  "data": {
+    "account_id": "0f3c9a1e-...",
+    "products": [
+      {
+        "product": "uptime",
+        "current_usage": 128400,
+        "quota_limit": 500000,
+        "hard_stopped": false,
+        "unit": "executions",
+        "period": "2026-08"
+      }
+    ]
+  }
+}
+```
+
+<Aside type="caution" title="Each product has its own period">
+`period` is per product and there is no single account-wide period, because an account can be metered on a different window per product. Read each product's own `period`; do not assume they agree. A product the client has never used has no row at all.
+
+`hard_stopped` is the one to watch. It means that product has stopped serving for the client because the quota is exhausted.
+</Aside>
+
+## Remove a client
+
+```bash
+curl -X DELETE https://api.siteqwality.com/partner/accounts/$CLIENT_ID \
+  -H "Authorization: Bearer $SESSION_JWT"
+```
+
+Immediately, and in this order of what you will notice:
+
+- the client's slot is freed, so you can add a replacement in the same minute,
+- the client's checks stop running,
+- the client's users can no longer sign in,
+- the client can no longer be opened with `X-SQ-Account`, and
+- the client disappears from `GET /partner/accounts`.
+
+<Aside type="danger" title="Removal is not erasure, and the contact address stays taken">
+The client's data is retained under the normal retention policy. This endpoint is not a deletion request under GDPR or any other regime; if a client asks to be erased, contact us.
+
+A practical consequence: the contact address of a removed client is still in use, so creating a **new** client with the same address returns `409`. If you removed a client by mistake, or you are re-onboarding the same contact, contact us rather than working around it with a second address.
+</Aside>
+
+Removing a client that is already removed, or that was never yours, is a `404`.
+
+## Onboarding many clients at once
+
+Bulk provisioning is an ordinary loop over the create endpoint. There is no batch endpoint, and one is not planned: creation reaches an external identity provider per account, so a batch call would be the same work with a worse failure mode.
+
+```bash
+#!/usr/bin/env bash
+# clients.csv: display_name,contact_email,contact_name
+set -euo pipefail
+
+while IFS=, read -r name email contact; do
+  response=$(curl -sS -w '\n%{http_code}' \
+    -X POST https://api.siteqwality.com/partner/accounts \
+    -H "Authorization: Bearer $SESSION_JWT" \
+    -H "Content-Type: application/json" \
+    -d "$(jq -nc --arg n "$name" --arg e "$email" --arg c "$contact" \
+          '{display_name:$n, contact_email:$e, contact_name:$c}')")
+
+  status=$(tail -n1 <<<"$response")
+  body=$(sed '$d' <<<"$response")
+
+  case "$status" in
+    200) echo "ok      $email $(jq -r '.data.account_id' <<<"$body")" ;;
+    409) echo "skip    $email already exists" ;;
+    402) echo "STOP    out of client slots"; exit 1 ;;
+    429) echo "STOP    rate limited, rerun later"; exit 1 ;;
+    *)   echo "FAIL    $email $status $body"; exit 1 ;;
+  esac
+
+  sleep 1
+done < clients.csv
+```
+
+### Pacing
+
+<Steps>
+
+1. **One at a time, with a pause.** Roughly one create per second is the right shape. Creation is not a cheap insert: it provisions an identity-provider organization and writes several rows in one transaction, so parallelising it buys little and makes partial failures harder to read.
+
+2. **Treat `429` as a full stop, not a retry-in-a-tight-loop.** API rate limits are shared across the whole API, so hammering through a limit degrades your own dashboard as well. Back off and rerun.
+
+3. **Make the loop resumable.** Treat `409` as "already done" and continue, as the script above does. Then a rerun after any failure is safe, and you do not need to track how far you got.
+
+4. **Stop on `402` rather than continuing.** Running out of slots mid-run is a commercial answer, not a transient error. Every subsequent create will fail the same way.
+
+5. **Set bundles in a second pass**, after every account exists. `PUT .../plan` is idempotent, so that pass is rerunnable on its own and a failure in it never leaves an account half-created.
+
+</Steps>
+
+<Aside type="note">
+If you are migrating dozens of clients from another platform and want the monitors seeded too, talk to us before you start. Monitor creation has its own external dependencies and a bulk import is worth doing together the first time.
+</Aside>
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Working in a client account" description="X-SQ-Account, and what it does not cover." href="/partners/context-switching/" />
+  <LinkCard title="Monthly client reports" description="The branded uptime report you send your client." href="/partners/client-reports/" />
+</CardGrid>

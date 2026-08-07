@@ -14,7 +14,7 @@ export default defineConfig({
 		starlight({
 			title: 'SiteQwality Docs',
 			description:
-				'Documentation for SiteQwality — uptime monitoring, observability, incidents, and status pages.',
+				'Documentation for SiteQwality: uptime monitoring, observability, incidents, and status pages.',
 			logo: {
 				light: './src/assets/atlas-logo-light.svg',
 				dark: './src/assets/atlas-logo-dark.svg',
@@ -325,6 +325,16 @@ export default defineConfig({
 						{ label: 'Pushover', slug: 'integrations/pushover' },
 						{ label: 'Pushbullet', slug: 'integrations/pushbullet' },
 						{ label: 'Webhooks', slug: 'integrations/webhooks' },
+					],
+				},
+				{
+					label: 'Partners',
+					collapsed: true,
+					items: [
+						{ label: 'Partner program', slug: 'partners/overview' },
+						{ label: 'Client accounts', slug: 'partners/client-accounts' },
+						{ label: 'Working in a client account', slug: 'partners/context-switching' },
+						{ label: 'Monthly client reports', slug: 'partners/client-reports' },
 					],
 				},
 				{

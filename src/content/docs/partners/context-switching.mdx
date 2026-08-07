@@ -1,0 +1,84 @@
+---
+title: Working in a client account
+description: One request header puts the entire SiteQwality API and dashboard on one of your client accounts.
+last_verified: 2026-08-06
+owner: jj
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+There is no separate partner API for building a client's monitoring. You use the ordinary API, with one extra header:
+
+```bash
+curl https://api.siteqwality.com/http/jobs \
+  -H "Authorization: Bearer $SESSION_JWT" \
+  -H "X-SQ-Account: $CLIENT_ACCOUNT_ID"
+```
+
+That request lists the **client's** monitors. Creating, updating, deleting, querying logs, building a status page, setting notification rules: every endpoint behaves as though you were signed in as that client.
+
+In the dashboard the same thing happens when you open a client from the **Clients** page. A banner shows which client you are in, and leaving it puts you back on your own account.
+
+## What the header changes, and what it does not
+
+| Changes | Stays yours |
+|---|---|
+| Which account the request reads and writes | Who you are, and your role |
+| Quotas, entitlements and feature gates | The audit trail's record of who acted |
+
+Every change you make inside a client is recorded in **that client's** [audit log](/enterprise/audit-log/), attributed to you as a partner rather than to one of the client's own users. Your client can see exactly what you did on their behalf, which is the point.
+
+## Which credentials may switch
+
+| Credential | May send `X-SQ-Account` |
+|---|---|
+| Dashboard session | yes |
+| [M2M client](/enterprise/api-clients/) | yes |
+| [API key](/getting-started/account-and-team/#generate-api-keys) | **no** |
+
+API keys are excluded on purpose. A key created before scopes existed carries no scope list and is unrestricted by design, so honouring the header on API keys would silently hand every one of those older keys the run of your entire client base. Use a session, or an M2M client with the scopes it needs.
+
+<Aside type="caution" title="An M2M client still needs its scopes">
+The header changes which account the request acts on. It does not widen what the credential may do. An M2M client scoped to `read:monitors` reads a client's monitors and gets a `403` trying to write them, exactly as it would on your own account.
+</Aside>
+
+## Endpoints that refuse the header
+
+Five prefixes return `404` while you are in client context:
+
+| Prefix | Why |
+|---|---|
+| `/account` | Team, roles, invitations and SSO are identity-provider operations, and your session is minted against **your** organization. Honouring them here would edit your own team while appearing to edit the client's. |
+| `/auth` | Same reason, for the one authenticated route under it. |
+| `/billing` | A client has no payment method. Their entitlements come from the [bundle you set](/partners/client-accounts/#set-a-clients-bundle). |
+| `/partner` | A client managing clients would be a third level. There are two. |
+| `/admin` | Internal staff surface, not customer API. |
+
+Inviting a client's own user to their account is on the roadmap and is the one real gap in this list today. If you need it now, tell us and we will do it for you.
+
+## Why every rejection is a 404
+
+A wrong `X-SQ-Account` value never returns `401` or `403`. An unknown account id, an account that is not yours, a client you removed and a malformed uuid are all the same `404` with no detail.
+
+Two reasons. Account ids must not be probeable: a distinguishable response would let anyone with a partner account test whether an id exists. And practically, dashboards treat `401` as "your session expired" and silently refresh or sign you out, so a mistyped id would log you out instead of showing an error.
+
+<Aside type="note" title="A `404` on a route you know exists">
+If a request that works on your own account returns `404` with the header set, check that order: the client id first, then whether the path is one of the refused prefixes above.
+</Aside>
+
+## Suspended and removed clients
+
+| Client state | Reads | Writes |
+|---|---|---|
+| Live | yes | yes |
+| Suspended | yes | `403` |
+| Removed | `404` | `404` |
+
+A suspended client stays readable so you can see what you have and export it. If **your** partner account is suspended, your clients are suspended too, and the same rule applies to every one of them.
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Client accounts" description="Creating, planning and removing the accounts you switch into." href="/partners/client-accounts/" />
+  <LinkCard title="Customer audit log" description="What your client sees of the work you did." href="/enterprise/audit-log/" />
+</CardGrid>
