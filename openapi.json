@@ -20,6 +20,27 @@
     }
   ],
   "paths": {
+    "/.well-known/oauth-authorization-server": {
+      "get": {
+        "tags": [
+          "M2M API Clients"
+        ],
+        "summary": "OAuth2 authorization server metadata (RFC 8414).",
+        "operationId": "metadata",
+        "responses": {
+          "200": {
+            "description": "Authorization server metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizationServerMetadata"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/account/api_key/": {
       "get": {
         "tags": [
@@ -191,8 +212,97 @@
         "tags": [
           "Audit Log"
         ],
-        "summary": "Customer-facing audit log: every mutating API request on the account with\nits actor (user session, M2M client, API key, or impersonating staff),\nnewest first. Reads are capped to the last 90 days. Owner role required,\nsince the log exposes other members' actions and request IPs.",
+        "summary": "Customer-facing audit log: every mutating API request on the account with\nits actor (user session, M2M client, API key, or impersonating staff),\nnewest first. Reads are capped to the last 90 days. Super admin, admin,\nor auditor role required, since the log exposes other members' actions\nand request IPs; audit read is the whole point of the auditor role\n(Datadog's Audit Trail Read is the precedent).",
         "operationId": "list_audit_log",
+        "parameters": [
+          {
+            "name": "actor_user_id",
+            "in": "query",
+            "description": "Only entries performed by this user.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "actor_api_key_id",
+            "in": "query",
+            "description": "Only entries performed by this API key.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "actor_type",
+            "in": "query",
+            "description": "Only entries with this actor type.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CustomerAuditActorType"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "description": "Action name, matched exactly or as a dot-prefix: `http.job` also\nmatches `http.job.regions`, but never `http.jobs`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "target_kind",
+            "in": "query",
+            "description": "Only entries targeting this resource kind (first path segment).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "target_id",
+            "in": "query",
+            "description": "Only entries targeting this resource id.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "RFC3339; clamped to the read window.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "description": "RFC3339; inclusive upper bound.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Row cap, clamped to 1..=1000 (default 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Audit log entries (last 90 days)",
@@ -208,7 +318,7 @@
             "description": "Missing or invalid authentication"
           },
           "403": {
-            "description": "Caller lacks the owner or admin role"
+            "description": "Caller lacks a role able to read the audit log (super admin, admin, or auditor)"
           },
           "500": {
             "description": "Internal server error"
@@ -446,7 +556,7 @@
             "description": "Missing or invalid authentication"
           },
           "403": {
-            "description": "Caller lacks the owner role, or the plan does not include SCIM"
+            "description": "Caller is not a super admin, or the plan does not include SCIM"
           },
           "404": {
             "description": "No SCIM connection configured"
@@ -495,7 +605,7 @@
             "description": "Missing or invalid authentication"
           },
           "403": {
-            "description": "Caller lacks the owner role, or the plan does not include SCIM"
+            "description": "Caller is not a super admin, or the plan does not include SCIM"
           },
           "409": {
             "description": "A SCIM connection already exists for this account"
@@ -524,7 +634,7 @@
             "description": "Missing or invalid authentication"
           },
           "403": {
-            "description": "Caller lacks the owner role, or the plan does not include SCIM"
+            "description": "Caller is not a super admin, or the plan does not include SCIM"
           },
           "404": {
             "description": "No SCIM connection configured"
@@ -562,7 +672,7 @@
             "description": "Missing or invalid authentication"
           },
           "403": {
-            "description": "Caller lacks the owner role, or the plan does not include SCIM"
+            "description": "Caller is not a super admin, or the plan does not include SCIM"
           },
           "404": {
             "description": "No SCIM connection configured"
@@ -1104,7 +1214,7 @@
             "description": "Missing or invalid authentication"
           },
           "403": {
-            "description": "Caller lacks the owner role, or the plan does not include SSO"
+            "description": "Caller is not a super admin, or the plan does not include SSO"
           },
           "404": {
             "description": "No SSO connection configured"
@@ -1153,7 +1263,7 @@
             "description": "Missing or invalid authentication"
           },
           "403": {
-            "description": "Caller lacks the owner role, or the plan does not include SSO"
+            "description": "Caller is not a super admin, or the plan does not include SSO"
           },
           "404": {
             "description": "No SSO connection configured"
@@ -1205,7 +1315,7 @@
             "description": "Missing or invalid authentication"
           },
           "403": {
-            "description": "Caller lacks the owner role, or the plan does not include SSO"
+            "description": "Caller is not a super admin, or the plan does not include SSO"
           },
           "409": {
             "description": "A connection already exists for this account"
@@ -1234,10 +1344,53 @@
             "description": "Missing or invalid authentication"
           },
           "403": {
-            "description": "Caller lacks the owner role, or the plan does not include SSO"
+            "description": "Caller is not a super admin, or the plan does not include SSO"
           },
           "404": {
             "description": "No SSO connection configured"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/user_invites/{invite_id}/resend": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Re-send the invite email for a pending invite.",
+        "operationId": "resend_user_invite",
+        "parameters": [
+          {
+            "name": "invite_id",
+            "in": "path",
+            "description": "Pending invite id (user_invites.id)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invite email re-sent"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller lacks the owner or admin role, or email not verified"
+          },
+          "404": {
+            "description": "No pending invite with this id on the account"
           },
           "500": {
             "description": "Internal server error"
@@ -1297,7 +1450,7 @@
             "description": "Missing or invalid authentication"
           },
           "403": {
-            "description": "Caller lacks the owner role"
+            "description": "Caller is not a super admin"
           },
           "404": {
             "description": "User not found in this account"
@@ -3407,6 +3560,57 @@
         ]
       }
     },
+    "/http/job/result/{job_result_id}/body": {
+      "get": {
+        "tags": [
+          "HTTP Monitors"
+        ],
+        "summary": "Pre-signed URL for the full response body of a failed HTTP check.",
+        "description": "Response bodies are captured on failure only and kept for a per-plan\nwindow (5 days on the free plan, 30 with any paid plan, longer on request).",
+        "operationId": "get_check_body_url",
+        "parameters": [
+          {
+            "name": "job_result_id",
+            "in": "path",
+            "description": "HTTP check result identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pre-signed body download URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckBodyUrlResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Result not found, or no body was captured for it"
+          },
+          "410": {
+            "description": "A body was captured but has aged out of the plan's retention window"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/http/job/result/{job_result_id}/details": {
       "get": {
         "tags": [
@@ -3757,8 +3961,26 @@
           {
             "name": "time_frame",
             "in": "query",
-            "description": "One of: day, week, month, year",
-            "required": true,
+            "description": "Relative window: day, week, month or year. Ignored when explicit bounds are given.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_date_time",
+            "in": "query",
+            "description": "Window start (RFC 3339). Must be paired with end_date_time.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date_time",
+            "in": "query",
+            "description": "Window end (RFC 3339). Must be paired with start_date_time.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -7296,6 +7518,49 @@
         ]
       }
     },
+    "/monitors/report": {
+      "get": {
+        "tags": [
+          "Monitors"
+        ],
+        "summary": "A branded uptime report for one calendar month, as a printable page.",
+        "description": "Returns **HTML, not JSON**. The page is styled for paper: open it in a\nbrowser and use Print, or \"Save as PDF\", to produce the document you send\non. There is a print button on the page for exactly that.\n\n`month` is a UTC calendar month, `YYYY-MM`. Omit it and you get the last\ncomplete month, which is the one a monthly report normally covers. Asking\nfor the month in progress is allowed and the report says plainly that it\nis not finished.\n\nThe page takes its logo, colours and title from your status page branding.\nAn account with no branding gets a plain, unbranded document rather than\nours, because this is a report you hand to somebody else.\n\nTwo things the report states about itself, and worth knowing before you\nsend it:\n\n* It covers **HTTP monitors only**. Heartbeat monitors and browser checks\n  have no daily uptime figure behind them, so they are named as excluded\n  rather than quietly dropped.\n* Uptime comes from a rollup rebuilt daily at 03:00 UTC, so a report for\n  the current month is month-to-date. The outage log is separate and is\n  current to the minute.",
+        "operationId": "get_monthly_report",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "description": "UTC calendar month as YYYY-MM (default: last complete month)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Printable monthly report",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "400": {
+            "description": "Malformed, future, or out-of-range month"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/monitors/response-time-series": {
       "get": {
         "tags": [
@@ -7782,6 +8047,79 @@
             "bearer_auth": []
           }
         ]
+      }
+    },
+    "/oauth2/token": {
+      "post": {
+        "tags": [
+          "M2M API Clients"
+        ],
+        "summary": "Exchange M2M client credentials for an access token (RFC 6749 section 4.4).",
+        "description": "Accepts a form-encoded body, HTTP Basic client authentication, or a JSON\nbody. Returns a bare RFC 6749 token response with no envelope.",
+        "operationId": "token",
+        "requestBody": {
+          "description": "Form-encoded: grant_type=client_credentials&client_id=...&client_secret=...[&scope=read:monitors write:incidents]",
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request, unsupported_grant_type, or invalid_scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_client",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "temporarily_unavailable (rate limited)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "temporarily_unavailable (issuer unreachable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/on_call_schedule/": {
@@ -8283,6 +8621,254 @@
           },
           "404": {
             "description": "Override not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/partner/accounts": {
+      "get": {
+        "tags": [
+          "Partner"
+        ],
+        "summary": "List the calling partner's managed client accounts.",
+        "description": "Unpaged, deliberately. The partner SKU is sold per client and the largest\ntier discussed is 50, so a partner's whole client list is one small page;\nadding a pager would be inventing a problem. If a partner ever holds\nhundreds of clients this becomes a paged endpoint, with `total` carried the\nway `GET /monitors` carries it.\n\nEach row's monitor counts come from the same three tables and the same\nstate-aware predicates `GET /monitors/totals` uses, in one query for the\nwhole list rather than one per client.",
+        "operationId": "list_partner_clients",
+        "responses": {
+          "200": {
+            "description": "The partner's live client accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerClientListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not an admin, or the account is not in the partner program"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Partner"
+        ],
+        "summary": "Create a managed client account under the calling partner.",
+        "description": "The client is a perfectly ordinary account with a parent pointer: it has\nits own monitors, its own status pages, its own quotas and its own\nnotification routing, and the partner works in it through the\n`X-SQ-Account` header. Three things make it not-ordinary, all decided here\nrather than inside the shared provisioning seam:\n\n* **No Stripe customer.** The partner is billed on one subscription; a\n  client is never billed directly, so it never gets a customer object to\n  leak or reconcile.\n* **No welcome email.** The contact never asked us for an account. A\n  \"welcome to SiteQwality\" email out of nowhere is the partner's\n  relationship to manage, not ours.\n* **A Stytch organization with no member and no session.** Nobody is\n  signing in yet. The organization exists up front so the partner's later\n  invite has somewhere to land, and the local user row (which the account\n  needs, for `primary_user_id`) carries a NULL `stytch_member_id` until\n  then.",
+        "operationId": "create_partner_client",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePartnerClientRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Client account created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerClientSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "No client slot left on the partner plan"
+          },
+          "403": {
+            "description": "Caller is not an admin, or the account is not in the partner program"
+          },
+          "409": {
+            "description": "That contact address already belongs to one of your clients, or to another SiteQwality account"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/partner/accounts/{client_account_id}": {
+      "delete": {
+        "tags": [
+          "Partner"
+        ],
+        "summary": "Soft-delete one of the caller's client accounts.",
+        "description": "Marks the client account deleted and nothing else. That single flag is what\nevery downstream consequence keys on, and each one is what removing a client\nshould mean:\n\n* the client's own users lose access,\n* the client's checks stop running,\n* the client can no longer be opened with `X-SQ-Account`, and\n* the client slot is freed immediately, so you can add a replacement.\n\nThe client's data is retained per the retention policy. **This is not an\nerasure endpoint.** Suspension history is left intact.",
+        "operationId": "delete_partner_client",
+        "parameters": [
+          {
+            "name": "client_account_id",
+            "in": "path",
+            "description": "Client account identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client account removed"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not an admin, or the account is not in the partner program"
+          },
+          "404": {
+            "description": "No live client account of yours with that id"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/partner/accounts/{client_account_id}/plan": {
+      "put": {
+        "tags": [
+          "Partner"
+        ],
+        "summary": "Set one of the caller's client accounts to a named entitlement bundle.",
+        "description": "A partner picks a bundle, never individual packs: the wholesale rate is flat\nper client, so what a client gets is one of the two compositions that rate\nwas priced against.\n\nThe bundle becomes ordinary subscription rows on the client account, so\nquota metering, paid feature unlocks and every other downstream consequence\nbehave exactly as they do for a direct customer.\n\n**Idempotent, and that is the intended way to use it.** Setting the bundle a\nclient is already on grants nothing, cancels nothing, and does not move a\nbilling anniversary, so a console that re-asserts state on every save is\nsafe.\n\nChanging a client's bundle moves that client between the wholesale lines on\nyour own subscription, prorated for the remainder of the current period.",
+        "operationId": "set_partner_client_plan",
+        "parameters": [
+          {
+            "name": "client_account_id",
+            "in": "path",
+            "description": "Client account identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPartnerClientPlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Bundle applied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetPartnerClientPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not an admin, or the account is not in the partner program"
+          },
+          "404": {
+            "description": "No live client account of yours with that id"
+          },
+          "422": {
+            "description": "Unknown bundle name, or no bundle in the body"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/partner/accounts/{client_account_id}/usage": {
+      "get": {
+        "tags": [
+          "Partner"
+        ],
+        "summary": "Per-product usage counters for one of the caller's client accounts.",
+        "description": "Resolved through exactly the path `/billing/usage` uses, against the\nCLIENT's account id: `account_usage_periods` derives the window each\nproduct is metered in, and `usage_counters_for_resolved_periods` reads each\nproduct's counter from its own window. Nothing here may shortcut to a\nsingle period string. A client can be anchored on a different day per\nproduct, and reporting one period is what made the 2026-08-02 hard-stop\nincident invisible for a month.\n\nA client provisioned but not yet given an entitlement bundle has no paid\npacks, so every product resolves to the calendar month and only the\nproducts it has actually used carry a row.",
+        "operationId": "get_partner_client_usage",
+        "parameters": [
+          {
+            "name": "client_account_id",
+            "in": "path",
+            "description": "Client account identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The client's per-product usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerClientUsageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not an admin, or the account is not in the partner program"
+          },
+          "404": {
+            "description": "No live client account of yours with that id"
           },
           "500": {
             "description": "Internal server error"
@@ -12958,6 +13544,51 @@
           }
         }
       },
+      "AuthorizationServerMetadata": {
+        "type": "object",
+        "description": "RFC 8414 authorization server metadata, served at\n`/.well-known/oauth-authorization-server` so client libraries can\nauto-configure instead of being handed a URL to paste.",
+        "required": [
+          "issuer",
+          "token_endpoint",
+          "grant_types_supported",
+          "token_endpoint_auth_methods_supported",
+          "scopes_supported",
+          "response_types_supported"
+        ],
+        "properties": {
+          "issuer": {
+            "type": "string"
+          },
+          "token_endpoint": {
+            "type": "string"
+          },
+          "grant_types_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "token_endpoint_auth_methods_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "scopes_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "response_types_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Empty: this server issues no authorization codes and no tokens by\nredirect. RFC 8414 still expects the key to be present."
+          }
+        }
+      },
       "AvailableField": {
         "type": "object",
         "required": [
@@ -13073,6 +13704,31 @@
           },
           "new_password": {
             "type": "string"
+          }
+        }
+      },
+      "CheckBodyUrlResponse": {
+        "type": "object",
+        "required": [
+          "url",
+          "expires_in_seconds"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "expires_in_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "body_bytes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "True size of the body in bytes, so a client can show it before the\ndownload starts."
           }
         }
       },
@@ -13902,6 +14558,31 @@
           }
         }
       },
+      "CreatePartnerClientRequest": {
+        "type": "object",
+        "description": "Body for `POST /partner/accounts`.",
+        "required": [
+          "display_name",
+          "contact_email"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "description": "The partner's label for this client, e.g. \"Acme Corp\". Not shown to the\nclient and not client-editable: it is how the partner console lists\nthem, and it names the client's Stytch organization."
+          },
+          "contact_email": {
+            "type": "string",
+            "description": "The client's real contact address. It becomes the child account's\nprimary user and the address its default notification group alerts, so\nan outage on the client's site reaches the client rather than the\npartner.\n\nMust be distinct across the partner's client accounts. See\n`Database::partner_client_account_id_by_contact_email` for why that is\na pricing rule and not a data-hygiene preference."
+          },
+          "contact_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The contact's name, when the partner knows it. Absent is normal."
+          }
+        }
+      },
       "CreateRumApplicationRequest": {
         "type": "object",
         "required": [
@@ -14306,6 +14987,21 @@
             ],
             "format": "uuid"
           },
+          "actor_api_key_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The API key that acted, when `actor_type` is `api_key`. Null on rows\nwritten before attribution landed (2026-08-06)."
+          },
+          "actor_api_key_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The key's friendly name at read time (keys are revoked, never\ndeleted, so this resolves for historical rows too)."
+          },
           "actor_m2m_client_id": {
             "type": [
               "string",
@@ -14372,7 +15068,16 @@
               "string",
               "null"
             ],
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Only entries performed by this user."
+          },
+          "actor_api_key_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Only entries performed by this API key."
           },
           "actor_type": {
             "oneOf": [
@@ -14380,7 +15085,8 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/CustomerAuditActorType"
+                "$ref": "#/components/schemas/CustomerAuditActorType",
+                "description": "Only entries with this actor type."
               }
             ]
           },
@@ -14388,41 +15094,47 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Action name, matched exactly or as a dot-prefix: `http.job` also\nmatches `http.job.regions`, but never `http.jobs`."
           },
           "target_kind": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Only entries targeting this resource kind (first path segment)."
           },
           "target_id": {
             "type": [
               "string",
               "null"
             ],
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Only entries targeting this resource id."
           },
           "since": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "RFC3339; clamped to the read window."
           },
           "until": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "RFC3339; inclusive upper bound."
           },
           "limit": {
             "type": [
               "integer",
               "null"
             ],
-            "format": "int64"
+            "format": "int64",
+            "description": "Row cap, clamped to 1..=1000 (default 100)."
           }
         }
       },
@@ -16954,6 +17666,184 @@
           "info"
         ]
       },
+      "PartnerBundle": {
+        "type": "string",
+        "description": "The named entitlement presets a partner may set on a client account.\n\nPresets rather than free choice of packs: the partner pays a flat\nwholesale rate per client, so what a client gets has to be one of the two\nthings that rate was priced against. A partner who needs something else\nbuys it retail on the client account or talks to us.",
+        "enum": [
+          "client_standard",
+          "client_pro"
+        ]
+      },
+      "PartnerBundlePackSummary": {
+        "type": "object",
+        "description": "One pack the client holds after the bundle was applied.",
+        "required": [
+          "pack_id",
+          "product",
+          "name"
+        ],
+        "properties": {
+          "pack_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product": {
+            "$ref": "#/components/schemas/PricingProduct"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "PartnerClientListResponse": {
+        "type": "object",
+        "description": "Response for `GET /partner/accounts`.",
+        "required": [
+          "clients"
+        ],
+        "properties": {
+          "clients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartnerClientSummary"
+            },
+            "description": "Live clients only, newest first. A soft-deleted client is absent, which\nmatches the `X-SQ-Account` switch refusing to open one."
+          }
+        }
+      },
+      "PartnerClientMonitorTotals": {
+        "type": "object",
+        "description": "Monitor counts for one client, in the same state-aware sense\n`GET /monitors/totals` uses: a paused monitor counts in `total` and\n`paused` and in neither `online` nor `down`.",
+        "required": [
+          "total",
+          "online",
+          "down",
+          "paused"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "online": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "down": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paused": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PartnerClientProductUsage": {
+        "type": "object",
+        "description": "One product's counters for one client.\n\nField-for-field the shape `/billing/usage` returns, on purpose: a partner\nreading a client's usage here and that client reading their own usage in\nthe dashboard must not see two different numbers or two different units.",
+        "required": [
+          "product",
+          "current_usage",
+          "quota_limit",
+          "hard_stopped",
+          "unit",
+          "period"
+        ],
+        "properties": {
+          "product": {
+            "type": "string"
+          },
+          "current_usage": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Usage in the product's CUSTOMER-FACING unit (see `unit`), not the raw\ntracking unit: synthetic is metered in seconds and reported in minutes."
+          },
+          "quota_limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hard_stopped": {
+            "type": "boolean"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string",
+            "description": "The period THIS product is metered in."
+          }
+        }
+      },
+      "PartnerClientSummary": {
+        "type": "object",
+        "description": "One managed client account, as the console lists it and as create answers.",
+        "required": [
+          "account_id",
+          "created_at",
+          "suspended",
+          "monitors"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The client's account id. This is the value the partner sends as\n`X-SQ-Account` to open the client in the ordinary dashboard."
+          },
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact_email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nullable because `accounts.primary_user_id` carries no foreign key; see\n`DbPartnerChildAccount::contact_email`."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "suspended": {
+            "type": "boolean",
+            "description": "Convenience mirror of `suspended_at.is_some()`, so a client list can\nrender the badge without parsing a timestamp."
+          },
+          "suspended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "monitors": {
+            "$ref": "#/components/schemas/PartnerClientMonitorTotals"
+          }
+        }
+      },
+      "PartnerClientUsageResponse": {
+        "type": "object",
+        "description": "Response for `GET /partner/accounts/{id}/usage`.\n\nDeliberately carries NO top-level period. `/billing/usage` still has one\nfor backwards compatibility, and it is a lie whenever an account is\nanchored on a different day per product: reporting one is what made the\n2026-08-02 hard-stop incident invisible for a month. A new endpoint gets to\nstart correct.",
+        "required": [
+          "account_id",
+          "products"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartnerClientProductUsage"
+            },
+            "description": "Every product, including the ones with no counter row yet, is NOT\nguaranteed here: this lists the counter rows that exist, exactly as\n`/billing/usage` does. A product a client has never used has no row."
+          }
+        }
+      },
       "PasskeyInfo": {
         "type": "object",
         "required": [
@@ -17128,6 +18018,21 @@
             "type": "string"
           }
         }
+      },
+      "PricingProduct": {
+        "type": "string",
+        "enum": [
+          "uptime",
+          "synthetic",
+          "telemetry",
+          "incidents",
+          "sms",
+          "status_pages",
+          "rum_observe",
+          "rum_analyze",
+          "session_replay",
+          "partner"
+        ]
       },
       "PublicStatusPageBranding": {
         "type": "object",
@@ -17946,6 +18851,13 @@
               "null"
             ]
           },
+          "has_frustration": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`true` keeps only sessions carrying at least one frustration signal\n(rage + dead + error clicks summed). `false` and absent are the same\nthing: no filter. Applied in SQL, so `total` stays the filtered set\nsize (unlike `has_replay`, see `list_rum_sessions`)."
+          },
           "limit": {
             "type": [
               "integer",
@@ -17976,6 +18888,10 @@
           "last_seen",
           "view_count",
           "error_count",
+          "rage_click_count",
+          "dead_click_count",
+          "error_click_count",
+          "action_count",
           "has_replay"
         ],
         "properties": {
@@ -18020,6 +18936,28 @@
           "error_count": {
             "type": "integer",
             "format": "int64",
+            "minimum": 0
+          },
+          "rage_click_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Frustration signals the SDK detects on click actions and stores in\n`rum_events.frustration`. Always present, never null: a session with\nnone reports 0.\n\n`serde(default)` is deserialization-side robustness only, so a\nClickHouse row missing the key cannot make `parse_lines` drop the whole\nsession (it swallows parse errors with `filter_map(...ok())`). The\nserializer always emits these, so `schema(required = true)` keeps the\ngenerated OpenAPI honest: without it utoipa infers optional from the\nserde default and the published contract disagrees with the real one,\nwhile the sibling `view_count` / `error_count` stay required.",
+            "minimum": 0
+          },
+          "dead_click_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "error_click_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "action_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total user actions in the session, summed from `rum_measures`.\n\nReads 0 for every session recorded so far: the browser SDK hardcodes\n`action_count: 0` on the measures it emits. See the caveat on\n`build_rum_sessions_list_query` in `common/src/db/rum_analytics.rs`.\nNot rendered anywhere in the dashboard for that reason.",
             "minimum": 0
           },
           "has_replay": {
@@ -18539,6 +19477,55 @@
           "monitor_count": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "SetPartnerClientPlanRequest": {
+        "type": "object",
+        "description": "Body for `PUT /partner/accounts/{id}/plan`.",
+        "required": [
+          "bundle"
+        ],
+        "properties": {
+          "bundle": {
+            "$ref": "#/components/schemas/PartnerBundle"
+          }
+        }
+      },
+      "SetPartnerClientPlanResponse": {
+        "type": "object",
+        "description": "Response for `PUT /partner/accounts/{id}/plan`.",
+        "required": [
+          "account_id",
+          "bundle",
+          "packs",
+          "granted",
+          "cancelled"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bundle": {
+            "$ref": "#/components/schemas/PartnerBundle"
+          },
+          "packs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartnerBundlePackSummary"
+            },
+            "description": "The packs the bundle grants, with the catalog ids they resolved to."
+          },
+          "granted": {
+            "type": "integer",
+            "description": "How many partner-sourced entitlement rows this call created. Zero when\nthe client was already on the bundle, which is what makes the endpoint\nsafe to call repeatedly.",
+            "minimum": 0
+          },
+          "cancelled": {
+            "type": "integer",
+            "description": "How many partner-sourced entitlement rows this call cancelled, i.e.\nwhat the previous bundle had that this one does not. Rows sourced from\nStripe or from a staff grant are never counted here because they are\nnever touched.",
+            "minimum": 0
           }
         }
       },
@@ -19405,6 +20392,57 @@
           "bad",
           "unknown"
         ]
+      },
+      "TokenErrorResponse": {
+        "type": "object",
+        "description": "RFC 6749 section 5.2 error response.",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "One of the RFC 6749 error codes: `invalid_request`, `invalid_client`,\n`invalid_scope`, `unsupported_grant_type`, `temporarily_unavailable`."
+          },
+          "error_description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Human-readable detail. Never distinguishes \"unknown client\" from\n\"wrong secret\": both are `invalid_client` with the same description."
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "description": "RFC 6749 section 5.1 successful access-token response.",
+        "required": [
+          "access_token",
+          "token_type",
+          "expires_in"
+        ],
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "The bearer token to send as `Authorization: Bearer <token>`."
+          },
+          "token_type": {
+            "type": "string",
+            "description": "Always \"Bearer\" (RFC 6750 casing)."
+          },
+          "expires_in": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Lifetime in seconds, passed through from the issuer."
+          },
+          "scope": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Space-delimited granted scopes. Absent when the token carries none."
+          }
+        }
       },
       "TopError": {
         "type": "object",
@@ -21705,6 +22743,10 @@
     {
       "name": "SCIM",
       "description": "SCIM directory-provisioning connection configuration."
+    },
+    {
+      "name": "Partner",
+      "description": "Manage client accounts as an agency or MSP partner"
     }
   ]
 }
