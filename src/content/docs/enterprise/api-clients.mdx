@@ -119,6 +119,8 @@ Scope checking is fail-closed. Account management, billing, authentication, staf
 That includes managing API clients themselves, which is deliberate: a client can never mint another client. Use a session or an API key for those operations.
 
 One consequence worth knowing: metric saved views are also unreachable, because no family maps to them today. Log saved views are reachable under `logs`.
+
+The [partner](/partners/overview/) client-management endpoints are a separate case: they are refused because every one of them requires the Admin role, and a client carries no role at all. A client **can** act inside a partner's client account with the `X-SQ-Account` header, subject to the scopes it holds.
 </Aside>
 
 Two errors distinguish the cases:

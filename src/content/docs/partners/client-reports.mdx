@@ -1,0 +1,103 @@
+---
+title: Monthly client reports
+description: A printable, branded uptime report for a calendar month, ready to send to a client.
+last_verified: 2026-08-06
+owner: jj
+---
+
+import { Steps, Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+```bash
+curl "https://api.siteqwality.com/monitors/report?month=2026-07" \
+  -H "Authorization: Bearer $SESSION_JWT" \
+  -H "X-SQ-Account: $CLIENT_ACCOUNT_ID" \
+  -o acme-july.html
+```
+
+The response is **HTML, not JSON**, styled for paper. Open it in a browser and print to PDF, and that PDF is the artifact you send. There is a print button on the page.
+
+The header is what makes it a client's report. Drop it and you get your own account's.
+
+<Aside type="tip" title="This is not a partner-only endpoint">
+Any account can pull its own monthly report. It is documented here because it is the thing agencies attach to a renewal email, and because the partner context header is what makes it per client.
+</Aside>
+
+## Choosing the month
+
+| `month` | Result |
+|---|---|
+| omitted | The last **complete** month, which is what a monthly report normally covers |
+| `2026-07` | That UTC calendar month |
+| the current month | Allowed. The report says on its face that the month is not finished |
+| a future month | `400` |
+| more than 13 months ago | `400` |
+
+Thirteen months is a data boundary rather than a policy. Per-check performance data is retained for a rolling year and the uptime rollup is rebuilt from it, so past that horizon the uptime table would render empty while the outage log kept filling in from a source that has no retention. A document that lists real outages beside a column of blanks is worse than a refusal.
+
+## What the report contains
+
+- Per-monitor uptime for the month, against the account's monitors.
+- An outage log: when each outage started, when it ended, how long it lasted.
+- The month's totals.
+
+It also states its own boundaries, in the document, because the person receiving it will not have read this page:
+
+<Steps>
+
+1. **HTTP monitors only.** Heartbeat monitors and browser checks have no daily uptime figure behind them, so they are named and counted as excluded rather than silently dropped from the total.
+
+2. **Uptime is a daily rollup rebuilt at 03:00 UTC.** A report for the month in progress is month-to-date. A report for a finished month pulled before 03:00 UTC on the 1st may be missing the last day, and says so.
+
+3. **The outage log is a different pipeline and is current to the minute.** So the two sections can disagree slightly at a month edge. The report says that too.
+
+</Steps>
+
+## Branding
+
+The report takes its logo, colours and title from status page branding, resolved in this order:
+
+<Steps>
+
+1. **The client's own status page branding**, if the client has a status page.
+2. **Your branding**, if they do not. This is the usual case for a managed client, and it is also the honest answer: the report is your deliverable under your care plan.
+3. **Neither**, in which case the report is plain and unbranded.
+
+</Steps>
+
+SiteQwality branding is never used as a fallback at any level. This page is handed to a third party, so it carries your identity or none.
+
+<Aside type="note" title="Set your branding before you send the first one">
+If neither you nor your client has configured status page branding, the report is correct but plain. Branding lives under **Status pages → Branding**; the logo, brand colour and display name are what the report reads.
+</Aside>
+
+## A monitor paused during an outage
+
+If a monitor was failing when it was paused, its outage is measured to its **last actual check**, not to now. Without that, a monitor paused mid-outage would accrue downtime forever and every future report would show the whole month as down.
+
+This matters more than it sounds: monitors on accounts nobody signs into are paused automatically after a long enough dormancy, and those are exactly the clients whose reports you send rather than read.
+
+## Automating it
+
+The endpoint is under the `monitors` scope family, so an [M2M client](/enterprise/api-clients/) with `read:monitors` can pull reports on a schedule. Combine it with `GET /partner/accounts` to generate a whole month's worth:
+
+```bash
+# One report per client, for last month.
+for id in $(curl -s https://api.siteqwality.com/partner/accounts \
+              -H "Authorization: Bearer $SESSION_JWT" \
+            | jq -r '.data.clients[].account_id'); do
+  curl -s "https://api.siteqwality.com/monitors/report" \
+    -H "Authorization: Bearer $SESSION_JWT" \
+    -H "X-SQ-Account: $id" \
+    -o "report-$id.html"
+  sleep 1
+done
+```
+
+Note the two different credentials this needs in practice: listing clients requires an Admin **session**, while the report itself works with a session or a scoped M2M token. See [roles and access](/partners/overview/#roles-and-access).
+
+## See also
+
+<CardGrid>
+  <LinkCard title="SLA reports" description="Attainment against a target, as JSON, for the accounts that need a number rather than a document." href="/enterprise/sla-reports/" />
+  <LinkCard title="Working in a client account" description="The header this endpoint is pointed with." href="/partners/context-switching/" />
+</CardGrid>
