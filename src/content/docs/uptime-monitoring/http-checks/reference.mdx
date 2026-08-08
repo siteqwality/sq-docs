@@ -38,7 +38,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `keyword_search_regex` | bool | `false` | Interpret `keyword_search` as a regular expression. |
 | `group_notification_ids` | uuid[] | none | Notification groups to fire on state change. Maximum 10, no duplicates, must belong to your account. |
 | `monitor_tls` | bool | `true` | Provision a paired [TLS check](/uptime-monitoring/ssl-tls-checks/overview/) for the URL's hostname. |
-| `monitor_dns` | bool | `true` | Provision a paired [DNS check](/uptime-monitoring/dns-checks/overview/) for the domain. |
+| `monitor_dns` | bool | `true` | Provision a paired [domain expiry check](/uptime-monitoring/dns-checks/overview/) for the URL's registrable domain. Silently skipped at create time, and rejected with `400` on update, when the host is on a shared platform suffix such as `*.vercel.app`. |
 | `monitor_page_speed` | bool | `false` | Provision a paired page-speed (Lighthouse) check on a slower schedule. |
 | `tags` | string[] | none | Free-form tags. Used for grouping and [maintenance-window](/incident-management/maintenance/overview/) matching. |
 | `http_version` | enum | `auto` | Preferred HTTP version for the check transport. See [HTTP versions](#http-versions). |
@@ -58,7 +58,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `last_status_change_at` | rfc3339 \| null | When `current_status` last transitioned. |
 | `created_at` | rfc3339 | When the check was created. |
 | `tls_job_id` | uuid \| null | Paired TLS check, if `monitor_tls` is on. |
-| `dns_job_id` | uuid \| null | Paired DNS check, if `monitor_dns` is on. |
+| `dns_job_id` | uuid \| null | Paired domain expiry check, if `monitor_dns` is on and the domain is registrable. |
 | `page_speed_job_id` | uuid \| null | Paired page-speed check, if `monitor_page_speed` is on. |
 | `group_notifications` | object[] \| null | Full notification-group objects resolved from `group_notification_ids`. |
 | `service_id` | uuid \| null | Service this check belongs to, set via the [service endpoints](/api-reference/). |

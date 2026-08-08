@@ -1,50 +1,118 @@
 ---
-title: DNS checks
-description: Verify a domain resolves correctly across resolvers and record types, paired with an HTTP check today.
-last_verified: 2026-05-03
+title: Domain expiry checks
+description: Read a domain's registration straight from its registry over RDAP, and alert before the registration lapses or the registry takes it back.
+last_verified: 2026-08-08
 owner: jj
 ---
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-A **DNS check** verifies a domain resolves to records you expect. Use it to catch:
+A **domain expiry check** reads your domain's registration record from its registry and alerts you on what the registry says: how long the registration has left, whether the registry is already holding it, who the sponsoring registrar is, and where the nameservers point.
 
-- Stale or hijacked records.
-- Registrar/DNS-provider outages.
-- Misconfigured DNS after a migration.
-- Apex-domain availability where there's no HTTPS endpoint to monitor.
+The API and the dashboard call these **DNS checks** (`monitor_dns`, `/dns/job/...`). That name is historical and the pages here use both, but the thing it monitors is the domain registration.
 
-## When to use DNS checks
+<Aside type="caution" title="This check does not resolve DNS">
+Nothing in this check queries a nameserver. It does not confirm that your domain resolves, that an A record points where you expect, or that any particular resolver answers. It reads the registration record from the registry and acts on that. If you need record-level assertions or per-resolver canaries, this is not the feature, and SiteQwality does not have one today.
+</Aside>
 
-- Your domain matters even when you're not serving HTTP from it (mail records, third-party services pointing at you).
-- You've ever had a DNS misconfig take down a launch.
-- You want a quick canary that *resolution* works independently of your application stack.
+## When to use it
+
+- Any domain you would lose if a renewal silently failed. The usual cause is an expired card on the registrar account, not a forgotten date.
+- Domains you inherited: from an agency, a former employee, or an acquisition, where nobody is certain who holds the renewal.
+- Domains where a hijack would be expensive. An unannounced registrar or nameserver change is the earliest visible signal of an unauthorised transfer, usually well before the site goes dark.
+- Portfolios. Every monitored domain reports the same three signals, so one alert format covers all of them.
 
 ## How it works
 
-Like TLS, DNS checks today are **paired with an HTTP check**. Set `monitor_dns: true` on creation and SiteQwality provisions a paired DNS check on the registrable domain.
+A domain check is **paired with an HTTP check**. Set `monitor_dns: true` and SiteQwality provisions one against the registrable domain of the HTTP check's URL, so `https://www.example.com/orders` is monitored as `example.com`.
 
-The check resolves the domain on a regular schedule and flips status:
+Each run:
 
-- **Healthy**: resolution succeeded with sane records.
-- **Pending failure**: one tick failed; the next confirms.
-- **Failed**: multiple consecutive resolution failures.
+1. Finds the registry's RDAP service for the domain's TLD, using [IANA's bootstrap registry](https://data.iana.org/rdap/dns.json) (about 1,200 TLDs, refreshed daily, with a bundled copy as a fallback). `.io` and `.co` run RDAP but are absent from that file, so they are served from two hardcoded entries.
+2. Requests the registration record from the registry itself.
+3. Records the result, whether or not the lookup worked, along with the expiry date, the registry status codes, the registrar and the nameservers.
+4. Decides whether any of the three signals below is worth an alert, and fans it out through the parent HTTP check's notification groups.
 
-The check uses public resolvers (a mix to avoid single-resolver bias). The `domain` field is the registrable domain extracted from the HTTP check's URL (`https://www.example.com/path` → `example.com`).
+**Cadence is daily.** It was weekly until August 2026, which made the warning ladder below impossible to honour: seven days between observations means a domain can be seen at "30 days left" and then next at "expired".
 
-## When NOT to use DNS checks
-
-- For **monitoring specific record values** (e.g. "the MX record points at provider X"), use a periodic comparison job rather than DNS checks. Today's DNS check confirms resolution succeeded, not that any specific record matches a target value.
-- For **per-resolver canary tests** (Cloudflare 1.1.1.1, Google 8.8.8.8, your ISP), this isn't supported in the current release.
-
-<Aside type="caution">
-The DNS check today is intentionally simple. It answers "does this domain resolve to *something*?", not "does it resolve to *exactly this*?" If you need stronger record-level guarantees, run a custom HTTP check that triggers a script you control.
+<Aside type="note" title="The date comes from the registry, not from your registrar">
+RDAP responses from a registry carry exactly one expiration event, so the date means the same thing on every TLD. Your registrar's control panel may show a date one day earlier, because a registrar tracks its own expiry separately. Neither is wrong. The registry's date is the one that governs what happens to the domain.
 </Aside>
+
+## Signal 1: the expiry ladder
+
+| Rung | Fires when | Message |
+|---|---|---|
+| 90 days | 90 or fewer days remain | `example.com expires in 90 days` |
+| 60 days | 60 or fewer days remain | `example.com expires in 60 days` |
+| 30 days | 30 or fewer days remain | `example.com expires in 30 days` |
+| 7 days | 7 or fewer days remain | `example.com expires in 7 days` |
+| Lapse | The expiry date is today, or has already passed | `example.com expires today`, or `example.com has expired` |
+
+Each rung fires **once** per expiry date. There is no repeat every day, and no second copy of the 30-day warning the following week.
+
+**The ladder is fixed. It is not configurable.** There is no field for it on the API, no setting in the dashboard, and no way to add or move a rung.
+
+Three behaviours are worth knowing, because none of them is what the table alone suggests:
+
+- **Rungs fire on crossing, not on an exact match.** A check that lands at 29 days remaining, having last run at 31, still sends the 30-day warning. A skipped run cannot silently swallow a rung.
+- **A rung that was already passed when monitoring started does not fire late.** Enable a check on a domain with 45 days left and you get one warning, the 60-day rung, not a burst of 90 and 60. The skipped 90 is marked done and never fires afterwards.
+- **A renewal resets the ladder.** When the expiry date moves, the record of which rungs have fired is cleared, so next year's warnings start from a clean slate.
+
+## Signal 2: registry status alerts
+
+This is the part of the check that the expiry date alone cannot give you, and it is the reason the check reads more than the date.
+
+Every registry publishes a set of EPP status codes on a registration. Most are routine (`client transfer prohibited` is a lock you want). A few mean the registration is already in trouble, and SiteQwality alerts the first time a domain enters one of them:
+
+| Registry state | What it means | What you should do |
+|---|---|---|
+| `auto renew period` | The registration reached its expiry date without being renewed, so the registry renewed it on the registrar's behalf. The registrar can still cancel that renewal for a refund, typically within 45 days, which deletes the domain. | Confirm with your registrar that the renewal was actually paid. This is a real, live risk, not a formality. |
+| `redemption period` | The domain was deleted. It is recoverable, usually for about 30 days and usually for a restoration fee well above the renewal price. | Contact your registrar today and ask for a redemption restore. |
+| `pending delete` | Redemption has ended. The domain drops in about five days and cannot be recovered. | It is effectively gone. Prepare for the name to be re-registered by someone else. |
+| `pending restore` | A restore has been requested but is not complete. | Follow it through with the registrar until the state clears. |
+| `client hold` / `server hold` | The registrar or the registry has pulled the domain out of the zone. The domain does not resolve for anyone right now. | Find out why. This is usually a payment dispute or an abuse complaint. |
+
+A status alert fires on the **transition into** a state, so a domain sitting in `auto renew period` for its whole 45-day window pages you once, not 45 times. If it gets worse (`auto renew period` becomes `pending delete`) that is a new state and a new alert.
+
+<Aside type="danger" title="The auto-renew trap: why the expiry date lies here">
+This is the failure mode that the date-only version of this check could not see.
+
+When a registration passes its expiry date unrenewed, the registry does not immediately release it. It auto-renews the domain for another term and **pushes the expiry date one or two years into the future**. At the same time it opens a grace window, typically 45 days, in which the registrar can hand the domain back for a credit. That is what happens when the card on file failed: the registrar has not been paid, so it fully intends to hand the domain back.
+
+The visible result is a domain that reads as perfectly healthy. One monitored domain sat in exactly this state on 2026-08-08: a date-only check reported **690 days remaining** while the domain was on day 40 of a 45-day window that ends in deletion. The expiry ladder is no help at all there, because it will not fire again for nearly two years.
+
+The registry status array is the only field that distinguishes "renewed" from "auto-renewed and about to be reclaimed", which is why the check reads it and alerts on it independently of the date.
+</Aside>
+
+**A registry status does not change the check's status.** A domain in `auto renew period` still reports `good`, because its expiry date genuinely is in the future. The alert is the signal. Do not build a dashboard rule that looks only at the status field.
+
+## Signal 3: registrar and nameserver changes
+
+The check records the sponsoring registrar and the nameserver set on every run and alerts when either changes.
+
+- **Registrar changed.** Either a transfer you performed, or one you did not. If you did not, that is a domain transfer away from you and the message says so.
+- **Nameservers changed.** The delegation moved. This is how a hijack takes your traffic, and it usually happens before anyone notices the registrar changed.
+
+Both are quiet about things that are not really changes:
+
+- The first check on a domain records the values and never treats that as a change, so enabling monitoring across a portfolio does not page you about every domain at once.
+- A registrar that recases its own name between responses is not a change.
+- Nameservers are lowercased and sorted before comparison, so a registry reordering the list is not a change.
+- Losing every nameserver **is** a change and does alert. An emptied delegation is how a domain goes dark.
+
+## What it cannot tell you
+
+- **Some TLDs publish no expiry date at all.** The two clear examples are `.de` and `.nl`. DENIC (`.de`) publishes no RDAP service, so there is nothing to read: the check records `no_rdap_endpoint` and stops there. SIDN (`.nl`) does answer, but its response omits the expiration event, so the registrar and nameserver signals still work and the expiry ladder never can. Both are policy decisions by those registries, not gaps in the check, and neither will ever start working by itself. Domains on them report `unknown` permanently.
+- **Platform-hosted hostnames get no domain check.** A monitor on `*.github.io`, `*.herokuapp.com`, `*.vercel.app` or any of the roughly 3,200 similar shared suffixes is not paired with a domain check, because the registration belongs to the platform. Reporting GitHub's renewal date as yours, and firing an alert ladder on it, would be a confident wrong answer.
+- **It does not monitor DNS resolution or record values.** See the caution at the top of this page.
+- **There is no standalone domain check.** It is always paired with an HTTP check.
+- **Thresholds are not configurable**, and neither is the daily cadence.
 
 ## See also
 
 <CardGrid>
-  <LinkCard title="Quickstart" description="Enable DNS monitoring on an HTTP check." href="/uptime-monitoring/dns-checks/quickstart/" />
-  <LinkCard title="Reference" description="Every field on a DNS check." href="/uptime-monitoring/dns-checks/reference/" />
-  <LinkCard title="HTTP checks" description="DNS checks pair with HTTP checks." href="/uptime-monitoring/http-checks/overview/" />
+  <LinkCard title="Quickstart" description="Turn domain monitoring on and read your first result." href="/uptime-monitoring/dns-checks/quickstart/" />
+  <LinkCard title="Reference" description="Fields, statuses, failure reasons, and the webhook payload." href="/uptime-monitoring/dns-checks/reference/" />
+  <LinkCard title="SSL/TLS checks" description="The other expiry clock worth watching." href="/uptime-monitoring/ssl-tls-checks/overview/" />
 </CardGrid>

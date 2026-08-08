@@ -1,44 +1,168 @@
 ---
-title: DNS check reference
-description: Every field on a DNS check, with status meanings.
-last_verified: 2026-05-03
+title: Domain expiry reference
+description: Every field on a domain expiry check, with statuses, failure reasons, alert reasons, and the webhook payload.
+last_verified: 2026-08-08
 owner: jj
 ---
 
-The full schema is in the auto-generated [API Reference](/api-reference/). Cheat sheet below.
+import { Aside } from '@astrojs/starlight/components';
+
+The wire-level schema is in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet. The API calls these DNS jobs; see the [overview](/uptime-monitoring/dns-checks/overview/) for why.
 
 ## Object: `DnsJob`
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | uuid | DNS check ID. |
+| `id` | uuid | Domain check ID. |
 | `account_id` | uuid | Owning account. |
 | `http_job_id` | uuid | The HTTP check this was paired with. |
-| `current_status` | enum | See status table. |
-| `domain` | string | Registrable domain extracted from the HTTP check's URL. |
-| `expiry_date` | rfc3339 \| null | Domain registration expiry (when available via WHOIS). |
-| `last_run_at` | rfc3339 \| null | Most recent resolution timestamp. |
+| `current_status` | enum | See [Status](#status). |
+| `domain` | string | The **registrable** domain derived from the HTTP check's URL (`https://www.example.com/path` becomes `example.com`). |
+| `expiry_date` | rfc3339 \| null | Registration expiry as published by the registry. `null` when the registry publishes none. |
+| `last_run_at` | rfc3339 \| null | When the check last ran, successfully or not. |
 | `last_status_change_at` | rfc3339 \| null | When `current_status` last transitioned. |
 | `created_at` | rfc3339 | When the check was provisioned. |
 
-## Status enum
+## Object: `DnsJobResult`
+
+One row per run, kept as history.
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | uuid | Result ID. |
+| `account_id` | uuid | Owning account. |
+| `dns_job_id` | uuid | The check this result belongs to. |
+| `created_at` | rfc3339 | When the run happened. |
+| `status` | enum | See [Status](#status). |
+| `failure_reason` | string \| null | Set when the registry could not be read. See [Failure reasons](#failure-reasons). |
+
+### Registry detail recorded per run
+
+Beyond the fields above, every run records what the registry said: the EPP status codes, the sponsoring registrar, the nameserver set, and which RDAP endpoint served the answer. That is what the [registry state](#registry-states-that-alert) and change alerts are computed from, and it is kept per run so history can answer "what did the registry say on the day this broke". The [API Reference](/api-reference/) is the authority on which of those fields the endpoints return today.
+
+## Status
 
 | Status | Meaning |
 |---|---|
-| `healthy` | Resolution succeeded across the resolver pool. |
-| `pending_failure` | One resolution failed; next confirms. |
-| `failed` | Two consecutive resolution failures. Triggers notifications. |
+| `good` | The registry answered and the expiry date is in the future. |
+| `expired` | The registry answered and the expiry date has passed. |
+| `unknown` | No usable expiry date. Either the registry answered without publishing an expiration event (`.nl` does exactly this), or the lookup failed. `failure_reason` tells the two apart: it is `null` in the first case and set in the second. |
+
+<Aside type="caution" title="A registry hold does not change the status">
+A domain in `auto renew period`, `redemption period` or `pending delete` still reports `good`, because its expiry date genuinely is in the future. The registry state is delivered as an **alert**, not as a status. Anything that keys "is this domain healthy" off `current_status` alone will call a domain in a deletion window healthy. The [overview](/uptime-monitoring/dns-checks/overview/#signal-2-registry-status-alerts) explains why.
+</Aside>
+
+## Registry states that alert
+
+Recorded per run from the registration's EPP status codes, in RFC 8056 form (lowercase with spaces).
+
+| State | Typical window | Meaning |
+|---|---|---|
+| `auto renew period` | ~45 days | Renewed automatically by the registry after a missed renewal. The registrar can still cancel for a credit, which deletes the domain. |
+| `redemption period` | ~30 days | Deleted, recoverable for a restoration fee. |
+| `pending delete` | ~5 days | Past redemption. Drops, and cannot be recovered. |
+| `pending restore` | short | A restore was requested and is not complete. |
+| `client hold` | until cleared | The registrar removed the domain from the zone. It does not resolve. |
+| `server hold` | until cleared | The registry removed the domain from the zone. It does not resolve. |
+
+Every other EPP code (`ok`, `active`, `client transfer prohibited`, and the rest) is recorded and never alerts.
+
+## Failure reasons
+
+When a run cannot read the registry it records one of these, and the check reports `unknown`.
+
+| Reason | Meaning | Retried |
+|---|---|---|
+| `no_rdap_endpoint` | The TLD publishes no RDAP service, from IANA's bootstrap registry or our overrides. `.de` is the common case. This will never succeed. | No |
+| `registry_no_record` | The registry returned 404 for this name. **This is not proof the domain is unregistered**: registries also answer 404 for a subdomain of a live domain, and RFC 7480 permits a 404 in place of admitting to rate limiting. | No |
+| `rate_limited` | The registry returned 429. Unexpected at this volume and worth reporting if it persists. | Yes |
+| `transport_error` | The request failed or timed out. The per-request timeout is 10 seconds. | Yes |
+| `malformed_response` | The registry answered with something that is not valid RDAP JSON. | Yes |
+
+<Aside type="note" title="A stale date is legible as stale">
+A failed run still records a result and still updates `last_run_at`. If a check reports `unknown` with a failure reason while `expiry_date` is still populated, that date is whatever the last **successful** run saw, not a current fact.
+</Aside>
+
+## Alert reasons
+
+Every alert carries a stable `reason` slug. This is the field to switch on in a webhook consumer.
+
+| Slug | Fires when |
+|---|---|
+| `domain_expiring` | A ladder rung is crossed: 90, 60, 30 or 7 days remaining, or the expiry date is today. Once per rung, per expiry date. |
+| `domain_expired` | The expiry date has already passed. Once. |
+| `domain_grace_state` | The domain newly entered one of the [registry states above](#registry-states-that-alert). Once per state entered. |
+| `domain_registrar_changed` | The sponsoring registrar changed from the previously recorded one. |
+| `domain_nameservers_changed` | The nameserver set changed from the previously recorded one. |
+
+## Webhook payload
+
+A webhook channel on the parent HTTP check's notification group receives a POST with a JSON body of this shape. The four original keys keep their exact names and meaning; `reason`, `headline` and `detail` were added in August 2026 and are additive.
+
+```json
+{
+  "data": {
+    "dns_job_id": "0f6a2c1e-9d5b-4a3f-8c11-2b7e4d0a6c93",
+    "monitor_name": "Marketing site",
+    "domain": "example.com",
+    "expiry_date": "2026-09-14",
+    "reason": "domain_grace_state",
+    "headline": "example.com is in auto renew period",
+    "detail": "The registry reports this domain as auto renew period. This usually means the registration was not renewed on time and the registry is holding it. The expiry date may still read as far away, because a registry auto-renew moves it forward while the registrar can still hand the domain back. Confirm the renewal with your registrar."
+  }
+}
+```
+
+| Key | Notes |
+|---|---|
+| `dns_job_id` | The domain check, not the HTTP check. |
+| `monitor_name` | The **parent HTTP check's** friendly name. |
+| `domain` | The registrable domain being monitored. |
+| `expiry_date` | `YYYY-MM-DD`, not RFC 3339. The literal string `"unknown"` when the registry publishes no expiry, which is a real case for registrar and nameserver change alerts. |
+| `reason` | One of the [alert reason slugs](#alert-reasons). |
+| `headline` | One short sentence, always naming the domain. |
+| `detail` | The explanatory sentence beneath the headline. Written for a human, not parsed. |
+
+<Aside type="caution" title="Switch on `reason`, not on `headline`">
+`headline` and `detail` are customer-facing prose and will be reworded. `reason` is a stable identifier and is what a consumer should branch on.
+</Aside>
+
+## Where the expiry date comes from
+
+The registry's own RDAP service, and specifically the `expiration` event in its response. SiteQwality deliberately does not follow the `related` link to the registrar's RDAP server, which publishes a second, different expiry (often a day earlier) and which some registrars omit entirely. Following it would trade one deterministic date for an ambiguous one, so a difference of a day against your registrar's control panel is expected.
+
+`.io` and `.co` run RDAP but are missing from IANA's bootstrap file, so they are served from two hardcoded endpoints.
+
+## Notification channels
+
+Domain alerts fan out through the **parent HTTP check's** notification groups. Email, SMS, Slack, webhook, Discord, Microsoft Teams, Google Chat, Mattermost, PagerDuty, OpsGenie, Pushover and Pushbullet all receive them.
+
+Telegram channels do not. Telegram is configurable and has a working transport, but no monitor type in SiteQwality produces a Telegram notification today, so a Telegram channel on the group is skipped for domain alerts.
+
+Maintenance windows do not suppress domain alerts, deliberately. A renewal deadline does not pause for scheduled work.
+
+## Cadence and lifecycle
+
+| Property | Value |
+|---|---|
+| Schedule | Once a day, with a flexible window of up to 4 hours |
+| Configurable | No. There is no interval field on a domain check. |
+| Alert thresholds | Fixed at 90, 60, 30 and 7 days plus the lapse itself. Not configurable. |
+| Enable | `PUT /http/job/{job_id}` with `monitor_dns: true`, or the toggle on the HTTP check |
+| Disable | The same with `monitor_dns: false`. This deletes the domain check and its schedule. |
 
 ## Endpoints
 
+The domain check is read-only through its own endpoints. You create it implicitly by setting `monitor_dns: true` on an HTTP check.
+
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/dns/job/{dns_job_id}` | Fetch current status. |
-| `GET` | `/dns/job/{dns_job_id}/recent` | Recent resolution results. |
-
-Toggle on/off via `PUT /http/job/{job_id}` with `monitor_dns: true|false`.
+| `GET` | `/dns/job/{dns_job_id}` | Fetch the check and its current status. |
+| `GET` | `/dns/job/{dns_job_id}/recent` | The single most recent result. |
+| `GET` | `/dns/job/{dns_job_id}/results?limit=50` | Recent results, newest first. `limit` defaults to 50 and is clamped to 200. |
 
 ## See also
 
-- [DNS overview](/uptime-monitoring/dns-checks/overview/): concept.
-- [TLS checks](/uptime-monitoring/ssl-tls-checks/overview/): sibling sub-check.
+- [Domain expiry overview](/uptime-monitoring/dns-checks/overview/): the three alert signals, and the auto-renew trap.
+- [Quickstart](/uptime-monitoring/dns-checks/quickstart/): turn it on and read the first result.
+- [HTTP checks reference](/uptime-monitoring/http-checks/reference/): the parent check.
