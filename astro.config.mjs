@@ -4,7 +4,7 @@ import starlight from '@astrojs/starlight';
 import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi';
 
 // NOTE: Expressive Code (code-block) theming lives in ./ec.config.mjs, not in
-// the Starlight `expressiveCode` option below — starlight-openapi's plugin
+// the Starlight `expressiveCode` option below. starlight-openapi's plugin
 // overwrites that option, so anything set there is silently discarded.
 
 // https://astro.build/config
@@ -110,7 +110,7 @@ export default defineConfig({
 							],
 						},
 						{
-							label: 'DNS checks',
+							label: 'Domain expiry checks',
 							collapsed: true,
 							items: [
 								{ label: 'Overview', slug: 'uptime-monitoring/dns-checks/overview' },

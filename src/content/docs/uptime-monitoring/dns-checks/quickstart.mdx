@@ -1,42 +1,46 @@
 ---
-title: DNS check quickstart
-description: Enable DNS monitoring on an HTTP check in two minutes.
-last_verified: 2026-05-03
+title: Domain expiry quickstart
+description: Turn domain registration monitoring on for an existing HTTP check, and read your first result.
+last_verified: 2026-08-08
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have DNS resolution monitoring on an existing HTTP check.
+By the end of this guide your domain's registration is being read from its registry once a day, and you will know how to tell a healthy result from a stale one.
 
 ## Prerequisites
 
-- An existing HTTP check.
+- An existing HTTP check. If you do not have one, follow the [HTTP checks quickstart](/uptime-monitoring/http-checks/quickstart/).
+- The HTTP check's URL must be on a domain you register yourself. Hosts on shared platform suffixes (`*.github.io`, `*.herokuapp.com`, `*.vercel.app`) cannot be monitored this way. See [step 3](#3-if-nothing-appears).
 
-## 1. Enable DNS monitoring
+## 1. Turn it on
 
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
 <Steps>
 
-1. Open the HTTP check, **Settings**.
+1. Open the HTTP check, then **Settings**.
 
-2. Toggle **Monitor DNS** on. Save.
+2. Toggle **Monitor DNS** on, and save.
 
 </Steps>
+
+The domain check is provisioned immediately, but it runs on its own daily schedule with a flexible window of up to four hours, so the first result may take a few hours to appear rather than landing on save.
 
 </TabItem>
 <TabItem label="API">
 
 ```bash
+# On an existing check
 curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "monitor_dns": true }'
 ```
 
-Or set it at create time:
+Or at create time:
 
 ```bash
 curl -X POST https://api.siteqwality.com/http/job \
@@ -54,15 +58,17 @@ curl -X POST https://api.siteqwality.com/http/job \
   }'
 ```
 
+The HTTP check's response carries the paired check's id as `dns_job_id`.
+
 </TabItem>
 </Tabs>
 
-## 2. View the DNS check
+## 2. Read the result
 
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-The HTTP check page shows a **DNS** sub-card with current status and the registrable domain SiteQwality is resolving.
+The HTTP check page shows a **DNS** sub-card with the current status, the registrable domain being monitored, and the expiry date once the first run completes.
 
 </TabItem>
 <TabItem label="API">
@@ -72,12 +78,77 @@ curl https://api.siteqwality.com/dns/job/$DNS_JOB_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-The `DnsJob` response gives `current_status`, `domain`, and `last_run_at`.
+```json
+{
+  "id": "...",
+  "http_job_id": "...",
+  "current_status": "good",
+  "domain": "example.com",
+  "expiry_date": "2027-03-14T00:00:00Z",
+  "domain_status": ["client transfer prohibited"],
+  "grace_states": [],
+  "registrar": "Example Registrar, Inc.",
+  "nameservers": ["ns1.example-dns.com", "ns2.example-dns.com"],
+  "last_run_at": "2026-08-08T04:11:07Z",
+  "last_status_change_at": null,
+  "last_failure_reason": null,
+  "last_failure_at": null,
+  "created_at": "2026-08-07T09:02:44Z"
+}
+```
+
+For history, `GET /dns/job/{dns_job_id}/results?limit=50` returns recent runs newest first, each with its own `status`, `failure_reason` and its own copy of what that run saw.
 
 </TabItem>
 </Tabs>
 
+Four things to check on that first result:
+
+- **`domain` is the registrable domain**, not the hostname you monitor. `https://www.example.com/orders` is monitored as `example.com`. That is correct: registries hold registrations, not hostnames.
+- **`current_status` is `good`, `expired` or `unknown`.** `unknown` is not an error state on its own. See the [status table](/uptime-monitoring/dns-checks/reference/#status).
+- **`grace_states` is empty, and that is the field to watch.** A non-empty list means the registration is in trouble no matter how far away the date reads. See the [registry states](/uptime-monitoring/dns-checks/reference/#registry-states-that-alert).
+- **`expiry_date` may differ by a day from your registrar's control panel.** SiteQwality reads the registry's date. See the [reference](/uptime-monitoring/dns-checks/reference/#where-the-expiry-date-comes-from).
+
+If `last_failure_reason` is ever set, the registry fields around it are the last known values rather than current ones, because a run that could not reach the registry deliberately leaves them alone. The [reference](/uptime-monitoring/dns-checks/reference/#the-check-and-a-run-of-the-check-are-different-objects) covers the distinction between the check and one run of it.
+
+## 3. If nothing appears
+
+<Steps>
+
+1. **Check that a domain monitor was created at all.** Fetch the HTTP check and look for `dns_job_id`. If it is `null`, none was provisioned.
+
+2. **If the URL is on a shared platform suffix, that is expected.** A create with `monitor_dns: true` on `myapp.vercel.app` succeeds and creates the HTTP check, but quietly pairs no domain monitor, because the registration for `vercel.app` belongs to Vercel. Turning it on afterwards with `PUT /http/job/{id}` is refused explicitly:
+
+   ```
+   400 myapp.vercel.app is hosted on vercel.app, which is a shared platform
+       domain. Domain-expiry monitoring needs a domain you register yourself.
+   ```
+
+3. **If the status is `unknown`, read the failure reason.** `GET /dns/job/{id}/results` returns `failure_reason` per run. `no_rdap_endpoint` means the TLD publishes no registration data (`.de` is the common one) and will never succeed. Everything else is listed in the [reference](/uptime-monitoring/dns-checks/reference/#failure-reasons).
+
+</Steps>
+
+## 4. Know what an alert will look like
+
+You do not need to do anything to receive alerts: they go to the same notification groups as the parent HTTP check. What arrives is one of five messages.
+
+| Trigger | Headline |
+|---|---|
+| A ladder rung (90, 60, 30 or 7 days) | `example.com expires in 30 days` |
+| The registration lapses | `example.com expires today`, or `example.com has expired` if it lapsed before monitoring saw it |
+| The registry starts holding the domain | `example.com is in auto renew period` |
+| The sponsoring registrar changes | `example.com changed registrar` |
+| The nameserver delegation changes | `example.com changed nameservers` |
+
+<Aside type="tip" title="The one to read carefully is the third">
+A registry state alert can arrive while the expiry date still reads years away. That is not a contradiction, it is the auto-renew trap: the registry renewed the domain automatically and the registrar can still hand it back. The [overview](/uptime-monitoring/dns-checks/overview/#signal-2-registry-status-alerts) explains it in full.
+</Aside>
+
+<Aside type="note">
+Maintenance windows do not hold domain alerts. A renewal deadline does not pause for scheduled work.
+</Aside>
+
 ## What's next
 
-<LinkCard title="DNS reference" description="Status enum and field details." href="/uptime-monitoring/dns-checks/reference/" />
-<LinkCard title="TLS checks" description="The other paired-check type." href="/uptime-monitoring/ssl-tls-checks/overview/" />
+<LinkCard title="Domain expiry reference" description="Fields, statuses, failure reasons, endpoints, and the webhook payload." href="/uptime-monitoring/dns-checks/reference/" />
+<LinkCard title="SSL/TLS checks" description="The other check paired onto an HTTP monitor." href="/uptime-monitoring/ssl-tls-checks/overview/" />
