@@ -19,8 +19,8 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `run_interval_seconds` | int | required | Seconds between checks. Must be at least `60` and a multiple of `60`. |
 | `run_interval_thirty_seconds` | bool | `false` | Run every 30 seconds instead. Only valid together with `run_interval_seconds: 60`. |
 | `timeout_ms` | int | required | Per-request timeout in milliseconds. Maximum `60000`. |
-| `check_regions` | string[] | `["aws-us-east-1"]` | Regions the check runs from. Omitted or empty falls back to the default. See [regions](#check-regions). |
-| `min_healthy_regions` | int | `1` | Minimum regions that must pass for the check to count as healthy. At least `1`, at most the number of `check_regions`. |
+| `check_regions` | string[] | `["aws-us-east-1"]` | Locations the check runs from. Omitted or empty falls back to the default. Only the default has a runner behind it. See [check regions](#check-regions). |
+| `min_healthy_regions` | int | `1` | Minimum locations that must pass for the check to count as healthy. At least `1`, at most the number of `check_regions`. Setting more than one location requires a paid plan. |
 | `confirmation_threshold` | int | `1` | Consecutive failed checks required before the monitor transitions to `failed` and alerts. `1` to `10`. See [requiring N failed checks](/uptime-monitoring/http-checks/how-to/confirmation-threshold/). |
 | `follow_redirects` | bool | `true` | Follow HTTP redirects before evaluating the response. |
 | `request_body` | string | none | Body sent with the request. |
@@ -73,12 +73,22 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 
 ## Check regions
 
-| Region value | Location |
-|---|---|
-| `aws-us-east-1` | N. Virginia, USA (default) |
-| `aws-us-west-1` | N. California, USA |
-| `aws-us-east-2` | Ohio, USA |
-| `aws-eu-west-2` | London, UK |
+The field validates against these four values and rejects anything else with a `400` carrying `Invalid check_regions <value>`. **Only the first one runs checks.**
+
+| Region value | Location | Runs checks today |
+|---|---|---|
+| `aws-us-east-1` | N. Virginia, USA | Yes. The default. |
+| `aws-us-west-1` | N. California, USA | No |
+| `aws-us-east-2` | Ohio, USA | No |
+| `aws-eu-west-2` | London, UK | No |
+
+<Aside type="danger" title="Setting a location with no runner does not fail loudly">
+Validation checks the value against the list above, not against whether anything is deployed there, so a check configured for `aws-eu-west-2` is created successfully and simply never produces a result from London.
+
+The quorum counts only locations that returned a success, and a configured location that reports nothing counts as **not healthy** rather than absent. So `check_regions: ["aws-us-east-1", "aws-eu-west-2"]` with `min_healthy_regions: 2` creates a monitor that can never report healthy.
+
+Additional check locations are on the roadmap. Until then, leave the field unset.
+</Aside>
 
 ## HTTP versions
 
@@ -146,16 +156,24 @@ A keyword assertion is evaluated against the live response while the check
 runs, never against the stored copy, so a keyword failure always carries the
 body that failed it even though the status code was `200`.
 
-### Retention
+### How long a captured body stays readable
 
-| Plan | Failure bodies kept |
+| Plan | Failure bodies readable for |
 |---|---|
 | Free | 5 days |
 | Any paid plan | 30 days |
 | On request | Up to 365 days |
 
-Retention is applied when a body is served, so upgrading immediately makes
-older captured bodies readable again rather than only affecting new checks.
+These are **read windows, not deletion schedules.** The window is evaluated at
+the moment you ask for a body: past it, `GET /http/job/result/{id}/body`
+answers `410` and the dashboard shows the body as expired. Upgrading therefore
+makes older captured bodies readable again straight away, rather than only
+affecting new checks, and downgrading closes off older ones without deleting
+anything.
+
+Do not read the table as a statement about when the stored object is destroyed.
+Object deletion is handled separately by the storage lifecycle on a longer
+schedule, and it is not the same number.
 
 ## See also
 

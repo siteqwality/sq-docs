@@ -1,6 +1,6 @@
 ---
 title: Uptime monitoring
-description: Five check types (HTTP, SSL/TLS, domain expiry, cron heartbeats, and full-browser synthetic) running on a schedule from one or more regions.
+description: Five check types (HTTP, SSL/TLS, domain expiry, cron heartbeats, and full-browser synthetic) running on a schedule from AWS us-east-1.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -29,14 +29,27 @@ Every uptime monitor in SiteQwality follows the same lifecycle: configure → ru
 
 ### Regions
 
-By default checks run from `aws-us-east-1`. Multi-region is paid; available regions:
+Every check runs from **AWS `us-east-1` (N. Virginia)**. It is the only location with check infrastructure, and it is the default for every monitor type. If you leave `check_regions` unset, this is what you get.
 
-- `aws-us-east-1`: N. Virginia
-- `aws-us-east-2`: Ohio
-- `aws-us-west-1`: N. California
-- `aws-eu-west-2`: London
+<Aside type="danger" title="Three of the four accepted region values have nothing behind them">
+The `check_regions` field still accepts four values, because the API enum has not changed:
 
-Set `min_healthy_regions` to control how many regions must report healthy before the monitor's overall status is considered healthy. Set it equal to the region count for unanimity, or to 1 to tolerate any single-region blip.
+| Value | Location | Runs checks today |
+|---|---|---|
+| `aws-us-east-1` | N. Virginia, USA | Yes. The default. |
+| `aws-us-east-2` | Ohio, USA | No |
+| `aws-us-west-1` | N. California, USA | No |
+| `aws-eu-west-2` | London, UK | No |
+
+Selecting one of the bottom three does not produce checks from that location, and the API accepts it without complaint. Two consequences follow, and both bite:
+
+- A configured location that never reports counts as **not healthy**, not as absent. A monitor set to `["aws-us-east-1", "aws-eu-west-2"]` with `min_healthy_regions: 2` can therefore never report healthy, because the quorum counts only locations that returned a success.
+- `min_healthy_regions` only means anything across locations that actually run. With one location it is always 1 of 1.
+
+Leave `check_regions` unset unless you have a reason not to. Additional check locations are on the roadmap and are not available today.
+</Aside>
+
+`min_healthy_regions` controls how many of a monitor's configured locations must report healthy before the monitor itself counts as healthy. Configuring more than one location requires a paid plan; the API returns `403 Forbidden` otherwise.
 
 ### Schedules
 

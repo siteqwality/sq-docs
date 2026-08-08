@@ -17,7 +17,7 @@ The umbrella term for any scheduled health check. SiteQwality has five monitor f
 
 ### Check
 
-A single execution of a monitor: one HTTP request, one DNS lookup, one TLS handshake. Each check produces a *result* (`success`, `failure`, plus latency and any captured payload). Multiple regions running the same monitor produce multiple checks per tick.
+A single execution of a monitor: one HTTP request, one DNS lookup, one TLS handshake. Each check produces a *result* (`success`, `failure`, plus latency and any captured payload). One check location runs today, so a monitor produces one check per tick.
 
 ### Run interval
 
@@ -25,11 +25,13 @@ How often a monitor's checks fire. Free plan minimum is 60 seconds; paid plans g
 
 ### Region
 
-A geographic location SiteQwality runs checks from. Default is `us-east-1`. Multi-region requires a paid plan; see the [HTTP checks reference](/uptime-monitoring/http-checks/reference/) for the full list.
+A geographic location SiteQwality runs checks from. There is exactly one today: `aws-us-east-1`, N. Virginia. It is the default, and it is the only value with check infrastructure behind it.
+
+The `check_regions` field accepts three other values (`aws-us-east-2`, `aws-us-west-1`, `aws-eu-west-2`) that no runner serves. Setting one does not produce checks from that location. See [check locations](/uptime-monitoring/overview/#regions) for what happens if you do.
 
 ### Min healthy regions
 
-When a monitor runs in N regions, this knob says "consider the monitor failing only if fewer than M regions report healthy." Set it equal to N to require unanimity, or to 1 to tolerate any single region failing.
+When a monitor runs in N locations, this knob says "consider the monitor failing only if fewer than M locations report healthy." With one location it is always 1 of 1. A configured location that reports nothing counts as **not healthy**, not as absent, which is why setting it above the number of locations that actually run leaves a monitor permanently failing.
 
 ## Incident vocabulary
 

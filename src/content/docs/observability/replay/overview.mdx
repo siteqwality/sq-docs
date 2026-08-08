@@ -62,17 +62,33 @@ Both are stored per RUM application, and both are shown as toggles on the applic
 Per-element overrides:
 
 ```html
-<!-- Mask the text of this element and its children -->
+<!-- Mask the text of this element and everything nested inside it -->
 <div class="rr-mask">Sensitive content</div>
 
-<!-- Do not record this element at all -->
+<!-- Record this element as an empty placeholder; its subtree is not recorded -->
 <div class="rr-block">Don't record this at all</div>
 
-<!-- Do not record input events on this element -->
+<!-- Do not record input events fired on THIS element. Put it on the input itself -->
 <input class="rr-ignore" />
 ```
 
-The `rr-mask` / `rr-block` / `rr-ignore` class names are rrweb's own defaults. The SDK does not override them, which is why they work.
+The `rr-mask` / `rr-block` / `rr-ignore` class names are rrweb's own defaults. The SDK does not override them, which is why they work. They do **not** behave alike, and the differences matter more than the similarity:
+
+| Class | What it covers | Cascades to descendants |
+|---|---|---|
+| `rr-mask` | Text nodes only. Not input values, not attributes, not `alt` / `title` / `placeholder`. | Yes |
+| `rr-block` | The whole subtree. The element itself is still recorded, as an empty box of the right width and height. | Yes |
+| `rr-ignore` | Input events fired on the element carrying the class. | **No** |
+
+<Aside type="caution" title="rr-ignore does not cascade, and does not cover the initial value">
+Two things about `rr-ignore` catch people out, and both come from how rrweb implements it.
+
+It is checked with `classList.contains` on the element the event fired on, with no walk up the tree. `<div class="rr-ignore"><input /></div>` therefore protects nothing: the class has to go on the `<input>` itself.
+
+Even placed correctly it only suppresses input *events*. The DOM serialiser never consults it, so a value already sitting in the field when recording starts is captured in the initial snapshot regardless. For a pre-filled field, use `mask_inputs`, or `rr-block` on its container.
+</Aside>
+
+`rr-mask` is the one to reach for when the concern is rendered text, and it is the only per-element control that cascades and masks rather than removes. If the concern is an input value, `mask_inputs` on the application is the control that covers it; `rr-mask` does not.
 
 <Aside type="caution" title="There is no per-element unmask">
 Masking is one-way. `rr-mask` adds masking to an element; nothing removes it. rrweb 2.0.0-alpha.4, the version this SDK pins, has no unmask option of any kind, so a `rr-unmask` class (or any other unmask attribute) does nothing and raises no error.

@@ -15,7 +15,7 @@ If you're tired of stitching Pingdom + Datadog + PagerDuty + Statuspage and watc
 
 <CardGrid>
   <Card title="Uptime monitoring" icon="approve-check">
-    HTTP, SSL/TLS, DNS, cron heartbeats, and full-browser synthetic checks, run every 30 seconds from any of our regions.
+    HTTP, SSL/TLS, DNS, cron heartbeats, and full-browser synthetic checks, run on a schedule from AWS us-east-1, as often as every 30 seconds on paid plans.
   </Card>
   <Card title="Observability" icon="bars">
     Metrics, logs, traces, RUM, and session replay. One query language across all five.
@@ -66,7 +66,9 @@ The [API Reference](/api-reference/) is auto-generated from the live Rust handle
 
 ## A note on plans
 
-Most features in these docs work on the free plan. A few are paid: sub-minute check intervals, multi-region checks, custom status-page domains, and session replay. Where that's the case the relevant page calls it out in an `Aside`.
+Most features in these docs work on the free plan. A few are paid: sub-minute check intervals, custom status-page domains, and session replay. Where that's the case the relevant page calls it out in an `Aside`.
+
+Checks run from one location, AWS `us-east-1`. Additional check locations are on the roadmap and are not available today, on any plan. See [check locations](/uptime-monitoring/overview/#regions).
 
 <Aside type="tip">
 Need help picking a plan, or want to see a demo before signing up? Email <a href="mailto:hello@siteqwality.com">hello@siteqwality.com</a>.

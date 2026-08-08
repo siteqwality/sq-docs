@@ -1,6 +1,6 @@
 ---
 title: Require N failed checks before alerting
-description: Use confirmation_threshold to alert only after several consecutive failed checks, and understand how it composes with regions and retries.
+description: Use confirmation_threshold to alert only after several consecutive failed checks, and understand how it composes with the location quorum and transport retries.
 last_verified: 2026-08-02
 owner: jj
 ---
@@ -49,7 +49,7 @@ Threshold `10` on a free-tier monitor at the 5 minute interval floor is **45 min
 
 This is the part worth being precise about. The threshold gates the **state transition**, not the check.
 
-Every check writes its result no matter what. A failed-but-unconfirmed check still lands in the check results, the per-phase performance record, and the per-region status. It shows as a failure in **Recent checks**, and it still drags down the 24 hour uptime ratio, the daily rollup, and therefore [SLA reports](/enterprise/sla-reports/).
+Every check writes its result no matter what. A failed-but-unconfirmed check still lands in the check results, the per-phase performance record, and the per-location status. It shows as a failure in **Recent checks**, and it still drags down the 24 hour uptime ratio, the daily rollup, and therefore [SLA reports](/enterprise/sla-reports/).
 
 What waits for confirmation:
 
@@ -67,7 +67,7 @@ Alert payloads are byte-identical whatever the threshold. An email or SMS will n
 
 ## Recovery is never delayed
 
-One successful check with a healthy region quorum closes the state transition immediately. All-clear notifications and automatic incident resolution are never threshold-gated, in either direction. The threshold only ever slows down bad news.
+One successful check that satisfies the location quorum closes the state transition immediately. All-clear notifications and automatic incident resolution are never threshold-gated, in either direction. The threshold only ever slows down bad news.
 
 ## How it composes with the other two failure filters
 
@@ -76,10 +76,12 @@ Three independent layers sit between a network blip and your phone. They run in 
 ```
 1. transport retry     inside a single check
         ↓
-2. region quorum       decides whether one check evaluation counts as failed
+2. location quorum     decides whether one check evaluation counts as failed
         ↓
 3. confirmation        counts consecutive failed evaluations
 ```
+
+With one check location, which is all there is today, layer 2 is a 1-of-1 pass-through and only layers 1 and 3 do any work. It is described in full below because the mechanism is real and applies the moment a second location exists.
 
 ### 1. Transport retry, inside one check
 
@@ -89,20 +91,21 @@ Only transport-level reasons are retried: connection reset, TLS failure, TCP con
 
 A check that fails once and succeeds on retry is recorded as a plain success. It never becomes a failed result, so it also resets any confirmation streak.
 
-### 2. Region quorum
+### 2. Location quorum
 
-For a multi-region monitor, `min_healthy_regions` decides whether a single evaluation counts as failed: the check is healthy when at least that many of its configured regions are passing.
+`min_healthy_regions` decides whether a single evaluation counts as failed: the check is healthy when at least that many of its configured locations are passing. Today every monitor runs from one location, `aws-us-east-1`, so this is 1 of 1 and the verdict is simply whether that check passed.
+
+<Aside type="caution" title="Configuring a location that does not run makes this permanent">
+The quorum counts only configured locations that returned a success. A location that reported nothing counts as **not healthy**, not as absent, and three of the four values `check_regions` accepts have no runner behind them. A monitor set to `["aws-us-east-1", "aws-eu-west-2"]` with `min_healthy_regions: 2` therefore fails the quorum on every single evaluation, and no confirmation threshold will save it. See [check locations](/uptime-monitoring/overview/#regions).
+</Aside>
 
 ### 3. Confirmation threshold
 
 The threshold then counts how many consecutive checks that quorum verdict has held for. The quorum decides *whether a check failed*; the threshold decides *how many failed checks in a row you need*.
 
-For the default single-region monitor this is exactly "the last N checks all failed".
+For a single-location monitor, which is every monitor today, this is exactly "the last N checks all failed".
 
-For a multi-region monitor it is measured in scheduler ticks, and the streak length is the largest number of checks any single configured region contributed to it. Two details follow from that, and both are intentional:
-
-- A configured region that reported nothing in the window counts as **not healthy**, not as absent.
-- Any moment at which the quorum was healthy resets the streak, including a single region recovering between two other regions' failures.
+Across several locations it would be measured in scheduler ticks, and the streak length would be the largest number of checks any single configured location contributed to it. Any moment at which the quorum was healthy resets the streak, including one location recovering between two others' failures. That path is implemented and none of it is reachable while only one location runs.
 
 <Aside type="tip">
 If the thing you actually want is "do not page me for a blip that clears within a minute", `delay_send_after_minutes` on the [notification group](/incident-management/notifications/overview/#notification-groups) is often the better tool: it delays the page but still opens the incident on the first failure. Use `confirmation_threshold` when you want the monitor to genuinely not consider itself down yet.

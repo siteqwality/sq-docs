@@ -103,7 +103,7 @@ If the email never arrives, check your spam folder and confirm the channel email
 
 ## What just happened
 
-- Your check ran on a schedule from one of our edge regions.
+- Your check ran on a schedule from AWS `us-east-1`, which is the only check location.
 - The result was compared against the assertions on the monitor (status code in the success list, no body keyword search).
 - A change in monitor status (success → failure) opened an **incident** automatically.
 - The incident's `notification group` was looked up, fanned out to its `notification channels`, and each channel rendered the alert in its own format.
@@ -126,7 +126,7 @@ You can wire this up much further: on-call schedules pick *who* gets the page, e
   />
   <LinkCard
     title="HTTP checks deep dive"
-    description="Multi-region, custom headers, body assertions, paired TLS/DNS checks."
+    description="Custom headers, body assertions, paired TLS/DNS checks, confirmation thresholds."
     href="/uptime-monitoring/http-checks/overview/"
   />
   <LinkCard

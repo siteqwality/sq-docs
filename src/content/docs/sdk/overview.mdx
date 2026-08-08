@@ -115,7 +115,7 @@ SiteQwalityRUM.addAction('checkout_completed', { variant: 'A' });
 | `context` | `Record<string, string>` | **Stored.** Merged into the event's `custom_attributes` and retained for 30 days. Read the warning below before putting anything in here. |
 
 <Aside type="danger" title="Do not put personal data in context">
-The `context` argument of `addError` and `addAction` **is stored**. The SDK merges it into the event's `custom_attributes`, a `Map(String, String)` column on the `rum_events` table, and it is retained for **30 days** on every plan, free and paid alike. That window is not configurable.
+The `context` argument of `addError` and `addAction` **is stored**. The SDK merges it into the event's `custom_attributes`, a `Map(String, String)` column on the `rum_events` table, and it is retained for **30 days** on every plan, free and paid alike. Buying a larger RUM Analyze pack raises the number of sessions you can record, not how long their events are kept, so there is no way to make that window longer.
 
 An earlier version of this page said `context` was "accepted for forward compatibility; not attached to the event today". That was wrong. If you have been passing user objects, email addresses, order contents or anything else that identifies a person, that data is in `rum_events` now and stays there until its 30-day window expires.
 

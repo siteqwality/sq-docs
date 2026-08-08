@@ -55,7 +55,7 @@ Records a custom error alongside auto-captured ones (recorded with `error_source
 Records a custom action with `action_type: "custom"` and `action_target: name`. Actions always increment the session's action count (used by `custom` filters with `min_actions`); the individual action event is only shipped when detail capture is active for the session. The `context` parameter **is stored**: it is merged into the event's `custom_attributes` and retained for 30 days.
 
 <Aside type="danger" title="Do not put personal data in context">
-The `context` argument of `addError` and `addAction` **is stored**. The SDK merges it into the event's `custom_attributes`, a `Map(String, String)` column on the `rum_events` table, and it is retained for **30 days** on every plan, free and paid alike. That window is not configurable.
+The `context` argument of `addError` and `addAction` **is stored**. The SDK merges it into the event's `custom_attributes`, a `Map(String, String)` column on the `rum_events` table, and it is retained for **30 days** on every plan, free and paid alike. Buying a larger RUM Analyze pack raises the number of sessions you can record, not how long their events are kept, so there is no way to make that window longer.
 
 An earlier version of this page said `context` was "accepted for forward compatibility and is not attached to the event today". That was wrong. If you have been passing user objects, email addresses, order contents or anything else that identifies a person, that data is in `rum_events` now and stays there until its 30-day window expires.
 
@@ -115,7 +115,7 @@ A batch flushes every 10 seconds, immediately at 50 queued events, and on tab hi
 
 - rrweb is lazy-loaded only when a replay-enabled filter activates, keeping the base bundle small.
 - Segments flush at 100 rrweb events and at least every 30 seconds, to `POST {replayBase}/v1/segments`.
-- Input masking (`mask_inputs`, default on) and text masking (`mask_text`, default off) come from the application's [privacy settings](/observability/replay/reference/#privacy-settings).
+- Input masking (`mask_inputs`) and text masking (`mask_text`) come from the application's [privacy settings](/observability/replay/reference/#privacy-settings), not from anything you pass to `init()`. A new application is created with input masking on and text masking off, but the value actually stored on your application is what the SDK obeys, and an application created earlier may store `mask_inputs: false`. Check it.
 
 ## Exported types
 

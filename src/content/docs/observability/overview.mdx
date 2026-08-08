@@ -43,7 +43,7 @@ SiteQwality's observability suite has five pillars. They share the same time pic
 | "How many errors in the last hour?" | **Metrics**. Alertable, fast, cheap. |
 | "What was the error message at 14:32?" | **Logs**. The full payload is there. |
 | "Why was that one request slow?" | **Traces**. See the call graph. |
-| "What was the LCP for users in Brazil?" | **RUM**. Geographically segmented. |
+| "What was the LCP for users on Safari?" | **RUM**. Segmented by browser, OS and device. Country is a dimension but is [effectively empty today](/observability/rum/how-to/dimensions/). |
 | "What did the user click before the error?" | **Replay**. Watch them. |
 
 If you find yourself reaching for **logs** to answer "how many", that's a metric. Emit one. If you reach for **metrics** to answer "what was the actual value", that's a log. Cross-emit.

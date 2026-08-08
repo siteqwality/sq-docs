@@ -120,7 +120,7 @@ The SDK respects two privacy toggles set on the RUM application:
 - `mask_inputs`: replace input values with `***` before sending.
 - `mask_text`: replace user-visible text with `***` (for replay only).
 
-Set these conservatively if you handle PII or financial data. See [replay privacy](/observability/replay/overview/#privacy).
+Set these conservatively if you handle PII or financial data, and check what is stored on each application rather than assuming a default: an application created earlier may store `mask_inputs: false`. See [replay privacy](/observability/replay/overview/#privacy) and the [privacy settings reference](/observability/replay/reference/#privacy-settings).
 
 ## Session dimensions
 
