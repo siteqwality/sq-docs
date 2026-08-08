@@ -117,7 +117,17 @@ Response:
 | Metrics per ingest request | 1000 |
 | Max metric name length | 255 |
 | Max tag key/value length | 255 |
-| Default retention | 90 days (paid tiers extend) |
+| Retention (free tier) | 3 days |
+| Retention (paid telemetry packs) | 15 days on the 50 GB pack; 30 days on the 200 GB and 1 TB packs |
+| Maximum purchasable retention | 30 days |
+
+Retention is resolved **per account**, not per metric or per source, and it is stamped onto each row when it is written. Metrics and histograms share one telemetry window with logs and traces.
+
+Two consequences follow from stamping at write time. Upgrading extends the window on rows already stored as well as new ones. Downgrading is forward-only: rows keep the window they were written with, so cancelling a pack never deletes data early, and it does not shorten anything already stored.
+
+<Aside type="caution" title="This page used to say 90 days">
+Earlier versions of this page stated a 90-day default. That was never true on any plan after per-account retention shipped. The real maximum is 30 days, on the largest telemetry pack.
+</Aside>
 
 ## See also
 

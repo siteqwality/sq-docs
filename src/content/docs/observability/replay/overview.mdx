@@ -44,7 +44,11 @@ Replay is **off by default**. It activates only for sessions matching a [session
 
 Once activated for a session, replay records from the activation moment onward, not from session start. So an errored session might have replay starting halfway through, when the error fired.
 
-For sessions where you want replay from the very beginning, use the `error` filter with `capture_replay: true`. The SDK starts recording on the first error, but the rrweb library was already buffering, so playback typically includes the few seconds before the error.
+<Aside type="caution" title="Nothing is buffered before the trigger">
+There is no pre-trigger buffer. The rrweb library is lazy-loaded: the SDK only fetches it once a replay-enabled filter matches, so nothing is being recorded, or even downloaded, before that moment. Playback starts at the activation point and never includes the lead-up to it.
+
+This page previously claimed that recording with an `error` filter included "the few seconds before the error". It does not.
+</Aside>
 
 ## Privacy
 
@@ -53,23 +57,31 @@ Replay is a privacy-sensitive feature. Two SDK-level controls (set on the RUM ap
 - **`mask_inputs`**: replace input values with `***` in the recording. Critical for password fields, credit card forms.
 - **`mask_text`**: replace user-visible text with `***`. Use when displaying customer names, financial figures, etc.
 
+Both are stored per RUM application, and both are shown as toggles on the application's privacy settings in the dashboard. **Check them there before you rely on either.** The toggles reflect what is actually stored for your application, which is the only thing that governs what gets recorded. Do not assume a default.
+
 Per-element overrides:
 
 ```html
-<!-- Force masking on a specific element -->
+<!-- Mask the text of this element and its children -->
 <div class="rr-mask">Sensitive content</div>
 
-<!-- Force unmasking -->
-<div class="rr-unmask">Always-visible content</div>
-
-<!-- Block from recording entirely -->
+<!-- Do not record this element at all -->
 <div class="rr-block">Don't record this at all</div>
+
+<!-- Do not record input events on this element -->
+<input class="rr-ignore" />
 ```
 
-The `rr-mask` / `rr-unmask` / `rr-block` class names are inherited from rrweb conventions.
+The `rr-mask` / `rr-block` / `rr-ignore` class names are rrweb's own defaults. The SDK does not override them, which is why they work.
+
+<Aside type="caution" title="There is no per-element unmask">
+Masking is one-way. `rr-mask` adds masking to an element; nothing removes it. rrweb 2.0.0-alpha.4, the version this SDK pins, has no unmask option of any kind, so a `rr-unmask` class (or any other unmask attribute) does nothing and raises no error.
+
+This page previously documented `rr-unmask`. It was never implemented. If you added it to an element expecting it to change behaviour, it did not.
+</Aside>
 
 <Aside type="caution">
-Default to safer (more masking) and selectively unmask. For PCI/HIPAA-sensitive apps, audit replays before relying on them, and consider whether replay is appropriate at all.
+`mask_text` is **off by default**, so all user-visible page text is recorded verbatim unless you turn `mask_text` on or add `rr-mask` yourself. Applying `rr-mask` to individual elements is the only per-element control available. For PCI/HIPAA-sensitive apps, audit replays before relying on them, and consider whether replay is appropriate at all.
 </Aside>
 
 ## Pricing
@@ -79,7 +91,7 @@ Replay is paid. Sessions with replay are billed per recorded session and per sto
 ## Limits
 
 - **Segment size**: ~1MB per segment. Larger sessions are split into multiple segments.
-- **Retention**: paid plans 30 days by default; configurable.
+- **Retention**: **30 days, fixed, on every plan.** It is the same on the free tier and on every paid replay pack, and it is not configurable. Two independent mechanisms both enforce 30 days: a TTL on the `rum_replay_segments` index and a flat 30-day expiry rule on the S3 bucket holding the recordings. Buying a larger replay pack raises the number of sessions you can record, not how long they are kept.
 - **Replay can be 10–100× the cost of plain RUM** depending on session length and DOM complexity. Filter aggressively.
 
 ## See also
