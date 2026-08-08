@@ -9,23 +9,50 @@ import { Aside } from '@astrojs/starlight/components';
 
 The wire-level schema is in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet. The API calls these DNS jobs; see the [overview](/uptime-monitoring/dns-checks/overview/) for why.
 
+## The check and a run of the check are different objects
+
+A domain check is served as two shapes, and they answer two different questions. Getting them confused is the single easiest way to misread this API.
+
+| Object | Endpoint | Answers |
+|---|---|---|
+| `DnsJob` | `GET /dns/job/{dns_job_id}` | What do we currently believe about this registration? |
+| `DnsJobResult` | `GET /dns/job/{dns_job_id}/results` | What did one particular run observe? |
+
+They agree on every successful run and diverge the moment a run fails.
+
+A failed run learned nothing, so **its result row records nothing**: `expiry_date`, `domain_status`, `registrar` and `nameservers` are all `null`, and `failure_reason` says why. History has to be able to say "we could not read the registry that day" rather than repeating the previous answer as though it had been confirmed.
+
+The job row does the opposite. It **keeps** the values the last successful run recorded, moves `current_status` to `unknown`, and sets `last_failure_reason` and `last_failure_at`. That is deliberate: clearing the date over a rate limit or a timeout would throw away a good date, blank the registrar and nameserver baseline (so the next successful run would read as a first observation and swallow a real registrar change), and re-arm every alert rung, producing a duplicate 30-day warning on recovery.
+
+<Aside type="caution" title="On the job, `last_failure_reason` marks the registry fields as last known">
+A non-null `last_failure_reason` on a `DnsJob` means `expiry_date`, `domain_status`, `grace_states`, `registrar` and `nameservers` are the **last known** values, not current facts. `last_failure_at` says how old they are. Both are cleared by the next run that reads the registry successfully, so "the last check worked" stays readable rather than becoming a permanent scar from one old blip.
+</Aside>
+
 ## Object: `DnsJob`
+
+Current best knowledge about the registration.
 
 | Field | Type | Description |
 |---|---|---|
 | `id` | uuid | Domain check ID. |
 | `account_id` | uuid | Owning account. |
 | `http_job_id` | uuid | The HTTP check this was paired with. |
-| `current_status` | enum | See [Status](#status). |
+| `current_status` | enum | See [Status](#status). Starts at `unknown` before the first run, and returns to `unknown` when a run fails. |
 | `domain` | string | The **registrable** domain derived from the HTTP check's URL (`https://www.example.com/path` becomes `example.com`). |
-| `expiry_date` | rfc3339 \| null | Registration expiry as published by the registry. `null` when the registry publishes none. |
+| `expiry_date` | rfc3339 \| null | Registration expiry as published by the registry. `null` when the registry publishes none, and before the first successful run. |
+| `domain_status` | string[] \| null | EPP status codes, in RFC 8056 form: lowercase with spaces, so `auto renew period`, not `autoRenewPeriod`. |
+| `grace_states` | string[] | The subset of `domain_status` that means the registration is in trouble. See [Registry states that alert](#registry-states-that-alert). Derived server-side, never `null`, and `[]` when there is nothing wrong. This is the field to key "needs attention" off, not the date. |
+| `registrar` | string \| null | Sponsoring registrar. |
+| `nameservers` | string[] \| null | Nameserver set, lowercased and sorted. |
 | `last_run_at` | rfc3339 \| null | When the check last ran, successfully or not. |
 | `last_status_change_at` | rfc3339 \| null | When `current_status` last transitioned. |
+| `last_failure_reason` | string \| null | Why the last run could not read the registry, if it could not. See [Failure reasons](#failure-reasons). Non-null means the five registry fields above are last known rather than current. Cleared by the next successful run. |
+| `last_failure_at` | rfc3339 \| null | When that failure happened. |
 | `created_at` | rfc3339 | When the check was provisioned. |
 
 ## Object: `DnsJobResult`
 
-One row per run, kept as history.
+One row per run, kept as history. Every field describes **that run**, so a failed run carries a `failure_reason` and nulls, never the previous answer.
 
 | Field | Type | Description |
 |---|---|---|
@@ -33,12 +60,30 @@ One row per run, kept as history.
 | `account_id` | uuid | Owning account. |
 | `dns_job_id` | uuid | The check this result belongs to. |
 | `created_at` | rfc3339 | When the run happened. |
+| `status` | enum | See [Status](#status). Always `unknown` when `failure_reason` is set. |
+| `failure_reason` | string \| null | Set when this run could not read the registry. See [Failure reasons](#failure-reasons). |
+| `expiry_date` | rfc3339 \| null | The expiry date this run observed. `null` on a failed run, and `null` when the registry answered but publishes no expiration event. |
+| `domain_status` | string[] \| null | EPP status codes this run observed, RFC 8056 form. `null` on a failed run. |
+| `grace_states` | string[] | Derived from this run's `domain_status`. Never `null`; `[]` on a failed run. |
+| `registrar` | string \| null | Sponsoring registrar this run observed. `null` on a failed run. |
+| `nameservers` | string[] \| null | Nameservers this run observed, lowercased and sorted. `null` on a failed run. |
+| `rdap_origin` | string \| null | Which endpoint served this run: `iana` when it came from IANA's bootstrap registry, `override` when it came from the two hardcoded endpoints (`.io` and `.co`). `null` on a failed run. |
+
+The registry fields are kept per run so history can answer "what did the registry say on the day this broke". The [registry state](#registry-states-that-alert) and change alerts are decided by comparing a run's observation against what the job already knew, which is why a failed run never fires one.
+
+## Object: `DnsOverview`
+
+The monitor overview, `GET /http/job/{job_id}/overview`, embeds a compact domain summary as its `dns` key. This is what the dashboard's Domain tile reads. It is absent when the HTTP check has no domain monitoring turned on.
+
+| Field | Type | Description |
+|---|---|---|
 | `status` | enum | See [Status](#status). |
-| `failure_reason` | string \| null | Set when the registry could not be read. See [Failure reasons](#failure-reasons). |
-
-### Registry detail recorded per run
-
-Beyond the fields above, every run records what the registry said: the EPP status codes, the sponsoring registrar, the nameserver set, and which RDAP endpoint served the answer. That is what the [registry state](#registry-states-that-alert) and change alerts are computed from, and it is kept per run so history can answer "what did the registry say on the day this broke". The [API Reference](/api-reference/) is the authority on which of those fields the endpoints return today.
+| `domain` | string | The registrable domain being monitored. |
+| `expiry_date` | rfc3339 \| null | Same value as the job's, with the same last-known caveat. |
+| `days_until_expiry` | integer \| null | Whole days from now to `expiry_date`, truncated toward zero, so a registration lapsing in 13 hours reads `0`. Negative once it has passed. |
+| `grace_states` | string[] | Same derived list as on the job. Never `null`. |
+| `last_failure_reason` | string \| null | Set when the last run could not read the registry, so a UI can mark the date as last known rather than current. |
+| `last_run_at` | rfc3339 \| null | When the domain check last ran. |
 
 ## Status
 
@@ -46,7 +91,7 @@ Beyond the fields above, every run records what the registry said: the EPP statu
 |---|---|
 | `good` | The registry answered and the expiry date is in the future. |
 | `expired` | The registry answered and the expiry date has passed. |
-| `unknown` | No usable expiry date. Either the registry answered without publishing an expiration event (`.nl` does exactly this), or the lookup failed. `failure_reason` tells the two apart: it is `null` in the first case and set in the second. |
+| `unknown` | No usable expiry date. Either the registry answered without publishing an expiration event (`.nl` does exactly this), or the lookup failed. The failure reason tells the two apart, and it is `null` in the first case: read `failure_reason` on a result, `last_failure_reason` on the check itself. |
 
 <Aside type="caution" title="A registry hold does not change the status">
 A domain in `auto renew period`, `redemption period` or `pending delete` still reports `good`, because its expiry date genuinely is in the future. The registry state is delivered as an **alert**, not as a status. Anything that keys "is this domain healthy" off `current_status` alone will call a domain in a deletion window healthy. The [overview](/uptime-monitoring/dns-checks/overview/#signal-2-registry-status-alerts) explains why.
@@ -79,8 +124,10 @@ When a run cannot read the registry it records one of these, and the check repor
 | `transport_error` | The request failed or timed out. The per-request timeout is 10 seconds. | Yes |
 | `malformed_response` | The registry answered with something that is not valid RDAP JSON. | Yes |
 
-<Aside type="note" title="A stale date is legible as stale">
-A failed run still records a result and still updates `last_run_at`. If a check reports `unknown` with a failure reason while `expiry_date` is still populated, that date is whatever the last **successful** run saw, not a current fact.
+<Aside type="note" title="Where a failure reason shows up">
+A failed run still records a result row and still updates `last_run_at`. Which field carries the reason depends on which object you are reading: it is `failure_reason` on the [result](#object-dnsjobresult), which is that run's own verdict, and `last_failure_reason` on the [job](#object-dnsjob), which persists until a run succeeds. The two carry the same set of values above.
+
+A retryable failure is retried on the schedule, and each attempt records its own result row, so a bad afternoon at a registry can leave several `unknown` rows in the history for one day.
 </Aside>
 
 ## Alert reasons
@@ -157,9 +204,10 @@ The domain check is read-only through its own endpoints. You create it implicitl
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/dns/job/{dns_job_id}` | Fetch the check and its current status. |
-| `GET` | `/dns/job/{dns_job_id}/recent` | The single most recent result. |
+| `GET` | `/dns/job/{dns_job_id}` | Fetch the check and its current knowledge. Returns a [`DnsJob`](#object-dnsjob). |
+| `GET` | `/dns/job/{dns_job_id}/recent` | The single most recent result. Returns a [`DnsJobResult`](#object-dnsjobresult). |
 | `GET` | `/dns/job/{dns_job_id}/results?limit=50` | Recent results, newest first. `limit` defaults to 50 and is clamped to 200. |
+| `GET` | `/http/job/{job_id}/overview` | The parent HTTP check's overview, whose `dns` key carries a [`DnsOverview`](#object-dnsoverview). |
 
 ## See also
 

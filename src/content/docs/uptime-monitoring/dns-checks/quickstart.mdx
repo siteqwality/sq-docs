@@ -85,22 +85,31 @@ curl https://api.siteqwality.com/dns/job/$DNS_JOB_ID \
   "current_status": "good",
   "domain": "example.com",
   "expiry_date": "2027-03-14T00:00:00Z",
+  "domain_status": ["client transfer prohibited"],
+  "grace_states": [],
+  "registrar": "Example Registrar, Inc.",
+  "nameservers": ["ns1.example-dns.com", "ns2.example-dns.com"],
   "last_run_at": "2026-08-08T04:11:07Z",
   "last_status_change_at": null,
+  "last_failure_reason": null,
+  "last_failure_at": null,
   "created_at": "2026-08-07T09:02:44Z"
 }
 ```
 
-For history, `GET /dns/job/{dns_job_id}/results?limit=50` returns recent runs newest first, each with its own `status` and `failure_reason`.
+For history, `GET /dns/job/{dns_job_id}/results?limit=50` returns recent runs newest first, each with its own `status`, `failure_reason` and its own copy of what that run saw.
 
 </TabItem>
 </Tabs>
 
-Three things to check on that first result:
+Four things to check on that first result:
 
 - **`domain` is the registrable domain**, not the hostname you monitor. `https://www.example.com/orders` is monitored as `example.com`. That is correct: registries hold registrations, not hostnames.
 - **`current_status` is `good`, `expired` or `unknown`.** `unknown` is not an error state on its own. See the [status table](/uptime-monitoring/dns-checks/reference/#status).
+- **`grace_states` is empty, and that is the field to watch.** A non-empty list means the registration is in trouble no matter how far away the date reads. See the [registry states](/uptime-monitoring/dns-checks/reference/#registry-states-that-alert).
 - **`expiry_date` may differ by a day from your registrar's control panel.** SiteQwality reads the registry's date. See the [reference](/uptime-monitoring/dns-checks/reference/#where-the-expiry-date-comes-from).
+
+If `last_failure_reason` is ever set, the registry fields around it are the last known values rather than current ones, because a run that could not reach the registry deliberately leaves them alone. The [reference](/uptime-monitoring/dns-checks/reference/#the-check-and-a-run-of-the-check-are-different-objects) covers the distinction between the check and one run of it.
 
 ## 3. If nothing appears
 
