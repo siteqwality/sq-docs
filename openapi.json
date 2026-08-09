@@ -1648,6 +1648,855 @@
         }
       }
     },
+    "/billing/addons": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Buy an add-on, or move between tiers of one.",
+        "operationId": "purchase_addon",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Add-on purchased or changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddonResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid interval, unknown pack, pack is not an add-on, or already on that tier"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin"
+          },
+          "409": {
+            "description": "Account has no Stripe customer"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/addons/{addon_key}": {
+      "delete": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Remove an add-on.",
+        "operationId": "remove_addon",
+        "parameters": [
+          {
+            "name": "addon_key",
+            "in": "path",
+            "description": "Add-on family key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Add-on removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveAddonResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No active add-on of that kind"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/cancel": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Schedule cancellation at the end of the current period.",
+        "operationId": "cancel_subscription",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Cancellation scheduled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No active subscription"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/cancel/revoke": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Undo a scheduled cancellation.",
+        "operationId": "revoke_cancellation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Cancellation revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No active subscription"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/change-plan": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Change subscription plan/quantity for a product.",
+        "operationId": "change_plan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Plan changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangePlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid billing interval"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/change-plan/preview": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Preview the cost and consequences of a plan change.",
+        "operationId": "preview_change_plan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Proration preview and downgrade warnings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown pack, inactive pack, or an add-on pack"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/config": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Stripe publishable key for the Payment Element.",
+        "operationId": "get_billing_config",
+        "responses": {
+          "200": {
+            "description": "Stripe publishable key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingConfigResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/features": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "List all paid-plan features and whether the account has access to each.",
+        "operationId": "get_features",
+        "responses": {
+          "200": {
+            "description": "Feature access list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeaturesListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/invoices": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Invoice history.",
+        "operationId": "list_invoices",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many invoices to return (default 24, max 100).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoices, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoicesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "409": {
+            "description": "Account has no Stripe customer"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/invoices/{invoice_id}/pay": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Pay an open invoice.",
+        "operationId": "pay_invoice",
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "description": "Stripe invoice id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayInvoiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Charged, or waiting on a browser authentication step",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayInvoiceResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin"
+          },
+          "404": {
+            "description": "No such invoice on this account"
+          },
+          "409": {
+            "description": "Account has no Stripe customer, or the invoice cannot be paid"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/overview": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Current billing state.",
+        "operationId": "get_overview",
+        "responses": {
+          "200": {
+            "description": "Current billing state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverviewResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/payment-methods": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "List the cards on file.",
+        "operationId": "list_payment_methods",
+        "responses": {
+          "200": {
+            "description": "Cards on file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethodsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "409": {
+            "description": "Account has no Stripe customer"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/payment-methods/default": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Choose which card gets charged.",
+        "operationId": "set_default_payment_method",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetDefaultPaymentMethodRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Default card updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin"
+          },
+          "409": {
+            "description": "Account has no Stripe customer"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/payment-methods/setup-intent": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Start adding a card.",
+        "operationId": "create_setup_intent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupIntentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "SetupIntent client secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupIntentResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin"
+          },
+          "409": {
+            "description": "Account has no Stripe customer"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/payment-methods/{payment_method_id}": {
+      "delete": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Remove a card.",
+        "operationId": "delete_payment_method",
+        "parameters": [
+          {
+            "name": "payment_method_id",
+            "in": "path",
+            "description": "Stripe payment method id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Card removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin"
+          },
+          "409": {
+            "description": "Removing the only card on a paid subscription"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/plans": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "List all active billing plans (public endpoint).",
+        "operationId": "get_plans",
+        "responses": {
+          "200": {
+            "description": "Active billing plans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlansResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/billing/sms-credits": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Get the account's purchased SMS credit balance and the packs on offer.",
+        "operationId": "get_sms_credits",
+        "responses": {
+          "200": {
+            "description": "Purchased SMS credit balance and packs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmsCreditsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/sms-credits/purchase": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Buy a one-time SMS credit pack without leaving the app.",
+        "description": "The in-app replacement for `POST /billing/sms-credits/checkout`. It creates\na PaymentIntent rather than redirecting to Stripe's hosted page, so the\ncard is collected by the Payment Element on our own Billing tab and the PAN\nnever touches our servers.\n\n**Nothing is credited here.** The response is only a client secret; the\nbalance moves when the `payment_intent.succeeded` webhook arrives, which is\nwhat keeps a customer who closes the tab mid-payment from being charged\nwithout credits or credited without paying.",
+        "operationId": "purchase_sms_credits",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsCreditsPurchaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "PaymentIntent client secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmsCreditsPurchaseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown or inactive pack, or the card was declined"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin, or the account has no paid plan"
+          },
+          "409": {
+            "description": "Account has no Stripe customer"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/subscriptions": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "List active subscriptions for the account.",
+        "operationId": "get_subscriptions",
+        "responses": {
+          "200": {
+            "description": "Active subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionsListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/usage": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Get current billing-period usage counters by product.",
+        "operationId": "get_usage",
+        "responses": {
+          "200": {
+            "description": "Usage counters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountUsageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/browser_check/": {
       "get": {
         "tags": [
@@ -3038,6 +3887,65 @@
             "bearer_auth": []
           }
         ]
+      },
+      "put": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "Set or clear the renewal date for a domain monitor.",
+        "description": "For the TLDs whose registries publish no expiry date under any protocol\n(`registry_publishes_expiry: false` on the monitor), this is the only date\nthere can be, and the normal 90/60/30/7/0 ladder runs against it.\n\n**A registry date, when there is one, still wins.** The date set here is kept\nand returned beside it rather than overriding it, so a customer can see the\ntwo disagree. See `DnsJob::manual_expiry_date` for the full argument.",
+        "operationId": "update_dns_job",
+        "parameters": [
+          {
+            "name": "dns_job_id",
+            "in": "path",
+            "description": "DNS monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDnsJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The updated DNS monitor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DnsJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The renewal date is in the past or absurdly far in the future"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "DNS monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
       }
     },
     "/dns/job/{dns_job_id}/recent": {
@@ -3075,6 +3983,492 @@
           },
           "404": {
             "description": "No DNS results found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dns/record-monitor": {
+      "post": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "Create a DNS record monitor.",
+        "description": "Opt-in only. A record monitor is deliberately NOT auto-created alongside an\nHTTP monitor: doing that for every existing domain would start an hourly zone\nquery for customers who never asked, establish baselines nobody reviewed, and\nsilently change every monitor count.",
+        "operationId": "create_dns_record_monitor",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDnsRecordMonitorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "DNS monitor created"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "DNS monitor limit reached for the account's plan"
+          },
+          "403": {
+            "description": "Check interval below the free-tier floor"
+          },
+          "409": {
+            "description": "A monitor already watches this domain"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dns/record-monitor/{monitor_id}": {
+      "get": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "Read one DNS record monitor.",
+        "operationId": "get_dns_record_monitor",
+        "parameters": [
+          {
+            "name": "monitor_id",
+            "in": "path",
+            "description": "DNS monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The DNS monitor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DnsRecordMonitor"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "DNS monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "Edit a DNS record monitor.",
+        "operationId": "update_dns_record_monitor",
+        "parameters": [
+          {
+            "name": "monitor_id",
+            "in": "path",
+            "description": "DNS monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDnsRecordMonitorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The updated DNS monitor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DnsRecordMonitor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "DNS monitor limit reached for the account's plan"
+          },
+          "403": {
+            "description": "Check interval below the free-tier floor"
+          },
+          "404": {
+            "description": "DNS monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "Delete a DNS record monitor, its baselines and its history.",
+        "operationId": "delete_dns_record_monitor",
+        "parameters": [
+          {
+            "name": "monitor_id",
+            "in": "path",
+            "description": "DNS monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "DNS monitor deleted"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "DNS monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dns/record-monitor/{monitor_id}/baseline/accept": {
+      "post": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "Accept one or more observed changes as the new baseline.",
+        "operationId": "accept_dns_record_baseline",
+        "parameters": [
+          {
+            "name": "monitor_id",
+            "in": "path",
+            "description": "DNS monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptBaselineRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The accepted baselines",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DnsRecordBaseline"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "DNS monitor or RRset not found"
+          },
+          "409": {
+            "description": "The record changed again since the alert was sent"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dns/record-monitor/{monitor_id}/baseline/declare": {
+      "post": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "Pin an RRset to values the customer DECLARES rather than to values we\nobserved.",
+        "description": "This is what makes the feature useful BEFORE a migration instead of only\nafter one: \"these are my four nameservers, tell me if the zone ever says\nanything else.\" Same table, different `source`, no new mechanism.",
+        "operationId": "declare_dns_record_baseline",
+        "parameters": [
+          {
+            "name": "monitor_id",
+            "in": "path",
+            "description": "DNS monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclareBaselineRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The declared baseline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DnsRecordBaseline"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "DNS monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dns/record-monitor/{monitor_id}/baselines": {
+      "get": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "The monitor's current baselines, one per watched RRset.",
+        "description": "Each carries `rdata_hash`, which is the value an accept request must echo\nback. That is what makes acceptance non-racy.",
+        "operationId": "list_dns_record_baselines",
+        "parameters": [
+          {
+            "name": "monitor_id",
+            "in": "path",
+            "description": "DNS monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The monitor's baselines",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DnsRecordBaseline"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "DNS monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dns/record-monitor/{monitor_id}/results": {
+      "get": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "The monitor's check history, newest first.",
+        "operationId": "list_dns_record_results",
+        "parameters": [
+          {
+            "name": "monitor_id",
+            "in": "path",
+            "description": "DNS monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "description": "How many days back to read. Clamped, because the table is\nrange-partitioned and an unbounded read scans every partition.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The monitor's checks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DnsRecordResult"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "DNS monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dns/record-monitors": {
+      "get": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "List every DNS record monitor on the account.",
+        "description": "Uncapped and unpaged, deliberately: the free tier holds three of these and\nthe interval floor bounds how many any account plausibly runs, so the set is\nsmall by construction. Contrast the unified monitor list, which pages because\nan account can hold hundreds of HTTP checks.",
+        "operationId": "list_dns_record_monitors",
+        "responses": {
+          "200": {
+            "description": "The account's DNS monitors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DnsRecordMonitor"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
           },
           "500": {
             "description": "Internal server error"
@@ -12687,6 +14081,21 @@
   },
   "components": {
     "schemas": {
+      "AcceptBaselineRequest": {
+        "type": "object",
+        "description": "The accept request body.",
+        "required": [
+          "accept"
+        ],
+        "properties": {
+          "accept": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
       "AccountMonitorTotals": {
         "type": "object",
         "description": "Account-wide monitor totals with optional 24h aggregates.\n\nThe aggregate fields (uptime, response times, and their previous-24h\ncounterparts for trend deltas) are omitted from the JSON when no HTTP\nperformance data exists in the window.",
@@ -12840,6 +14249,25 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AccountSlaMonitor"
+            }
+          }
+        }
+      },
+      "AccountUsageResponse": {
+        "type": "object",
+        "required": [
+          "period",
+          "products"
+        ],
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "The Uptime product's period, kept for backwards compatibility. Read\n`ProductUsage::period` for the period a given product is metered in."
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductUsage"
             }
           }
         }
@@ -13053,6 +14481,58 @@
           },
           "url": {
             "type": "string"
+          }
+        }
+      },
+      "AddonRequest": {
+        "type": "object",
+        "required": [
+          "pack_id",
+          "billing_interval",
+          "idempotency_key"
+        ],
+        "properties": {
+          "pack_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "billing_interval": {
+            "type": "string",
+            "description": "`\"month\"` or `\"year\"`."
+          },
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Client-generated, stable across retries of ONE confirm attempt.\n\nThis is what makes a double-click safe: the same value twice is one\nStripe mutation. A client that omits it gets no protection, which is\nwhy it is required rather than optional here (unlike `change-plan`,\nwhich has to keep accepting bodies from already-cached bundles)."
+          }
+        }
+      },
+      "AddonResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "status"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Retained for symmetry with `change-plan`, whose older clients read it."
+          },
+          "status": {
+            "type": "string",
+            "description": "`\"updated\"` when the change is live, `\"requires_payment\"` when the\ncustomer must confirm a payment before it takes effect."
+          },
+          "client_secret": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stripe_subscription_id": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -13610,6 +15090,18 @@
           }
         }
       },
+      "BillingConfigResponse": {
+        "type": "object",
+        "required": [
+          "publishable_key"
+        ],
+        "properties": {
+          "publishable_key": {
+            "type": "string",
+            "description": "Empty when no key is configured, which the frontend must treat as\n\"payment collection unavailable\" rather than as an error. That keeps a\ndeploy where the SSM parameter is missing from taking the whole account\npage down with it."
+          }
+        }
+      },
       "BrandingAssetType": {
         "type": "string",
         "enum": [
@@ -13692,6 +15184,37 @@
           "pending_failure"
         ]
       },
+      "CancelRequest": {
+        "type": "object",
+        "required": [
+          "idempotency_key"
+        ],
+        "properties": {
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CancelResponse": {
+        "type": "object",
+        "required": [
+          "cancel_at_period_end"
+        ],
+        "properties": {
+          "cancel_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Unix seconds at which access ends, or `null` if Stripe has not set a\ndate yet."
+          },
+          "cancel_at_period_end": {
+            "type": "boolean"
+          }
+        }
+      },
       "ChangePasswordRequest": {
         "type": "object",
         "required": [
@@ -13704,6 +15227,63 @@
           },
           "new_password": {
             "type": "string"
+          }
+        }
+      },
+      "ChangePlanRequest": {
+        "type": "object",
+        "required": [
+          "product",
+          "pack_id",
+          "billing_interval"
+        ],
+        "properties": {
+          "product": {
+            "$ref": "#/components/schemas/PricingProduct"
+          },
+          "pack_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "billing_interval": {
+            "type": "string"
+          },
+          "idempotency_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Client-generated, stable across retries of ONE confirm attempt, so a\ndouble-click is one Stripe mutation.\n\nOptional purely for backwards compatibility: a cached frontend bundle\npredating this field must keep working. A request without one gets no\nreplay protection beyond the per-account advisory lock, which serializes\nconcurrent requests but cannot recognise a client retry after a timeout."
+          }
+        }
+      },
+      "ChangePlanResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "status"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Retained so an already-cached frontend bundle keeps working."
+          },
+          "status": {
+            "type": "string",
+            "description": "`\"updated\"` when the change is live, `\"requires_payment\"` when the\ncustomer must confirm a payment before it takes effect."
+          },
+          "client_secret": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stripe_subscription_id": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -13939,6 +15519,59 @@
               "null"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "CreateDnsRecordMonitorRequest": {
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "The zone to watch. Normalised to lowercase without a trailing dot."
+          },
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "http_job_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Optional grouping only. This is NOT a 1:1 pairing: a zone can be watched\nwithout a website, which is the whole reason this is a separate monitor\ntype from the domain-expiry check."
+          },
+          "watched": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            },
+            "description": "Omit to take the default set: the apex `A`, `AAAA`, `MX`, `NS`, `TXT` and\n`CAA`, plus `www` `CNAME` and `A`."
+          },
+          "interval_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "group_notification_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -15286,6 +16919,29 @@
           "text"
         ]
       },
+      "DeclareBaselineRequest": {
+        "type": "object",
+        "description": "What a customer may pin without us having observed it.\n\n`source = user_declared`. This is what makes the feature useful BEFORE a\nmigration instead of only after one.",
+        "required": [
+          "name",
+          "record_type",
+          "rdata"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "record_type": {
+            "type": "string"
+          },
+          "rdata": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "DiscordNotificationDetails": {
         "type": "object",
         "required": [
@@ -15307,7 +16963,9 @@
           "http_job_id",
           "current_status",
           "domain",
-          "created_at"
+          "created_at",
+          "grace_states",
+          "registry_publishes_expiry"
         ],
         "properties": {
           "id": {
@@ -15352,6 +17010,73 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "domain_status": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "EPP status codes from the last check, RFC 8056 form\n(`auto renew period`, not `autoRenewPeriod`)."
+          },
+          "grace_states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Registry states that mean the registration is in trouble regardless of\nwhat `expiry_date` says.\n\nDerived from `domain_status` rather than stored, so a client never has to\ncarry its own copy of which EPP codes matter. It is the field a UI should\nkey \"needs attention\" off: a domain in `auto renew period` reports an\nexpiry date up to two years out while sitting in a 45-day window in which\nthe registrar can hand it back."
+          },
+          "registrar": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Sponsoring registrar as of the last check."
+          },
+          "nameservers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Nameservers as of the last check, lowercased and sorted."
+          },
+          "manual_expiry_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The renewal date the customer entered themselves.\n\nFor the TLDs in [`crate::domain_expiry::NO_EXPIRY_TLDS`], whose\nregistries publish no date under any protocol, this is the only date\nthere can be, and the normal 90/60/30/7/0 ladder runs against it.\n\n**When a registry date also exists, the registry wins** and this stays\nvisible beside it rather than being discarded. A stale manual date is\nexactly the silent wrongness domain monitoring exists to remove, so it\nnever overrides the authority; but dropping it would leave the customer\nbelieving they had entered a date that was doing something. Seeing the\ntwo disagree is the information. `expiry_source` says which of them\n`expiry_date` currently is."
+          },
+          "expiry_source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where the current `expiry_date` came from: `rdap`, `whois`, `whoxy` or\n`manual`. Null when there is no date at all."
+          },
+          "registry_publishes_expiry": {
+            "type": "boolean",
+            "description": "Whether this TLD's registry publishes an expiry date.\n\nDERIVED from the domain, never stored, so it can never go stale against\nthe curated list. `false` for the eleven TLDs measured as publishing\nnothing, and that is the flag a UI keys \"offer the manual entry field\"\noff. It is `true` for every TLD not positively established otherwise,\nincluding every TLD nobody has looked at, which is what makes the default\nsafe: being wrong in this direction costs three failed lookups, and being\nwrong the other way silently removes a customer's check."
+          },
+          "last_failure_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the last check could not read the registry, if it could not.\n\nOne of `no_rdap_endpoint`, `registry_no_record`, `no_whois_server`,\n`whois_no_record`, `whois_access_denied`, `rate_limited`,\n`transport_error`, `malformed_response`, `no_source_has_a_record`, or\n`registry_publishes_no_expiry`.\n\n**`registry_publishes_no_expiry` is a STATE, not a failure**, and a UI\nmust not present it as a broken check. It means the chain was never run\nbecause this registry publishes nothing, and the customer's next move is\nto enter a date, not to open a support ticket. `registry_publishes_expiry`\nabove is the same fact in the form a client can branch on.\n\nA failed check DELIBERATELY leaves `expiry_date`, `domain_status`,\n`registrar` and `nameservers` untouched: it learned nothing, and clearing\nthem would erase a good date over a transient blip and re-arm every alert\nrung. So a non-null value here means the sibling fields are LAST KNOWN\nrather than current, and a UI should say so. Cleared on the next\nsuccessful check."
+          },
+          "last_failure_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -15362,7 +17087,8 @@
           "account_id",
           "dns_job_id",
           "created_at",
-          "status"
+          "status",
+          "grace_states"
         ],
         "properties": {
           "id": {
@@ -15389,6 +17115,60 @@
               "string",
               "null"
             ]
+          },
+          "expiry_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The registry expiry date this check observed.\n\nAdditive. The column has always existed on the row and was simply never\nreturned, so the check history rendered as a status and a timestamp with\nno way to see the date move on renewal."
+          },
+          "domain_status": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "EPP status codes the registry reported, RFC 8056 form."
+          },
+          "grace_states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Registry states that mean the registration is in trouble regardless of\nwhat `expiry_date` says.\n\nDerived, not stored. The set of codes that count as trouble is a product\ndecision that lives in [`crate::domain_expiry`], and a client that\nhardcoded its own list would silently disagree with the alerting the\nmoment either side changed."
+          },
+          "registrar": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nameservers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "rdap_origin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`iana` when the RDAP endpoint came from IANA's bootstrap registry,\n`override` when it came from the hardcoded map (`.io`, `.co`). Null when\nthis check was not answered by the RDAP leg."
+          },
+          "expiry_source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Which leg of the lookup chain answered this check: `rdap`, `whois`,\n`whoxy`, or `manual` when no source published a date and the customer's\nown was used.\n\nPer check, so history can date a domain sliding from one leg to another.\nThat is what a registry quietly withdrawing its RDAP endpoint looks like,\nand it is invisible from the job row alone."
           }
         }
       },
@@ -15399,6 +17179,249 @@
           "expired",
           "unknown"
         ]
+      },
+      "DnsRecordBaseline": {
+        "type": "object",
+        "description": "One baseline as the api returns it.",
+        "required": [
+          "id",
+          "monitor_id",
+          "name",
+          "record_type",
+          "rdata",
+          "rdata_hash",
+          "rotating",
+          "source",
+          "established_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "monitor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "record_type": {
+            "type": "string"
+          },
+          "rdata": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rdata_hash": {
+            "type": "string",
+            "description": "Hex-encoded sha256 of the canonical RRset. This is the value an accept\nrequest must echo back, which is what makes acceptance non-racy."
+          },
+          "rotating": {
+            "type": "boolean"
+          },
+          "rotating_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ttl": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Display only. Never a diff input: a TTL change is an operational fact,\nnot a security one."
+          },
+          "source": {
+            "type": "string"
+          },
+          "established_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "accepted_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "DnsRecordMonitor": {
+        "type": "object",
+        "description": "A DNS record monitor as the api returns it.",
+        "required": [
+          "id",
+          "account_id",
+          "created_at",
+          "domain",
+          "watched",
+          "interval_seconds",
+          "paused",
+          "current_status",
+          "group_notification_ids"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "http_job_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "domain": {
+            "type": "string"
+          },
+          "watched": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "current_status": {
+            "type": "string",
+            "description": "`pending` | `baselined` | `changed` | `unreachable`.\n\nDeliberately never `success`: a monitor that has never run says so\ninstead of claiming to be fine."
+          },
+          "last_run_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_status_change_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_failure_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When set, everything displayed for this monitor is LAST KNOWN, not\ncurrent: a failed check keeps the previous values rather than nulling\nthem, so this field is what makes the staleness legible."
+          },
+          "last_failure_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "group_notification_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "DnsRecordResult": {
+        "type": "object",
+        "description": "One check as the api returns it.",
+        "required": [
+          "id",
+          "monitor_id",
+          "created_at",
+          "status",
+          "snapshot_hash",
+          "changed",
+          "servers_queried",
+          "delegation_source",
+          "disagreement"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "monitor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          },
+          "snapshot_hash": {
+            "type": "string"
+          },
+          "changed": {
+            "type": "boolean"
+          },
+          "snapshot": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            },
+            "description": "Present only on the first check, on a change, or on a failure. Every row\ncarries `snapshot_hash`, so an absent snapshot means \"identical to the\nlast stored one\" rather than \"we did not look\"."
+          },
+          "servers_queried": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "delegation_source": {
+            "type": "string",
+            "description": "`parent_referral` | `rdap_sibling` | `recursive`.\n\nBounds the latency guarantee. \"Detection latency is the check interval\"\nholds only for `parent_referral`; on `recursive` a delegation change can\nbe up to the cached delegation's TTL late, routinely 24 to 48 hours."
+          },
+          "disagreement": {
+            "type": "boolean"
+          },
+          "failure_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "query_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          }
+        }
       },
       "EmailNotificationDetails": {
         "type": "object",
@@ -15644,6 +17667,39 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AvailableField"
+            }
+          }
+        }
+      },
+      "FeatureAccessResponse": {
+        "type": "object",
+        "required": [
+          "feature_key",
+          "feature_label",
+          "has_access"
+        ],
+        "properties": {
+          "feature_key": {
+            "type": "string"
+          },
+          "feature_label": {
+            "type": "string"
+          },
+          "has_access": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FeaturesListResponse": {
+        "type": "object",
+        "required": [
+          "features"
+        ],
+        "properties": {
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureAccessResponse"
             }
           }
         }
@@ -16262,6 +18318,75 @@
           "pushover",
           "pushbullet"
         ]
+      },
+      "InvoiceSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "created",
+          "total_cents",
+          "currency",
+          "status",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Stripe's human-facing invoice number. Absent until finalization."
+          },
+          "created": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix seconds."
+          },
+          "total_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217, uppercase."
+          },
+          "status": {
+            "type": "string"
+          },
+          "pdf_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A direct `files.stripe.com` link, handed to the browser as-is rather\nthan proxied. A PDF download is a file, not a management screen, so it\ndoes not break the \"no screen sends the customer to Stripe\" rule, and\nproxying it would mean streaming a document through a Lambda for no\ngain. The link is short-lived and scoped to the invoice by Stripe."
+          },
+          "description": {
+            "type": "string",
+            "description": "A readable summary of the line items. Deliberately NOT Stripe's\ntop-level `description`, which is null on every subscription invoice we\ngenerate and would leave the whole column blank."
+          }
+        }
+      },
+      "InvoicesResponse": {
+        "type": "object",
+        "required": [
+          "invoices",
+          "has_more"
+        ],
+        "properties": {
+          "invoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvoiceSummary"
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Stripe's paging flag for the page requested. It counts invoices Stripe\nholds, not rows returned, so it can be true while this page dropped a\ndraft."
+          }
+        }
       },
       "LevelCount": {
         "type": "object",
@@ -17474,6 +19599,18 @@
           }
         }
       },
+      "OkResponse": {
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "description": "Always true. Present because a successful response with an empty body\nhands the dashboard's request wrapper a falsy `data`, which reads as a\nfailure at the call site."
+          }
+        }
+      },
       "OnCallOverrideResponse": {
         "type": "object",
         "required": [
@@ -17638,6 +19775,79 @@
           }
         },
         "additionalProperties": false
+      },
+      "OverviewCard": {
+        "type": "object",
+        "required": [
+          "id",
+          "brand",
+          "last4",
+          "exp_month",
+          "exp_year"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "last4": {
+            "type": "string"
+          },
+          "exp_month": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "exp_year": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "OverviewResponse": {
+        "type": "object",
+        "required": [
+          "cancel_at_period_end"
+        ],
+        "properties": {
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Stripe's own subscription status, or `null` when the account has never\nsubscribed. Deliberately the raw Stripe string rather than our internal\nenum: this screen exists to show what Stripe thinks."
+          },
+          "cancel_at_period_end": {
+            "type": "boolean"
+          },
+          "cancel_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Unix seconds. Set when a cancellation is scheduled."
+          },
+          "current_period_end": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Unix seconds. Read off the first subscription ITEM, not the\nsubscription: Stripe moved period boundaries onto items in the API\nversion this SDK pins, and `Subscription` no longer carries them."
+          },
+          "default_payment_method": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OverviewCard"
+              }
+            ]
+          }
+        }
       },
       "PagerDutyNotificationDetails": {
         "type": "object",
@@ -18019,6 +20229,255 @@
           }
         }
       },
+      "PayInvoiceRequest": {
+        "type": "object",
+        "required": [
+          "idempotency_key"
+        ],
+        "properties": {
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Client-generated, stable across retries of ONE pay attempt. Same\ncontract as the add-on endpoint: the same value twice is one charge."
+          }
+        }
+      },
+      "PayInvoiceResponse": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "`\"paid\"` when the charge went through, `\"requires_action\"` when the\ncustomer's bank wants an authentication challenge finished in the\nbrowser."
+          },
+          "client_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Present only with `requires_action`. Feed it to the Payment Element."
+          }
+        }
+      },
+      "PaymentMethodResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "brand",
+          "last4",
+          "exp_month",
+          "exp_year",
+          "is_default",
+          "is_expired"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "last4": {
+            "type": "string"
+          },
+          "exp_month": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "exp_year": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "is_default": {
+            "type": "boolean"
+          },
+          "is_expired": {
+            "type": "boolean",
+            "description": "True once the card's expiry month has passed. Surfaced so the list can\nflag it before a renewal fails rather than after."
+          }
+        }
+      },
+      "PaymentMethodsResponse": {
+        "type": "object",
+        "required": [
+          "payment_methods"
+        ],
+        "properties": {
+          "payment_methods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentMethodResponse"
+            }
+          }
+        }
+      },
+      "PlanPackResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "product",
+          "name",
+          "quota_value",
+          "quota_unit",
+          "price_monthly_cents",
+          "price_annual_cents",
+          "is_free_tier",
+          "sort_order"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "product": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quota_value": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "quota_unit": {
+            "type": "string"
+          },
+          "price_monthly_cents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "price_annual_cents": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_free_tier": {
+            "type": "boolean"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "retention_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Data-retention window this tier includes, in days. `null` for products\nthat have no retention dimension."
+          },
+          "addon_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Add-on family, or `null` for a normal quota tier.\n\nClients MUST filter tier pickers to `addon_key == null`. Add-ons carry\nthe same `product` as the quota tiers they sit beside, so a picker that\nfilters on product alone offers them as if they were tiers, and\nchoosing one asks the server to replace the customer's paid pack."
+          }
+        }
+      },
+      "PlansResponse": {
+        "type": "object",
+        "required": [
+          "packs"
+        ],
+        "properties": {
+          "packs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanPackResponse"
+            }
+          }
+        }
+      },
+      "PreviewLine": {
+        "type": "object",
+        "required": [
+          "description",
+          "amount_cents"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PreviewRequest": {
+        "type": "object",
+        "required": [
+          "product",
+          "pack_id",
+          "billing_interval"
+        ],
+        "properties": {
+          "product": {
+            "$ref": "#/components/schemas/PricingProduct"
+          },
+          "pack_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "billing_interval": {
+            "type": "string"
+          }
+        }
+      },
+      "PreviewResponse": {
+        "type": "object",
+        "required": [
+          "amount_due_now_cents",
+          "next_invoice_total_cents",
+          "currency",
+          "lines",
+          "warnings"
+        ],
+        "properties": {
+          "amount_due_now_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "What Stripe will charge immediately. Zero under the current proration\npolicy for an existing subscription: `create_prorations` puts the\ndifference on the NEXT invoice rather than charging now."
+          },
+          "next_invoice_total_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreviewLine"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreviewWarning"
+            }
+          }
+        }
+      },
+      "PreviewWarning": {
+        "type": "object",
+        "description": "Something the customer loses by making this change.",
+        "required": [
+          "kind",
+          "message"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "Stable machine key, so the client can style or order without parsing\nthe message."
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "PricingProduct": {
         "type": "string",
         "enum": [
@@ -18033,6 +20492,42 @@
           "session_replay",
           "partner"
         ]
+      },
+      "ProductUsage": {
+        "type": "object",
+        "required": [
+          "product",
+          "current_usage",
+          "quota_limit",
+          "hard_stopped",
+          "unit",
+          "period"
+        ],
+        "properties": {
+          "product": {
+            "type": "string"
+          },
+          "current_usage": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Usage in the product's CUSTOMER-FACING unit (see `unit`), not the raw\ntracking unit. Synthetic is metered in seconds for sub-minute accuracy\nbut reported in minutes so it matches the packs and the pricing page."
+          },
+          "quota_limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hard_stopped": {
+            "type": "boolean"
+          },
+          "unit": {
+            "type": "string",
+            "description": "The unit `current_usage` / `quota_limit` are expressed in."
+          },
+          "period": {
+            "type": "string",
+            "description": "The usage period THIS product is metered in. Products are anchored per\nsubscription, so an account can be metering RUM on its billing\nanniversary while an unpurchased product runs on the calendar month;\nthe top-level `period` cannot describe that."
+          }
+        }
       },
       "PublicStatusPageBranding": {
         "type": "object",
@@ -18162,6 +20657,17 @@
               "format": "uuid"
             },
             "description": "Monitor ids to fetch response-time samples for. Ids that are not HTTP\nmonitors, or that belong to another account, are simply absent from\nthe response."
+          }
+        }
+      },
+      "RemoveAddonResponse": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
           }
         }
       },
@@ -19480,6 +21986,17 @@
           }
         }
       },
+      "SetDefaultPaymentMethodRequest": {
+        "type": "object",
+        "required": [
+          "payment_method_id"
+        ],
+        "properties": {
+          "payment_method_id": {
+            "type": "string"
+          }
+        }
+      },
       "SetPartnerClientPlanRequest": {
         "type": "object",
         "description": "Body for `PUT /partner/accounts/{id}/plan`.",
@@ -19540,6 +22057,29 @@
           }
         }
       },
+      "SetupIntentRequest": {
+        "type": "object",
+        "required": [
+          "idempotency_key"
+        ],
+        "properties": {
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "SetupIntentResponse": {
+        "type": "object",
+        "required": [
+          "client_secret"
+        ],
+        "properties": {
+          "client_secret": {
+            "type": "string"
+          }
+        }
+      },
       "SlaMonth": {
         "type": "object",
         "description": "Attainment of one calendar month against the monitor's target.",
@@ -19595,6 +22135,88 @@
           }
         },
         "additionalProperties": false
+      },
+      "SmsCreditPackInfo": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "credits",
+          "price_cents"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "credits": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "price_cents": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SmsCreditsPurchaseRequest": {
+        "type": "object",
+        "required": [
+          "pack_id",
+          "idempotency_key"
+        ],
+        "properties": {
+          "pack_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Client-generated, stable across retries of ONE confirm attempt. Same\ncontract as `POST /billing/addons`: the same value twice is one charge."
+          }
+        }
+      },
+      "SmsCreditsPurchaseResponse": {
+        "type": "object",
+        "required": [
+          "client_secret"
+        ],
+        "properties": {
+          "client_secret": {
+            "type": "string",
+            "description": "Hand this to Stripe's Payment Element to collect and confirm the card.\nThe credits land when `payment_intent.succeeded` arrives, never here."
+          }
+        }
+      },
+      "SmsCreditsResponse": {
+        "type": "object",
+        "required": [
+          "balance",
+          "total_purchased",
+          "packs"
+        ],
+        "properties": {
+          "balance": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Non-expiring purchased credits currently available."
+          },
+          "total_purchased": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "packs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SmsCreditPackInfo"
+            },
+            "description": "One-time packs available for purchase."
+          }
+        }
       },
       "SmsNotificationDetails": {
         "type": "object",
@@ -19939,6 +22561,64 @@
           "in_progress",
           "completed"
         ]
+      },
+      "SubscriptionResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "pack_id",
+          "quantity",
+          "status",
+          "billing_interval",
+          "billing_cycle_start",
+          "billing_cycle_end"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "pack_id": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string"
+          },
+          "billing_interval": {
+            "type": "string"
+          },
+          "billing_cycle_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "billing_cycle_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stripe_subscription_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SubscriptionsListResponse": {
+        "type": "object",
+        "required": [
+          "subscriptions"
+        ],
+        "properties": {
+          "subscriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionResponse"
+            }
+          }
+        }
       },
       "TagFacetValue": {
         "type": "object",
@@ -20380,6 +23060,98 @@
           "failure_reason": {
             "type": [
               "string",
+              "null"
+            ]
+          },
+          "issuer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serial_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "not_before": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "not_after": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "signature_algorithm": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "key_algorithm": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "key_bits": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "san_dns_names": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "cipher_suite": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`None` means our rustls probe could not complete, i.e. the endpoint\noffers only ciphers modern clients have dropped. The check itself runs\non native-tls and still succeeds."
+          },
+          "chain_length": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "hostname_matches": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "self_signed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "chain_trusted": {
+            "type": [
+              "boolean",
               "null"
             ]
           }
@@ -21452,6 +24224,66 @@
               "null"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "UpdateDnsJobRequest": {
+        "type": "object",
+        "description": "Body of `PUT /dns/job/{dns_job_id}`.\n\n`manual_expiry_date` is REQUIRED, and `null` is how it is cleared. It is\ndeliberately not `#[serde(default)]`: with exactly one field, an omitted key\nwould silently clear the customer's date, and `{}` deserializing into\n\"delete what I typed\" is not a request anybody meant to make. An empty body\nis a 422 from the shared `Json` extractor instead.",
+        "required": [
+          "manual_expiry_date"
+        ],
+        "properties": {
+          "manual_expiry_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "RFC 3339. Must be in the future and inside\n[`MAX_MANUAL_EXPIRY_YEARS`] years. Send `null` to clear it.\n\n`required` is asserted explicitly because utoipa reads an `Option<T>` as\nan optional key while serde, with no `#[serde(default)]`, demands it. The\npublished spec has to say what the endpoint actually does."
+          }
+        }
+      },
+      "UpdateDnsRecordMonitorRequest": {
+        "type": "object",
+        "properties": {
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "watched": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "interval_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "paused": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "group_notification_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
