@@ -1,13 +1,13 @@
 ---
 title: Domain expiry quickstart
-description: Turn domain registration monitoring on for an existing HTTP check, and read your first result.
-last_verified: 2026-08-08
+description: Turn domain registration monitoring on for an existing HTTP check, read your first result, and set a renewal date by hand when the registry publishes none.
+last_verified: 2026-08-09
 owner: jj
 ---
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide your domain's registration is being read from its registry once a day, and you will know how to tell a healthy result from a stale one.
+By the end of this guide your domain's registration is being read once a day, you will know how to tell a healthy result from a stale one, and you will know what to do if your TLD is one of the eleven that publish no expiry date.
 
 ## Prerequisites
 
@@ -85,6 +85,9 @@ curl https://api.siteqwality.com/dns/job/$DNS_JOB_ID \
   "current_status": "good",
   "domain": "example.com",
   "expiry_date": "2027-03-14T00:00:00Z",
+  "expiry_source": "rdap",
+  "manual_expiry_date": null,
+  "registry_publishes_expiry": true,
   "domain_status": ["client transfer prohibited"],
   "grace_states": [],
   "registrar": "Example Registrar, Inc.",
@@ -102,12 +105,13 @@ For history, `GET /dns/job/{dns_job_id}/results?limit=50` returns recent runs ne
 </TabItem>
 </Tabs>
 
-Four things to check on that first result:
+Five things to check on that first result:
 
 - **`domain` is the registrable domain**, not the hostname you monitor. `https://www.example.com/orders` is monitored as `example.com`. That is correct: registries hold registrations, not hostnames.
 - **`current_status` is `good`, `expired` or `unknown`.** `unknown` is not an error state on its own. See the [status table](/uptime-monitoring/dns-checks/reference/#status).
 - **`grace_states` is empty, and that is the field to watch.** A non-empty list means the registration is in trouble no matter how far away the date reads. See the [registry states](/uptime-monitoring/dns-checks/reference/#registry-states-that-alert).
-- **`expiry_date` may differ by a day from your registrar's control panel.** SiteQwality reads the registry's date. See the [reference](/uptime-monitoring/dns-checks/reference/#where-the-expiry-date-comes-from).
+- **`expiry_source` says who gave you the date.** `rdap` and `whois` are the registry's own answer. `whoxy` is a commercial database, used when the registry gave us nothing, and is worth a second look before you act on it. `manual` is a date somebody at your company typed in. See [where the date comes from](/uptime-monitoring/dns-checks/reference/#where-the-expiry-date-comes-from).
+- **`expiry_date` may differ by a day from your registrar's control panel.** SiteQwality reads the registry's date, not the registrar's. That is expected.
 
 If `last_failure_reason` is ever set, the registry fields around it are the last known values rather than current ones, because a run that could not reach the registry deliberately leaves them alone. The [reference](/uptime-monitoring/dns-checks/reference/#the-check-and-a-run-of-the-check-are-different-objects) covers the distinction between the check and one run of it.
 
@@ -124,11 +128,55 @@ If `last_failure_reason` is ever set, the registry fields around it are the last
        domain. Domain-expiry monitoring needs a domain you register yourself.
    ```
 
-3. **If the status is `unknown`, read the failure reason.** `GET /dns/job/{id}/results` returns `failure_reason` per run. `no_rdap_endpoint` means the TLD publishes no registration data (`.de` is the common one) and will never succeed. Everything else is listed in the [reference](/uptime-monitoring/dns-checks/reference/#failure-reasons).
+3. **If the status is `unknown`, read the failure reason.** `GET /dns/job/{id}/results` returns `failure_reason` per run. `registry_publishes_no_expiry` is not a failure and needs [step 4](#4-if-your-tld-publishes-no-expiry-date). Everything else is a real lookup problem and is listed in the [reference](/uptime-monitoring/dns-checks/reference/#failure-reasons).
 
 </Steps>
 
-## 4. Know what an alert will look like
+## 4. If your TLD publishes no expiry date
+
+Eleven TLDs publish no expiry date to anybody, under any protocol, because their registries have decided not to:
+
+`.am` &middot; `.at` &middot; `.be` &middot; `.ch` &middot; `.de` &middot; `.eu` &middot; `.gg` &middot; `.im` &middot; `.jp` &middot; `.nl` &middot; `.nz`
+
+A domain on one of them reports `registry_publishes_expiry: false`, `expiry_date: null`, `current_status: unknown` and `last_failure_reason: "registry_publishes_no_expiry"`. **The check is not broken.** No source has the date, so there is nothing to wait for and nothing to retry. Registrar and nameserver change alerts still work normally.
+
+The fix is to tell SiteQwality the date yourself.
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. Open the HTTP check and find the domain card. On these TLDs it says the registry publishes no expiry date, instead of showing a countdown.
+
+2. Enter your renewal date and save.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X PUT https://api.siteqwality.com/dns/job/$DNS_JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "manual_expiry_date": "2027-03-01T00:00:00Z" }'
+```
+
+Send `{ "manual_expiry_date": null }` to clear it. Either way the updated check comes back in the response.
+
+</TabItem>
+</Tabs>
+
+From then on the check behaves like any other: warnings at 90, 60, 30 and 7 days, then on the lapse, each rung once. `expiry_source` reads `manual`.
+
+<Aside type="danger" title="Put the update in your renewal runbook">
+A manual date is yours to maintain. Nothing moves it when you renew, because there is no registry answer to read it back from.
+
+Renew a `.de` domain and forget this field, and the ladder will warn you four times about a renewal you already paid for, then tell you the domain has expired while it is perfectly fine. Update the date in the same step in which you renew.
+</Aside>
+
+## 5. Know what an alert will look like
 
 You do not need to do anything to receive alerts: they go to the same notification groups as the parent HTTP check. What arrives is one of five messages.
 
