@@ -1,7 +1,7 @@
 ---
 title: Domain expiry checks
-description: Read a domain's registration straight from its registry over RDAP, and alert before the registration lapses or the registry takes it back.
-last_verified: 2026-08-08
+description: Read a domain's registration from its registry, over RDAP where the registry runs one and port-43 WHOIS where it does not, and alert before the registration lapses or the registry takes it back.
+last_verified: 2026-08-09
 owner: jj
 ---
 
@@ -28,15 +28,90 @@ A domain check is **paired with an HTTP check**. Set `monitor_dns: true` and Sit
 
 Each run:
 
-1. Finds the registry's RDAP service for the domain's TLD, using [IANA's bootstrap registry](https://data.iana.org/rdap/dns.json) (about 1,200 TLDs, refreshed daily, with a bundled copy as a fallback). `.io` and `.co` run RDAP but are absent from that file, so they are served from two hardcoded entries.
-2. Requests the registration record from the registry itself.
-3. Records the result, whether or not the lookup worked, along with the expiry date, the registry status codes, the registrar and the nameservers.
-4. Decides whether any of the three signals below is worth an alert, and fans it out through the parent HTTP check's notification groups.
+1. Works down a **three-leg chain** until one leg returns a registration record for the name. See below.
+2. Records the result, whether or not the lookup worked, along with the expiry date, the registry status codes, the registrar and the nameservers.
+3. Decides whether any of the three signals below is worth an alert, and fans it out through the parent HTTP check's notification groups.
 
 **Cadence is daily.** It was weekly until August 2026, which made the warning ladder below impossible to honour: seven days between observations means a domain can be seen at "30 days left" and then next at "expired".
 
+### The three legs
+
+| Order | Leg | Used when |
+|---|---|---|
+| 1 | **Registry RDAP.** The registry's own RDAP service, located through [IANA's bootstrap registry](https://data.iana.org/rdap/dns.json) (about 1,200 TLDs, refreshed daily, with a bundled copy as a fallback). `.io` and `.co` run RDAP but are absent from that file, so they are served from two hardcoded entries. | Always tried first. |
+| 2 | **Port-43 WHOIS.** The registry's own WHOIS server, on the classic port-43 protocol. | The TLD has no RDAP service, or RDAP had no record for this name. |
+| 3 | **A commercial registration database.** A paid third-party source that aggregates registration data. | Neither of the first two produced a record. |
+
+`expiry_source` on the check tells you which leg answered: `rdap`, `whois`, `whoxy`, or `manual` when the date is one you entered yourself. It is `null` when there is no date at all. Legs 1 and 2 are both the registry's own answer. Only leg 3 is somebody else's copy, and it exists to catch the long tail rather than to be the usual path.
+
+### Why there is a chain at all
+
+**RDAP is mandatory for gTLDs and optional for ccTLDs.** ICANN's registry contracts require every gTLD (`.com`, `.org`, `.dev`, and the rest) to run an RDAP service. ccTLD registries are not party to those contracts and are under no obligation, so many run port-43 WHOIS only. IANA's bootstrap file lists an RDAP service for roughly 1,200 of the 1,438 TLDs in the root.
+
+Reading RDAP and stopping there left a large part of the country-code space with no expiry check at all. A `.me` domain got nothing.
+
+The WHOIS leg recovers about half of that gap. Measured on 2026-08-09 against 24 ccTLD registries' own WHOIS servers, these publish an expiry date over port 43: `.cn`, `.dk`, `.it`, `.kr`, `.me`, `.ru`, `.se`, `.sh`, `.st`, `.us`. The third leg covers what is left, including registries that refuse connections from our address and formats that would otherwise need hand-parsing.
+
+<Aside type="caution" title="A blip does not cascade down the chain">
+The chain advances only when a leg has **no endpoint** for the TLD or **no record** for the name. It does **not** advance on a transport failure: a timeout, a refused connection, a `429`, or a malformed response records that failure and is retried against the same leg on the next run.
+
+That distinction is deliberate. A registry having a bad afternoon must not turn one lookup into three lookups against three providers for every monitored domain on that TLD.
+</Aside>
+
 <Aside type="note" title="The date comes from the registry, not from your registrar">
-RDAP responses from a registry carry exactly one expiration event, so the date means the same thing on every TLD. Your registrar's control panel may show a date one day earlier, because a registrar tracks its own expiry separately. Neither is wrong. The registry's date is the one that governs what happens to the domain.
+Whichever of the first two legs answers, the date is the registry's. Your registrar's control panel may show a date one day earlier, because a registrar tracks its own expiry separately. Neither is wrong. The registry's date is the one that governs what happens to the domain.
+</Aside>
+
+## When the registry publishes no expiry date
+
+Some registries publish no expiry date to anybody, under any protocol. That is policy, not an outage, and no fallback can route around it.
+
+**The TLDs we have positively established publish no expiry date:**
+
+`.am` &middot; `.at` &middot; `.be` &middot; `.ch` &middot; `.de` &middot; `.eu` &middot; `.gg` &middot; `.im` &middot; `.jp` &middot; `.nl` &middot; `.nz`
+
+A domain on one of these reports:
+
+| Field | Value |
+|---|---|
+| `registry_publishes_expiry` | `false` |
+| `expiry_date` | `null` |
+| `expiry_source` | `null` |
+| `current_status` | `unknown` |
+| `last_failure_reason` | `registry_publishes_no_expiry` |
+
+**`registry_publishes_no_expiry` is a state, not a broken check.** It is not retried, it will not clear on its own, and it is not an alert. It is the check telling you, in one field, that no amount of waiting will produce a date for this domain.
+
+Everything else the registry does publish still works. Only the expiry ladder is affected: the registrar and nameserver change alerts run off whatever fields that registry returns. `.nl` is the clearest illustration, because SIDN answers RDAP with a complete record and simply omits the expiration event. `.de` is the other shape: DENIC publishes no RDAP service at all.
+
+`registry_publishes_expiry` is `true` for every TLD not on that list. It is a statement about what we have established, not a guess, so a TLD only lands on the list once we have confirmed it publishes nothing.
+
+### Set the renewal date yourself
+
+For those TLDs, you supply the date. Send it to the check with `PUT /dns/job/{dns_job_id}`:
+
+```bash
+curl -X PUT https://api.siteqwality.com/dns/job/$DNS_JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "manual_expiry_date": "2027-03-01T00:00:00Z" }'
+```
+
+In the dashboard, the domain card says the TLD publishes no expiry date and offers the same field.
+
+Once it is set:
+
+- The **normal ladder runs against it**: 90, 60, 30 and 7 days, then the lapse itself, each rung once per date, exactly as it would against a registry date.
+- `expiry_source` reads `manual`.
+- `registry_publishes_expiry` stays `false`. It describes the TLD, not your domain.
+- Clear it by sending `{ "manual_expiry_date": null }`.
+
+<Aside type="danger" title="A manual date is yours to maintain and does not update itself">
+Nothing moves this date when you renew. There is no registry answer to read it back from, which is the entire reason you are typing it in.
+
+So a renewal is two steps: renew the domain, then set the new date. Skip the second and the ladder warns you about a renewal you already completed, then reports the domain as expired while it is perfectly fine. That is worse than no alert, because it teaches you to ignore the alert.
+
+Put the update in the same calendar reminder or runbook step as the renewal itself.
 </Aside>
 
 ## Signal 1: the expiry ladder
@@ -103,7 +178,7 @@ Both are quiet about things that are not really changes:
 
 ## What it cannot tell you
 
-- **Some TLDs publish no expiry date at all.** The two clear examples are `.de` and `.nl`. DENIC (`.de`) publishes no RDAP service, so there is nothing to read: the check records `no_rdap_endpoint` and stops there. SIDN (`.nl`) does answer, but its response omits the expiration event, so the registrar and nameserver signals still work and the expiry ladder never can. Both are policy decisions by those registries, not gaps in the check, and neither will ever start working by itself. Domains on them report `unknown` permanently.
+- **Eleven TLDs publish no expiry date at all**, so no chain can find one and you have to [enter the renewal date yourself](#when-the-registry-publishes-no-expiry-date). Everything else on the registration still works for them.
 - **Platform-hosted hostnames get no domain check.** A monitor on `*.github.io`, `*.herokuapp.com`, `*.vercel.app` or any of the roughly 3,200 similar shared suffixes is not paired with a domain check, because the registration belongs to the platform. Reporting GitHub's renewal date as yours, and firing an alert ladder on it, would be a confident wrong answer.
 - **It does not monitor DNS resolution or record values.** See the caution at the top of this page.
 - **There is no standalone domain check.** It is always paired with an HTTP check.
