@@ -131,7 +131,7 @@ Recorded when a run ends with no expiry date. The check reports `unknown` in eve
 | `malformed_response` | The source answered with something that would not parse. | Yes, against the same leg |
 
 <Aside type="caution" title="`registry_publishes_no_expiry` must not be rendered as a broken check">
-It is the one value in this table that is a **state**. A `.de` domain is not failing, is not degraded, and is not waiting on anything: its registry does not publish the date, and it never will. Anything that paints a red badge, opens an incident, or fires an alert on a non-null `last_failure_reason` will be wrong about every domain on those eleven TLDs, permanently.
+It is the one value in this table that is a **state**. A `.de` domain is not failing, is not degraded, and is not waiting on anything: its registry does not publish the date, and it never will. Anything that paints a red badge, opens an incident, or fires an alert on a non-null `last_failure_reason` will be wrong about every domain on those ten TLDs, permanently.
 
 Key the "something is wrong" treatment off the other five values, and key an "enter a renewal date" prompt off `registry_publishes_expiry` being `false`.
 </Aside>
@@ -213,7 +213,7 @@ On the RDAP leg, SiteQwality deliberately does not follow the `related` link to 
 
 ## Manual renewal dates
 
-Eleven TLDs publish no expiry date to anybody: `.am`, `.at`, `.be`, `.ch`, `.de`, `.eu`, `.gg`, `.im`, `.jp`, `.nl` and `.nz`. They report `registry_publishes_expiry: false` and `last_failure_reason: registry_publishes_no_expiry`. For those, you supply the date.
+Eleven TLDs publish no expiry date to anybody: `.am`, `.at`, `.be`, `.de`, `.eu`, `.gg`, `.im`, `.nl`, `.no` and `.nz`. They report `registry_publishes_expiry: false` and `last_failure_reason: registry_publishes_no_expiry`. For those, you supply the date.
 
 ```bash
 # Set it
