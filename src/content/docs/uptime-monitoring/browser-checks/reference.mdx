@@ -17,7 +17,7 @@ The full request schema is in the auto-generated [API Reference](/api-reference/
 | `script` | string | required | The Playwright script body. Wrapped in an async IIFE; max ~50KB. |
 | `frequency` | enum | required | `5m`, `10m`, `15m`, `30m`, or `1h`. |
 | `timeout_seconds` | int | `60` | Max script runtime, 1–300. The actual user-script budget is `timeout - 30s`. |
-| `check_regions` | string[] | `["aws-us-east-1"]` | Regions to run from. Subset of [supported regions](#supported-regions). Every value currently resolves to `aws-us-east-1`, see the note there. |
+| `check_regions` | string[] | `["aws-us-east-1"]` | Locations to run from. Subset of [supported regions](#supported-regions). Every value currently resolves to `aws-us-east-1`, the only location with a runner; see the note there. |
 | `min_healthy_regions` | int | `1` | Required healthy regions for overall status. Must be ≤ region count, and is additionally capped at runtime to the number of regions that can actually serve the check. |
 | `group_notification_ids` | uuid[] | `[]` | Notification groups; cap of 10. |
 | `state` | enum | `active` | `active` or `paused`. Paused checks don't run. |
@@ -27,19 +27,19 @@ The full request schema is in the auto-generated [API Reference](/api-reference/
 
 ## Supported regions
 
-These four values are accepted by the API:
+These four values are accepted by the API. **One of them runs anything.**
 
-| Value | Location |
-|---|---|
-| `aws-us-east-1` | N. Virginia, USA (default) |
-| `aws-us-east-2` | Ohio, USA |
-| `aws-us-west-1` | N. California, USA |
-| `aws-eu-west-2` | London, UK |
+| Value | Location | Runs checks today |
+|---|---|---|
+| `aws-us-east-1` | N. Virginia, USA | Yes. The default. |
+| `aws-us-east-2` | Ohio, USA | No |
+| `aws-us-west-1` | N. California, USA | No |
+| `aws-eu-west-2` | London, UK | No |
 
-<Aside type="danger" title="Only aws-us-east-1 has a browser runner today">
+<Aside type="danger" title="Only aws-us-east-1 has a runner, for any check type">
 A browser check requested for any other region falls back to the US East runner, and its result is recorded against `aws-us-east-1` because that is where it genuinely ran. Multiple selected regions collapse into a single run.
 
-See [regions](/uptime-monitoring/browser-checks/overview/#regions) for the full behavior, including how `min_healthy_regions` is capped. HTTP checks are unaffected and do run in all four.
+See [regions](/uptime-monitoring/browser-checks/overview/#regions) for the full behavior, including how `min_healthy_regions` is capped. This is not specific to browser checks: `aws-us-east-1` is the only location with check infrastructure at all, and HTTP checks run from there too. See [check locations](/uptime-monitoring/overview/#regions).
 </Aside>
 
 ## The script API

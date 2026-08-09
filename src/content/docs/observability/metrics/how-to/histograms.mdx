@@ -105,7 +105,7 @@ One response drives both views:
 
 - **Intervals with no data are absent, not zero.** A gap in the response means nothing was recorded, and the chart shows a gap rather than a floor.
 - **Percentiles are per interval and cannot be averaged.** Each bucket's percentiles come from that interval's own merged distribution. Averaging p99 across intervals is not a meaningful p99.
-- **Histogram data is retained for 90 days.**
+- **Histogram retention is 3 days on the free tier and at most 30 days on a paid telemetry pack** (15 days on the 50 GB pack, 30 days on the 200 GB and 1 TB packs). Histograms share the single per-account telemetry window with metrics, logs and traces. This page previously said 90 days, which was wrong: 30 days is the longest window that can be bought. See the [metrics reference](/observability/metrics/reference/#limits).
 - **Keep one bucket layout per metric name.** Rows for the same metric are merged bucket-by-bucket per interval. If two services emit the same metric name with different bounds, one layout wins and the merged result is not meaningful. Give them different names or a distinguishing tag.
 - **Timestamps here are second-precision.** Do not rely on sub-second alignment when correlating with other charts.
 

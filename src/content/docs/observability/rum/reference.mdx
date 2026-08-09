@@ -15,8 +15,8 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 |---|---|---|---|
 | `name` | string | required | Application name. 1 to 255 characters. |
 | `domain` | string | none | Site domain, used by dashboard deep links. |
-| `settings.privacy.mask_inputs` | bool | `true` | Mask input values in replay recordings. |
-| `settings.privacy.mask_text` | bool | `false` | Mask all user-visible text in replay recordings. |
+| `settings.privacy.mask_inputs` | bool | `true` | Mask input values in replay recordings. Read the stored value rather than trusting this default; see [privacy settings](/observability/replay/reference/#privacy-settings). |
+| `settings.privacy.mask_text` | bool | `false` | Mask all user-visible text in replay recordings. Off by default, so page text is recorded verbatim unless you turn it on. |
 
 `POST /rum` takes `name` and `domain`. `PUT /rum/{app_id}` additionally takes `settings`.
 

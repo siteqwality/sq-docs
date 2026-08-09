@@ -22,7 +22,7 @@ For ping-style "is the box up" checks where there's no HTTP server, use a [cron 
 
 Every HTTP check has a **schedule** (default: every 10 minutes; minimum 30 seconds on paid plans) and a **target URL**. On each tick:
 
-1. SiteQwality issues the configured HTTP request from one or more **regions** (`us-east-1` by default; multi-region requires a paid plan).
+1. SiteQwality issues the configured HTTP request from AWS `us-east-1`, the only [check location](/uptime-monitoring/overview/#regions) that runs checks today.
 2. The response is evaluated against your **assertions**: status code, response body keyword search, response time.
 3. If the result differs from the previous status (e.g., success → failure), an **incident** opens and your **notification rules** fire.
 4. The result is recorded for uptime/latency dashboards and historical reporting.
@@ -42,7 +42,7 @@ These are opt-in via the `monitor_tls`, `monitor_dns`, and `monitor_page_speed` 
 | **Request** | method, URI, custom headers, request body, content type, follow-redirects |
 | **Auth** | Basic, Digest, or Bearer token |
 | **Assertions** | success/failure status code lists, keyword search (substring or regex, optionally case-sensitive or inverted), timeout |
-| **Schedule** | run interval (30 s on paid plans, otherwise 60 s minimum), check regions, minimum healthy regions |
+| **Schedule** | run interval (30 s on paid plans, otherwise 60 s minimum), check regions and minimum healthy regions (both settable, both effectively fixed at one location today) |
 | **Notifications** | one or more notification groups |
 
 Full field-by-field reference: see the auto-generated [`POST /http/job`](/api-reference/operations/create_http_job/).

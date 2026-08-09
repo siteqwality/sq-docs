@@ -22,10 +22,18 @@ Replay records only for sessions matching a [session filter](/observability/rum/
 
 Set on the RUM application (`PUT /rum/{app_id}` under `settings.privacy`), delivered to the SDK with its config:
 
-| Field | Default | Effect |
+| Field | Documented default | Effect |
 |---|---|---|
 | `mask_inputs` | `true` | Masks all input values in the recording (rrweb `maskAllInputs`). |
 | `mask_text` | `false` | Masks all user-visible text in the recording. |
+
+<Aside type="danger" title="Read the stored value, not the documented default">
+Applications created earlier can have `mask_inputs` stored as `false`, because the value was written into the application's settings at creation time and nothing rewrites it afterwards. The documented default governs what a new application is created with; **the stored value is what governs what is recorded**.
+
+`GET /rum/{app_id}` returns `settings.privacy` for the application, and the dashboard shows the same two values as toggles under **RUM → Settings → Privacy**. Check them on every application you operate before relying on either one. There is no bulk fix and no backfill.
+
+`mask_text` is off, which is a deliberate default and not a defect: with it off, all user-visible page text is recorded verbatim. Turn it on, or apply `rr-mask` to the elements that matter, if the pages being recorded render anything you would not want in a recording.
+</Aside>
 
 ## Segment mechanics
 

@@ -66,7 +66,13 @@ If you need to stop collection entirely, disable every filter to stop detail and
 | Privacy settings | **RUM → Settings → Privacy**, or `PUT /rum/{app_id}` with `settings.privacy` |
 | Session filters | **RUM → Filters**, or the `/rum/{app_id}/filters` endpoints |
 
-Defaults if you set nothing: `mask_inputs` is **on**, `mask_text` is **off**, and there are no filters, meaning no detail capture and no replay.
+Defaults for a newly created application: `mask_inputs` is **on**, `mask_text` is **off**, and there are no filters, meaning no detail capture and no replay.
+
+<Aside type="danger" title="An existing application may not carry those defaults">
+Privacy settings are written into the application record when it is created, and nothing rewrites them afterwards. An application created earlier can have `mask_inputs` stored as `false`, in which case its recordings capture input values however this page describes the default.
+
+The config payload above is the authority: `GET {ingestBase}/v1/config` returns exactly what the SDK will obey for your application, and the dashboard's **RUM → Settings → Privacy** toggles show the same stored values. Check them per application. There is no backfill.
+</Aside>
 
 ## How long changes take to land
 

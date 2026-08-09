@@ -77,7 +77,7 @@ Anything you can do with Playwright works inside a step.
 Available frequencies: `5m`, `10m`, `15m`, `30m`, `1h`. Browser checks are billed per run; the dashboard shows your current monthly count under **Settings → Billing → Usage**.
 
 <Aside type="caution">
-Browser checks are paid-only. Single-region runs are included on Pro plans; multi-region checks need a higher tier.
+Browser checks are paid-only. Every run happens in `aws-us-east-1` whatever you select, so there is no multi-location browser check to buy today.
 </Aside>
 
 ## Failure alerts carry the failed step and a screenshot
@@ -110,14 +110,14 @@ The region selector accepts the same four values as HTTP checks, but **only one 
 
 `POST /browser_check/{id}/run` tells you the truth in its response: it reports the region the run actually executed in.
 
-This is a browser-check limitation only. **HTTP checks really do run from all four regions.**
+**This is not a browser-check limitation.** `aws-us-east-1` is the only location with check infrastructure of any kind: HTTP checks run from there too, and the other three values have no runner behind them either. The difference is that browser checks fall back to the US East runner and record the truth, while an HTTP check configured for a location that does not run simply never reports from it. See [check locations](/uptime-monitoring/overview/#regions).
 </Aside>
 
 ## Constraints
 
 - **Script size**: anything under 50KB. The script is stored in Postgres alongside the check config.
 - **Timeout**: `1`–`300` seconds per run. Includes browser startup; the user script gets `timeout - 30s`.
-- **Regions**: accepts `aws-us-east-1`, `aws-us-east-2`, `aws-us-west-1`, `aws-eu-west-2`, with the caveat above.
+- **Regions**: accepts `aws-us-east-1`, `aws-us-east-2`, `aws-us-west-1`, `aws-eu-west-2`. Only `aws-us-east-1` runs anything; see the caveat above.
 
 ## See also
 
