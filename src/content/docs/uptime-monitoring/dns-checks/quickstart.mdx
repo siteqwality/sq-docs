@@ -7,7 +7,7 @@ owner: jj
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide your domain's registration is being read once a day, you will know how to tell a healthy result from a stale one, and you will know what to do if your TLD is one of the eleven that publish no expiry date.
+By the end of this guide your domain's registration is being read once a day, you will know how to tell a healthy result from a stale one, and you will know what to do if your TLD is one of the ten that publish no expiry date.
 
 ## Prerequisites
 
@@ -136,7 +136,7 @@ If `last_failure_reason` is ever set, the registry fields around it are the last
 
 Eleven TLDs publish no expiry date to anybody, under any protocol, because their registries have decided not to:
 
-`.am` &middot; `.at` &middot; `.be` &middot; `.ch` &middot; `.de` &middot; `.eu` &middot; `.gg` &middot; `.im` &middot; `.jp` &middot; `.nl` &middot; `.nz`
+`.am` &middot; `.at` &middot; `.be` &middot; `.de` &middot; `.eu` &middot; `.gg` &middot; `.im` &middot; `.nl` &middot; `.no` &middot; `.nz`
 
 A domain on one of them reports `registry_publishes_expiry: false`, `expiry_date: null`, `current_status: unknown` and `last_failure_reason: "registry_publishes_no_expiry"`. **The check is not broken.** No source has the date, so there is nothing to wait for and nothing to retry. Registrar and nameserver change alerts still work normally.
 
