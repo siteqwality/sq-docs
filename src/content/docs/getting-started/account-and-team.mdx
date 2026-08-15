@@ -1,7 +1,7 @@
 ---
 title: Account and team setup
 description: Invite teammates, generate API keys, and set up the things that should exist before anything goes wrong.
-last_verified: 2026-08-06
+last_verified: 2026-08-14
 owner: jj
 ---
 
@@ -15,7 +15,7 @@ Once you have an account, there are a handful of one-time setup steps that pay o
 
 1. Open **Account → Users**.
 
-2. Click **Invite User**, enter their email, and pick the role they'll join with (defaults to **Member**). Inviting someone as Admin or Super Admin requires you to be a Super Admin yourself.
+2. Click **Invite User**, enter their email, and pick the role they'll join with (defaults to **Member**). Inviting someone as Admin, Billing Admin, or Super Admin requires you to be a Super Admin yourself. To invite a group, choose **Invite several people** and paste up to 25 addresses (one per line, or separated by commas).
 
 3. Invites expire after **14 days**. Pending invites stay listed in the same table with **Resend** and **Cancel** actions: Resend re-sends the original link and resets the expiry clock (including for already-expired invites); cancelling kills the link.
 
@@ -29,8 +29,10 @@ Once you have an account, there are a handful of one-time setup steps that pay o
 </Steps>
 
 <Aside type="caution">
-Pending invites count toward your plan's seat limit immediately, not on acceptance. Expired invites stop counting on their own, and cancelling frees the seat right away.
+Pending invites count toward your plan's seat limit immediately, not on acceptance. Expired invites stop counting on their own, and cancelling frees the seat right away. Free accounts have 3 seats.
 </Aside>
+
+Directory-managed teams should map IdP groups to the exact role IDs in [SCIM role mapping](/enterprise/scim/). Unknown names become Member. The account's original user cannot be deprovisioned.
 
 ## Set up your contact methods
 
