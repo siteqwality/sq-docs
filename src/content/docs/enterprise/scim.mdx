@@ -1,0 +1,83 @@
+---
+title: SCIM role mapping
+description: Exact SiteQwality role strings for SCIM, what happens to unknown names, and who cannot be removed.
+last_verified: 2026-08-14
+owner: jj
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+SCIM provisions and deprovisions people from your identity provider into SiteQwality. Roles travel with them. The mapping is exact-string, case-sensitive, and fail-soft: an unknown name becomes Member rather than rejecting the user.
+
+This page is the contract. If a string is not in the table below, it is not a SiteQwality role.
+
+## Set up the connection
+
+<Steps>
+
+1. In SiteQwality open **Account → Security → SCIM** (a Super Admin). Create a connection. Copy the **SCIM base URL** and the **bearer token**. The token is shown once.
+
+2. In your identity provider (Okta, Entra ID, OneLogin, JumpCloud, and so on) create a SCIM 2.0 application. Paste the base URL and token.
+
+3. Map groups or roles in the IdP to the SiteQwality role IDs in the table below. Stytch is the SCIM endpoint we expose, so the value the IdP sends must be the Stytch `role_id`, not a display label.
+
+4. Push one test user, then check **Account → Users**. They should appear with the mapped role. If the role looks wrong, the IdP is sending a string that is not in the table.
+
+</Steps>
+
+SCIM is on a paid plan. A 403 on the connection endpoints means the account is still on the free tier.
+
+## Role IDs the IdP must send
+
+Send one of these strings as the member's role. They are the same IDs you pick in the invite dialog.
+
+| IdP / Stytch `role_id` | Dashboard role | What they can do |
+|---|---|---|
+| `super_admin` | Super Admin | Everything, including billing, roles, SSO, and SCIM. |
+| `admin` | Admin | Team, API keys, and the audit log. Not billing, roles, SSO, or SCIM. |
+| `billing_admin` | Billing Admin | Billing only. Not team or role management. |
+| `member` | Member | Full product access. No team, credentials, or billing. New users start here. |
+| `viewer` | Viewer | Read-only. Can still acknowledge and resolve incidents if they are on call. |
+| `auditor` | Auditor | Read-only, plus the [audit log](/enterprise/audit-log/). |
+
+`owner` is a retired alias for Super Admin. Existing grants still work. Do not assign `owner` to new people.
+
+If a member has more than one of these roles, SiteQwality keeps the **first** one in that list that appears on the member. Extra roles are ignored.
+
+## Unknown names become Member
+
+These do **not** map and fall through to Member:
+
+- Stytch's implicit `stytch_member` (every member has it; it is not a SiteQwality role)
+- Custom Stytch roles you created in the Stytch dashboard
+- Display names (`Super Admin`, `Admin`, `Viewer`)
+- Okta/Entra group names (`Engineering`, `On-Call`)
+- Empty role lists
+
+The user is still created. They land as Member. A Super Admin can raise the role later in **Account → Users**, or you can fix the IdP mapping and push the user again.
+
+<Aside type="caution">
+Do not invent role IDs. `SuperAdmin`, `super-admin`, and `admins` are all unknown names and become Member.
+</Aside>
+
+## Who cannot be removed
+
+Two people are protected. The IdP cannot take the account down by deleting them.
+
+| Who | Dashboard | SCIM deprovision |
+|---|---|---|
+| The account's original user (the primary user) | Cannot be deleted or demoted | The delete is ignored. They stay a Super Admin. |
+| The last Super Admin | Cannot be deleted or demoted | Do not remove their Super Admin group in the IdP until someone else holds `super_admin`. |
+
+Always keep at least two Super Admins if you manage roles from the directory. Map a break-glass group to `super_admin` so a directory outage does not lock you out of billing and SCIM.
+
+## Invites still work
+
+SCIM does not replace [invites](/getting-started/account-and-team/). You can still invite one person or paste up to 25 emails at once from **Account → Users**. A pending invite counts toward the seat limit immediately. An expired invite (14 days) stops counting and can be resent or replaced.
+
+If SCIM later pushes the same email, SiteQwality attaches the directory member to the existing user rather than creating a duplicate.
+
+## See also
+
+- [Account and team setup](/getting-started/account-and-team/)
+- [Enterprise overview](/enterprise/overview/)
