@@ -12,7 +12,7 @@ A **domain expiry check** reads your domain's registration record from its regis
 The API and the dashboard call these **DNS checks** (`monitor_dns`, `/dns/job/...`). That name is historical and the pages here use both, but the thing it monitors is the domain registration.
 
 <Aside type="caution" title="This check does not resolve DNS">
-Nothing in this check queries a nameserver. It does not confirm that your domain resolves, that an A record points where you expect, or that any particular resolver answers. It reads the registration record from the registry and acts on that. If you need record-level assertions or per-resolver canaries, this is not the feature, and SiteQwality does not have one today.
+Nothing in this check queries a nameserver. It does not confirm that your domain resolves, that an A record points where you expect, or that any particular resolver answers. It reads the registration record from the registry and acts on that. Record-level DNS monitors are a separate product type (DNS Monitor in the dashboard), not this expiry check.
 </Aside>
 
 ## When to use it

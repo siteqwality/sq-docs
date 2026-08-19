@@ -1,6 +1,6 @@
 ---
 title: Status pages
-description: Branded, custom-domain public status pages with components, scheduled maintenance, and email/webhook subscribers.
+description: Branded, custom-domain public status pages with components, scheduled maintenance, and email subscribers.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -48,7 +48,7 @@ The status page back-end is a separate Lambda (`status-page-api`) reading the sa
 | **Subscribers** | visitors opt in to email or webhook notifications (coming soon) |
 
 <Aside type="caution">
-Subscriber management is partially implemented in the API. Email-based subscribers exist on the data side but the dashboard surface is still in progress. Track via [public status pages](https://app.siteqwality.com/status-pages).
+Visitors subscribe with email and confirm the address. We send email on incident create/update and on status-page maintenance. SMS, RSS, and webhook subscribers are not available.
 </Aside>
 
 ## Pricing notes

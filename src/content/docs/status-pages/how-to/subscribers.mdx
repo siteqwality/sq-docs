@@ -7,10 +7,10 @@ owner: jj
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-A *subscriber* is a visitor to your status page who's opted in to receive notifications when you publish or update an incident, or schedule maintenance. SiteQwality supports email subscribers out of the box; webhook subscribers are coming.
+A *subscriber* is a visitor to your status page who confirmed an email address. They get an email when you publish or update an incident, or schedule maintenance. SMS, RSS, and webhook subscribers are not available.
 
 <Aside type="caution">
-Subscribers are partially shipped. The data model and ingestion paths exist, but the dashboard UI for managing the subscriber list and the front-end opt-in widget are still being polished. This guide will be expanded once the dashboard surface lands. In the meantime, the visible subscribe widget on the public page may not be present on every theme.
+The public status page has an email subscribe form. The visitor confirms the address from a link we send. Until they confirm, they get no mail.
 </Aside>
 
 ## How it works (today)
@@ -27,9 +27,8 @@ A confirmation email is sent on subscribe; the visitor must click the link to ac
 
 ## Coming soon
 
-- Webhook subscribers (POST your incident JSON to a customer URL).
-- Per-component subscriptions (subscribe only to certain components).
-- Slack subscribers (post to a Slack channel via webhook).
+- SMS, RSS, or webhook subscribers.
+- Per-component subscriptions.
 - Bulk subscriber management in the dashboard.
 
 ## See also
