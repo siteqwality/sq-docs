@@ -110,6 +110,9 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Caller is not an admin"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -717,6 +720,94 @@
           },
           "502": {
             "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/oauth/google/complete": {
+      "post": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Finish attaching Google after the Stytch redirect, bound to the current session.",
+        "description": "Requires `X-Stytch-Session-Token` so Stytch attaches the OAuth factor to\nthis member rather than creating a parallel login. Google's email must\nmatch the session email (case-insensitive) or the request is rejected.",
+        "operationId": "complete_google_oauth_connect",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthConnectCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Google connected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuritySimpleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing session token or email mismatch"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/oauth/google/start": {
+      "get": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Start attaching Google OAuth to the currently signed-in member.",
+        "description": "Returns an org-scoped Stytch start URL (not discovery). The SPA navigates\nthe browser there; after Google consent Stytch redirects to the dashboard\ncallback with a token that `complete_google_oauth_connect` consumes.",
+        "operationId": "start_google_oauth_connect",
+        "responses": {
+          "200": {
+            "description": "OAuth start URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthConnectStartResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "500": {
+            "description": "Internal server error"
           }
         },
         "security": [
@@ -1444,7 +1535,7 @@
             }
           },
           "400": {
-            "description": "Unknown role, or the target is the primary account user"
+            "description": "Unknown role"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -1455,8 +1546,249 @@
           "404": {
             "description": "User not found in this account"
           },
+          "409": {
+            "description": "Would leave the account with no Super Admin"
+          },
           "500": {
             "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/alert-rules": {
+      "get": {
+        "tags": [
+          "Alert Rules"
+        ],
+        "operationId": "list_alert_rules",
+        "responses": {
+          "200": {
+            "description": "Alert rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertRule"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Alert Rules"
+        ],
+        "operationId": "create_alert_rule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertRule"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Alert rule created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Plan limit"
+          },
+          "500": {
+            "description": "Internal error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/alert-rules/{id}": {
+      "get": {
+        "tags": [
+          "Alert Rules"
+        ],
+        "operationId": "get_alert_rule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Alert rule id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alert rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRule"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Alert Rules"
+        ],
+        "operationId": "update_alert_rule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Alert rule id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAlertRule"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Alert Rules"
+        ],
+        "operationId": "delete_alert_rule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Alert rule id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/alert-rules/{id}/test": {
+      "post": {
+        "tags": [
+          "Alert Rules"
+        ],
+        "operationId": "test_alert_rule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Alert rule id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evaluation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleTestResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
           }
         },
         "security": [
@@ -2479,6 +2811,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AccountUsageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/usage/history": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Archived usage from closed billing periods.",
+        "operationId": "get_usage_history",
+        "responses": {
+          "200": {
+            "description": "Archived usage by product and period",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageHistoryResponse"
                 }
               }
             }
@@ -5784,6 +6148,48 @@
           },
           "500": {
             "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/http/jobs/import": {
+      "post": {
+        "tags": [
+          "HTTP Monitors"
+        ],
+        "summary": "Create HTTP monitors from a CSV. Each row goes through `POST /http/job`\nso EventBridge schedules are attached.",
+        "operationId": "import_http_jobs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportHttpJobsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Import finished",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportHttpJobsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CSV could not be parsed"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
           }
         },
         "security": [
@@ -14536,6 +14942,205 @@
           }
         }
       },
+      "AlertQuery": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LogAlertQuery"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "log"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MetricAlertQuery"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "metric"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "AlertRule": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "created_at",
+          "updated_at",
+          "name",
+          "kind",
+          "enabled",
+          "query",
+          "window_seconds",
+          "eval_interval_seconds",
+          "comparison",
+          "threshold",
+          "for_seconds",
+          "group_notification_ids",
+          "tags",
+          "current_state"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_by_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "query": {},
+          "window_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "eval_interval_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "comparison": {
+            "type": "string"
+          },
+          "threshold": {
+            "type": "number",
+            "format": "double"
+          },
+          "for_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "group_notification_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "current_state": {
+            "type": "string"
+          },
+          "pending_since": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_evaluated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_state_change_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "AlertRuleTestResult": {
+        "type": "object",
+        "required": [
+          "breaching",
+          "current_state"
+        ],
+        "properties": {
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "breaching": {
+            "type": "boolean"
+          },
+          "current_state": {
+            "type": "string"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "AnalyticsQueryParams": {
         "type": "object",
         "properties": {
@@ -14867,6 +15472,13 @@
         "properties": {
           "webhook_url": {
             "type": "string"
+          },
+          "signing_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The signing secret, present ONLY on the create response.\n\nThe `From` impl below always produces `None`, and every read path goes\nthrough it, so \"never returned on a read\" is structural rather than a\nconvention someone has to remember. The create handler sets it\nexplicitly, once. Pinned by `from_never_reveals_the_signing_secret`."
           }
         }
       },
@@ -15335,6 +15947,82 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "CreateAlertRule": {
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "query",
+          "threshold"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "query": {
+            "$ref": "#/components/schemas/AlertQuery"
+          },
+          "window_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "eval_interval_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "comparison": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "threshold": {
+            "type": "number",
+            "format": "double"
+          },
+          "for_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "group_notification_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -15850,6 +16538,20 @@
             ],
             "format": "int32",
             "description": "Number of consecutive failed checks (1-10) required before the monitor\nis considered down and notifications are sent. Defaults to 1 (alert on\nthe first failed check)."
+          },
+          "json_path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional JSONPath assertion on the response body."
+          },
+          "json_path_expected": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When set, the JSONPath result must stringify to this value."
           }
         }
       },
@@ -16479,7 +17181,8 @@
         ],
         "properties": {
           "type": {
-            "$ref": "#/components/schemas/ContactMethodType"
+            "$ref": "#/components/schemas/ContactMethodType",
+            "description": "`method_type` is the field the dashboard used to send. Accept both so\na stale client still creates a row the engine can page."
           },
           "details": {}
         }
@@ -17754,6 +18457,35 @@
         },
         "additionalProperties": false
       },
+      "HistoryProductUsage": {
+        "type": "object",
+        "required": [
+          "product",
+          "period",
+          "total_usage",
+          "quota_limit",
+          "unit"
+        ],
+        "properties": {
+          "product": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "total_usage": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "quota_limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      },
       "HostErrors": {
         "type": "object",
         "required": [
@@ -17945,6 +18677,36 @@
           "end_date_time": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ImportHttpJobsRequest": {
+        "type": "object",
+        "required": [
+          "csv"
+        ],
+        "properties": {
+          "csv": {
+            "type": "string"
+          }
+        }
+      },
+      "ImportHttpJobsResponse": {
+        "type": "object",
+        "required": [
+          "created",
+          "errors"
+        ],
+        "properties": {
+          "created": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -18405,6 +19167,59 @@
           }
         }
       },
+      "LogAlertQuery": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "level": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "env": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "host": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tags": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "excluded": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata_search": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "LogEntry": {
         "type": "object",
         "required": [
@@ -18456,7 +19271,8 @@
           "first_seen",
           "last_seen",
           "samples",
-          "investigate_search"
+          "investigate_search",
+          "is_new"
         ],
         "properties": {
           "template": {
@@ -18486,7 +19302,28 @@
           },
           "investigate_search": {
             "type": "string",
-            "description": "Pre-built search term for the \"Investigate\" button: a short unique\nsubstring extracted from the template (first non-placeholder token >= 4 chars)"
+            "description": "Pre-built search term for the \"Investigate\" button: distinctive\nnon-placeholder tokens from the template, joined."
+          },
+          "previous_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Count of this template in the previous equal-length window.\nAbsent when the request has no time range, so no comparison ran.",
+            "minimum": 0
+          },
+          "change_pct": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Integer percent change vs the previous window:\n`(count - previous) * 100 / previous`. Absent when `previous_count`\nis missing or zero (a new pattern has no percentage)."
+          },
+          "is_new": {
+            "type": "boolean",
+            "description": "True when the comparison ran and this template was absent from the\nprevious window."
           }
         }
       },
@@ -18895,6 +19732,29 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "MetricAlertQuery": {
+        "type": "object",
+        "required": [
+          "metric_name"
+        ],
+        "properties": {
+          "metric_name": {
+            "type": "string"
+          },
+          "aggregation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "filters": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -19583,6 +20443,32 @@
           "pushbullet"
         ]
       },
+      "OAuthConnectCompleteRequest": {
+        "type": "object",
+        "description": "Complete an in-session OAuth provider attach.",
+        "required": [
+          "oauth_token"
+        ],
+        "properties": {
+          "oauth_token": {
+            "type": "string",
+            "description": "Token from the Stytch redirect (`?token=` on the callback URL)."
+          }
+        }
+      },
+      "OAuthConnectStartResponse": {
+        "type": "object",
+        "description": "Start URL for attaching an OAuth provider while already signed in.",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Stytch public OAuth start URL. The browser navigates here directly."
+          }
+        }
+      },
       "OAuthProviderInfo": {
         "type": "object",
         "required": [
@@ -20226,6 +21112,20 @@
           },
           "generated_at": {
             "type": "string"
+          },
+          "previous_window_start": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Start of the previous equal-length window used for `is_new` / `change_pct`."
+          },
+          "previous_window_end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "End of the previous equal-length window (equals the current window start)."
           }
         }
       },
@@ -20820,6 +21720,10 @@
         "properties": {
           "privacy": {
             "$ref": "#/components/schemas/RumPrivacySettings"
+          },
+          "retention": {
+            "$ref": "#/components/schemas/RumRetentionCeiling",
+            "description": "The customer's own maximum retention for this application's data, in\ndays. Absent, and by default, means no limit beyond the account's\nentitlement. See `common::retention::ceiling`: the entitlement is a MAX\nover the account's packs, which makes every window a floor, and this is\nthe only thing that lets a customer go below it."
           }
         }
       },
@@ -21187,10 +22091,36 @@
         "type": "object",
         "properties": {
           "mask_inputs": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Mask the value of every form input before it leaves the browser.\nDefaults to ON."
           },
           "mask_text": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Mask all user-visible page text. Defaults to OFF: a replay with every\ntext node masked is unreadable, so this is opt-in. Anything the page\nrenders is therefore recorded verbatim unless the customer turns this\non, and every document that describes replay has to say so."
+          }
+        }
+      },
+      "RumRetentionCeiling": {
+        "type": "object",
+        "description": "A customer's requested maximum retention, in days, for one RUM application.\n\n`None` on a field means \"no ceiling for this product\": the account's\nentitlement stands.",
+        "properties": {
+          "observe_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Caps `rum_measures` (RUM Observe), the 458-day table.",
+            "minimum": 0
+          },
+          "analyze_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Caps `rum_events` (RUM Analyze).",
+            "minimum": 0
           }
         }
       },
@@ -23945,17 +24875,9 @@
               "null"
             ]
           },
-          "auth_password": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "auth_bearer_token": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "has_auth": {
+            "type": "boolean",
+            "description": "True when a basic-auth password or bearer token is stored for this\nmonitor. The credentials themselves are write-only and are deliberately\nabsent from this struct, so there is nothing here for a read-only\nviewer, a scoped API key, an M2M client or a read-only impersonation\nsession to read back. See `crate::model::api::secrets`.\n\nBulk edit spreads a row back into an update request, and the update\nstatement writes `COALESCE($n, auth_password)`, so an absent key leaves\nthe stored credential alone. That is why these two can be dropped from\nthe shape outright rather than emitted as null."
           },
           "success_http_codes": {
             "type": [
@@ -23982,6 +24904,7 @@
               "object",
               "null"
             ],
+            "description": "Header NAMES only: every value is replaced by `secrets::REDACTED`.\nSending the placeholder back on an update keeps the stored value.",
             "additionalProperties": {
               "type": "string"
             },
@@ -24070,6 +24993,86 @@
               "null"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "UpdateAlertRule": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "query": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AlertQuery"
+              }
+            ]
+          },
+          "window_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "eval_interval_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "comparison": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "threshold": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "for_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "group_notification_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -24539,6 +25542,18 @@
             ],
             "format": "int32",
             "description": "Number of consecutive failed checks (1-10) required before the monitor\nis considered down and notifications are sent."
+          },
+          "json_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "json_path_expected": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -25282,6 +26297,20 @@
           "high",
           "low"
         ]
+      },
+      "UsageHistoryResponse": {
+        "type": "object",
+        "required": [
+          "products"
+        ],
+        "properties": {
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryProductUsage"
+            }
+          }
+        }
       },
       "UserContactMethodResponse": {
         "type": "object",
