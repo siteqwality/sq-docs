@@ -1249,7 +1249,7 @@
         "tags": [
           "Security"
         ],
-        "summary": "Begin TOTP enrollment. Returns the otpauth:// URL, secret, and recovery codes.",
+        "summary": "Begin TOTP enrollment. Returns the QR image, secret, and recovery codes.",
         "operationId": "totp_start",
         "responses": {
           "200": {
