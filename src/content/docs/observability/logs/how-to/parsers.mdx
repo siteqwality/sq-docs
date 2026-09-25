@@ -119,7 +119,7 @@ If `matched: false` or `error` is set, fix the pattern and retry.
 You can also tag a single ingest request to use a specific parser via the `X-Log-Parser` header:
 
 ```bash
-curl -X POST https://logs.siteqwality.com/v1/ingest \
+curl -X POST https://logs.siteqwality.com/ingest \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: text/plain" \
   -H "X-Log-Parser: <parser-id>" \

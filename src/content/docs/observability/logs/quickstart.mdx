@@ -12,7 +12,7 @@ By the end of this guide you'll have ingested a few logs, queried them via the A
 ## 1. Send a log
 
 ```bash
-curl -X POST https://logs.siteqwality.com/v1/ingest \
+curl -X POST https://logs.siteqwality.com/ingest \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -39,7 +39,7 @@ curl -X POST https://logs.siteqwality.com/v1/ingest \
 for i in {1..20}; do
   LEVEL="info"
   [ $((i % 5)) -eq 0 ] && LEVEL="error"
-  curl -X POST https://logs.siteqwality.com/v1/ingest \
+  curl -X POST https://logs.siteqwality.com/ingest \
     -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
     -H "Content-Type: application/json" \
     -d "{
@@ -118,7 +118,7 @@ import logging, requests, json, os
 class SqHandler(logging.Handler):
     def emit(self, record):
         requests.post(
-            "https://logs.siteqwality.com/v1/ingest",
+            "https://logs.siteqwality.com/ingest",
             headers={"Authorization": f"Bearer {os.environ['SITEQWALITY_API_KEY']}"},
             json={
                 "timestamp": record.created,
@@ -130,7 +130,7 @@ class SqHandler(logging.Handler):
         )
 ```
 
-**Ship via your existing log pipeline** (Vector, Fluent Bit, Filebeat). Point it at `https://logs.siteqwality.com/v1/ingest` with the API key in the Authorization header.
+**Ship via your existing log pipeline** (Vector, Fluent Bit, Filebeat). Point it at `https://logs.siteqwality.com/ingest` with the API key in the Authorization header.
 
 For high-volume apps, batch via NDJSON: stick to `Content-Type: application/x-ndjson` and submit one JSON object per line, up to ~1MB per request.
 
