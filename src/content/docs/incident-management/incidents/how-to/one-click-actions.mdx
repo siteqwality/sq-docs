@@ -1,7 +1,7 @@
 ---
 title: Acknowledge from the alert itself
 description: Signed one-click links in email and SMS, and interactive Acknowledge and Resolve buttons in Slack.
-last_verified: 2026-08-02
+last_verified: 2026-09-26
 owner: jj
 ---
 
@@ -24,12 +24,15 @@ Acting through any of these does exactly what the API endpoints do, including ca
 
 Each link is a signed, single-purpose URL of the form `https://api.siteqwality.com/incident/action/<token>`. The token carries the incident, the account, the acting user, and an expiry, all covered by an HMAC signature.
 
-Opening one returns a small confirmation page in the browser. There is no login step: the signature is the credential.
+Opening one shows a confirmation page with a single button, **Acknowledge incident** or **Resolve incident**. Nothing changes until you press it. There is no login step: the signature is the credential.
+
+The extra tap is deliberate. Email security scanners (Outlook Safe Links, Mimecast, Proofpoint and others) open every link in a message before a person sees it. When opening the link acted on its own, a scanner could acknowledge the incident and stop the escalation with nobody awake. A scanner opens the page; only a person presses the button.
 
 **Links expire 24 hours after the message is sent.** The clock starts at send time, not at incident creation, so a resend gives a fresh 24 hours.
 
 | What you see | Meaning |
 |---|---|
+| Acknowledge incident / Resolve incident button | The link is valid. Press the button to act. |
 | Incident acknowledged | Done. Escalation paging has stopped. |
 | Incident resolved | Done. |
 | Already acknowledged / Already resolved | Someone beat you to it. No harm done. |
