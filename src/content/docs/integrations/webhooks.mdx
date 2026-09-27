@@ -87,6 +87,7 @@ Your endpoint should:
 - Return any 2xx within 5 seconds. SiteQwality treats anything else as a failure.
 - Be idempotent, since the same event can be retried on receiver failure.
 - Accept large bodies (incidents with many updates can be 10–50KB).
+- Be reachable at a public address. A URL whose host is a private, loopback or link-local address (`10.x`, `192.168.x`, `127.0.0.1`, `localhost`, `169.254.169.254`, and their IPv6 equivalents) is refused with a `400` when you save it. A hostname that resolves only to such addresses when we deliver fails with the error kind `blocked_destination` and is not retried. The same applies to Discord, Microsoft Teams, Google Chat and Mattermost webhook URLs.
 
 ## Securing the receiver
 
