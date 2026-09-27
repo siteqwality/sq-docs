@@ -63,6 +63,8 @@ await step('Open homepage', async () => {
 
 The full Playwright API is available. Anything documented at https://playwright.dev/docs/api/class-page works.
 
+The browser can only reach public addresses. A navigation, redirect or subresource aimed at a private, loopback or link-local address (`10.x`, `192.168.x`, `127.0.0.1`, `localhost`, `169.254.169.254`, or a hostname that resolves only to one) is refused. A refused `http://` request answers `403`; a refused `https://` request fails with `net::ERR_TUNNEL_CONNECTION_FAILED`, and the check's error names the address and why. Refused subresources are listed in the console errors.
+
 Common helpers:
 
 ```javascript
