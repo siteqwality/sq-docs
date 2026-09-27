@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi';
+import starlightLlmsTxt from 'starlight-llms-txt';
 
 // NOTE: Expressive Code (code-block) theming lives in ./ec.config.mjs, not in
 // the Starlight `expressiveCode` option below. starlight-openapi's plugin
@@ -74,6 +75,31 @@ export default defineConfig({
 				{ tag: 'link', attrs: { rel: 'manifest', href: '/site.webmanifest' } },
 			],
 			plugins: [
+				// Serves /llms.txt, /llms-full.txt and /llms-small.txt from the docs
+				// content. Pinned to 0.10.x: 0.11 and later need Astro 7.
+				starlightLlmsTxt({
+					projectName: 'SiteQwality',
+					description:
+						'SiteQwality is an uptime monitoring, status page, incident management and observability (logs, metrics, traces, RUM, session replay) service.',
+					details: [
+						'AI assistants can use SiteQwality directly through its MCP server at `https://mcp.siteqwality.com/mcp`. Setup for Claude, Claude Code, ChatGPT, Cursor, VS Code and Codex CLI: [Connect AI assistants (MCP)](https://docs.siteqwality.com/integrations/mcp/).',
+						'',
+						'Key pages:',
+						'',
+						'- [Introduction](https://docs.siteqwality.com/getting-started/introduction/): what the platform covers and where to start.',
+						'- [Concepts and glossary](https://docs.siteqwality.com/getting-started/concepts/): monitor, check, incident, on-call, escalation, notification group.',
+						'- [Account and team setup](https://docs.siteqwality.com/getting-started/account-and-team/): roles, API keys and scopes.',
+						'- [Uptime monitoring](https://docs.siteqwality.com/uptime-monitoring/overview/): HTTP, SSL/TLS, domain expiry, cron and browser checks.',
+						'- [Observability](https://docs.siteqwality.com/observability/overview/): logs, metrics, traces, RUM and session replay.',
+						'- [Incident management](https://docs.siteqwality.com/incident-management/overview/): incidents, on-call, escalation, notifications, maintenance windows.',
+						'- [Status pages](https://docs.siteqwality.com/status-pages/overview/)',
+						'- [Integrations](https://docs.siteqwality.com/integrations/overview/): Slack, Teams, PagerDuty, webhooks and more.',
+						'- [API Reference](https://docs.siteqwality.com/api-reference/): every REST endpoint at `https://api.siteqwality.com`, authenticated with `Authorization: Bearer <API key>`.',
+					].join('\n'),
+					promote: ['index*', 'integrations/mcp', 'getting-started/**'],
+					// Starlight's per-heading "Section titled" links are noise in plain text.
+					customSelectors: { all: ['.sl-anchor-link'] },
+				}),
 				starlightOpenAPI([
 					{
 						base: 'api-reference',
@@ -327,6 +353,7 @@ export default defineConfig({
 					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'integrations/overview' },
+						{ label: 'AI assistants (MCP)', slug: 'integrations/mcp' },
 						{ label: 'Slack', slug: 'integrations/slack' },
 						{ label: 'Microsoft Teams', slug: 'integrations/microsoft-teams' },
 						{ label: 'Discord', slug: 'integrations/discord' },

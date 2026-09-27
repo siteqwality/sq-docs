@@ -1,0 +1,289 @@
+---
+title: Connect AI assistants (MCP)
+description: Ask Claude, ChatGPT, Cursor and other AI assistants about your monitors, incidents and telemetry, and let them take everyday actions for you.
+last_verified: 2026-09-27
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+SiteQwality runs a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server, so Claude, ChatGPT, Cursor, VS Code and other AI assistants can work with your account. Ask which monitors are down, what happened in last night's incident, or what the logs said around a failed check, and let the assistant take everyday actions: pause a monitor, acknowledge an incident, post a status page update.
+
+The server URL is:
+
+```text
+https://mcp.siteqwality.com/mcp
+```
+
+It is available on every plan, including Free. Plan limits and usage quotas apply exactly as they do in the dashboard.
+
+## How signing in works
+
+<Steps>
+
+1. Add the server URL to your assistant (steps for each one are below).
+
+2. The assistant opens a SiteQwality consent page in your browser. Sign in if you are not already.
+
+3. Choose **read-only** or **read and write**, then approve.
+
+</Steps>
+
+The assistant then acts as you, limited to what you approved. Your role still applies: a Viewer cannot make changes even after granting write access.
+
+To cut an assistant off, revoke it under **Settings → AI assistants**.
+
+## Add SiteQwality to your assistant
+
+<Tabs syncKey="mcp-client">
+<TabItem label="Claude">
+
+Works in Claude on the web and in Claude Desktop, on every Claude plan.
+
+<Steps>
+
+1. Open **[Customize → Connectors](https://claude.ai/customize/connectors)**, click **+**, then **Add custom connector**.
+
+2. Name it `SiteQwality`, paste `https://mcp.siteqwality.com/mcp` as the URL, and click **Add**. Leave **Advanced settings** empty.
+
+3. Click **Connect** and approve access on the SiteQwality consent page.
+
+4. In a chat, turn the connector on from the **+** menu under **Connectors**.
+
+</Steps>
+
+On Team and Enterprise plans an Owner adds the connector once under **Organization settings → Connectors**, and each member then clicks **Connect** under **Customize → Connectors**. Free Claude plans allow one custom connector.
+
+</TabItem>
+<TabItem label="Claude Code">
+
+```bash
+claude mcp add --transport http siteqwality https://mcp.siteqwality.com/mcp
+```
+
+Then run `/mcp` inside Claude Code, pick `siteqwality` and sign in. Add `--scope user` to the command to make SiteQwality available in every project, not only the current one.
+
+</TabItem>
+<TabItem label="Cursor">
+
+Add this to `~/.cursor/mcp.json` (every project) or `.cursor/mcp.json` (one project):
+
+```json
+{
+  "mcpServers": {
+    "siteqwality": {
+      "url": "https://mcp.siteqwality.com/mcp"
+    }
+  }
+}
+```
+
+Cursor opens your browser to sign in when it first connects. If it does not, open Cursor's MCP settings and click **Connect** next to `siteqwality`.
+
+</TabItem>
+<TabItem label="VS Code">
+
+Run **MCP: Add Server** from the Command Palette, choose **HTTP**, paste the URL and name it `siteqwality`. Or add it to `.vscode/mcp.json` yourself:
+
+```json
+{
+  "servers": {
+    "siteqwality": {
+      "type": "http",
+      "url": "https://mcp.siteqwality.com/mcp"
+    }
+  }
+}
+```
+
+VS Code opens your browser to sign in the first time the server starts. The tools appear in Copilot Chat under **Configure Tools**.
+
+</TabItem>
+<TabItem label="ChatGPT">
+
+Available on the web for ChatGPT Plus, Pro, Business, Enterprise and Edu.
+
+<Steps>
+
+1. Open **Settings → Security and login** and turn on **Developer mode**.
+
+2. Go to [ChatGPT Plugins](https://chatgpt.com/plugins), click **+** and create an app named `SiteQwality` with `https://mcp.siteqwality.com/mcp` as the server URL and **OAuth** as the authentication.
+
+3. Approve access on the SiteQwality consent page.
+
+4. In a chat, pick **Developer mode** from the **+** menu and select SiteQwality.
+
+</Steps>
+
+By default ChatGPT asks you to confirm each write action before it runs.
+
+</TabItem>
+<TabItem label="Codex CLI">
+
+```bash
+codex mcp add siteqwality --url https://mcp.siteqwality.com/mcp
+codex mcp login siteqwality
+```
+
+The second command opens your browser to sign in. The same server in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.siteqwality]
+url = "https://mcp.siteqwality.com/mcp"
+```
+
+</TabItem>
+</Tabs>
+
+Any other client that supports remote MCP servers over Streamable HTTP with OAuth works the same way: give it the server URL and it will send you to the consent page.
+
+## Headless agents and CI
+
+Agents that run without a person at a browser (CI jobs, scheduled scripts, background agents) sign in with an [API key](/getting-started/account-and-team/#generate-api-keys) instead of the consent page. Send it as a header:
+
+```text
+Authorization: Bearer <your API key>
+```
+
+Create it under **Settings → API Keys → + New key**, choose **Full access** (ingest keys cannot call the API), and tick only the scopes the agent needs. A key with no scopes ticked can do everything your account can.
+
+<Tabs syncKey="mcp-client">
+<TabItem label="Claude Code">
+
+```bash
+claude mcp add --transport http siteqwality https://mcp.siteqwality.com/mcp \
+  --header "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+</TabItem>
+<TabItem label="Cursor">
+
+```json
+{
+  "mcpServers": {
+    "siteqwality": {
+      "url": "https://mcp.siteqwality.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:SITEQWALITY_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem label="VS Code">
+
+```json
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "siteqwality-key",
+      "description": "SiteQwality API key",
+      "password": true
+    }
+  ],
+  "servers": {
+    "siteqwality": {
+      "type": "http",
+      "url": "https://mcp.siteqwality.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:siteqwality-key}"
+      }
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem label="Codex CLI">
+
+```bash
+codex mcp add siteqwality --url https://mcp.siteqwality.com/mcp \
+  --bearer-token-env-var SITEQWALITY_API_KEY
+```
+
+</TabItem>
+</Tabs>
+
+## Permissions
+
+Access is granted per area, as `read:<area>` and `write:<area>`. On the consent page, read-only grants every `read:` scope and read and write grants both. On an API key you tick them one by one, and write does not include read, so tick both if the agent needs both.
+
+| Area | Scopes | Covers |
+|---|---|---|
+| Monitors | `read:monitors`, `write:monitors` | HTTP, SSL/TLS, domain expiry, cron and browser checks |
+| Incidents | `read:incidents`, `write:incidents` | Incidents, escalation policies, on-call schedules, maintenance windows |
+| Notifications | `read:notifications`, `write:notifications` | Notification channels, groups and integrations |
+| Status Pages | `read:status_pages`, `write:status_pages` | Status pages and their components |
+| Logs | `read:logs`, `write:logs` | Log search, parsers, saved views |
+| Metrics | `read:metrics`, `write:metrics` | Metric queries and saved views |
+| Traces | `read:traces`, `write:traces` | Trace search and detail |
+| RUM | `read:rum`, `write:rum` | RUM applications and analytics |
+| Dashboards | `read:dashboards`, `write:dashboards` | Dashboards and widgets |
+
+## What you can ask for
+
+Assistants pick the right tool themselves; you just ask. **Write** tools need the matching `write:` scope.
+
+| Tool | What it does | Access |
+|---|---|---|
+| `list_monitors` | Lists your monitors and their current status. | Read |
+| `get_monitor` | Shows one monitor's settings and recent results. | Read |
+| `get_monitor_results` | Fetches a monitor's check results over a time range. | Read |
+| `create_http_monitor` | Creates an HTTP monitor. | Write |
+| `update_http_monitor` | Changes an HTTP monitor's settings. | Write |
+| `pause_monitor`, `resume_monitor` | Pauses or resumes a monitor. | Write |
+| `delete_monitor` | Deletes a monitor. | Write, asks first |
+| `get_alert_history` | Shows the alerts a monitor has sent. | Read |
+| `get_browser_check_results` | Shows a browser check's recent runs. | Read |
+| `run_browser_check` | Runs a browser check now. | Write |
+| `list_incidents`, `get_incident` | Lists incidents, or shows one in detail. | Read |
+| `acknowledge_incident`, `resolve_incident` | Acknowledges or resolves an incident. | Write |
+| `list_status_pages` | Lists your status pages. | Read |
+| `post_status_page_update` | Posts or updates an incident on a status page. | Write |
+| `search_logs` | Searches your logs. | Read |
+| `query_metrics` | Queries your metrics. | Read |
+| `search_traces` | Searches your traces. | Read |
+| `get_account_usage` | Shows your plan and current usage. | Read |
+
+Two more tools reach everything else the [SiteQwality API](/api-reference/) can do:
+
+| Tool | What it does | Access |
+|---|---|---|
+| `find_api_operations` | Searches the API for the operation that does what you asked. | Read |
+| `call_api` | Calls any operation `find_api_operations` found. | Scope of the operation, asks first |
+
+## Safety
+
+- **Risky actions are marked.** `delete_monitor` and `call_api` are flagged as destructive, so assistants that honor the flag ask you before running them. Read tools are flagged read-only.
+- **Your data is data.** Results include text you and your services control, such as monitor names and log lines. The tools tell the assistant to treat that text as data, never as instructions.
+- **Changes are audited.** Every change an assistant makes goes through the same API as the dashboard and shows up in your [audit log](/enterprise/audit-log/).
+- **Grant the least you need.** Choose read-only when you only want answers. You can reconnect with write access later.
+
+## Partner and agency accounts
+
+If you manage [client accounts](/partners/client-accounts/), an assistant can work in one of them when your client lets you set custom headers (Claude Code, Cursor, VS Code and Codex CLI do). Add this header next to the server URL:
+
+```text
+X-SQ-Account: <client account id>
+```
+
+It works when you signed in through the consent page. API keys cannot switch accounts. See [Working in a client account](/partners/context-switching/) for what the header changes and why a wrong id returns `404`.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| The assistant stopped working after you revoked it, or says it is not authorized (`401`) | Connect again: **Connect** in Claude, `/mcp` in Claude Code, `codex mcp login siteqwality` in Codex, or remove and re-add the server elsewhere. |
+| `403` on an action | The access you approved does not cover it. Revoke under **Settings → AI assistants** and reconnect with read and write, or add the scope to your API key. A `403` can also mean your role does not allow the action, or a plan limit was reached; the message says which. |
+| `404` with `X-SQ-Account` set | The client id is wrong, or you are using an API key. See [Working in a client account](/partners/context-switching/). |
+| The assistant cannot find a tool for what you asked | Ask it to use `find_api_operations`. |
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Account and team setup" description="API keys, scopes and roles." href="/getting-started/account-and-team/" />
+  <LinkCard title="API Reference" description="Every operation the assistant can reach." href="/api-reference/" />
+</CardGrid>
