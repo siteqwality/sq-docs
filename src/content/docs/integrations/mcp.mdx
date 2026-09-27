@@ -31,7 +31,7 @@ It is available on every plan, including Free. Plan limits and usage quotas appl
 
 The assistant then acts as you, limited to what you approved. Your role still applies: a Viewer cannot make changes even after granting write access.
 
-To cut an assistant off, revoke it under **Settings → AI assistants**.
+To cut an assistant off, revoke it on the **AI Assistants** tab in **Settings**. It can no longer sign in, and access it already has ends within an hour, when its current token expires.
 
 ## Add SiteQwality to your assistant
 
@@ -229,24 +229,24 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 
 | Tool | What it does | Access |
 |---|---|---|
+| `list_attention_items` | Shows what needs attention now: monitors that are down, open incidents, most urgent first. | Read |
 | `list_monitors` | Lists your monitors and their current status. | Read |
-| `get_monitor` | Shows one monitor's settings and recent results. | Read |
-| `get_monitor_results` | Fetches a monitor's check results over a time range. | Read |
+| `get_monitor` | Shows one monitor's settings and state. | Read |
+| `get_recent_checks` | Shows a monitor's latest check results, including the failing step of a browser check. | Read |
+| `get_alert_history` | Shows a monitor's recent outages and the alerts each one sent. | Read |
 | `create_http_monitor` | Creates an HTTP monitor. | Write |
 | `update_http_monitor` | Changes an HTTP monitor's settings. | Write |
 | `pause_monitor`, `resume_monitor` | Pauses or resumes a monitor. | Write |
 | `delete_monitor` | Deletes a monitor. | Write, asks first |
-| `get_alert_history` | Shows the alerts a monitor has sent. | Read |
-| `get_browser_check_results` | Shows a browser check's recent runs. | Read |
 | `run_browser_check` | Runs a browser check now. | Write |
-| `list_incidents`, `get_incident` | Lists incidents, or shows one in detail. | Read |
+| `list_incidents`, `get_incident` | Lists incidents, or shows one with its timeline. | Read |
 | `acknowledge_incident`, `resolve_incident` | Acknowledges or resolves an incident. | Write |
+| `create_incident` | Opens an incident, optionally on a status page. | Write |
+| `post_incident_update` | Posts an update to an incident and its status page. | Write |
 | `list_status_pages` | Lists your status pages. | Read |
-| `post_status_page_update` | Posts or updates an incident on a status page. | Write |
 | `search_logs` | Searches your logs. | Read |
-| `query_metrics` | Queries your metrics. | Read |
-| `search_traces` | Searches your traces. | Read |
-| `get_account_usage` | Shows your plan and current usage. | Read |
+| `list_metric_names`, `query_metrics` | Lists your metrics, or queries one. | Read |
+| `search_traces`, `get_trace` | Searches your traces, or shows one trace's spans. | Read |
 
 Two more tools reach everything else the [SiteQwality API](/api-reference/) can do:
 
@@ -277,7 +277,7 @@ It works when you signed in through the consent page. API keys cannot switch acc
 | Problem | Fix |
 |---|---|
 | The assistant stopped working after you revoked it, or says it is not authorized (`401`) | Connect again: **Connect** in Claude, `/mcp` in Claude Code, `codex mcp login siteqwality` in Codex, or remove and re-add the server elsewhere. |
-| `403` on an action | The access you approved does not cover it. Revoke under **Settings → AI assistants** and reconnect with read and write, or add the scope to your API key. A `403` can also mean your role does not allow the action, or a plan limit was reached; the message says which. |
+| `403` on an action | The access you approved does not cover it. Revoke it on the **AI Assistants** tab in **Settings** and reconnect with read and write, or add the scope to your API key. A `403` can also mean your role does not allow the action, or a plan limit was reached; the message says which. |
 | `404` with `X-SQ-Account` set | The client id is wrong, or you are using an API key. See [Working in a client account](/partners/context-switching/). |
 | The assistant cannot find a tool for what you asked | Ask it to use `find_api_operations`. |
 
