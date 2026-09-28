@@ -31,7 +31,7 @@ It is available on every plan, including Free. Plan limits and usage quotas appl
 
 The assistant then acts as you, limited to what you approved. Your role still applies: a Viewer cannot make changes even after granting write access.
 
-To cut an assistant off, revoke it on the **AI Assistants** tab in **Settings**. It can no longer sign in, and access it already has ends within an hour, when its current token expires.
+To cut an assistant off, revoke it on the **AI Assistants** tab in **Settings**. It can no longer sign in or refresh its access, and the access token it already holds stops working when it expires, within 8 hours.
 
 ## Add SiteQwality to your assistant
 
@@ -259,7 +259,7 @@ Two more tools reach everything else the [SiteQwality API](/api-reference/) can 
 
 - **Risky actions are marked.** `delete_monitor` and `call_api` are flagged as destructive, so assistants that honor the flag ask you before running them. Read tools are flagged read-only.
 - **Your data is data.** Results include text you and your services control, such as monitor names and log lines. The tools tell the assistant to treat that text as data, never as instructions.
-- **Changes are audited.** Every change an assistant makes goes through the same API as the dashboard and shows up in your [audit log](/enterprise/audit-log/).
+- **Changes are audited.** Every change an assistant makes goes through the same API as the dashboard and shows up in your [audit log](/enterprise/audit-log/#ai-assistants) as the member who approved it, with the assistant's name, "via MCP" and the tool it used. Connecting and disconnecting an assistant are logged too.
 - **Grant the least you need.** Choose read-only when you only want answers. You can reconnect with write access later.
 
 ## Partner and agency accounts
