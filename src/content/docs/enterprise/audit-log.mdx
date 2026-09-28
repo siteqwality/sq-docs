@@ -1,7 +1,7 @@
 ---
 title: Customer audit log
-description: Every change made through the dashboard or API, with who made it, readable for the last 90 days.
-last_verified: 2026-08-06
+description: Every change made through the dashboard, the API or an AI assistant, with who made it, readable for the last 90 days.
+last_verified: 2026-09-28
 owner: jj
 ---
 
@@ -17,7 +17,7 @@ Find it under **Account → Audit Log**. Only **super admins, admins, and audito
 
 **Not recorded:**
 
-- **Reads.** `GET` requests are never logged. Nothing tells you who *looked* at something, only who changed it. A handful of read endpoints that use `POST` purely to carry a request body (the dashboard's batch monitor lookup, the log-parser test preview) are treated as reads and excluded too.
+- **Reads.** `GET` requests are never logged. Nothing tells you who *looked* at something, only who changed it. A handful of read endpoints that use `POST` purely to carry a request body (the dashboard's batch monitor lookup, the log-parser test preview, the consent page loading what an AI assistant is asking for) are treated as reads and excluded too.
 - **Unauthenticated requests**, including ones whose credentials were rejected.
 - **SiteQwality staff actions**, which live in a separate internal audit log. Staff acting *as* one of your users through impersonation do appear here, marked as such.
 
@@ -31,6 +31,8 @@ A request that identifies its caller and is then denied **is** recorded, with th
 | `m2m` | An [M2M API client](/enterprise/api-clients/). `actor_m2m_client_id` identifies it. |
 | `api_key` | A static API key. `actor_api_key_id` identifies which one, and `actor_api_key_name` carries its display name. Entries from before 2026-08-06 predate the column and have neither. |
 | `impersonated_staff` | A SiteQwality staff member acting as one of your users. `impersonated_by` records which staff member. |
+| `connected_app` | An [AI assistant](/integrations/mcp/) (or other OAuth app) acting as the member who approved it. `actor_user_id` and `actor_user_email` identify the member; `connected_app` names the app. |
+| `partner` | A user of your [partner account](/partners/context-switching/) acting on this account. |
 | `system` | Reserved. Nothing produces it today. |
 
 ## Reading the log
@@ -40,7 +42,10 @@ Each entry carries:
 | Field | Description |
 |---|---|
 | `occurred_at` | When, in UTC. |
-| `actor_type`, `actor_user_id`, `actor_api_key_id`, `actor_api_key_name`, `actor_m2m_client_id`, `impersonated_by` | Who. |
+| `actor_type`, `actor_user_id`, `actor_user_email`, `actor_api_key_id`, `actor_api_key_name`, `actor_m2m_client_id`, `impersonated_by` | Who. `actor_user_email` is the person behind a session, an AI assistant or a partner action. |
+| `connected_app` | `{ client_id, name }` of the AI assistant involved: the one that acted, or the one connected or disconnected. `name` is what the app registered itself as. |
+| `via`, `mcp_tool` | `via` is `mcp` when the change came through the [MCP server](/integrations/mcp/), whichever credential it used, and `mcp_tool` names the tool that made it. |
+| `consent_granted`, `scopes` | On an `oauth.authorize` entry: whether the member allowed the assistant, and the scopes they granted. |
 | `action` | The path with UUIDs (and free-form segments like RUM release versions) removed, dot-joined. |
 | `target_kind`, `target_id` | The resource type and, when the path had one, its ID. |
 | `http_method`, `http_path`, `http_status` | The raw request and its outcome. |
@@ -54,6 +59,8 @@ Each entry carries:
 | `DELETE /http/job/{id}` | `http.job` |
 | `POST /incident/{id}/acknowledge` | `incident.acknowledge` |
 | `POST /account/m2m_client` | `account.m2m_client` |
+| `POST /oauth/authorize` (a member allowing or refusing an AI assistant) | `oauth.authorize` |
+| `DELETE /account/connected_apps/{id}` (a member disconnecting an AI assistant) | `account.connected_apps` |
 
 The verb lives in `http_method`, so filter on both when you want "who deleted a monitor" rather than "who touched monitors".
 
@@ -76,7 +83,7 @@ The endpoint is gated on the super admin, admin, or auditor role, which only a l
 |---|---|---|
 | `actor_user_id` | none | Exact UUID. |
 | `actor_api_key_id` | none | Exact UUID; narrows to one API key's actions. |
-| `actor_type` | none | One of the five above. |
+| `actor_type` | none | One of the actor types above. |
 | `action` | none | Exact match **or dot-prefix**: `http.job` also matches `http.job.regions`, never `http.jobs`. |
 | `target_kind` | none | Exact match. |
 | `target_id` | none | Exact UUID. |
@@ -88,6 +95,16 @@ Entries come back newest first.
 <Aside type="caution" title="There is no cursor pagination">
 The only way to reach older entries is to move the `since` and `until` window. If a query returns exactly `limit` rows, assume there are more and narrow the range.
 </Aside>
+
+## AI assistants
+
+Everything an assistant changes goes through the same API as the dashboard, so it is logged like any other change, and the entry answers three questions:
+
+- **Who:** the member who approved the assistant (`actor_user_email`). An assistant never acts as anyone else, and never with more than that member's role allows.
+- **Through which assistant:** `connected_app.name`, for example `Claude`.
+- **How:** `via: "mcp"` and the tool it used, for example `pause_monitor`. An API key used through MCP keeps `actor_type: api_key` and gets the same `via` and `mcp_tool`.
+
+Connecting an assistant is logged too: an `oauth.authorize` entry records who allowed or refused which app, with the scopes granted, and an `account.connected_apps` `DELETE` records who disconnected it. To see everything assistants did, filter on `actor_type=connected_app`.
 
 ## The 90-day read window
 
