@@ -87,7 +87,7 @@ The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/conf
 | Param | Description |
 |---|---|
 | `from`, `to` | Time range. |
-| `search` | Matches part of the session user's ID or email. |
+| `search` | Case-sensitive match on part of the session user's ID or email. |
 | `browser`, `os`, `country` | Exact-match filters. |
 | `has_error`, `has_replay` | Boolean filters. |
 | `limit` | Page size. Default 50, maximum 100. |
