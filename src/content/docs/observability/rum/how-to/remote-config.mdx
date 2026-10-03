@@ -37,7 +37,7 @@ The same public client token the SDK already holds authenticates the request, an
     "settings": {
       "privacy": { "mask_inputs": true, "mask_text": false },
       "retention": { "observe_days": null, "analyze_days": null },
-      "resource_exclusions": ["/b", "https://us.i.posthog.com"]
+      "resource_exclusions": ["/api/heartbeat", "https://analytics.example.com"]
     }
   }
 }
@@ -108,24 +108,24 @@ Note that an `error` filter fires on **any** error in the session, regardless of
 
 ## Excluded resources
 
-Some requests are noise as resource events: a polling endpoint, a game loop, an analytics beacon. List them on the application and they stop being recorded. Only that application is affected.
+List requests you do not want recorded as resource events, such as polling endpoints or analytics beacons. Only that application is affected.
 
 A rule takes one of two forms:
 
 | Form | Example | Excludes |
 |---|---|---|
-| Path, starting with `/` | `/b` | `/b` and everything under `/b/` on the page's own origin |
-| Absolute, starting with `http://` or `https://` | `https://us.i.posthog.com` | Everything on that origin, or under the given path on it |
+| Path, starting with `/` | `/api/heartbeat` | That path and everything under it on the page's own origin |
+| Absolute, starting with `http://` or `https://` | `https://analytics.example.com` | Everything on that origin, or under the given path on it |
 
 How a resource URL is matched:
 
 - The origin must match: scheme, host and port. Host case is ignored and default ports are normalized, so `https://API.example:443/v1` matches `https://api.example/v1/x`.
-- The path must equal the rule's path or continue it after a `/`. `/b` matches `/b`, `/b?t=1` and `/b/2`, but not `/blocks`. A trailing slash on the rule is ignored, and `/` excludes the whole origin.
+- The path must equal the rule's path or continue it after a `/`. `/api/poll` matches `/api/poll`, `/api/poll?t=1` and `/api/poll/2`, but not `/api/polls`. A trailing slash on the rule is ignored, and `/` excludes the whole origin.
 - Query strings and fragments are ignored.
 
 Each application takes up to **50** rules of up to 512 characters each. A rule may not contain `?`, `#` or whitespace. Blank lines and duplicates are dropped on save.
 
-Wildcards are not supported, so list each host: `https://us.i.posthog.com` and `https://eu.i.posthog.com`, not `https://*.posthog.com`.
+Wildcards are not supported, so list each host separately.
 
 Ingest drops matching resource events within a minute of saving, from every SDK version, before they are stored. From SDK **1.0.5** the browser also skips them, so they are never sent, and it picks up changes on its 5 minute config refresh without a page reload.
 
