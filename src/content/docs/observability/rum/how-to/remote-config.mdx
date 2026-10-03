@@ -125,6 +125,8 @@ How a resource URL is matched:
 
 Each application takes up to **50** rules of up to 512 characters each. A rule may not contain `?`, `#` or whitespace. Blank lines and duplicates are dropped on save.
 
+Wildcards are not supported, so list each host: `https://us.i.posthog.com` and `https://eu.i.posthog.com`, not `https://*.posthog.com`.
+
 Ingest drops matching resource events within a minute of saving, from every SDK version, before they are stored. From SDK **1.0.5** the browser also skips them, so they are never sent, and it picks up changes on its 5 minute config refresh without a page reload.
 
 ## See also
