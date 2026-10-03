@@ -28,7 +28,7 @@ await SiteQwalityRUM.init({ applicationId: '...', clientToken: '...' });
 | `ingestBase` | string | `https://rum.siteqwality.com` | Override for the RUM ingest host (event delivery and config fetch). |
 | `replayBase` | string | `https://replay.siteqwality.com` | Override for the replay segment endpoint. |
 
-`init` is idempotent: a second call while an instance exists is a no-op. On init the SDK fetches its server-side config (session filters, privacy settings and excluded resources) from `GET {ingestBase}/v1/config`, authenticated by the client token, and refreshes it every 5 minutes. The fetch has a 5 second timeout and never throws: on any failure (network error, non-2xx, unexpected response shape) the SDK falls back to safe defaults, meaning no session filters, no excluded resources and `mask_inputs: true` / `mask_text: false`. A failed refresh keeps the last known config.
+`init` is idempotent: a second call while an instance exists is a no-op. On init the SDK fetches its server-side config (session filters, privacy settings and excluded resources) from `GET {ingestBase}/v1/config`, authenticated by the client token, and refreshes it every 5 minutes. The fetch has a 5 second timeout and never throws: on any failure (network error, non-2xx, unexpected response shape) the SDK falls back to safe defaults, meaning no session filters, no excluded resources, `mask_inputs: true` / `mask_text: false` and `hide_action_text: false`. A failed refresh keeps the last known config.
 
 ## Public methods
 
@@ -44,7 +44,31 @@ Starts the SDK: creates or restores the session, fetches config, starts all coll
 | `email` | string | User email. |
 | `name` | string | Display name. |
 
-All fields optional. User identity attaches to subsequent error and detail events.
+All fields optional. `id` and `email` attach to every event sent after the call; `name` stays in the browser.
+
+From 1.0.6 that includes page views and vitals, so every session shows its user in **RUM → Sessions** and the session search finds it. Earlier versions attached the user to error and detail events only, so a session without detail capture showed no user.
+
+Each call replaces the previous user. Call `setUser({})` on logout.
+
+### `SiteQwalityRUM.setGlobalAttribute(key, value)`
+
+Adds a string attribute to every error and detail event sent after the call, in `custom_attributes`. Page views and vitals do not carry it. Setting an existing key replaces its value, and per-call `context` wins over a global attribute with the same key.
+
+```javascript
+SiteQwalityRUM.setGlobalAttribute('plan', 'pro');
+```
+
+| Limit | Value |
+|---|---|
+| Attributes | 50 |
+| Key length | 128 characters |
+| Value length | 1,024 characters |
+
+A longer value is cut to 1,024 characters. A blank or overlong key, a non-string, or a new key past the 50th is ignored without an error. Global attributes are stored like `context`; see the warning below. Added in 1.0.6.
+
+### `SiteQwalityRUM.removeGlobalAttribute(key)`
+
+Stops attaching `key` to events sent after the call. Removing a key that is not set does nothing. Added in 1.0.6.
 
 ### `SiteQwalityRUM.addError(error, context?)`
 
@@ -63,8 +87,25 @@ One timing difference is worth knowing. `addError` always ships, so its `context
 
 No dashboard screen or API response renders `custom_attributes` today. Do not treat that as a safeguard. The data is stored, it is readable by anyone with database access, and a future release may surface it in the product.
 
+Global attributes set with `setGlobalAttribute` are stored the same way, on every error and detail event.
+
 Pass low-cardinality, non-personal labels only, such as `{ feature: 'checkout', step: '3' }`.
 </Aside>
+
+## Click names
+
+With detail capture active, every click is recorded as an action whose `action_target` names the clicked element:
+
+| Element | Name |
+|---|---|
+| Has `data-sq-action-name`, or sits inside an element that has it | That value, trimmed, up to 100 characters |
+| Has an `id` | `#id` |
+| Anything else | Tag, up to two classes, then up to 30 characters of its text (or its `aria-label`) in brackets, such as `button.btn.primary[Send message]` |
+
+The bracketed text can contain what your users typed or see, such as names or message previews. Two ways to keep it out:
+
+- Set `data-sq-action-name` on the element to give it a fixed name: `<button data-sq-action-name="Send message">`. Needs SDK 1.0.6.
+- Turn on [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names) for the application. Clicks are then named without the brackets, such as `button.btn.primary`. Ingest applies it for every SDK version, and from 1.0.6 the browser stops sending the text too.
 
 ## What is collected when
 

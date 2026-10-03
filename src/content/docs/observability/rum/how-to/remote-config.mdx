@@ -35,7 +35,7 @@ The same public client token the SDK already holds authenticates the request, an
       }
     ],
     "settings": {
-      "privacy": { "mask_inputs": true, "mask_text": false },
+      "privacy": { "mask_inputs": true, "mask_text": false, "hide_action_text": false },
       "retention": { "observe_days": null, "analyze_days": null },
       "resource_exclusions": ["/api/heartbeat", "https://analytics.example.com"]
     }
@@ -49,13 +49,14 @@ Only **enabled** filters are sent. Disabling one in the dashboard removes it fro
 
 ## What you can change remotely
 
-Four things, and it is worth being clear about the boundary:
+Five things, and it is worth being clear about the boundary:
 
 | Change | Effect |
 |---|---|
 | Add, edit or disable a [session filter](/observability/rum/how-to/session-filters/) | Controls whether detail capture turns on for a session |
 | Set `capture_replay` on a filter | Controls whether [session replay](/observability/replay/overview/) starts |
 | Change `mask_inputs` / `mask_text` | Controls replay masking |
+| Turn on [`hide_action_text`](#hiding-element-text-in-click-names) | Drops element text from click names |
 | Edit [excluded resources](#excluded-resources) | Stops matching resource timings from being recorded |
 
 **What you cannot change remotely:** there are no sample rates in the configuration, and no global kill switch. Flush intervals, batch sizes and session timeouts are fixed in the SDK. Endpoint hosts can only be set locally in `init()`.
@@ -70,7 +71,7 @@ If you need to stop collection entirely, disable every filter to stop detail and
 | Session filters | **RUM → Filters**, or the `/rum/{app_id}/filters` endpoints |
 | Excluded resources | **RUM → Settings → Excluded resources**, or `settings.resource_exclusions` in a full-settings `PUT /rum/{app_id}` |
 
-Defaults for a newly created application: `mask_inputs` is **on**, `mask_text` is **off**, nothing is excluded, and there are no filters, meaning no detail capture and no replay.
+Defaults for a newly created application: `mask_inputs` is **on**, `mask_text` and `hide_action_text` are **off**, nothing is excluded, and there are no filters, meaning no detail capture and no replay.
 
 <Aside type="caution" title="PUT replaces the whole settings object">
 Fetch `GET /rum/{app_id}`, change only the key you need, and send `settings` back with every other key exactly as returned. Any key you leave out is reset to its default, so saving only `privacy` clears your excluded resources and your retention limits.
@@ -128,6 +129,28 @@ Each application takes up to **50** rules of up to 512 characters each. A rule m
 Wildcards are not supported, so list each host separately.
 
 Ingest drops matching resource events within a minute of saving, from every SDK version, before they are stored. From SDK **1.0.5** the browser also skips them, so they are never sent, and it picks up changes on its 5 minute config refresh without a page reload.
+
+## Hiding element text in click names
+
+Auto-captured clicks are named from the clicked element, including up to 30 characters of its text or `aria-label`, such as `button.btn.primary[Send message]`. On pages that render what users wrote, that text can be personal data.
+
+Turn on **Hide element text in click names** under **RUM → Settings → Privacy** (or set `settings.privacy.hide_action_text` to `true`) and clicks are stored without the bracketed text:
+
+| Sent | Stored |
+|---|---|
+| `button.btn.primary[Send message]` | `button.btn.primary` |
+| `a.nav[Home]` | `a.nav` |
+| `#save` | `#save` |
+
+Ingest strips the text within a minute of saving, from every SDK version, before it is stored. From SDK **1.0.6** the browser also leaves it out, picking up the change on its 5 minute config refresh. Clicks already stored keep their names.
+
+To give an element a stable, readable name instead, add `data-sq-action-name`. It applies to clicks on the element and anything inside it, and is used as is whether or not the setting is on:
+
+```html
+<button class="btn primary" data-sq-action-name="Send message">Send</button>
+```
+
+`data-sq-action-name` needs SDK 1.0.6. The value is stored as written, so keep personal data out of it, and do not end it with text in square brackets, which the setting strips.
 
 ## See also
 
