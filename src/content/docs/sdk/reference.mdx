@@ -154,7 +154,7 @@ The SDK sends three event streams to `ingestBase`, each independently batched:
 | Detail events | `POST /v1/events` | Resources, actions, long tasks. |
 | Errors | `POST /v1/errors` | Error events. |
 
-A batch flushes every 10 seconds, immediately at 50 queued events, and on tab hide or page unload. Every batch is a `fetch` with `keepalive`, so the last one outlives the page, authenticated by the `Authorization` header and sent without cookies (`credentials: 'omit'`). A batch over 60 KB goes without `keepalive`, since browsers refuse larger keepalive requests. Delivery is fire-and-forget; failed sends are not retried. Before SDK 1.0.2 the last batch used `navigator.sendBeacon` and never arrived, so upgrade if you pin an older version.
+A batch flushes every 10 seconds, immediately at 50 queued events, and on tab hide or page unload. Every batch is a `fetch` with `keepalive`, so the last one outlives the page, authenticated by the `Authorization` header and sent without cookies (`credentials: 'omit'`). A batch over 60 KB goes without `keepalive`, since browsers refuse larger keepalive requests. From SDK 1.0.3 a batch that fails with a 429, 408, 5xx or network error is kept and retried with jittered exponential backoff, waiting at least the server's `Retry-After` and at most 5 minutes between attempts. A 401 or 403 stops sending for the rest of the page, and any other 4xx drops the batch. Each stream holds up to 1,000 events while it waits, dropping the oldest past that. Before SDK 1.0.2 the last batch used `navigator.sendBeacon` and never arrived, so upgrade if you pin an older version.
 
 ## Replay recording
 
