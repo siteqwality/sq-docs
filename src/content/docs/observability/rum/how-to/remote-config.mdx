@@ -67,7 +67,7 @@ If you need to stop collection entirely, disable every filter to stop detail and
 
 | What | Where |
 |---|---|
-| Privacy settings | **RUM → Settings → Privacy**, or `settings.privacy` in a full-settings `PUT /rum/{app_id}` |
+| Privacy settings | **RUM → Settings → Session Replay Privacy** and **Click Names**, or `settings.privacy` in a full-settings `PUT /rum/{app_id}` |
 | Session filters | **RUM → Filters**, or the `/rum/{app_id}/filters` endpoints |
 | Excluded resources | **RUM → Settings → Excluded resources**, or `settings.resource_exclusions` in a full-settings `PUT /rum/{app_id}` |
 
@@ -134,7 +134,7 @@ Ingest drops matching resource events within a minute of saving, from every SDK 
 
 Auto-captured clicks are named from the clicked element, including up to 30 characters of its text, or else its full `aria-label`, such as `button.btn.primary[Send message]`. On pages that render what users wrote, that text can be personal data.
 
-Turn on **Hide element text in click names** under **RUM → Settings → Privacy** (or set `settings.privacy.hide_action_text` to `true`) and clicks are stored without the bracketed text:
+Turn on **Hide element text in click names** under **RUM → Settings → Click Names** (or set `settings.privacy.hide_action_text` to `true`) and clicks are stored without the bracketed text:
 
 | Sent | Stored |
 |---|---|
