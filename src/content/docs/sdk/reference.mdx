@@ -46,7 +46,7 @@ Starts the SDK: creates or restores the session, fetches config, starts all coll
 
 All fields optional. `id` and `email` attach to every event recorded after the call; `name` stays in the browser. Call after `init()`; calls made before it are ignored.
 
-From 1.0.6 that includes page views and vitals, so every session shows its user in **RUM → Sessions** and the session search finds it. Earlier versions attached the user to error and detail events only, so a session without detail capture showed no user.
+From 1.0.6 that includes page views and vitals, so the session shows its user in **RUM → Sessions** and the session search finds it. Earlier versions attached the user to error and detail events only, so a session with no errors and no detail capture showed no user.
 
 Each call replaces the previous user. Call `setUser({})` on logout.
 

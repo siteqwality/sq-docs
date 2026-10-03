@@ -81,7 +81,7 @@ SiteQwalityRUM.setUser({
 | `email` | optional | User's email. Shown on the session and searchable. |
 | `name` | optional | Display name. Kept in the browser, not sent. |
 
-From SDK 1.0.6 the user attaches to every event recorded after the call, so every session shows its user, including sessions without detail capture. Call `setUser({})` on logout. Call after `init()`; calls made before it are ignored.
+From SDK 1.0.6 the user attaches to every event recorded after the call, page views and vitals included, so the session shows its user even without detail capture. Call `setUser({})` on logout. Call after `init()`; calls made before it are ignored.
 
 ### `setGlobalAttribute(key, value)` / `removeGlobalAttribute(key)`
 
