@@ -17,6 +17,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `domain` | string | none | Site domain, used by dashboard deep links. |
 | `settings.privacy.mask_inputs` | bool | `true` | Mask input values in replay recordings. Read the stored value rather than trusting this default; see [privacy settings](/observability/replay/reference/#privacy-settings). |
 | `settings.privacy.mask_text` | bool | `false` | Mask all user-visible text in replay recordings. Off by default, so page text is recorded verbatim unless you turn it on. |
+| `settings.privacy.hide_action_text` | bool | `false` | Drop element text from click names, so `button.send[Send message]` is stored as `button.send`. See [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names). |
 | `settings.retention.observe_days` | int or null | `null` | Keep this application's page views and Web Vitals (`rum_measures`) at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
 | `settings.retention.analyze_days` | int or null | `null` | Keep this application's detail events (`rum_events`) at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
 | `settings.resource_exclusions` | string[] | `[]` | Resource URLs never recorded as resource events. Up to 50 rules; see [excluded resources](/observability/rum/how-to/remote-config/#excluded-resources). |
@@ -69,7 +70,7 @@ The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/conf
 |---|---|
 | `application_id` | The application. |
 | `filters` | Enabled session filters only. |
-| `settings` | Privacy settings (`mask_inputs`, `mask_text`) and `resource_exclusions`. |
+| `settings` | Privacy settings (`mask_inputs`, `mask_text`, `hide_action_text`) and `resource_exclusions`. |
 
 ## Analytics query parameters
 
@@ -86,7 +87,7 @@ The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/conf
 | Param | Description |
 |---|---|
 | `from`, `to` | Time range. |
-| `search` | Free-text search. |
+| `search` | Case-sensitive match on part of the session user's ID or email. |
 | `browser`, `os`, `country` | Exact-match filters. |
 | `has_error`, `has_replay` | Boolean filters. |
 | `limit` | Page size. Default 50, maximum 100. |

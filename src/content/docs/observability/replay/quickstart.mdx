@@ -39,7 +39,7 @@ By the end of this guide you'll have replay activated for any session that throw
 ```bash
 SETTINGS=$(curl -s https://api.siteqwality.com/rum/$APP_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  | jq '.data.settings | .privacy = {"mask_inputs": true, "mask_text": false}')
+  | jq '.data.settings | .privacy.mask_inputs = true | .privacy.mask_text = false')
 
 curl -X PUT https://api.siteqwality.com/rum/$APP_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \

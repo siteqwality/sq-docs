@@ -94,8 +94,11 @@ The CDN bundle code-splits. `rrweb` (replay engine) is loaded only when a replay
 ## Tracking custom data
 
 ```javascript
-// Identify a user (call after login)
+// Identify a user (call after login); the session then shows it
 SiteQwalityRUM.setUser({ id: 'usr_abc', email: 'alice@example.com', name: 'Alice' });
+
+// Label every later error and detail event
+SiteQwalityRUM.setGlobalAttribute('plan', 'pro');
 
 // Custom error
 SiteQwalityRUM.addError(new Error('Payment dialog refused'), { feature: 'checkout' });
@@ -116,10 +119,11 @@ SiteQwalityRUM.addAction('checkout_step_2', { variant: 'A' });
 
 ## Privacy
 
-The SDK respects two privacy toggles set on the RUM application:
+The SDK respects three privacy toggles set on the RUM application:
 
 - `mask_inputs`: replace input values with `***` before sending.
 - `mask_text`: replace user-visible text with `***` (for replay only).
+- `hide_action_text`: drop element text from click names. See [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names).
 
 Set these conservatively if you handle PII or financial data, and check what is stored on each application rather than assuming a default: an application created earlier may store `mask_inputs: false`. See [replay privacy](/observability/replay/overview/#privacy) and the [privacy settings reference](/observability/replay/reference/#privacy-settings).
 

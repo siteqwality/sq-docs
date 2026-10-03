@@ -77,11 +77,22 @@ SiteQwalityRUM.setUser({
 
 | Field | Required | Description |
 |---|---|---|
-| `id` | optional | Your internal user ID. Indexed for filtering. |
-| `email` | optional | User's email. |
-| `name` | optional | Display name. |
+| `id` | optional | Your internal user ID. Shown on the session, searchable, and used by `has_user` filters. |
+| `email` | optional | User's email. Shown on the session and searchable. |
+| `name` | optional | Display name. Kept in the browser, not sent. |
 
-User context attaches to all subsequent events and replay segments.
+From SDK 1.0.6 the user attaches to every event recorded after the call, page views and vitals included, so the session shows its user even without detail capture. Call `setUser({})` on logout. Call after `init()`; calls made before it are ignored.
+
+### `setGlobalAttribute(key, value)` / `removeGlobalAttribute(key)`
+
+Attach a string attribute to every error and detail event recorded after the call, or stop attaching it. Call after `init()`; calls made before it are ignored. Added in 1.0.6.
+
+```javascript
+SiteQwalityRUM.setGlobalAttribute('plan', 'pro');
+SiteQwalityRUM.removeGlobalAttribute('plan');
+```
+
+Up to 50 attributes, keys up to 128 characters and values up to 1,024 (longer values are cut). Invalid input is ignored, never thrown. Values are stored like `context` below, so the same warning applies. See the [SDK reference](/sdk/reference/#siteqwalityrumsetglobalattributekey-value).
 
 ### `addError(error, context?)`
 
@@ -121,8 +132,14 @@ An earlier version of this page said `context` was "accepted for forward compati
 
 No dashboard screen or API response renders `custom_attributes` today. Do not treat that as a safeguard. The data is stored, it is readable by anyone with database access, and a future release may surface it in the product.
 
+Global attributes from `setGlobalAttribute` are stored the same way.
+
 Pass low-cardinality, non-personal labels only, as in the `{ feature: 'checkout', step: '3' }` example above.
 </Aside>
+
+### Naming clicks
+
+Auto-captured clicks are named from the element, including up to 30 characters of its text. Set `data-sq-action-name` on an element (or an ancestor) to name its clicks yourself, or turn on [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names) for the application. See [click names](/sdk/reference/#click-names).
 
 ## TypeScript types
 

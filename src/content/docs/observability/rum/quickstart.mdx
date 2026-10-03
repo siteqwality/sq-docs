@@ -86,7 +86,7 @@ For non-blocking install, use the async snippet pattern (queued calls before SDK
 ```html
 <script>
   window.SiteQwalityRUM = window.SiteQwalityRUM || { _q: [] };
-  ['init', 'setUser', 'addError', 'addAction'].forEach(m => {
+  ['init', 'setUser', 'setGlobalAttribute', 'removeGlobalAttribute', 'addError', 'addAction'].forEach(m => {
     window.SiteQwalityRUM[m] = (...args) => window.SiteQwalityRUM._q.push([m, args]);
   });
   window.SiteQwalityRUM.init({ applicationId: 'abc123', clientToken: 'pub_def456', env: 'prod' });
@@ -132,6 +132,8 @@ SiteQwalityRUM.setUser({
   name: 'Alice',
 });
 ```
+
+The user then shows on the session in **RUM → Sessions**, and the session search finds it by ID or email (case-sensitive).
 
 For business events:
 
