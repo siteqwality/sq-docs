@@ -17,9 +17,11 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `domain` | string | none | Site domain, used by dashboard deep links. |
 | `settings.privacy.mask_inputs` | bool | `true` | Mask input values in replay recordings. Read the stored value rather than trusting this default; see [privacy settings](/observability/replay/reference/#privacy-settings). |
 | `settings.privacy.mask_text` | bool | `false` | Mask all user-visible text in replay recordings. Off by default, so page text is recorded verbatim unless you turn it on. |
+| `settings.retention.observe_days` | int or null | `null` | Keep this application's page views and Web Vitals (`rum_measures`) at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
+| `settings.retention.analyze_days` | int or null | `null` | Keep this application's detail events (`rum_events`) at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
 | `settings.resource_exclusions` | string[] | `[]` | Resource URLs never recorded as resource events. Up to 50 rules; see [excluded resources](/observability/rum/how-to/remote-config/#excluded-resources). |
 
-`POST /rum` takes `name` and `domain`. `PUT /rum/{app_id}` additionally takes `settings`, and replaces the whole object, so send every key back.
+`POST /rum` takes `name` and `domain`. `PUT /rum/{app_id}` additionally takes `settings` and replaces the whole object. Send it back exactly as `GET /rum/{app_id}` returns it, with only your change applied; a key you leave out is reset to its default.
 
 Read-only fields on the response:
 
