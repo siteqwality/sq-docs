@@ -1,7 +1,7 @@
 ---
 title: RUM reference
-description: RUM application fields, session filters, source-map releases, analytics query parameters, and every endpoint.
-last_verified: 2026-08-01
+description: RUM application fields, recording rules, source-map releases, analytics query parameters, and every endpoint.
+last_verified: 2026-10-03
 owner: jj
 ---
 
@@ -21,6 +21,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `settings.retention.observe_days` | int or null | `null` | Keep this application's page views and Web Vitals (`rum_measures`) at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
 | `settings.retention.analyze_days` | int or null | `null` | Keep this application's detail events (`rum_events`) at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
 | `settings.resource_exclusions` | string[] | `[]` | Resource URLs never recorded as resource events. Up to 50 rules; see [excluded resources](/observability/rum/how-to/remote-config/#excluded-resources). |
+| `settings.frustration_ignore_selectors` | string[] | `[]` | CSS selectors whose clicks never count as rage or dead clicks. Up to 50 entries, each 1 to 256 printable characters; anything else returns `400`. See [frustration signals](/sdk/reference/#frustration-signals). |
 
 `POST /rum` takes `name` and `domain`. `PUT /rum/{app_id}` additionally takes `settings` and replaces the whole object. Send it back exactly as `GET /rum/{app_id}` returns it, with only your change applied; a key you leave out is reset to its default.
 
@@ -33,26 +34,28 @@ Read-only fields on the response:
 | `client_token` | string | Public token the SDK sends with every payload. Rotate via `POST /rum/{app_id}/rotate-token`. |
 | `created_at` / `updated_at` | rfc3339 | Timestamps. |
 
-## Session filters
+## Recording rules
 
-Session filters decide which sessions get detail capture (and optionally replay). Managed under `/rum/{app_id}/filters`.
+Recording rules decide which sessions get detail capture (and optionally replay). The dashboard calls them **Recording rules**; the API calls them session filters and manages them under `/rum/{app_id}/filters`.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `name` | string | required | Filter label. |
-| `filter_type` | enum | required | `error`, `slow_performance`, or `custom`. |
+| `name` | string | required | Rule label, 1 to 255 characters. |
+| `filter_type` | enum | required | `error`, `slow_performance`, or `custom`. Validated on update too. |
 | `conditions` | map | required | Condition object; keys depend on `filter_type` (below). |
-| `capture_replay` | bool | `false` | Also record [session replay](/observability/replay/overview/) when this filter matches. |
-| `enabled` | bool | `true` | Disabled filters are not delivered to the SDK. |
-| `priority` | int | `0` | Ordering value. |
+| `capture_replay` | bool | `false` | Also record [session replay](/observability/replay/overview/) when this rule matches. |
+| `enabled` | bool | `true` | Disabled rules are not delivered to the SDK. |
+| `priority` | int | `0` | Accepted and stored, not used. Every enabled rule is evaluated, and any match activates. |
 
 ### Conditions by filter type
 
-| `filter_type` | Condition keys | Matches when |
-|---|---|---|
-| `error` | `has_error` | The session has thrown at least one error. |
-| `slow_performance` | `lcp_gt_ms`, `cls_gt` | Session LCP exceeds `lcp_gt_ms` (milliseconds) or CLS exceeds `cls_gt`. |
-| `custom` | `has_user`, `min_actions` | `has_user: true` requires an identified user; `min_actions` requires at least that many user actions. |
+| `filter_type` | Allowed keys | Other rules | Matches when |
+|---|---|---|---|
+| `error` | `has_error`: bool | `{}` allowed | The session has sent at least one error. Filtered browser noise never counts. |
+| `slow_performance` | `lcp_gt_ms`: number in (0, 600000]; `cls_gt`: number in (0, 10] | At least one key. Legacy `lcp_threshold_ms` and `cls_threshold` are accepted and stored under the new names. | LCP exceeds `lcp_gt_ms` (milliseconds) or CLS exceeds `cls_gt`. |
+| `custom` | `has_user`: bool; `min_actions`: integer 1 to 10000 | `{}` allowed, and matches every session | `has_user: true` requires an identified user; `min_actions` requires at least that many actions in the session. |
+
+Any other key, a wrong type or an out-of-range value returns `400`, for example `Unknown condition key "url" for filter_type custom. Allowed: has_user, min_actions`. An update is validated after merging it into the stored rule. The SDK fails closed too: a `custom` rule with any other key never matches.
 
 ## Source-map releases
 
@@ -62,6 +65,8 @@ Managed under `/rum/{app_id}/releases`. See [Source maps](/observability/rum/how
 |---|---|---|
 | `version` | string | Release version, 1 to 255 characters. Must match the `version` passed to the SDK's `init`. |
 
+`GET /rum/{app_id}/releases/{version}/sourcemaps` lists the maps recorded against a release: `id`, `original_file` (the name frames are matched against) and `created_at`.
+
 ## SDK config
 
 The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/config`, authenticated by the client token, at init and every 5 minutes after. The dashboard API exposes the same payload at `GET /rum/{app_id}/config` (session-authed):
@@ -69,37 +74,105 @@ The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/conf
 | Field | Description |
 |---|---|
 | `application_id` | The application. |
-| `filters` | Enabled session filters only. |
-| `settings` | Privacy settings (`mask_inputs`, `mask_text`, `hide_action_text`) and `resource_exclusions`. |
+| `filters` | Enabled recording rules only. |
+| `settings` | Privacy settings (`mask_inputs`, `mask_text`, `hide_action_text`), `resource_exclusions` and `frustration_ignore_selectors`. |
 
-## Analytics query parameters
+## Analytics conventions
 
-### `GET /rum/{app_id}/overview` and `/vitals`
+| Topic | Rule |
+|---|---|
+| Timestamps | Every timestamp in a RUM API response is ISO 8601 UTC ending in `Z`, such as `2026-10-03T13:00:00.000Z`. Request params accept any ISO 8601 string. |
+| `interval` | `5m`, `1h`, `6h` or `1d`. When absent it follows the span: up to 6 hours `5m`, up to 48 hours `1h`, up to 8 days `6h`, longer `1d`. |
+| `tz` | IANA time zone name such as `Europe/Berlin`, up to 64 characters; default `UTC`. Buckets align to it, which matters for `1d`. An unknown zone returns `400`. |
+| Dimension filters | `browser`, `os`, `country`, `device_type`: exact, case-sensitive match. |
+| `url` | Case-insensitive substring of the page URL. |
+| Web Vitals | One value per page view (its latest valid value). Valid: `lcp_ms`, `fcp_ms`, `inp_ms`, `ttfb_ms` 0 to 600,000; `cls` 0 to 10. Anything else is ignored. Percentiles are approximate (t-digest). |
+| Text params | `search` and `url` are trimmed and capped at 200 characters; empty means absent. |
+
+### `GET /rum/{app_id}/overview`
 
 | Param | Description |
 |---|---|
 | `from`, `to` | Time range (required). |
-| `country`, `browser`, `os`, `device_type`, `url` | Optional exact-match filters (overview). |
-| `vital` | Optional vital name to series (vitals). |
+| `country`, `browser`, `os`, `device_type`, `url` | Optional filters (see conventions). |
 
-### `GET /rum/{app_id}/sessions`
+| Field | Description |
+|---|---|
+| `session_count` | Sessions with at least one page view in the range. |
+| `view_count` | Page views in the range. |
+| `error_count`, `error_rate` | Error events in the range, and errors per session. |
+| `error_session_count`, `error_session_rate` | Sessions with an error, and their share of `session_count` (0 to 1). |
+| `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `p75_fcp_ms`, `p75_ttfb_ms` | p75 per vital; `null` with no samples. |
+| `vitals_distribution` | Per vital (`lcp`, `inp`, `cls`, `fcp`, `ttfb`): `samples`, `good`, `needs_improvement`, `poor` page-view counts, using the [thresholds](/observability/rum/overview/#in-the-dashboard). |
+| `avg_lcp_ms`, `avg_fcp_ms`, `avg_cls`, `avg_inp_ms`, `avg_ttfb_ms` | Deprecated. Means of the per-view values; prefer the p75 fields. |
+| `top_pages` | Top 10 URLs by page views: `url`, `view_count`, `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `p75_load_time_ms` (initial loads only), `vitals_samples`, and the deprecated `avg_lcp_ms`, `avg_load_time_ms`. |
+| `top_errors` | Top 10 error groups by events, honouring the filters. |
+| `country_breakdown`, `browser_breakdown` | Top 20 countries and top 10 browsers by sessions. |
+
+### `GET /rum/{app_id}/vitals`
 
 | Param | Description |
 |---|---|
-| `from`, `to` | Time range. |
-| `search` | Case-sensitive match on part of the session user's ID or email. |
-| `browser`, `os`, `country` | Exact-match filters. |
-| `has_error`, `has_replay` | Boolean filters. |
+| `from`, `to` | Time range (required). |
+| `vital` | `lcp` (default), `inp`, `cls`, `fcp` or `ttfb`. |
+| `interval`, `tz` | Bucket size and zone (see conventions). |
+| `country`, `browser`, `os`, `device_type`, `url` | Optional filters, as on the overview. |
+
+Each point carries `timestamp`, `p50`, `p75`, `p95` and `count` (page views). A page view lands in the bucket of its last valid sample. Buckets without samples are left out.
+
+### `GET /rum/{app_id}/sessions`
+
+A session is listed when it has a page view or vital in `[from, to]` and at least one page view. Its counts, `first_seen`, `last_seen` and duration cover its whole life (at most 4 hours), not only the part inside the range.
+
+| Param | Description |
+|---|---|
+| `from`, `to` | Time range. Default: the 30 days ending now. |
+| `search` | Case-insensitive match on part of the user ID or email, a session ID prefix, any visited URL, or any error message in the session. |
+| `url` | Case-insensitive substring of any page URL the session visited. |
+| `browser`, `os`, `country`, `device_type` | Exact-match filters. |
+| `has_error`, `has_replay`, `has_frustration` | `true` keeps only sessions with an error event, a replay, or a rage, dead or error click. |
+| `error_fingerprint` | Sessions where that error group occurred in the range. |
+| `sort` | `started` (default), `duration`, `errors`, `friction` (frustration signals) or `pages`. Anything else returns `400`. |
+| `order` | `desc` (default) or `asc`. Anything else returns `400`. |
 | `limit` | Page size. Default 50, maximum 100. |
 | `offset` | Page offset. Default 0. |
+
+`total` counts every session matching the filters. Each session adds `duration_ms` (first to last activity across page views, events and replay) and `entry_url` (its first page view). `error_count` and `has_error` come from error events. `GET /rum/{app_id}/sessions/{session_id}` returns the same fields, and its `events` include one `type: "view"` row per page view (`event_id` and `view_id` are the view's ID; fields that do not apply are `null`).
 
 ### `GET /rum/{app_id}/errors`
 
 | Param | Description |
 |---|---|
-| `since` | Start of the range (required); the end defaults to now. |
-| `resolved` | Filter by resolved state. |
-| `search` | Free-text search in error messages. |
+| `since` | Start of the range (required). |
+| `to` | End of the range. Default now. |
+| `search` | Case-insensitive match on any error message in the range. Returns every group with a matching event. |
+| `sort` | `count` (default), `sessions`, `last_seen` or `first_seen`, all descending. Anything else returns `400`. |
+| `limit` | Page size. Default 100, maximum 500. |
+| `offset` | Page offset. Default 0. |
+| `resolved` | Accepted and ignored. |
+
+Each group carries `count` (events), `session_count` (sessions) and `user_count` (identified users), all within the range, plus `first_seen` and `last_seen` in the range.
+
+### `GET /rum/{app_id}/errors/{fingerprint}`
+
+| Param | Description |
+|---|---|
+| `from`, `to` | Time range. Default: the 30 days ending now. Every count, the timeline and the affected sessions follow it. |
+| `interval`, `tz` | Timeline bucket size and zone (see conventions). Empty buckets come back with `count: 0`. |
+
+Adds `session_count` and `affected_session_count` (equal). `affected_sessions` lists up to 50 sessions, newest first, each with `timestamp` and `error_ts_ms` (the error's first occurrence in that session, ISO and Unix milliseconds), `event_id` (that error event) and `has_replay`. Use the last two to [link to the replay at the error](/observability/replay/reference/#replay-links).
+
+### `GET /rum/{app_id}/facets`
+
+| Param | Description |
+|---|---|
+| `from`, `to` | Time range. |
+
+Returns `browser`, `os`, `country` and `device_type`, each a list of `{ value, session_count }`: the top 50 non-empty values by sessions in the range.
+
+### `GET /rum/{app_id}/ingest-status`
+
+No params. Returns `last_seen_at` (the newest page view or vital in the last 24 hours, `null` if none), `sessions_last_hour` and `sessions_last_24h`. Use it to check an install.
 
 ## Endpoints
 
@@ -110,21 +183,24 @@ The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/conf
 | `GET` / `PUT` / `DELETE` | `/rum/{app_id}` | Detail / update / delete. |
 | `POST` | `/rum/{app_id}/rotate-token` | Rotate the client token. |
 | `GET` | `/rum/{app_id}/config` | SDK config (filters + settings). |
-| `POST` / `GET` | `/rum/{app_id}/filters` | Create / list session filters. |
-| `PUT` / `DELETE` | `/rum/{app_id}/filters/{filter_id}` | Update / delete a filter. |
+| `POST` / `GET` | `/rum/{app_id}/filters` | Create / list recording rules. Invalid conditions return `400`. |
+| `PUT` / `DELETE` | `/rum/{app_id}/filters/{filter_id}` | Update / delete a recording rule. |
 | `POST` / `GET` | `/rum/{app_id}/releases` | Create / list source-map releases. |
-| `POST` | `/rum/{app_id}/releases/{version}/sourcemaps` | Upload a source map for a release. |
+| `POST` | `/rum/{app_id}/releases/{version}/sourcemaps` | Request an upload URL for a source map. |
+| `GET` | `/rum/{app_id}/releases/{version}/sourcemaps` | List the source maps recorded against a release. |
 | `DELETE` | `/rum/{app_id}/releases/{version}` | Delete a release. |
-| `GET` | `/rum/{app_id}/overview` | Aggregate overview (vitals averages, top pages, top errors, breakdowns). |
+| `GET` | `/rum/{app_id}/overview` | Aggregate overview (p75 vitals and their distribution, top pages, top errors, breakdowns). |
 | `GET` | `/rum/{app_id}/vitals` | Vital timeseries (p50/p75/p95). |
 | `GET` | `/rum/{app_id}/sessions` | Session list. |
 | `GET` | `/rum/{app_id}/sessions/{session_id}` | Session detail with events. |
 | `GET` | `/rum/{app_id}/errors` | Error groups. |
 | `GET` | `/rum/{app_id}/errors/{fingerprint}` | Error detail, timeline, affected sessions. |
+| `GET` | `/rum/{app_id}/facets` | Dimension values seen in a range, with session counts. |
+| `GET` | `/rum/{app_id}/ingest-status` | When data last arrived, and recent session counts. |
 | `GET` | `/rum/{app_id}/replay/{session_id}` | Replay segment URLs. See [Replay reference](/observability/replay/reference/). |
 
 ## See also
 
 - [RUM overview](/observability/rum/overview/) for the concept and capture tiers.
-- [Session filters](/observability/rum/how-to/session-filters/) for activation patterns.
+- [Recording rules](/observability/rum/how-to/session-filters/) for activation patterns.
 - [SDK reference](/sdk/reference/) for init options and the browser API.

@@ -1,7 +1,7 @@
 ---
 title: RUM (Real User Monitoring)
 description: Web vitals, errors, user actions, resource timing, collected from real browsers via the JS SDK, optionally with session replay.
-last_verified: 2026-08-02
+last_verified: 2026-10-03
 owner: jj
 ---
 
@@ -34,10 +34,10 @@ You install the `@siteqwality/rum` SDK in your front-end. It:
 
 The SDK is **two layers**:
 
-- **Always-on collection** of light measurements (web vitals, view counts, error counts), sent on every session.
-- **Detail collection** (resource timings, individual error stacks, click targets), activated only when a [session filter](/observability/rum/how-to/session-filters/) matches the session. Keeps cost down by not capturing every detail for every user.
+- **Always-on collection** of page views, Web Vitals and errors (with their stacks), sent on every session.
+- **Detail collection** (resource timings, click events with frustration signals, long tasks), activated only when a [recording rule](/observability/rum/how-to/session-filters/) matches the session. Keeps cost down by not capturing every detail for every user.
 
-[Session replay](/observability/replay/overview/) is the third tier: pixel playback, activated only by replay-enabled session filters. See its own page.
+[Session replay](/observability/replay/overview/) is the third tier: pixel playback, activated only by recording rules with `capture_replay: true`. A new application has no rules, so replay stays off until you add one. See its own page.
 
 ## RUM application
 
@@ -46,7 +46,7 @@ Each install of the SDK targets a **RUM application**, typically one per domain 
 - A unique `application_id` and a public `client_token`.
 - A `domain` for the dashboard's "Open in app" links.
 - Privacy settings (`mask_inputs`, `mask_text`).
-- Session filters that activate detail/replay capture.
+- Recording rules that activate detail/replay capture (the API calls them session filters).
 - [Excluded resources](/observability/rum/how-to/remote-config/#excluded-resources): resource URLs it never records.
 
 Create one in **RUM → New application**.
@@ -64,32 +64,40 @@ npm install @siteqwality/rum
 ```javascript
 import { SiteQwalityRUM } from '@siteqwality/rum';
 
-await SiteQwalityRUM.init({
+SiteQwalityRUM.init({
   applicationId: 'abc123',
   clientToken: 'pub_def456',
-  service: 'web',
-  version: '1.4.2',
-  env: 'prod',
+  // version: '1.4.2', // your release; enables source-mapped stack traces
 });
 ```
 
+Calls made before `init()` are ignored with the npm package, so call it first.
+
 ### CDN
 
-For static sites, drop in a script tag:
+For static sites, paste this into the page's `<head>`:
 
 ```html
-<script type="module" src="https://cdn.siteqwality.com/rum/v1/sdk.min.js"></script>
-<script type="module">
-  await SiteQwalityRUM.init({
+<script>
+  (function(w,d,s,u){var r=w.SiteQwalityRUM=w.SiteQwalityRUM||{_q:[]};if(r._q&&!r._h){
+  ['init','setUser','setGlobalAttribute','removeGlobalAttribute','addError','addAction'].forEach(function(m){
+    r[m]=function(){r._q.push([m,arguments])}});
+  r._h=function(e){r._q.push(['_e',[e]])};w.addEventListener('error',r._h);
+  w.addEventListener('unhandledrejection',r._h);
+  var e=d.createElement(s);e.async=1;e.src=u;(d.head||d.documentElement).appendChild(e)}
+  })(window,document,'script','https://cdn.siteqwality.com/rum/v1/sdk.min.js');
+
+  SiteQwalityRUM.init({
     applicationId: 'abc123',
     clientToken: 'pub_def456',
-    service: 'web',
-    env: 'prod',
+    // version: '1.4.2', // your release; enables source-mapped stack traces
   });
 </script>
 ```
 
-The CDN bundle code-splits. `rrweb` (replay engine) is loaded only when a replay-enabled filter activates, so it's free for users not being replayed.
+The snippet loads the SDK asynchronously, queues calls and captures errors until it arrives, then replays them. It is a classic script and defines a single global, `SiteQwalityRUM`. The replay recorder is a separate file loaded only when a recording rule with `capture_replay: true` matches, so sessions that are not replayed never download it.
+
+`init()` is fire-and-forget: collection starts synchronously, and the Promise it returns (settled once remote config is applied or fails) never needs an `await`.
 
 ## Tracking custom data
 
@@ -111,11 +119,11 @@ SiteQwalityRUM.addAction('checkout_step_2', { variant: 'A' });
 
 | Always-on | Detail (filter-activated) | Replay (replay-enabled filter) |
 |---|---|---|
-| View counts, page loads | Resource timings (every fetch/XHR) | Full DOM snapshots + mutations |
-| Web vitals (LCP, FCP, CLS, TTFB, INP) | Individual errors with stack traces | Mouse/keyboard input events |
-| Aggregate error count | Click/keypress events with target | Network requests captured visually |
-| Aggregate action count | Long tasks (>50ms blocking) | (privacy: optional input/text masking) |
-| Session start/end | Distributed-trace IDs from outgoing fetches | |
+| Page views, page load timing | Resource timings (every fetch/XHR) | Full DOM snapshots + mutations |
+| Web vitals (LCP, FCP, CLS, TTFB, INP) | Click events with target and frustration signal | Mouse/keyboard input events |
+| Errors with message and stack (known browser noise filtered) | Long tasks (>50ms blocking) | Network requests captured visually |
+| Aggregate action count | | (privacy: optional input/text masking) |
+| Session start/end | | |
 
 ## Privacy
 
@@ -129,9 +137,34 @@ Set these conservatively if you handle PII or financial data, and check what is 
 
 ## Session dimensions
 
-Every session carries `browser`, `os`, `device_type` and `country`, so you can segment vitals and errors without instrumenting anything. The first three are parsed from the User-Agent server side.
+Every session carries `browser`, `os`, `device_type` and `country`, so you can segment vitals and errors without instrumenting anything. The first three are parsed from the User-Agent server side. Country is looked up from the client IP address at ingest; the IP itself is never stored or logged. A `country` sent in the payload still wins.
 
-Two honest caveats before you build a report on them: **country is effectively empty today** for browser traffic, because nothing in front of the ingest endpoint supplies a geo header, and there was **no backfill**, so sessions recorded before this shipped have no browser, OS or device value. See [segmenting by dimension](/observability/rum/how-to/dimensions/).
+There was **no backfill**: sessions recorded before each dimension shipped keep an empty value. See [segmenting by dimension](/observability/rum/how-to/dimensions/).
+
+[IP geolocation by DB-IP](https://db-ip.com), CC BY 4.0.
+
+## In the dashboard
+
+**Overview** leads with LCP, INP and CLS at the 75th percentile (p75), each coloured by Google's thresholds, with a bar showing the share of page views rated good, needs improvement and poor. FCP and TTFB sit in a second row. Each page view counts once per vital, with its latest valid value. The top row shows sessions, page views, errors and the share of sessions with an error. **Sessions** counts only sessions with at least one page view, and the error numbers come from the error events themselves.
+
+| Vital | Good | Poor |
+|---|---|---|
+| LCP | ≤ 2,500 ms | > 4,000 ms |
+| INP | ≤ 200 ms | > 500 ms |
+| CLS | ≤ 0.1 | > 0.25 |
+| FCP | ≤ 1,800 ms | > 3,000 ms |
+| TTFB | ≤ 800 ms | > 1,800 ms |
+
+Anything between the two is "needs improvement".
+
+**Top pages** lists each URL's page views with p75 LCP, INP, CLS and load time. Load time counts initial page loads only, never route changes. Click a row to see the sessions that visited it.
+
+**Vitals charts** plot p50, p75 and p95 in your local time zone, with dates on ranges over 24 hours. Buckets are 5 minutes for the last 1 or 6 hours, 1 hour for 24 hours, 6 hours for 7 days and 1 day (aligned to your time zone) for 30 days. Empty buckets show as gaps, buckets with fewer than 10 samples are drawn faded, and lines mark the good and poor thresholds.
+
+**Sessions** lists sessions active in the range that have at least one page view. Search matches a user ID or email, a session ID prefix, any visited URL or any error message in the session, ignoring case. The browser, OS, country and device filters offer only values seen in the range, with session counts. Filters, sort and range live in the URL, so a copied link reopens the same view.
+
+**Errors** groups errors and shows events, sessions and identified users per group for the selected range. Search runs on the server across every group in the range. An error's page lists the affected sessions, and **View all sessions** opens Sessions filtered to that error. **Watch replay** appears only when the session has a replay, and opens it at the error.
+
 
 ## See also
 
@@ -139,7 +172,7 @@ Two honest caveats before you build a report on them: **country is effectively e
   <LinkCard title="Quickstart" description="Install the SDK in your app, see your first session." href="/observability/rum/quickstart/" />
   <LinkCard title="Source maps" description="Symbolicate JS errors with original source code." href="/observability/rum/how-to/source-maps/" />
   <LinkCard title="Dimensions" description="Segment by browser, OS, device and country." href="/observability/rum/how-to/dimensions/" />
-  <LinkCard title="Session filters" description="Activate detail capture and replay only when needed." href="/observability/rum/how-to/session-filters/" />
+  <LinkCard title="Recording rules" description="Activate detail capture and replay only when needed." href="/observability/rum/how-to/session-filters/" />
   <LinkCard title="Remote config" description="Change capture behaviour without redeploying." href="/observability/rum/how-to/remote-config/" />
   <LinkCard title="Session Replay" description="Pixel playback of user sessions." href="/observability/replay/overview/" />
 </CardGrid>

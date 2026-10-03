@@ -1,7 +1,7 @@
 ---
 title: Session Replay
-description: Pixel-perfect playback of user sessions, recorded by the RUM SDK and activated only by replay-enabled session filters.
-last_verified: 2026-05-03
+description: Pixel-perfect playback of user sessions, recorded by the RUM SDK and activated only by recording rules with capture_replay.
+last_verified: 2026-10-03
 owner: jj
 ---
 
@@ -19,7 +19,7 @@ import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 ## When NOT to use replay
 
 - For aggregate analytics. That's RUM's measurement layer.
-- As your only data source. Replay is heavy and only captured for filter-matched sessions. The other observability pillars are still your high-level monitoring.
+- As your only data source. Replay is heavy and only captured for sessions a recording rule matches. The other observability pillars are still your high-level monitoring.
 
 ## How it works
 
@@ -36,19 +36,23 @@ Playback in the dashboard:
 1. Replays the initial DOM.
 2. Applies each mutation in real time.
 3. Renders mouse cursor, click highlights, typing.
-4. Lets you scrub the timeline, jump to errors, slow down.
+4. Lets you scrub the timeline, slow down, click an event or marker to seek to it, and step between errors with **Previous error** / **Next error** (keys `[` and `]`).
+
+**Copy link at current time** gives a link that opens the replay at that moment, and an error's **Watch replay** opens the replay at the error. See [replay links](/observability/replay/reference/#replay-links).
 
 ## Activation
 
-Replay is **off by default**. It activates only for sessions matching a [session filter](/observability/rum/how-to/session-filters/) with `capture_replay: true`.
+Replay is **off by default**. A new application has no recording rules, so nothing is replayed until you add a [recording rule](/observability/rum/how-to/session-filters/) with `capture_replay: true`. Until then the Sessions page shows a banner saying replay is off.
 
-Once activated for a session, replay records from the activation moment onward, not from session start. So an errored session might have replay starting halfway through, when the error fired.
+The SDK evaluates rules immediately: when its config loads or refreshes, and after every sent error, Web Vital, action and `setUser` call. Once replay activates for a session, it records from that moment onward, not from session start. An `error` rule's replay therefore starts at the error. On later page loads in the same session and tab, recording resumes from the start of each page once the config loads, as long as an enabled rule still has `capture_replay: true`.
 
 <Aside type="caution" title="Nothing is buffered before the trigger">
-There is no pre-trigger buffer. The rrweb library is lazy-loaded: the SDK only fetches it once a replay-enabled filter matches, so nothing is being recorded, or even downloaded, before that moment. Playback starts at the activation point and never includes the lead-up to it.
+There is no pre-trigger buffer yet. The recorder is lazy-loaded: the SDK only fetches it once a replay rule matches, so nothing is being recorded, or even downloaded, before that moment. Playback starts at the activation point and never includes the lead-up to it.
 
-This page previously claimed that recording with an `error` filter included "the few seconds before the error". It does not.
+This page previously claimed that recording with an `error` rule included "the few seconds before the error". It does not.
 </Aside>
+
+In the dashboard, a session without a replay says why: replay is off for the application, the session ended before the first replay rule existed, it is older than the 30-day retention, the replay quota was reached, or no rule matched (or the recording never arrived, for example a very short visit or a blocked request).
 
 ## Privacy
 
@@ -102,7 +106,7 @@ This page previously documented `rr-unmask`. It was never implemented. If you ad
 
 ## Pricing
 
-Replay is paid. Sessions with replay are billed per recorded session and per stored MB. Set conservative session filters. Do not "replay everyone."
+Replay is paid. Sessions with replay are billed per recorded session and per stored MB. Set conservative recording rules. Do not "replay everyone."
 
 ## Limits
 
@@ -115,6 +119,6 @@ Replay is paid. Sessions with replay are billed per recorded session and per sto
 <CardGrid>
   <LinkCard title="Quickstart" description="Enable replay for error sessions in your RUM app." href="/observability/replay/quickstart/" />
   <LinkCard title="Privacy considerations" description="What rr-mask / rr-block actually do." href="/observability/replay/quickstart/#privacy-checklist" />
-  <LinkCard title="Session filters" description="The activation mechanism." href="/observability/rum/how-to/session-filters/" />
+  <LinkCard title="Recording rules" description="The activation mechanism." href="/observability/rum/how-to/session-filters/" />
   <LinkCard title="RUM overview" description="The parent pillar." href="/observability/rum/overview/" />
 </CardGrid>

@@ -1,7 +1,7 @@
 ---
 title: Segment by browser, OS, device and country
-description: How RUM derives its session dimensions, which endpoints filter and break down by them, and what is genuinely populated today.
-last_verified: 2026-08-02
+description: How RUM derives its session dimensions, which endpoints filter and break down by them, and what each value means.
+last_verified: 2026-10-03
 owner: jj
 ---
 
@@ -16,9 +16,11 @@ RUM sessions carry four context dimensions, so you can ask questions like "is LC
 | `browser` | The User-Agent, parsed server side |
 | `os` | The User-Agent, parsed server side |
 | `device_type` | The User-Agent, parsed server side |
-| `country` | An edge geo header on the request |
+| `country` | The client IP address, looked up at ingest |
 
-Your SDK payload can also set any of these explicitly, and an explicit value always wins over the parsed one. That is the escape hatch if you already know better than a User-Agent string does.
+Your SDK payload can also set any of these explicitly, and an explicit value always wins over the derived one. That is the escape hatch if you already know better than a User-Agent string or an IP address does.
+
+Country comes from an IP-to-country database bundled with the ingest service, so the address never leaves it, and it is never stored or logged. A visitor on a VPN or corporate proxy is placed where that exit is. Country headers sent by the client are ignored. [IP geolocation by DB-IP](https://db-ip.com), CC BY 4.0.
 
 ### Values you will see
 
@@ -32,21 +34,15 @@ Your SDK payload can also set any of these explicitly, and an explicit value alw
 
 Unknown values are stored as an **empty string**, not the literal text `unknown`. The dashboard renders that bucket as `(unknown)`.
 
-<Aside type="caution" title="Country is effectively empty today">
-Country is only populated when a CDN or edge layer in front of the RUM ingest endpoint adds a viewer-country header. The current ingest topology does not have one, so **for browser SDK traffic the country dimension is empty in practice** and a country breakdown will be almost entirely `(unknown)`.
-
-The dimension works, the plumbing to fill it does not exist yet. Don't build a report around geography until that changes, or set `country` explicitly in your payload if you can determine it yourself.
-</Aside>
-
 <Aside type="caution" title="There is no backfill">
-Browser, OS and device were not being recorded before this shipped. Those historical rows are **permanently empty** and nothing re-parses them.
+Browser, OS and device were not recorded before they shipped, and country was left empty until the IP lookup shipped. Those historical rows are **permanently empty** and nothing re-processes them.
 
-Comparing a breakdown across the cutover will show a large `(unknown)` block for the earlier period. That is missing data, not a change in your traffic. Pick time ranges that start after the change when you want a clean picture.
+Comparing a breakdown across a cutover will show a large `(unknown)` block for the earlier period. That is missing data, not a change in your traffic. Pick time ranges that start after the change when you want a clean picture.
 </Aside>
 
 ## Filtering and breaking down
 
-Filters are **exact, case-sensitive** matches on the stored value: `Chrome`, not `chrome`; `US`, not `us`.
+Dimension filters are **exact, case-sensitive** matches on the stored value: `Chrome`, not `chrome`; `US`, not `us`. To see which values exist, ask the facets endpoint (below) rather than guessing.
 
 ### Overview
 
@@ -59,7 +55,7 @@ curl -G "https://api.siteqwality.com/rum/$APP_ID/overview" \
   --data-urlencode "device_type=mobile"
 ```
 
-`from` and `to` are required. Optional filters: `country`, `browser`, `os`, `device_type`, and `url` (a substring match).
+`from` and `to` are required. Optional filters: `country`, `browser`, `os`, `device_type`, and `url` (a case-insensitive substring of the page URL).
 
 The response includes two breakdowns:
 
@@ -68,7 +64,7 @@ The response includes two breakdowns:
 | `country_breakdown` | Top 20 by session count |
 | `browser_breakdown` | Top 10 by session count |
 
-There is **no OS or device breakdown**. Those two dimensions are filter-only, so to compare them you filter and read the resulting totals.
+There is **no OS or device breakdown**. Those two dimensions are filter-only, so to compare them you filter and read the resulting totals. The dashboard shows country names and hides the country panel when no session in the range has one.
 
 ### Sessions
 
@@ -81,18 +77,40 @@ curl -G "https://api.siteqwality.com/rum/$APP_ID/sessions" \
   --data-urlencode "has_error=true"
 ```
 
-Accepts `browser`, `os` and `country`, plus `search`, `has_error`, `has_replay`, `limit` (default 50, max 100) and `offset`.
+Accepts `browser`, `os`, `country` and `device_type`, plus `search`, `url` (a case-insensitive substring of any visited page), `has_error`, `has_replay`, `has_frustration`, `error_fingerprint`, `sort`, `order`, `limit` (default 50, max 100) and `offset`. See the [RUM reference](/observability/rum/reference/#get-rumapp_idsessions).
 
-**`device_type` is not a filter here**, although every returned session does carry its `device_type` value. Filter on it via the overview endpoint, or filter client-side.
+### Facets
+
+The values each dimension actually takes in a range, with session counts. The dashboard's session filter dropdowns come from here.
+
+```bash
+curl -G "https://api.siteqwality.com/rum/$APP_ID/facets" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "from=2026-08-01T00:00:00Z" \
+  --data-urlencode "to=2026-08-02T00:00:00Z"
+```
+
+```json
+{
+  "data": {
+    "browser": [{ "value": "Chrome", "session_count": 412 }, { "value": "Safari", "session_count": 133 }],
+    "os": [{ "value": "Windows", "session_count": 280 }],
+    "country": [{ "value": "US", "session_count": 201 }, { "value": "DE", "session_count": 64 }],
+    "device_type": [{ "value": "desktop", "session_count": 390 }, { "value": "mobile", "session_count": 155 }]
+  }
+}
+```
+
+Each list holds the top 50 non-empty values by session count.
 
 ## A limitation worth knowing
 
 These dimensions live on **session measurements only**. Individual error and detail events do not carry them.
 
-In practice that means you segment sessions by browser or device, and reach errors through those sessions, rather than filtering an error list directly by browser.
+In practice that means you segment sessions by browser or device, and reach errors through those sessions, rather than filtering an error list directly by browser. The overview's top errors do honour a dimension filter, by keeping errors from sessions that match it.
 
 ## See also
 
 <LinkCard title="RUM reference" description="Application, filter, and analytics endpoints." href="/observability/rum/reference/" />
-<LinkCard title="Session filters" description="Activate detail capture and replay selectively." href="/observability/rum/how-to/session-filters/" />
+<LinkCard title="Recording rules" description="Activate detail capture and replay selectively." href="/observability/rum/how-to/session-filters/" />
 <LinkCard title="Source maps" description="Make the errors in those sessions readable." href="/observability/rum/how-to/source-maps/" />

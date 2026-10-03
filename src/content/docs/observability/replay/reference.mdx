@@ -1,7 +1,7 @@
 ---
 title: Session Replay reference
 description: Replay activation settings, privacy toggles, segment mechanics, and the retrieval endpoint.
-last_verified: 2026-08-01
+last_verified: 2026-10-03
 owner: jj
 ---
 
@@ -11,12 +11,13 @@ Replay is configured through the [RUM application](/observability/rum/reference/
 
 ## Activation
 
-Replay records only for sessions matching a [session filter](/observability/rum/how-to/session-filters/) with `capture_replay: true`. The SDK re-evaluates filters every 5 seconds; once replay activates for a session it stays on for that session.
+Replay records only for sessions matching a [recording rule](/observability/rum/how-to/session-filters/) (an API session filter) with `capture_replay: true`. A new application has none, so replay is off until one exists. The SDK evaluates rules when its config loads or refreshes and after every sent error, Web Vital, action and `setUser` call, with no timer. Recording starts at the match, with no buffer of what came before. Once replay activates for a session it stays on for that session, and it resumes on later page loads in the same tab while an enabled rule still has `capture_replay: true`.
 
 | Setting | Where | Default | Description |
 |---|---|---|---|
-| `capture_replay` | Session filter | `false` | Record replay when this filter matches. |
-| `enabled` | Session filter | `true` | Disabled filters are never delivered to the SDK. |
+| `capture_replay` | Recording rule | `false` | Record replay when this rule matches. |
+| `enabled` | Recording rule | `true` | Disabled rules are never delivered to the SDK. |
+| `priority` | Recording rule | `0` | Accepted by the API but not used. |
 
 ## Privacy settings
 
@@ -85,8 +86,19 @@ Play the segments in the order returned. Do not deduplicate or sort them by `seg
 
 The dashboard player consumes these; you can also fetch them directly for your own tooling.
 
+## Replay links
+
+The dashboard player opens at a given moment from its URL, `https://app.siteqwality.com/rum/{app_id}/replay/{session_id}`:
+
+| Query | Effect |
+|---|---|
+| `?t=754`, `?t=12:34`, `?t=1:02:03` | Opens at that offset into the recording (seconds, `m:ss` or `h:mm:ss`), clamped to the recording. **Copy link at current time** writes this form. |
+| `?at=<epoch ms>&event=<event_id>` | Opens 5 seconds before that absolute time (never before the start) and highlights the event row with that ID. An error's **Watch replay** link uses the error's `error_ts_ms` and `event_id`. |
+
+When both are present, `t` wins.
+
 ## See also
 
 - [Replay overview](/observability/replay/overview/) for the concept and privacy guidance.
-- [Session filters](/observability/rum/how-to/session-filters/) for the activation mechanism.
+- [Recording rules](/observability/rum/how-to/session-filters/) for the activation mechanism.
 - [SDK reference](/sdk/reference/) for the recorder's browser-side behavior.
