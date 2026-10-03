@@ -152,7 +152,7 @@ To give an element a stable, readable name instead, add `data-sq-action-name`. I
 
 `data-sq-action-name` needs SDK 1.0.6. The value is trimmed, cut to 100 characters, and its square brackets become parentheses, so the setting never strips it. Keep personal data out of it.
 
-Names passed to `addAction()` are sent as written. With the setting on, one that ends in bracketed text loses it too, so `checkout[step 2]` is stored as `checkout`.
+Names passed to `addAction()` are never changed by this setting.
 
 ## See also
 
