@@ -27,6 +27,8 @@ Set on the RUM application under `settings.privacy` and delivered to the SDK wit
 | `mask_inputs` | `true` | Masks all input values in the recording (rrweb `maskAllInputs`). |
 | `mask_text` | `false` | Masks all user-visible text in the recording. |
 
+`settings.privacy` also carries [`hide_action_text`](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names), which is not a replay setting. Send it back unchanged too.
+
 <Aside type="danger" title="Read the stored value, not the documented default">
 Applications created earlier can have `mask_inputs` stored as `false`, because the value was written into the application's settings at creation time and nothing rewrites it afterwards. The documented default governs what a new application is created with; **the stored value is what governs what is recorded**.
 
