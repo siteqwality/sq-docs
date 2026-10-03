@@ -17,8 +17,9 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `domain` | string | none | Site domain, used by dashboard deep links. |
 | `settings.privacy.mask_inputs` | bool | `true` | Mask input values in replay recordings. Read the stored value rather than trusting this default; see [privacy settings](/observability/replay/reference/#privacy-settings). |
 | `settings.privacy.mask_text` | bool | `false` | Mask all user-visible text in replay recordings. Off by default, so page text is recorded verbatim unless you turn it on. |
+| `settings.resource_exclusions` | string[] | `[]` | Resource URLs never recorded as resource events. Up to 50 rules; see [excluded resources](/observability/rum/how-to/remote-config/#excluded-resources). |
 
-`POST /rum` takes `name` and `domain`. `PUT /rum/{app_id}` additionally takes `settings`.
+`POST /rum` takes `name` and `domain`. `PUT /rum/{app_id}` additionally takes `settings`, and replaces the whole object, so send every key back.
 
 Read-only fields on the response:
 
@@ -66,7 +67,7 @@ The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/conf
 |---|---|
 | `application_id` | The application. |
 | `filters` | Enabled session filters only. |
-| `settings` | Privacy settings (`mask_inputs`, `mask_text`). |
+| `settings` | Privacy settings (`mask_inputs`, `mask_text`) and `resource_exclusions`. |
 
 ## Analytics query parameters
 
@@ -105,7 +106,7 @@ The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/conf
 | `GET` | `/rum` | List applications. |
 | `GET` / `PUT` / `DELETE` | `/rum/{app_id}` | Detail / update / delete. |
 | `POST` | `/rum/{app_id}/rotate-token` | Rotate the client token. |
-| `GET` | `/rum/{app_id}/config` | SDK config (filters + privacy). |
+| `GET` | `/rum/{app_id}/config` | SDK config (filters + settings). |
 | `POST` / `GET` | `/rum/{app_id}/filters` | Create / list session filters. |
 | `PUT` / `DELETE` | `/rum/{app_id}/filters/{filter_id}` | Update / delete a filter. |
 | `POST` / `GET` | `/rum/{app_id}/releases` | Create / list source-map releases. |
