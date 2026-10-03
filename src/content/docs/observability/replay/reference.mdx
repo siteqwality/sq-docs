@@ -61,20 +61,27 @@ Content-Type: application/json
 |---|---|---|
 | `session_id` | string | The RUM session. |
 | `segment_index` | int | Position within the session. |
-| `timestamp` | string | When the segment was recorded. |
+| `timestamp` | string | When the segment was received. |
 | `s3_key` | string | Storage location (internal). |
+| `content_hash` | string | First 16 hex digits of the payload's SHA-256. |
+| `first_event_ts` | string | Time of the earliest event in the segment. |
 | `size_bytes` | int | Segment payload size. |
+
+Each distinct payload is stored once. A retried upload with the same content is accepted and not stored again.
 
 ## Retrieval
 
-`GET /rum/{app_id}/replay/{session_id}` returns one entry per segment, in order:
+`GET /rum/{app_id}/replay/{session_id}` returns one entry per stored segment, ordered by `first_event_ms`, then `segment_index`:
 
 | Field | Description |
 |---|---|
-| `segment_index` | Position within the session. |
+| `segment_index` | Position within the session. Not unique: older SDK versions restart it at 0 on every page load. |
 | `url` | Presigned download URL for the segment payload. |
 | `size_bytes` | Segment payload size. |
+| `first_event_ms` | Time of the earliest event in the segment, in Unix milliseconds. |
 | `expires_in_seconds` | URL lifetime: 900 seconds (15 minutes). Re-fetch the list for fresh URLs. |
+
+Play the segments in the order returned. Do not deduplicate or sort them by `segment_index`.
 
 The dashboard player consumes these; you can also fetch them directly for your own tooling.
 
