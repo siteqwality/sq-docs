@@ -102,7 +102,7 @@ With detail capture active, every click is recorded as an action whose `action_t
 |---|---|
 | Has `data-sq-action-name`, or sits inside an element that has it | That value, trimmed, up to 100 characters, with square brackets turned into parentheses |
 | Has an `id` | `#id` |
-| Anything else | Tag, up to two classes, then up to 30 characters of its text (or its `aria-label`) in brackets, such as `button.btn.primary[Send message]` |
+| Anything else | Tag, up to two classes, then up to 30 characters of its text (or else its full `aria-label`) in brackets, such as `button.btn.primary[Send message]` |
 
 The bracketed text can contain what your users typed or see, such as names or message previews. Two ways to keep it out:
 

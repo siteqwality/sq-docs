@@ -132,7 +132,7 @@ Ingest drops matching resource events within a minute of saving, from every SDK 
 
 ## Hiding element text in click names
 
-Auto-captured clicks are named from the clicked element, including up to 30 characters of its text or `aria-label`, such as `button.btn.primary[Send message]`. On pages that render what users wrote, that text can be personal data.
+Auto-captured clicks are named from the clicked element, including up to 30 characters of its text, or else its full `aria-label`, such as `button.btn.primary[Send message]`. On pages that render what users wrote, that text can be personal data.
 
 Turn on **Hide element text in click names** under **RUM → Settings → Privacy** (or set `settings.privacy.hide_action_text` to `true`) and clicks are stored without the bracketed text:
 
