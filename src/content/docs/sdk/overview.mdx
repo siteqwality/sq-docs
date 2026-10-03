@@ -81,11 +81,11 @@ SiteQwalityRUM.setUser({
 | `email` | optional | User's email. Shown on the session and searchable. |
 | `name` | optional | Display name. Kept in the browser, not sent. |
 
-From SDK 1.0.6 the user attaches to every event sent after the call, so every session shows its user, including sessions without detail capture. Call `setUser({})` on logout.
+From SDK 1.0.6 the user attaches to every event recorded after the call, so every session shows its user, including sessions without detail capture. Call `setUser({})` on logout. Call after `init()`; calls made before it are ignored.
 
 ### `setGlobalAttribute(key, value)` / `removeGlobalAttribute(key)`
 
-Attach a string attribute to every later error and detail event, or stop attaching it. Added in 1.0.6.
+Attach a string attribute to every error and detail event recorded after the call, or stop attaching it. Call after `init()`; calls made before it are ignored. Added in 1.0.6.
 
 ```javascript
 SiteQwalityRUM.setGlobalAttribute('plan', 'pro');

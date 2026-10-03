@@ -44,7 +44,7 @@ Starts the SDK: creates or restores the session, fetches config, starts all coll
 | `email` | string | User email. |
 | `name` | string | Display name. |
 
-All fields optional. `id` and `email` attach to every event sent after the call; `name` stays in the browser.
+All fields optional. `id` and `email` attach to every event recorded after the call; `name` stays in the browser. Call after `init()`; calls made before it are ignored.
 
 From 1.0.6 that includes page views and vitals, so every session shows its user in **RUM → Sessions** and the session search finds it. Earlier versions attached the user to error and detail events only, so a session without detail capture showed no user.
 
@@ -52,7 +52,7 @@ Each call replaces the previous user. Call `setUser({})` on logout.
 
 ### `SiteQwalityRUM.setGlobalAttribute(key, value)`
 
-Adds a string attribute to every error and detail event sent after the call, in `custom_attributes`. Page views and vitals do not carry it. Setting an existing key replaces its value, and per-call `context` wins over a global attribute with the same key.
+Adds a string attribute to every error and detail event recorded after the call, in `custom_attributes`. Page views and vitals do not carry it. Setting an existing key replaces its value, and per-call `context` wins over a global attribute with the same key.
 
 ```javascript
 SiteQwalityRUM.setGlobalAttribute('plan', 'pro');
@@ -64,11 +64,11 @@ SiteQwalityRUM.setGlobalAttribute('plan', 'pro');
 | Key length | 128 characters |
 | Value length | 1,024 characters |
 
-A longer value is cut to 1,024 characters. A blank or overlong key, a non-string, or a new key past the 50th is ignored without an error. Global attributes are stored like `context`; see the warning below. Added in 1.0.6.
+A longer value is cut to 1,024 characters. A blank or overlong key, a non-string, or a new key past the 50th is ignored without an error. Global attributes are stored like `context`; see the warning below. Call after `init()`; calls made before it are ignored. Added in 1.0.6.
 
 ### `SiteQwalityRUM.removeGlobalAttribute(key)`
 
-Stops attaching `key` to events sent after the call. Removing a key that is not set does nothing. Added in 1.0.6.
+Stops attaching `key` to events recorded after the call. Removing a key that is not set does nothing. Added in 1.0.6.
 
 ### `SiteQwalityRUM.addError(error, context?)`
 
