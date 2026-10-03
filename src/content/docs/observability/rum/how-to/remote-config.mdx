@@ -144,13 +144,15 @@ Turn on **Hide element text in click names** under **RUM → Settings → Privac
 
 Ingest strips the text within a minute of saving, from every SDK version, before it is stored. From SDK **1.0.6** the browser also leaves it out, picking up the change on its 5 minute config refresh. Clicks already stored keep their names.
 
-To give an element a stable, readable name instead, add `data-sq-action-name`. It applies to clicks on the element and anything inside it, and is used as is whether or not the setting is on:
+To give an element a stable, readable name instead, add `data-sq-action-name`. It applies to clicks on the element and anything inside it, whether or not the setting is on:
 
 ```html
 <button class="btn primary" data-sq-action-name="Send message">Send</button>
 ```
 
-`data-sq-action-name` needs SDK 1.0.6. The value is stored as written, so keep personal data out of it, and do not end it with text in square brackets, which the setting strips.
+`data-sq-action-name` needs SDK 1.0.6. The value is trimmed, cut to 100 characters, and its square brackets become parentheses, so the setting never strips it. Keep personal data out of it.
+
+Names passed to `addAction()` are sent as written. With the setting on, one that ends in bracketed text loses it too, so `checkout[step 2]` is stored as `checkout`.
 
 ## See also
 

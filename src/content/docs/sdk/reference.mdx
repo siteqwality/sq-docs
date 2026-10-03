@@ -78,6 +78,8 @@ Records a custom error alongside auto-captured ones (recorded with `error_source
 
 Records a custom action with `action_type: "custom"` and `action_target: name`. Actions always increment the session's action count (used by `custom` filters with `min_actions`); the individual action event is only shipped when detail capture is active for the session. The `context` parameter **is stored**: it is merged into the event's `custom_attributes` and retained for 30 days.
 
+If the application [hides element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names), a `name` ending in bracketed text is stored without it, so `checkout[step 2]` becomes `checkout`. Leave square brackets out of action names.
+
 <Aside type="danger" title="Do not put personal data in context">
 The `context` argument of `addError` and `addAction` **is stored**. The SDK merges it into the event's `custom_attributes`, a `Map(String, String)` column on the `rum_events` table, and it is retained for **30 days** on every plan, free and paid alike. Buying a larger RUM Analyze pack raises the number of sessions you can record, not how long their events are kept, so there is no way to make that window longer.
 
@@ -98,7 +100,7 @@ With detail capture active, every click is recorded as an action whose `action_t
 
 | Element | Name |
 |---|---|
-| Has `data-sq-action-name`, or sits inside an element that has it | That value, trimmed, up to 100 characters |
+| Has `data-sq-action-name`, or sits inside an element that has it | That value, trimmed, up to 100 characters, with square brackets turned into parentheses |
 | Has an `id` | `#id` |
 | Anything else | Tag, up to two classes, then up to 30 characters of its text (or its `aria-label`) in brackets, such as `button.btn.primary[Send message]` |
 
