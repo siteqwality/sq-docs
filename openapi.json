@@ -334,6 +334,80 @@
         ]
       }
     },
+    "/account/connected_apps": {
+      "get": {
+        "tags": [
+          "AI Assistants"
+        ],
+        "summary": "List the apps the signed-in member has granted access to.",
+        "operationId": "list_connected_apps",
+        "responses": {
+          "200": {
+            "description": "The member's connected apps",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConnectedApp"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not a dashboard session"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/connected_apps/{connected_app_id}": {
+      "delete": {
+        "tags": [
+          "AI Assistants"
+        ],
+        "summary": "Revoke the signed-in member's grant to an app. Its tokens stop working.",
+        "operationId": "revoke_connected_app",
+        "parameters": [
+          {
+            "name": "connected_app_id",
+            "in": "path",
+            "description": "The connected app to revoke",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
+          },
+          "400": {
+            "description": "Not an app this member connected"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not a dashboard session"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/account/email_status": {
       "get": {
         "tags": [
@@ -1249,7 +1323,7 @@
         "tags": [
           "Security"
         ],
-        "summary": "Begin TOTP enrollment. Returns the otpauth:// URL, secret, and recovery codes.",
+        "summary": "Begin TOTP enrollment. Returns the QR image, secret, and recovery codes.",
         "operationId": "totp_start",
         "responses": {
           "200": {
@@ -1985,7 +2059,7 @@
         "tags": [
           "Billing"
         ],
-        "summary": "Buy an add-on, or move between tiers of one.",
+        "summary": "Buy an add-on, or move between tiers of one. Buying and moving to a\npricier tier apply now; a cheaper tier waits for the period end.",
         "operationId": "purchase_addon",
         "requestBody": {
           "content": {
@@ -1999,7 +2073,7 @@
         },
         "responses": {
           "200": {
-            "description": "Add-on purchased or changed",
+            "description": "Add-on bought or upgraded (now), cheaper tier scheduled for period end, or payment required",
             "content": {
               "application/json": {
                 "schema": {
@@ -2036,7 +2110,7 @@
         "tags": [
           "Billing"
         ],
-        "summary": "Remove an add-on.",
+        "summary": "Remove an add-on at the end of the current billing period.",
         "operationId": "remove_addon",
         "parameters": [
           {
@@ -2051,7 +2125,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Add-on removed",
+            "description": "Add-on removal scheduled for the end of the period",
             "content": {
               "application/json": {
                 "schema": {
@@ -2182,6 +2256,7 @@
           "Billing"
         ],
         "summary": "Change subscription plan/quantity for a product.",
+        "description": "Upgrades apply now and are charged now for the prorated difference, and\nonly once that charge is paid. Downgrades are scheduled for the end of the\ncurrent billing period with no credit or refund; picking the current plan\nagain cancels a scheduled downgrade.",
         "operationId": "change_plan",
         "requestBody": {
           "content": {
@@ -2195,7 +2270,7 @@
         },
         "responses": {
           "200": {
-            "description": "Plan changed",
+            "description": "Plan changed, change scheduled, or payment required",
             "content": {
               "application/json": {
                 "schema": {
@@ -2205,13 +2280,16 @@
             }
           },
           "400": {
-            "description": "Invalid billing interval"
+            "description": "Invalid billing interval, or already on that plan"
           },
           "401": {
             "description": "Missing or invalid authentication"
           },
           "403": {
             "description": "Caller is not a super admin"
+          },
+          "409": {
+            "description": "The subscription is set to cancel; resume it first"
           },
           "500": {
             "description": "Internal server error"
@@ -2770,7 +2848,7 @@
         "tags": [
           "Billing"
         ],
-        "summary": "List active subscriptions for the account.",
+        "summary": "List active subscriptions for the account, each with any change scheduled\nfor the end of its billing period.",
         "operationId": "get_subscriptions",
         "responses": {
           "200": {
@@ -6239,33 +6317,46 @@
         "tags": [
           "Incidents"
         ],
-        "summary": "List standalone (non-status-page) incidents for the account.",
+        "summary": "List the account's incidents, newest first.",
+        "description": "`total` is the size of the whole filtered set. The status filter is applied\nin SQL: the dashboard used to fetch one page and filter it client-side, so\nan open incident older than the newest 50 was never shown as active.",
         "operationId": "list_standalone_incidents",
         "parameters": [
           {
             "name": "limit",
             "in": "query",
-            "description": "Page size",
+            "description": "Page size. Defaults to 50, clamped to 1..=100.",
             "required": false,
             "schema": {
               "type": "integer",
-              "format": "int32"
+              "format": "int64"
             }
           },
           {
             "name": "offset",
             "in": "query",
-            "description": "Page offset",
+            "description": "Row offset into the filtered list, newest first.",
             "required": false,
             "schema": {
               "type": "integer",
-              "format": "int32"
+              "format": "int64"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "`active` (triggered or acknowledged), `resolved`, or `all`. Defaults to\n`all`. Keyed on `responder_status`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/IncidentListStatus"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Page of incidents"
+            "description": "One page of incidents in `data`, plus `total`: the number of incidents matching `status`"
+          },
+          "400": {
+            "description": "Invalid query parameters, including an unknown `status`"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -6329,7 +6420,7 @@
         "tags": [
           "Incidents"
         ],
-        "summary": "One-click incident acknowledge/resolve via a signed link from email, SMS,\nor webhook payloads. Unauthenticated: the HMAC token is the credential.",
+        "summary": "Opening a signed incident link. Verifies the token and shows a\nconfirmation page whose button POSTs back to this URL. Changes nothing,\nso a mail scanner or link preview fetching it is harmless.\nUnauthenticated: the HMAC token is the credential.",
         "operationId": "incident_action_link",
         "parameters": [
           {
@@ -6344,7 +6435,51 @@
         ],
         "responses": {
           "200": {
-            "description": "Action applied (HTML confirmation page)",
+            "description": "Confirmation page, or an already-done page (HTML). Nothing is changed.",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "400": {
+            "description": "Invalid or expired link",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "404": {
+            "description": "Incident not found",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "503": {
+            "description": "Action links not configured",
+            "content": {
+              "text/html": {}
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Confirming a signed incident link: acknowledges or resolves the incident\nand cancels escalation. This is the button on the GET page.\nUnauthenticated: the HMAC token is the credential.",
+        "operationId": "incident_action_link_confirm",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Signed incident action token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Action applied, or it had already been (HTML result page)",
             "content": {
               "text/html": {}
             }
@@ -7577,6 +7712,66 @@
         "responses": {
           "200": {
             "description": "Parser deleted"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Parser not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/log_parsers/{parser_id}/test": {
+      "post": {
+        "tags": [
+          "Log Parsers"
+        ],
+        "summary": "Test a saved log parser against a sample log line.",
+        "operationId": "test_saved_log_parser",
+        "parameters": [
+          {
+            "name": "parser_id",
+            "in": "path",
+            "description": "Log parser identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestParserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Parse result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestParserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid sample"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -9470,6 +9665,80 @@
         ]
       }
     },
+    "/monitors/{monitor_id}/alert_history": {
+      "get": {
+        "tags": [
+          "Monitors"
+        ],
+        "operationId": "get_monitor_alert_history",
+        "parameters": [
+          {
+            "name": "monitor_id",
+            "in": "path",
+            "description": "Monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "`http` (default), `cron` or `browser`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many outages, newest first. 1..=100, default 25.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Outages and the alerts sent for each",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonitorAlertHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown monitor kind"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/notification/": {
       "post": {
         "tags": [
@@ -9840,6 +10109,96 @@
           },
           "500": {
             "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/oauth/authorize": {
+      "post": {
+        "tags": [
+          "AI Assistants"
+        ],
+        "summary": "Record the member's consent decision and get the redirect back to the app.",
+        "operationId": "authorize",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Where to send the browser next",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthAuthorizeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request was refused"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not a dashboard session"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/oauth/authorize/start": {
+      "post": {
+        "tags": [
+          "AI Assistants"
+        ],
+        "summary": "Check an OAuth authorization request and describe it for the consent screen.",
+        "operationId": "authorize_start",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAuthorizeStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The app and scopes to show on the consent screen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthAuthorizeStartResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The app, redirect or scopes were refused"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not a dashboard session"
           }
         },
         "security": [
@@ -10800,6 +11159,7 @@
           "RUM Applications"
         ],
         "summary": "Update a RUM application.",
+        "description": "`settings` replaces the stored settings object in full.",
         "operationId": "update_rum_application",
         "parameters": [
           {
@@ -11340,7 +11700,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Releases"
+            "description": "Releases, newest first, each with `source_map_count`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RumSourceMapRelease"
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -11464,6 +11834,63 @@
       }
     },
     "/rum/{app_id}/releases/{version}/sourcemaps": {
+      "get": {
+        "tags": [
+          "RUM Source Maps"
+        ],
+        "summary": "List the source maps recorded against one release, by file name.",
+        "operationId": "list_rum_source_maps",
+        "parameters": [
+          {
+            "name": "app_id",
+            "in": "path",
+            "description": "RUM application identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "description": "Release version",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Source maps for the release",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RumSourceMap"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Application or release not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
       "post": {
         "tags": [
           "RUM Source Maps"
@@ -12238,13 +12665,13 @@
         "tags": [
           "Status Pages"
         ],
-        "summary": "List status pages for the account.",
+        "summary": "List status pages for the account, ordered by name.",
         "operationId": "list_status_pages",
         "parameters": [
           {
             "name": "limit",
             "in": "query",
-            "description": "Page size",
+            "description": "Page size. Defaults to 10, clamped to 1..=100",
             "required": false,
             "schema": {
               "type": "integer",
@@ -12254,7 +12681,7 @@
           {
             "name": "offset",
             "in": "query",
-            "description": "Page offset",
+            "description": "Row offset into the whole list",
             "required": false,
             "schema": {
               "type": "integer",
@@ -12264,7 +12691,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Page of status pages"
+            "description": "One page of status pages in `data`, plus `total`: the number of status pages on the account"
+          },
+          "400": {
+            "description": "Invalid pagination parameters"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -12324,6 +12754,52 @@
       }
     },
     "/status_page/{status_page_id}": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Get one status page.",
+        "description": "The dashboard's status page screen used to find its own title by scanning\nthe first page of `GET /status_page/`, so any page past that first page\nrendered with its UUID for a name.",
+        "operationId": "get_status_page",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The status page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
       "put": {
         "tags": [
           "Status Pages"
@@ -12643,7 +13119,7 @@
         "tags": [
           "Status Pages"
         ],
-        "summary": "List browser monitors attached to a status page.",
+        "summary": "List browser monitors attached to a status page, ordered by display name.",
         "operationId": "list_status_page_browser_checks",
         "parameters": [
           {
@@ -12659,7 +13135,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Page size",
+            "description": "Page size. Defaults to 10, clamped to 1..=100",
             "required": false,
             "schema": {
               "type": "integer",
@@ -12669,7 +13145,7 @@
           {
             "name": "offset",
             "in": "query",
-            "description": "Page offset",
+            "description": "Row offset into the whole list",
             "required": false,
             "schema": {
               "type": "integer",
@@ -12679,7 +13155,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Page of browser monitor mappings"
+            "description": "One page of browser monitor mappings in `data`, plus `total`: the number of browser monitors on the status page"
+          },
+          "400": {
+            "description": "Invalid pagination parameters"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -13012,7 +13491,7 @@
         "tags": [
           "Status Pages"
         ],
-        "summary": "List HTTP monitors attached to a status page.",
+        "summary": "List HTTP monitors attached to a status page, ordered by display name.",
         "operationId": "list_status_page_http_jobs",
         "parameters": [
           {
@@ -13028,7 +13507,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Page size",
+            "description": "Page size. Defaults to 10, clamped to 1..=100",
             "required": false,
             "schema": {
               "type": "integer",
@@ -13038,7 +13517,7 @@
           {
             "name": "offset",
             "in": "query",
-            "description": "Page offset",
+            "description": "Row offset into the whole list",
             "required": false,
             "schema": {
               "type": "integer",
@@ -13048,7 +13527,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Page of HTTP monitor mappings"
+            "description": "One page of HTTP monitor mappings in `data`, plus `total`: the number of HTTP monitors on the status page"
+          },
+          "400": {
+            "description": "Invalid pagination parameters"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -14385,6 +14867,9 @@
               }
             }
           },
+          "400": {
+            "description": "delay_minutes out of range (0 to 1440)"
+          },
           "401": {
             "description": "Missing or invalid authentication"
           },
@@ -14926,7 +15411,7 @@
           },
           "status": {
             "type": "string",
-            "description": "`\"updated\"` when the change is live, `\"requires_payment\"` when the\ncustomer must confirm a payment before it takes effect."
+            "description": "The same statuses as `change-plan`: `\"updated\"` when the change is\nlive, `\"requires_payment\"` when the customer must confirm a payment\nfirst, `\"scheduled\"` for a cheaper tier (applied at `effective_at`),\nand `\"scheduled_change_cancelled\"` when re-picking the current tier\ncancelled a scheduled change."
           },
           "client_secret": {
             "type": [
@@ -14939,6 +15424,165 @@
               "string",
               "null"
             ]
+          },
+          "effective_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "For `scheduled`: when the change takes effect."
+          }
+        }
+      },
+      "AlertDeliveryEvent": {
+        "type": "object",
+        "description": "SES's report about one recipient of an alert email.",
+        "required": [
+          "at",
+          "event_type",
+          "permanent",
+          "recipient"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "bounce | complaint | delivery_delay | reject | rendering_failure"
+          },
+          "sub_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "e.g. `Permanent/General`, `Transient/MailboxFull`."
+          },
+          "permanent": {
+            "type": "boolean",
+            "description": "True only for a permanent bounce or a complaint. A transient bounce is\nnever a dead address."
+          },
+          "recipient": {
+            "type": "string",
+            "description": "Masked."
+          }
+        }
+      },
+      "AlertHistoryDelivery": {
+        "type": "object",
+        "description": "One alert we sent (or tried to) for an outage.",
+        "required": [
+          "id",
+          "sent_at",
+          "status",
+          "events"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notification_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The channel row this went through, when it still exists."
+          },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "email | sms | slack | webhook | telegram | discord | pagerduty | …"
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Masked: `o***@example.com`, `***1234`, a Slack channel, a webhook host."
+          },
+          "is_failure": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "true = the DOWN alert, false = the recovery."
+          },
+          "status": {
+            "type": "string",
+            "description": "sent | delivered | delayed | soft_bounced | failed | rejected |\nbounced | complained"
+          },
+          "status_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "provider_error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the provider said when it did not accept the alert."
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the provider reported later (a bounce's type and diagnostic)."
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertDeliveryEvent"
+            },
+            "description": "Per-recipient SES reports, for email."
+          }
+        }
+      },
+      "AlertHistoryTransition": {
+        "type": "object",
+        "description": "One outage and everything sent about it.",
+        "required": [
+          "id",
+          "started_at",
+          "deliveries"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the monitor went down (after any confirmation checks)."
+          },
+          "ended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it recovered; `None` while still down."
+          },
+          "deliveries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertHistoryDelivery"
+            },
+            "description": "Oldest first, so the list reads as the story: went down, told X,\ndelivered, recovered, told X."
           }
         }
       },
@@ -15588,6 +16232,24 @@
           }
         }
       },
+      "AuditConnectedApp": {
+        "type": "object",
+        "description": "An OAuth app as the audit log names it. `name` is what the app registered\nitself as, looked up when the row was written; it is display text only.",
+        "required": [
+          "client_id"
+        ],
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "AuthMethodsResponse": {
         "type": "object",
         "description": "What auth methods are configured for a given email. Used by the email-first\nlogin UI to branch between password, magic link, and OAuth.",
@@ -15883,7 +16545,7 @@
           },
           "status": {
             "type": "string",
-            "description": "`\"updated\"` when the change is live, `\"requires_payment\"` when the\ncustomer must confirm a payment before it takes effect."
+            "description": "One of `updated`, `requires_payment`, `scheduled`,\n`scheduled_change_cancelled`. See [`change_plan_status`]."
           },
           "client_secret": {
             "type": [
@@ -15896,6 +16558,60 @@
               "string",
               "null"
             ]
+          },
+          "effective_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "For `scheduled`: when the change takes effect (the end of the current\nbilling period)."
+          }
+        }
+      },
+      "ChannelDelivery": {
+        "type": "object",
+        "description": "One delivery, as a channel's health shows it.",
+        "required": [
+          "at",
+          "status"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "description": "sent | delivered | delayed | soft_bounced | failed | rejected |\nbounced | complained"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The provider's reason for a non-success status, URLs reduced to hosts."
+          }
+        }
+      },
+      "ChannelHealth": {
+        "type": "object",
+        "description": "A channel's recent delivery record.",
+        "required": [
+          "state",
+          "recent"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "description": "`healthy`: the most recent delivery reached the provider.\n`degraded`: it was refused, bounced, complained about or could not be\nsent, so the next alert will likely not arrive either.\n`unknown`: nothing sent in the lookback window."
+          },
+          "recent": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelDelivery"
+            },
+            "description": "Newest first, at most [`CHANNEL_HEALTH_RECENT`]."
           }
         }
       },
@@ -15921,6 +16637,132 @@
             ],
             "format": "int32",
             "description": "True size of the body in bytes, so a client can show it before the\ndownload starts."
+          }
+        }
+      },
+      "ComplimentarySummary": {
+        "type": "object",
+        "description": "The account's active complimentary plan, for the billing page.",
+        "required": [
+          "products",
+          "granted_at"
+        ],
+        "properties": {
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Products covered at any tier."
+          },
+          "granted_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ends_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Null means no end date."
+          }
+        }
+      },
+      "ConnectedApp": {
+        "type": "object",
+        "description": "An app the signed-in member has granted access to.",
+        "required": [
+          "connected_app_id",
+          "name",
+          "scopes"
+        ],
+        "properties": {
+          "connected_app_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "client_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "logo_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ConnectedAppClient": {
+        "type": "object",
+        "description": "The app asking for access, as the consent screen shows it.",
+        "required": [
+          "client_id",
+          "name"
+        ],
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "logo_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "client_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ConsentScope": {
+        "type": "object",
+        "description": "One requested scope, and whether this member can grant it.",
+        "required": [
+          "scope",
+          "is_grantable"
+        ],
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_grantable": {
+            "type": "boolean"
           }
         }
       },
@@ -17290,6 +18132,8 @@
           "m2m",
           "api_key",
           "impersonated_staff",
+          "partner",
+          "connected_app",
           "system"
         ]
       },
@@ -17392,6 +18236,55 @@
               "string",
               "null"
             ]
+          },
+          "actor_user_email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The acting user's email: the person behind a session, an AI assistant\nor a partner action (or the user staff impersonated)."
+          },
+          "connected_app": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AuditConnectedApp",
+                "description": "The AI assistant or other OAuth app involved: the one that acted when\n`actor_type` is `connected_app`, or the one approved, denied or\nrevoked on an `oauth.authorize` or `account.connected_apps` row."
+              }
+            ]
+          },
+          "via": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`mcp` when the change came through the MCP server (an AI assistant's\ntool call), whatever credential it used."
+          },
+          "mcp_tool": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The MCP tool that made the change, when `via` is `mcp`."
+          },
+          "consent_granted": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "On an `oauth.authorize` row: whether the member allowed the app."
+          },
+          "scopes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "On an `oauth.authorize` row: the scopes the member granted."
           }
         }
       },
@@ -18764,6 +19657,15 @@
           }
         }
       },
+      "IncidentListStatus": {
+        "type": "string",
+        "description": "Which incidents `GET /incident/` returns.\n\nKeyed on the responder lifecycle (`responder_status`), which is what the\ndashboard's Active and Resolved tabs mean: an incident is active until a\nresponder resolves it, whatever its public status-page `status` says.",
+        "enum": [
+          "active",
+          "resolved",
+          "all"
+        ]
+      },
       "IncidentResponderStatus": {
         "type": "string",
         "enum": [
@@ -19595,6 +20497,13 @@
         "properties": {
           "token": {
             "type": "string"
+          },
+          "promotekit_referral": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The PromoteKit referral, recorded on the Stripe customer when this\nclick creates the account. Ignored when it signs an existing user in."
           }
         }
       },
@@ -20217,6 +21126,31 @@
         },
         "additionalProperties": false
       },
+      "MonitorAlertHistoryResponse": {
+        "type": "object",
+        "description": "`GET /monitors/{monitor_id}/alert_history`.",
+        "required": [
+          "monitor_id",
+          "kind",
+          "transitions"
+        ],
+        "properties": {
+          "monitor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "transitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertHistoryTransition"
+            },
+            "description": "Newest outage first."
+          }
+        }
+      },
       "MonitorTotalsByType": {
         "type": "object",
         "description": "Account-wide monitor counts split by monitor type.\n\nAll three keys are ALWAYS present, including for a type the account has\nnone of, which is why this is a struct and not a map. A dashboard tile\nthat reads a missing key renders nothing at all, and \"nothing\" reads as a\nstuck loading state rather than as zero.",
@@ -20325,6 +21259,17 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "health": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChannelHealth",
+                "description": "How this channel's recent deliveries went: whether the last alert\nreached anyone, and why not when it did not (a revoked Slack token, a\nbouncing inbox). Present on the read endpoints; absent on create and\nupdate responses."
+              }
+            ]
           }
         }
       },
@@ -20442,6 +21387,138 @@
           "pushover",
           "pushbullet"
         ]
+      },
+      "OAuthAuthorizeRequest": {
+        "type": "object",
+        "description": "The member's decision on the consent screen.",
+        "required": [
+          "consent_granted",
+          "client_id",
+          "redirect_uri",
+          "response_type"
+        ],
+        "properties": {
+          "consent_granted": {
+            "type": "boolean"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The scopes the member granted: a subset of the requested ones."
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "redirect_uri": {
+            "type": "string"
+          },
+          "response_type": {
+            "type": "string"
+          },
+          "state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nonce": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "code_challenge": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resources": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "prompt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OAuthAuthorizeResponse": {
+        "type": "object",
+        "required": [
+          "redirect_uri"
+        ],
+        "properties": {
+          "redirect_uri": {
+            "type": "string",
+            "description": "Where to send the browser next: back to the app, with the code or the\ndenial attached."
+          }
+        }
+      },
+      "OAuthAuthorizeStartRequest": {
+        "type": "object",
+        "description": "The OAuth request the consent page received, passed through for checking.",
+        "required": [
+          "client_id",
+          "redirect_uri",
+          "response_type"
+        ],
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "redirect_uri": {
+            "type": "string"
+          },
+          "response_type": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The requested scopes, split from the space-separated `scope` param."
+          },
+          "prompt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OAuthAuthorizeStartResponse": {
+        "type": "object",
+        "required": [
+          "client",
+          "consent_required",
+          "scopes"
+        ],
+        "properties": {
+          "client": {
+            "$ref": "#/components/schemas/ConnectedAppClient"
+          },
+          "consent_required": {
+            "type": "boolean",
+            "description": "False when the member already approved this app for these scopes;\nthe page can then continue without asking again."
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsentScope"
+            }
+          }
+        }
       },
       "OAuthConnectCompleteRequest": {
         "type": "object",
@@ -21328,6 +22405,7 @@
       "PreviewResponse": {
         "type": "object",
         "required": [
+          "change_type",
           "amount_due_now_cents",
           "next_invoice_total_cents",
           "currency",
@@ -21335,14 +22413,27 @@
           "warnings"
         ],
         "properties": {
+          "change_type": {
+            "type": "string",
+            "description": "One of `new`, `upgrade`, `downgrade`, `cancel_scheduled_change`,\n`none`, `blocked`. See [`change_type`]."
+          },
+          "effective_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the change takes effect. Absent for changes applied immediately."
+          },
           "amount_due_now_cents": {
             "type": "integer",
             "format": "int64",
-            "description": "What Stripe will charge immediately. Zero under the current proration\npolicy for an existing subscription: `create_prorations` puts the\ndifference on the NEXT invoice rather than charging now."
+            "description": "What Stripe charges today. For an upgrade this is the prorated\ndifference (Stripe's own preview of the immediate invoice); for a\ndowngrade it is always zero."
           },
           "next_invoice_total_cents": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "For an upgrade or a first purchase: the total of the invoice raised\ntoday. For a downgrade: what this product costs per billing period\nfrom `effective_at` (zero when moving to free, or when a complimentary\nplan covers it)."
           },
           "currency": {
             "type": "string"
@@ -21358,6 +22449,13 @@
             "items": {
               "$ref": "#/components/schemas/PreviewWarning"
             }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why a `blocked` change cannot be made yet."
           }
         }
       },
@@ -21567,7 +22665,15 @@
         ],
         "properties": {
           "status": {
-            "type": "string"
+            "type": "string",
+            "description": "`\"scheduled\"`: the add-on stays until `effective_at`, the end of the\nperiod already paid for, and is removed then with no credit or refund."
+          },
+          "effective_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -21724,6 +22830,13 @@
           "retention": {
             "$ref": "#/components/schemas/RumRetentionCeiling",
             "description": "The customer's own maximum retention for this application's data, in\ndays. Absent, and by default, means no limit beyond the account's\nentitlement. See `common::retention::ceiling`: the entitlement is a MAX\nover the account's packs, which makes every window a floor, and this is\nthe only thing that lets a customer go below it."
+          },
+          "resource_exclusions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Resource URLs not recorded as resource events: a path on the page's origin\n(\"/api/heartbeat\") or an absolute http(s) URL (\"https://analytics.example.com\"). At most 50."
           }
         }
       },
@@ -22097,6 +23210,10 @@
           "mask_text": {
             "type": "boolean",
             "description": "Mask all user-visible page text. Defaults to OFF: a replay with every\ntext node masked is unreadable, so this is opt-in. Anything the page\nrenders is therefore recorded verbatim unless the customer turns this\non, and every document that describes replay has to say so."
+          },
+          "hide_action_text": {
+            "type": "boolean",
+            "description": "Name clicks by tag and class only, never by element text. Defaults to\nOFF. When on, the ingestor also strips text from older SDKs' click names."
           }
         }
       },
@@ -22401,13 +23518,37 @@
           }
         }
       },
+      "RumSourceMap": {
+        "type": "object",
+        "description": "One source map recorded against a release.",
+        "required": [
+          "id",
+          "original_file",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "original_file": {
+            "type": "string",
+            "description": "The name the map was uploaded under, which symbolication matches\nagainst the file name in each stack frame."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "RumSourceMapRelease": {
         "type": "object",
         "required": [
           "id",
           "application_id",
           "version",
-          "created_at"
+          "created_at",
+          "source_map_count"
         ],
         "properties": {
           "id": {
@@ -22424,6 +23565,11 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "source_map_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Source maps recorded against this release. A release that was just\ncreated has none."
           }
         }
       },
@@ -22570,6 +23716,33 @@
             "description": "Whether at least one verification certificate is on file."
           },
           "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ScheduledChangeResponse": {
+        "type": "object",
+        "description": "What this plan changes to at the end of the billing period.",
+        "required": [
+          "effective_at"
+        ],
+        "properties": {
+          "pack_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The pack it changes to, or `null` when the product returns to its\nfree tier."
+          },
+          "billing_interval": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`\"month\"` or `\"year\"` when `pack_id` is set."
+          },
+          "effective_at": {
             "type": "string",
             "format": "date-time"
           }
@@ -23501,7 +24674,8 @@
           "status",
           "billing_interval",
           "billing_cycle_start",
-          "billing_cycle_end"
+          "billing_cycle_end",
+          "complimentary"
         ],
         "properties": {
           "id": {
@@ -23533,6 +24707,21 @@
               "string",
               "null"
             ]
+          },
+          "complimentary": {
+            "type": "boolean",
+            "description": "True when this plan is covered by the account's complimentary grant:\nStripe bills it at $0, so the UI shows the list price struck through."
+          },
+          "scheduled_change": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ScheduledChangeResponse",
+                "description": "A downgrade (or removal) Stripe will apply at the end of the current\nbilling period, or `null` when nothing is scheduled."
+              }
+            ]
           }
         }
       },
@@ -23547,6 +24736,16 @@
             "items": {
               "$ref": "#/components/schemas/SubscriptionResponse"
             }
+          },
+          "complimentary": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComplimentarySummary"
+              }
+            ]
           }
         }
       },
@@ -25145,7 +26344,8 @@
               "string",
               "null"
             ],
-            "format": "uuid"
+            "format": "uuid",
+            "description": "`null` unlinks the service; leaving the field out keeps it."
           },
           "tags": {
             "type": [
@@ -25226,7 +26426,8 @@
               "integer",
               "null"
             ],
-            "format": "int32"
+            "format": "int32",
+            "description": "`null` turns auto-refresh off; leaving the field out keeps it. A plain\n`#[serde(default)]` read `null` as \"leave it\", so \"Off\" never saved."
           }
         }
       },
@@ -25607,7 +26808,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "For description, detect_pattern and source_filter, `null` clears the\nvalue (no pattern matches every line; no filter covers every source)\nand leaving the field out keeps it."
           },
           "enabled": {
             "type": [
@@ -25789,7 +26991,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "`null` clears the domain; leaving the field out keeps it."
           },
           "settings": {
             "oneOf": [
@@ -25952,7 +27155,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "For the three fields below, `null` clears the value and leaving the\nfield out keeps it."
           },
           "escalation_policy_id": {
             "type": [
@@ -26250,7 +27454,9 @@
           "query_config": {},
           "visualization_config": {},
           "layout": {},
-          "time_range_override": {}
+          "time_range_override": {
+            "description": "`null` removes the override (the widget follows the dashboard again)."
+          }
         }
       },
       "UploadSourceMapRequest": {
@@ -26508,6 +27714,10 @@
     {
       "name": "M2M API Clients",
       "description": "OAuth2 client_credentials clients for programmatic API access with scoped permissions."
+    },
+    {
+      "name": "AI Assistants",
+      "description": "Signing AI assistants in to the MCP server, and the apps a member has connected."
     },
     {
       "name": "Audit Log",
