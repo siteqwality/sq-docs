@@ -34,18 +34,17 @@ By the end of this guide you'll have replay activated for any session that throw
 </TabItem>
 <TabItem label="API">
 
+`PUT` replaces the whole `settings` object, so fetch it, change `privacy`, and send it all back:
+
 ```bash
+SETTINGS=$(curl -s https://api.siteqwality.com/rum/$APP_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  | jq '.data.settings | .privacy = {"mask_inputs": true, "mask_text": false}')
+
 curl -X PUT https://api.siteqwality.com/rum/$APP_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "settings": {
-      "privacy": {
-        "mask_inputs": true,
-        "mask_text": false
-      }
-    }
-  }'
+  -d "{\"settings\": $SETTINGS}"
 ```
 
 </TabItem>

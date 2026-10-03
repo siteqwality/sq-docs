@@ -28,7 +28,7 @@ await SiteQwalityRUM.init({ applicationId: '...', clientToken: '...' });
 | `ingestBase` | string | `https://rum.siteqwality.com` | Override for the RUM ingest host (event delivery and config fetch). |
 | `replayBase` | string | `https://replay.siteqwality.com` | Override for the replay segment endpoint. |
 
-`init` is idempotent: a second call while an instance exists is a no-op. On init the SDK fetches its server-side config (session filters + privacy settings) from `GET {ingestBase}/v1/config`, authenticated by the client token, and refreshes it every 5 minutes. The fetch has a 5 second timeout and never throws: on any failure (network error, non-2xx, unexpected response shape) the SDK falls back to safe defaults, meaning no session filters and `mask_inputs: true` / `mask_text: false`. A failed refresh keeps the last known config.
+`init` is idempotent: a second call while an instance exists is a no-op. On init the SDK fetches its server-side config (session filters, privacy settings and excluded resources) from `GET {ingestBase}/v1/config`, authenticated by the client token, and refreshes it every 5 minutes. The fetch has a 5 second timeout and never throws: on any failure (network error, non-2xx, unexpected response shape) the SDK falls back to safe defaults, meaning no session filters, no excluded resources and `mask_inputs: true` / `mask_text: false`. A failed refresh keeps the last known config.
 
 ## Public methods
 
@@ -80,6 +80,8 @@ Pass low-cardinality, non-personal labels only, such as `{ feature: 'checkout', 
 | Session replay (rrweb) | | with `capture_replay: true` |
 
 Detail capture activates when any enabled [session filter](/observability/rum/how-to/session-filters/) matches; replay additionally requires `capture_replay: true` on the matching filter.
+
+From 1.0.5 the SDK skips resource timings matching the application's [excluded resources](/observability/rum/how-to/remote-config/#excluded-resources). Ingest drops them for every SDK version.
 
 ## Sampling evaluation
 

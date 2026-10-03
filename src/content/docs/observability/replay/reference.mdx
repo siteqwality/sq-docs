@@ -20,7 +20,7 @@ Replay records only for sessions matching a [session filter](/observability/rum/
 
 ## Privacy settings
 
-Set on the RUM application (`PUT /rum/{app_id}` under `settings.privacy`), delivered to the SDK with its config:
+Set on the RUM application under `settings.privacy` and delivered to the SDK with its config. `PUT /rum/{app_id}` replaces the whole `settings` object, so send it back as `GET /rum/{app_id}` returns it with only `privacy` changed:
 
 | Field | Documented default | Effect |
 |---|---|---|
