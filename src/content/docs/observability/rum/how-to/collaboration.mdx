@@ -37,7 +37,7 @@ List comments with `GET /comments?target=...`. Results are oldest first. Pass th
 
 ## Mentioning teammates
 
-The `mentions` array accepts up to 20 distinct account user IDs. Mention emails link to the comment and include the absolute timestamp for a session comment. Editing a comment notifies only newly added recipients; the author is not notified about their own mention.
+The `mentions` array accepts up to 20 distinct account user IDs. Mention emails link to the comment and include the absolute timestamp for a session comment. Editing a comment notifies only newly added recipients; the person making the write is not notified about their own mention.
 
 A successful comment write returns `mention_delivery` with `queued` and `failed` counts. Queued means accepted by the notification transport, not delivered to an inbox. A queue failure does not undo the comment. Show the failure to the user and do not automatically repost the comment, which would duplicate the discussion.
 
