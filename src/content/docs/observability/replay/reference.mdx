@@ -1,6 +1,6 @@
 ---
 title: Session Replay reference
-description: Replay activation settings, privacy toggles, segment mechanics, and the retrieval endpoint.
+description: Replay activation settings, privacy toggles, segment mechanics, access rules, compaction and the retrieval endpoints.
 last_verified: 2026-10-04
 owner: jj
 ---
@@ -73,9 +73,82 @@ Content-Type: application/json
 
 Each distinct payload is stored once. A retried upload with the same content is accepted and not stored again.
 
+## Who can watch a replay
+
+A replay shows what a user saw, so reading one needs more than read access to RUM.
+
+| Caller | Needs |
+|---|---|
+| Team member | The account's replay access level: **Members** (default) lets any member watch, **Admins** only admins and super admins. **Viewers and auditors never can.** |
+| API key or [M2M client](/enterprise/api-clients/) | The `read:rum_replay` scope, plus `read:rum`. A key with no scope list does not get replays: add both scopes. |
+| AI assistant | Never. The [MCP server](/integrations/mcp/) does not expose replay content. |
+
+Change the access level with `PUT /rum/settings` (account admins only), sending only the fields you change:
+
+```json
+{ "replay_access": "admins", "body_access": "members" }
+```
+
+`body_access` sets the same rule for network bodies, headers and console arguments. `GET /rum/settings` returns both.
+
+Callers without access get a `403`. An application outside your account returns `404`.
+
 ## Retrieval
 
-`GET /rum/{app_id}/replay/{session_id}` returns one entry per stored segment, ordered by `first_event_ms`, then `segment_index`:
+The player loads a replay in two steps: a manifest that lists every piece without URLs, then short-lived URLs for the pieces it is about to play.
+
+### Manifest
+
+`GET /rum/{app_id}/sessions/{session_id}/replay`:
+
+| Field | Description |
+|---|---|
+| `status` | `ready` (all compacted), `live` (a segment arrived in the last 2 minutes on a page still open: poll every 5 seconds), `processing` (some page loads are still raw segments; they play, and are compacted within about 35 minutes) or `none`. |
+| `reason` | With `none`, why nothing was recorded, when the SDK reported it: `not_sampled`, `no_rule`, `consent`, `quota`, `privacy_url`, `too_large` or `opted_out`. |
+| `start_ms`, `end_ms` | First and last recorded event, Unix milliseconds. |
+| `active_ms`, `activity` | Time with user input, and the `[start, end]` ranges it falls in, for skipping inactivity. |
+| `windows[]` | One per browser tab: `window_id`, `index` (0 for the tab that recorded first) and its `page_loads[]`. |
+| `page_loads[]` | One per document: `page_load_id`, `url` (minimised), `start_ms`, `end_ms` and its `chunks[]` in playback order. |
+| `chunks[]` | `id` (opaque), `kind` (`block` or `segment`), `start_ms`, `end_ms`, `bytes`, and `snapshot` (playback can start here). |
+
+SDK 1.x and 2.0 record no tabs or page loads. Until compaction infers their page loads, their segments are listed under the nil `window_id` and `page_load_id`.
+
+### Chunk URLs
+
+`POST /rum/{app_id}/sessions/{session_id}/replay/chunks` with `{"ids": [...]}`, at most 20 ids, returns one entry per id found (unknown ids are left out):
+
+| Field | Description |
+|---|---|
+| `id`, `kind` | The id asked for, and `block`, `segment` or `stylesheet`. |
+| `url` | Presigned GET URL. |
+| `range` | For blocks: send it as the `Range` header. |
+| `expires_in` | 120 seconds. On a `403` from storage, ask for the URL again. |
+
+Block ids include their compaction version. Keep ids opaque and use the range returned with each URL. If a chunk id is omitted, refresh the manifest before retrying. Existing URLs remain valid through recompaction until their 120-second expiry.
+
+How to play each kind:
+
+- **`block`**: a compacted block, one gzip stream holding a JSON array of rrweb events. Gunzip it yourself; the response has no `Content-Encoding`. Every block starts with Meta and a full snapshot and plays on its own. When you continue from the previous block of the same page load, skip the new block's leading Meta and full snapshot events and every event marked `"sqk": 1`: they only rebuild the state the player already has.
+- **`stylesheet`**: plain CSS. A block's `_cssText` attribute or style text that reads `sq-css:<hash>` names one: request `css:<hash>` with the block's other ids and swap in its text before handing events to rrweb.
+- **`segment`**: a raw segment as the SDK sent it, either a JSON array of rrweb events (SDK 2.1+) or `{session_id, segment_index, events}` (SDK 1.x and 2.0).
+
+### Compaction
+
+About 30 minutes after a page load goes quiet (2 minutes once the SDK marks it ended), its segments are compacted into blocks. Compaction applies the application's current [privacy settings](#privacy-settings) and selectors again on the server, including recordings from older SDKs. These rules apply at compaction time; changing settings does not automatically recompact existing blocks. It also removes duplicated events, moves stylesheets of 1 KB or more into a shared store, and adds a full snapshot about every megabyte so seeking never replays the whole page load. Raw segments stay until their retention ends.
+
+### Who watched
+
+Every replay view is written to the [audit log](/enterprise/audit-log/) as `rum.replay.viewed`, with `target_kind` `rum_session` and the session as `target_id`, at most once per viewer per 30 minutes. Whenever the manifest, the chunk URLs or the legacy endpoint below return something to play, the view is recorded first; if it cannot be recorded, the request fails with a `500` and returns no content. Within the 30 minutes, further requests by the same viewer add no entries.
+
+`GET /rum/{app_id}/sessions/{session_id}/viewers` lists who watched over the last 90 days, most recent first: `actor_type`, the person or key (`user_id`, `email`, `api_key_id`, `api_key_name`, `m2m_client_id`), `first_viewed_at`, `last_viewed_at` and `views`.
+
+### Legacy segment list
+
+<Aside type="caution" title="Deprecated">
+`GET /rum/{app_id}/replay/{session_id}` predates compaction and returns raw segments only. It follows the same access rules and records a view like the manifest. Use the manifest for new tooling.
+</Aside>
+
+It returns one entry per stored segment, ordered by `first_event_ms`, then `segment_index`:
 
 | Field | Description |
 |---|---|
@@ -86,8 +159,6 @@ Each distinct payload is stored once. A retried upload with the same content is 
 | `expires_in_seconds` | URL lifetime: 900 seconds (15 minutes). Re-fetch the list for fresh URLs. |
 
 Play the segments in the order returned. Do not deduplicate or sort them by `segment_index`.
-
-The dashboard player consumes these; you can also fetch them directly for your own tooling.
 
 ## Replay links
 

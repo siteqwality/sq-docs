@@ -1,7 +1,7 @@
 ---
 title: Connect AI assistants (MCP)
 description: Ask Claude, ChatGPT, Cursor and other AI assistants about your monitors, incidents and telemetry, and let them take everyday actions for you.
-last_verified: 2026-09-27
+last_verified: 2026-10-04
 owner: jj
 ---
 
@@ -222,6 +222,8 @@ Access is granted per area, as `read:<area>` and `write:<area>`. On the consent 
 | Traces | `read:traces`, `write:traces` | Trace search and detail |
 | RUM | `read:rum`, `write:rum` | RUM applications and analytics |
 | Dashboards | `read:dashboards`, `write:dashboards` | Dashboards and widgets |
+
+Session replay content is never available to an assistant, whatever it is granted: it stays with the people allowed to [watch replays](/observability/replay/reference/#who-can-watch-a-replay).
 
 ## What you can ask for
 
