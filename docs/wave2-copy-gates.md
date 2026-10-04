@@ -38,12 +38,14 @@ npm run build
 # After npm login and release prerequisites, from a clean, reviewed SDK release checkout.
 make check
 npm pack --dry-run
-npm publish
+npm publish --tag next
 make deploy
 make probe
 ```
 
 `make deploy` uses the SDK's existing deployment script and `AWS_PROFILE=siteqwality`, uploads the versioned release and `/rum/v2/`, and invalidates the CDN alias. It must not run from an unrelated or dirty code worktree. Follow the SDK release checklist and fixture checks as well.
+
+The 2.x canary package uses the `next` npm tag. Promoting `latest` or advancing the moving CDN alias requires the rollout gates above; these commands are not blanket publication approval.
 
 Replay and core deployment commands remain owned by the wrapper runbook. Use isolated builds of merged core code and the root deploy rules; never build from the shared core checkout. Update the runbook's preflight to include the index header before following it.
 
