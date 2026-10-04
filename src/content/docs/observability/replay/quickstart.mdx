@@ -1,7 +1,7 @@
 ---
 title: Session Replay quickstart
 description: Enable replay for errored sessions in your RUM app, then watch a real session in the dashboard.
-last_verified: 2026-10-03
+last_verified: 2026-10-04
 owner: jj
 ---
 
@@ -34,17 +34,13 @@ By the end of this guide you'll have replay activated for any session that throw
 </TabItem>
 <TabItem label="API">
 
-`PUT` replaces the whole `settings` object, so fetch it, change `privacy`, and send it all back:
+Send only the keys you change; the rest keep their stored values. Changing privacy needs an account admin or an API key with no scope restriction:
 
 ```bash
-SETTINGS=$(curl -s https://api.siteqwality.com/rum/$APP_ID \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  | jq '.data.settings | .privacy.mask_inputs = true | .privacy.mask_text = false')
-
-curl -X PUT https://api.siteqwality.com/rum/$APP_ID \
+curl -X PATCH https://api.siteqwality.com/rum/$APP_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{\"settings\": $SETTINGS}"
+  -d '{"settings": {"privacy": {"mask_inputs": true, "mask_text": false}}}'
 ```
 
 </TabItem>
@@ -52,18 +48,16 @@ curl -X PUT https://api.siteqwality.com/rum/$APP_ID \
 
 ## 2. Add a recording rule to enable replay
 
-Replay only activates when a session matches a recording rule with `capture_replay: true`. A new application has none, so replay is off until you add one. In the dashboard, use **RUM → Recording rules**; through the API, rules live under `/filters`:
+Replay activates when a session matches a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application already has one, **Errored sessions**, which replays every session with an error, so you can skip this step. An application created before recording rules v2 may have none; add one in **RUM → Recording rules**, or through the API:
 
 ```bash
-curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
+curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Errored sessions (replay)",
-    "filter_type": "error",
-    "conditions": {},
-    "capture_replay": true,
-    "enabled": true
+    "name": "Errored sessions",
+    "capture": "replay",
+    "conditions": [{ "kind": "error" }]
   }'
 ```
 

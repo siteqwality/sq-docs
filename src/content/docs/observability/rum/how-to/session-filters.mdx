@@ -1,149 +1,206 @@
 ---
 title: Configure recording rules
-description: Activate detail collection and replay only for sessions that match interesting conditions, so costs stay down.
-last_verified: 2026-10-03
+description: Choose which sessions record full detail and which record a replay, with conditions, sample rates and an Auto rate that follows your replay quota.
+last_verified: 2026-10-04
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-By default, RUM sends page views, Web Vitals and errors (with their stacks) for every session. Detail collection (resource timings, click events with frustration signals, long tasks) and session replay activate **only when a session matches a recording rule**.
+Every session records the basics: page views, Web Vitals and errors. Recording rules decide which sessions record more:
 
-This is the core cost-control mechanism: capture every user lightly, and only the interesting ones in detail.
+- **Analyze**: full activity, meaning clicks with frustration signals, resource timings and long tasks.
+- **Replay**: a [session replay](/observability/replay/overview/). A Replay rule also turns on Analyze.
 
-Manage rules under **RUM → Recording rules** in the dashboard. The API calls them session filters: they live under `/rum/{app_id}/filters` and carry a `filter_type`.
+This is the main cost control: capture every user lightly, and only the interesting sessions in full.
 
-A new application has no rules, so it records no detail and no replay until you add one. The Sessions page shows a banner saying replay is off until a rule with `capture_replay: true` exists.
+Manage rules through the API under `/rum/{app_id}/rules`. The dashboard's **RUM → Recording rules** page shows and edits the rules [SDK 1.x can express](#sdk-versions); sampled and Auto rules, and the newer conditions, are API-only for now.
 
-## Rule types
+## The rules a new application starts with
 
-| `filter_type` | Conditions | Activates when |
+| Name | Capture | Sample | Conditions | Gates |
+|---|---|---|---|---|
+| Errored sessions | Replay | 100% | `error` | none |
+| Sample | Replay | Auto | none (every session) | 3 s minimum, one user interaction |
+| Sample | Analyze | 10% | none (every session) | none |
+
+So replay works from the first day: every errored session is replayed, plus an [Auto](#auto-sampling) sample that stays within your replay quota. Edit or delete these like any other rule.
+
+Applications created before recording rules v2 kept their session filters, copied into rules as described in [rules copied from session filters](#rules-copied-from-session-filters).
+
+## How rules decide
+
+- A rule **matches** when all its conditions hold. A rule with no conditions matches every session.
+- Rules combine with **any**: one matching Replay rule records a replay, one matching rule of either kind records Analyze.
+- **Sampling** is per session and per rule, and deterministic: every tab and page load of a session gets the same answer. A rule at 10% matches in about one session in ten.
+- **Gates** delay upload, not the match. A sampled-in session uploads its replay only once it is `min_duration_ms` old and, with `require_interaction`, after the user clicked, typed or scrolled. Bounces and bots then cost nothing. A rule with an `error` condition ignores both gates.
+
+## Rule fields
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `name` | string | required | 1 to 255 characters. |
+| `capture` | `analyze` or `replay` | required | What a matching session records. |
+| `enabled` | bool | `true` | Disabled rules are kept but never applied. |
+| `sample_rate` | number | `1` | Share of matching sessions, from 0.00001 to 1, kept to 5 decimals. For an Auto rule, the most Auto may set. |
+| `auto_sample` | bool | `false` | Replay rules only: the rate follows your replay quota. See [Auto sampling](#auto-sampling). |
+| `conditions` | array | `[]` | All must hold. See [conditions](#conditions). |
+| `min_duration_ms` | int | `3000` for Replay, `0` for Analyze | 0 to 600,000. |
+| `require_interaction` | bool | `true` for Replay, `false` for Analyze | Wait for a click, keypress or scroll. |
+| `position` | int | after the last rule | Display order. Every enabled rule is evaluated whatever its position. |
+
+Responses add `id`, `application_id`, `effective_sample_rate` (the rate in force when Auto or quota protection set one), `effective_rate_at`, `applies_to_sdk_v1` (see [SDK versions](#sdk-versions)), `created_by_user_id`, `created_at` and `updated_at`.
+
+An application holds at most 50 rules, and a rule at most 20 conditions.
+
+## Conditions
+
+| `kind` | Fields | Holds when |
 |---|---|---|
-| `error` | `has_error` (bool), or `{}` | The session sends an error. Filtered browser noise never counts. |
-| `slow_performance` | `lcp_gt_ms` (0 to 600,000), `cls_gt` (0 to 10); at least one | LCP or CLS exceeds the threshold. |
-| `custom` | `has_user` (bool), `min_actions` (1 to 10,000), or `{}` | All given conditions hold. `{}` matches every session. |
+| `url` | `op` (`contains`, `starts_with`, `regex`), `value` | A page URL of the session matches. |
+| `event` | `name` | `addAction` was called with this name. |
+| `error` | optional `error_type`, `message_contains`, `unhandled_only` | The session sent an error. Filtered browser noise never counts. |
+| `network_error` | `status_class` (`4xx`, `5xx`, `network`), optional `url_contains` | A request failed with that class. |
+| `frustration` | `type` (`rage_click`, `dead_click`, `error_click`) | The user produced that signal. |
+| `vital` | `metric` (`lcp`, `inp`, `cls`), `gt` | The final value exceeds `gt`: milliseconds for LCP and INP (up to 600,000), unitless for CLS (up to 10). |
+| `identified` | none | `setUser` was called with an id. |
+| `attribute` | `key`, `value` | A global attribute or user trait equals the value. |
+| `device` | `class` (`desktop`, `mobile`) | The device class. Tablets count as mobile. |
+| `release` | `op` (`eq`, `starts_with`), `value` | The `version` passed to `init`. |
+| `env` | `value` | The `env` passed to `init`. |
 
-Any other key is rejected with a `400`, and the SDK never matches a `custom` rule carrying one. There is no condition on FCP, on user attributes or on URLs. See the [validation table](/observability/rum/reference/#conditions-by-filter-type).
+Text values are trimmed and hold up to 256 characters. An unknown kind or field returns `422`; an out-of-range value returns `400`.
 
-Each rule has:
+A `url` regex must mean the same in the browser and on the server, so it is limited to the syntax both share: groups other than `(?:`, backreferences, `\A`, `\z`, `\p{…}` and `[[:class:]]` are refused. So are nested repeats such as `(a+)+` or `(a?)+`, which can freeze a page.
 
-- `name`: display label, 1 to 255 characters.
-- `filter_type`: one of the above.
-- `conditions`: type-specific config.
-- `capture_replay`: if `true`, also start session replay.
-- `enabled`: toggle off without deleting.
-- `priority`: accepted by the API but not used. Every enabled rule is evaluated, and any match activates.
+## Auto sampling
+
+An Auto rule's rate is recomputed every hour from your replay quota:
+
+1. The hourly budget is what is left of the period's replay quota, divided by the hours to the period's end, minus the replays errored sessions are expected to use, kept to 90% for safety.
+2. The budget is shared across your applications by their traffic. An application with `replay_monthly_target` set (see [`PATCH /rum/{app_id}`](/observability/rum/reference/)) takes what keeps it on that target first.
+3. The rate is the application's share divided by its sessions per hour, never above the rule's `sample_rate` and never below 0.01%.
+
+When errored sessions alone would use more than the budget, the error rules are slowed too, so errored sessions are spread over the period instead of using up the quota in the first days. Errored sessions always win over sampled ones. A new Auto rule records at 0.01% until its first hourly run.
+
+The rate in force is the rule's `effective_sample_rate`. A change of less than 10% is not published.
+
+## SDK versions
+
+Sample rates, Auto, the gates and most condition kinds are applied in the browser by SDK 2.0. SDK 1.x receives only the rules it can express, so each rule's `applies_to_sdk_v1` says whether SDK 1.x sessions follow it:
+
+| Rule | What SDK 1.x does |
+|---|---|
+| Full rate, no conditions | Records every session, after one action when `require_interaction` is on |
+| Full rate, a single `error` condition without filters | Records sessions with an error |
+| Full rate, a single `identified` condition | Records sessions with a user, after one action when `require_interaction` is on |
+| Full rate, a single `vital` on LCP or CLS | Records sessions over the threshold |
+| Anything else: sampled, Auto, other or several conditions | Not applied |
+
+SDK 1.x ignores `min_duration_ms`.
+
+## Estimate a rule before saving
+
+`POST /rum/{app_id}/rules/preview` takes a rule body (`name` optional) and estimates what it would record from the last 7 days of sessions. Read access is enough.
+
+```bash
+curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules/preview" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "capture": "replay", "sample_rate": 0.5,
+        "conditions": [{ "kind": "url", "op": "starts_with", "value": "/checkout" }] }'
+```
+
+```json
+{
+  "data": {
+    "window_days": 7,
+    "sessions_in_window": 41200,
+    "matching_sessions_in_window": 3100,
+    "sample_rate": 0.5,
+    "estimated_sessions_per_month": 6643,
+    "quota_product": "session_replay",
+    "monthly_quota": 10000,
+    "quota_share": 0.6643,
+    "approximate": false,
+    "not_evaluated": []
+  }
+}
+```
+
+The estimate is the matching sessions times the sample rate, scaled to 30 days. An Auto rule uses the application's current Auto rate. Conditions the stored sessions cannot answer (`event`, and `url_contains` on `network_error`) count as matching and are listed in `not_evaluated`, with `approximate: true`. So is `require_interaction` when no session recorded activity.
 
 ## Examples
 
-### "Always capture detail for sessions with errors"
+### Replay sessions that reach checkout, half of them
 
 ```bash
-curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
+curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Error sessions (capture detail)",
-    "filter_type": "error",
-    "conditions": {},
-    "capture_replay": false,
-    "enabled": true
+    "name": "Checkout",
+    "capture": "replay",
+    "sample_rate": 0.5,
+    "conditions": [{ "kind": "url", "op": "starts_with", "value": "/checkout" }]
   }'
 ```
 
-Result: from its first error on, the session sends click targets, resource timings and long tasks.
-
-### "Replay errored sessions"
+### Analyze every session with a failed API call
 
 ```bash
-curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
+curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Error sessions (replay)",
-    "filter_type": "error",
-    "conditions": {},
-    "capture_replay": true,
-    "enabled": true
+    "name": "API 5xx",
+    "capture": "analyze",
+    "conditions": [{ "kind": "network_error", "status_class": "5xx", "url_contains": "/api/" }]
   }'
 ```
 
-Result: errored sessions get full detail **and** replay. The replay starts at the error; it does not show what came before it (see [what replay records](#what-replay-records)).
+### Pause a rule, then delete it
 
-### "Replay slow LCP sessions"
+`PUT /rum/{app_id}/rules/{rule_id}` changes only the fields you send, and validates the result as a whole:
 
 ```bash
-curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
+curl -X PUT "https://api.siteqwality.com/rum/$APP_ID/rules/$RULE_ID" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Slow LCP",
-    "filter_type": "slow_performance",
-    "conditions": { "lcp_gt_ms": 2500 },
-    "capture_replay": true,
-    "enabled": true
-  }'
+  -d '{ "enabled": false }'
+
+curl -X DELETE "https://api.siteqwality.com/rum/$APP_ID/rules/$RULE_ID" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-Result: any session with LCP > 2.5s gets replay.
+Changing a rule's capture, Auto or conditions clears its effective rate until the next hourly run.
 
-### "Custom: replay engaged signed-in users"
+## When changes apply
 
-```bash
-curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Signed-in, 5+ actions",
-    "filter_type": "custom",
-    "conditions": { "has_user": true, "min_actions": 5 },
-    "capture_replay": true,
-    "enabled": true
-  }'
-```
+Every change publishes the application's SDK configuration before the request returns. If it cannot be published, the request returns `503` and nothing is changed. SDK 2.0 picks a change up on new page loads within 6 minutes. SDK 1.x picks it up on its 5 minute refresh; budget about ten minutes, see [how long changes take](/observability/rum/how-to/remote-config/#how-long-changes-take-to-land).
 
-`has_user` matches any user identified with [`setUser`](/sdk/reference/#siteqwalityrumsetuseruser); rules cannot pick out particular users or roles. `min_actions` counts clicks and `addAction` calls across the whole session, including earlier page loads in the same tab.
+Rule changes are recorded in the [audit log](/enterprise/audit-log/) with the rule id and the new configuration revision.
 
-## When rules are evaluated
+## Rules copied from session filters
 
-The SDK evaluates rules in the browser, immediately:
+Before recording rules v2, rules were session filters with a `filter_type`. Each application's filters were copied on its first change after the upgrade, or by the one-time migration:
 
-- when the config loads at startup, and on every refresh (every 5 minutes),
-- after every error it sends,
-- after every Web Vital,
-- after every action (click or `addAction`),
-- after `setUser`.
+| Session filter | Becomes |
+|---|---|
+| `error` | One rule with an `error` condition |
+| `slow_performance` | One `vital` rule per threshold, so a filter with both LCP and CLS becomes two rules, the second named with " (CLS)" |
+| `custom` with `has_user: true` | An `identified` condition |
+| `custom` with `min_actions` | `require_interaction`: one action instead of the old count |
+| `capture_replay: true` | `capture: replay` |
 
-There is no timer, so a session that matches does so at that moment. Activation is one-way: once detail or replay turns on for a session it stays on, and the SDK remembers that per session and tab across page loads.
+A filter that never matched, such as a `custom` filter with a key SDK 1.1 does not evaluate, was copied disabled.
 
-## What replay records
-
-Replay starts when a rule with `capture_replay: true` matches, and there is no buffer of what came before: the recorder only starts at that moment. So an `error` rule's replay starts at the error, and a `custom {}` rule's replay starts as soon as the config arrives. On later page loads in the same session and tab, recording resumes from the start of each page once the config loads, as long as an enabled rule still has `capture_replay: true`.
-
-## Sampling vs filtering
-
-Both reduce volume. The difference:
-
-- **Sampling** is random, keeping N% of sessions regardless of content.
-- **Filtering** is targeted, keeping only the sessions that match a condition.
-
-SiteQwality uses filtering only. There is no random sampling.
-
-## Recommended starting rule set
-
-For a production SaaS:
-
-1. **Error sessions (replay)**, `capture_replay: true`. Errored sessions get detail and a replay from the error on.
-2. **Slow LCP (capture detail)**, `lcp_gt_ms: 4000`, `capture_replay: false`. Gets click targets and resource timings to diagnose.
-
-Keep total active replay volume low. Replay segments are large and storage adds up.
-
-<Aside type="tip">
-The SDK fetches rules on every page load and refreshes them every 5 minutes, re-evaluating each time, so a new rule can turn capture on for a session already in progress. Turning a rule off only affects sessions that have not activated yet. Budget about ten minutes for a change to land; see [how long changes take](/observability/rum/how-to/remote-config/#how-long-changes-take-to-land).
+<Aside type="caution" title="The /filters routes are deprecated">
+`/rum/{app_id}/filters` still works, as a view over the rules in the old session-filter shape. It shows only the rules [SDK 1.x can express](#sdk-versions); other rules are hidden from it and cannot be changed through it. A `slow_performance` filter with both thresholds is stored as two rules, and `min_actions` is stored as one required interaction and read back as `min_actions: 1`. Move to `/rules`.
 </Aside>
 
 ## See also
 
-<LinkCard title="RUM overview" description="The pillar concepts." href="/observability/rum/overview/" />
-<LinkCard title="Session Replay" description="What replay actually captures." href="/observability/replay/overview/" />
-<LinkCard title="Source maps" description="Make those captured error stacks readable." href="/observability/rum/how-to/source-maps/" />
+<LinkCard title="RUM reference" description="Every rule field and endpoint." href="/observability/rum/reference/" />
+<LinkCard title="Change SDK behaviour without redeploying" description="How the configuration reaches the browser." href="/observability/rum/how-to/remote-config/" />
+<LinkCard title="Session Replay" description="What replay captures." href="/observability/replay/overview/" />

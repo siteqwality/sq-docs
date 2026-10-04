@@ -1,7 +1,7 @@
 ---
 title: Session Replay reference
 description: Replay activation settings, privacy toggles, segment mechanics, and the retrieval endpoint.
-last_verified: 2026-10-03
+last_verified: 2026-10-04
 owner: jj
 ---
 
@@ -11,24 +11,25 @@ Replay is configured through the [RUM application](/observability/rum/reference/
 
 ## Activation
 
-Replay records only for sessions matching a [recording rule](/observability/rum/how-to/session-filters/) (an API session filter) with `capture_replay: true`. A new application has none, so replay is off until one exists. The SDK evaluates rules when its config loads or refreshes and after every sent error, Web Vital, action and `setUser` call, with no timer. Recording starts at the match, with no buffer of what came before. Once replay activates for a session it stays on for that session, and it resumes on later page loads in the same tab while an enabled rule still has `capture_replay: true`.
+Replay records only for sessions matching a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application starts with **Errored sessions** (every errored session) and an Auto sample within the replay quota; an application created before recording rules v2 keeps the rules copied from its session filters. With SDK 1.x, recording starts at the match, with no buffer of what came before, and only rules [SDK 1.x can express](/observability/rum/how-to/session-filters/#sdk-versions) apply. Once replay activates for a session it stays on for that session, and it resumes on later page loads in the same tab while an enabled Replay rule still applies.
 
 | Setting | Where | Default | Description |
 |---|---|---|---|
-| `capture_replay` | Recording rule | `false` | Record replay when this rule matches. |
-| `enabled` | Recording rule | `true` | Disabled rules are never delivered to the SDK. |
-| `priority` | Recording rule | `0` | Accepted by the API but not used. |
+| `capture` | Recording rule | required | `replay` records a replay when the rule matches. |
+| `sample_rate`, `auto_sample` | Recording rule | `1`, `false` | Share of matching sessions; Auto follows the replay quota. SDK 2.0. |
+| `min_duration_ms`, `require_interaction` | Recording rule | `3000`, `true` for Replay | Gates before upload, bypassed by error conditions. SDK 2.0. |
+| `enabled` | Recording rule | `true` | Disabled rules are never applied. |
 
 ## Privacy settings
 
-Set on the RUM application under `settings.privacy` and delivered to the SDK with its config. `PUT /rum/{app_id}` replaces the whole `settings` object, so send it back as `GET /rum/{app_id}` returns it with only `privacy` changed:
+Set on the RUM application under `settings.privacy` and delivered to the SDK with its config. Change them with `PATCH /rum/{app_id}`, sending only the keys you change; it needs an account admin or an API key with no scope restriction. A [privacy level](/observability/rum/how-to/remote-config/#privacy-levels) writes these flags for you:
 
 | Field | Documented default | Effect |
 |---|---|---|
 | `mask_inputs` | `true` | Masks all input values in the recording (rrweb `maskAllInputs`). |
 | `mask_text` | `false` | Masks all user-visible text in the recording. |
 
-`settings.privacy` also carries [`hide_action_text`](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names), which is not a replay setting. Send it back unchanged too.
+`settings.privacy` also carries [`hide_action_text`](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names), which is not a replay setting.
 
 <Aside type="danger" title="Read the stored value, not the documented default">
 Applications created earlier can have `mask_inputs` stored as `false`, because the value was written into the application's settings at creation time and nothing rewrites it afterwards. The documented default governs what a new application is created with; **the stored value is what governs what is recorded**.

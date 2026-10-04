@@ -1,7 +1,7 @@
 ---
 title: RUM reference
 description: RUM application fields, recording rules, source-map releases, analytics query parameters, and every endpoint.
-last_verified: 2026-10-03
+last_verified: 2026-10-04
 owner: jj
 ---
 
@@ -15,15 +15,28 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 |---|---|---|---|
 | `name` | string | required | Application name. 1 to 255 characters. |
 | `domain` | string | none | Site domain, used by dashboard deep links. |
-| `settings.privacy.mask_inputs` | bool | `true` | Mask input values in replay recordings. Read the stored value rather than trusting this default; see [privacy settings](/observability/replay/reference/#privacy-settings). |
-| `settings.privacy.mask_text` | bool | `false` | Mask all user-visible text in replay recordings. Off by default, so page text is recorded verbatim unless you turn it on. |
+| `allowed_origins` | string[] | `[]` | Pages that may send data, up to 100; empty allows all. See [allowed origins](/observability/rum/how-to/remote-config/#allowed-origins). |
+| `replay_monthly_target` | int or null | `null` | Monthly replays [Auto sampling](/observability/rum/how-to/session-filters/#auto-sampling) aims this application at. 1 to 100,000,000. |
+| `settings.privacy.level` | `strict`, `balanced`, `relaxed` or null | `balanced` for new applications | See [privacy levels](/observability/rum/how-to/remote-config/#privacy-levels). Null (Custom) applies the flags below as stored. |
+| `settings.privacy.mask_inputs` | bool | `true` | Mask input values in replay recordings. Under a level, written from the level. Read the stored value rather than trusting this default; see [privacy settings](/observability/replay/reference/#privacy-settings). |
+| `settings.privacy.mask_text` | bool | `false` | Mask all user-visible text in replay recordings. Off by default, so page text is recorded verbatim unless you turn it on or choose Strict. |
 | `settings.privacy.hide_action_text` | bool | `false` | Drop element text from click names, so `button.send[Send message]` is stored as `button.send`. See [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names). |
+| `settings.privacy.pii_patterns` | string[] | all three for new applications | `email`, `card`, `digits9`: what is scrubbed from text. Written from the level. |
+| `settings.privacy.mask_selectors`, `unmask_selectors`, `block_selectors`, `ignore_input_selectors` | string[] | `[]` | CSS selectors for SDK 2.0, up to 50 each. `unmask_selectors` applies under Strict only. |
+| `settings.privacy.never_record_urls` | string[] | `[]` | URL patterns where SDK 2.0 pauses replay and drops detail. |
+| `settings.privacy.require_consent`, `honor_gpc`, `cookieless`, `capture_user_email` | bool | `false`, `true` for new applications, `false`, `true` | Consent and identity handling, applied by SDK 2.0; `capture_user_email` is also applied at ingest. |
 | `settings.retention.observe_days` | int or null | `null` | Keep this application's page views and Web Vitals (`rum_measures`) at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
 | `settings.retention.analyze_days` | int or null | `null` | Keep this application's detail events (`rum_events`) at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
 | `settings.resource_exclusions` | string[] | `[]` | Resource URLs never recorded as resource events. Up to 50 rules; see [excluded resources](/observability/rum/how-to/remote-config/#excluded-resources). |
-| `settings.frustration_ignore_selectors` | string[] | `[]` | CSS selectors whose clicks never count as rage or dead clicks. Up to 50 entries, each 1 to 256 printable characters; anything else returns `400`. See [frustration signals](/sdk/reference/#frustration-signals). |
+| `settings.frustration_ignore_selectors` | string[] | `[]` | CSS selectors whose clicks never count as rage or dead clicks. Up to 50 valid CSS selectors, each 1 to 256 printable characters; anything else returns `400`. See [frustration signals](/sdk/reference/#frustration-signals). |
+| `settings.capture.network` | object | see [network capture](/observability/rum/how-to/remote-config/#network-capture) | `header_allowlist`, `body_urls` and `trace_urls` (URL prefixes), `max_body_bytes`. |
+| `settings.capture.console` | string[] | `["error", "warn"]` | Console levels SDK 2.0 records, within the privacy level's limit. |
+| `settings.capture.errors` | object | empty | `ignore` and `deny_urls` patterns, and `console_errors_as_issues`. |
+| `settings.routes` | object[] | `[]` | Route rules, `{ "pattern": "/profiles/:id", "name": "Profile" }`, up to 100. |
+| `settings.observe_sample_rate` | number | `1` | Share of sessions that send data at all, greater than 0 and at most 1. |
+| `settings.allow_requests_without_origin` | bool | `false` | Accept requests without an `Origin` header, for server-side senders. |
 
-`POST /rum` takes `name` and `domain`. `PUT /rum/{app_id}` additionally takes `settings` and replaces the whole object. Send it back exactly as `GET /rum/{app_id}` returns it, with only your change applied; a key you leave out is reset to its default.
+`POST /rum` takes `name` and `domain`. `PATCH /rum/{app_id}` takes any of `name`, `domain`, `settings`, `allowed_origins` and `replay_monthly_target`; `settings` holds only the keys to change, merges into the stored settings, and refuses unknown keys. `PUT /rum/{app_id}` takes `name`, `domain` and `settings`, merged the same way but ignoring unknown keys. Changing `privacy`, `retention`, `capture.network.body_urls` or `capture.network.header_allowlist` needs an account admin or an API key with no scope restriction (`403` otherwise). A change that cannot be published to the SDK returns `503` and changes nothing.
 
 Read-only fields on the response:
 
@@ -32,30 +45,39 @@ Read-only fields on the response:
 | `id` | uuid | Application ID. Passed to the SDK as `applicationId`. |
 | `account_id` | uuid | Owning account. |
 | `client_token` | string | Public token the SDK sends with every payload. Rotate via `POST /rum/{app_id}/rotate-token`. |
+| `config_revision` | int | Revision of the published SDK configuration. Increases on every change. |
+| `data_region` | string | Where the application's data is stored (`us`). |
 | `created_at` / `updated_at` | rfc3339 | Timestamps. |
 
 ## Recording rules
 
-Recording rules decide which sessions get detail capture (and optionally replay). The dashboard calls them **Recording rules**; the API calls them session filters and manages them under `/rum/{app_id}/filters`.
+Recording rules decide which sessions record Analyze detail and which record a replay. Managed under `/rum/{app_id}/rules`; see [Configure recording rules](/observability/rum/how-to/session-filters/) for the conditions, Auto sampling and how SDK 1.x reads them.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `name` | string | required | Rule label, 1 to 255 characters. |
-| `filter_type` | enum | required | `error`, `slow_performance`, or `custom`. Validated on update too. |
-| `conditions` | map | required | Condition object; keys depend on `filter_type` (below). |
-| `capture_replay` | bool | `false` | Also record [session replay](/observability/replay/overview/) when this rule matches. |
-| `enabled` | bool | `true` | Disabled rules are not delivered to the SDK. |
-| `priority` | int | `0` | Accepted and stored, not used. Every enabled rule is evaluated, and any match activates. |
+| `name` | string | required | 1 to 255 characters. |
+| `capture` | `analyze` or `replay` | required | Replay also records Analyze. |
+| `enabled` | bool | `true` | Disabled rules are never applied. |
+| `sample_rate` | number | `1` | 0.00001 to 1. The cap for an Auto rule. |
+| `auto_sample` | bool | `false` | Replay rules only. |
+| `conditions` | object[] | `[]` | All must hold; see [conditions](/observability/rum/how-to/session-filters/#conditions). |
+| `min_duration_ms` | int | `3000` for Replay, `0` for Analyze | 0 to 600,000. |
+| `require_interaction` | bool | `true` for Replay, `false` for Analyze | |
+| `position` | int | after the last rule | Display order. |
 
-### Conditions by filter type
+Responses add `id`, `effective_sample_rate`, `effective_rate_at`, `applies_to_sdk_v1`, `created_by_user_id`, `created_at` and `updated_at`. `PUT /rum/{app_id}/rules/{rule_id}` changes only the fields sent. At most 50 rules per application. A malformed body returns `422`, an invalid rule `400`, a 51st rule `409`.
 
-| `filter_type` | Allowed keys | Other rules | Matches when |
-|---|---|---|---|
-| `error` | `has_error`: bool | `{}` allowed | The session has sent at least one error. Filtered browser noise never counts. |
-| `slow_performance` | `lcp_gt_ms`: number in (0, 600000]; `cls_gt`: number in (0, 10] | At least one key. Legacy `lcp_threshold_ms` and `cls_threshold` are accepted and stored under the new names. | LCP exceeds `lcp_gt_ms` (milliseconds) or CLS exceeds `cls_gt`. |
-| `custom` | `has_user`: bool; `min_actions`: integer 1 to 10000 | `{}` allowed, and matches every session | `has_user: true` requires an identified user; `min_actions` requires at least that many actions in the session. |
+### Session filters (deprecated)
 
-Any other key, a wrong type or an out-of-range value returns `400`, for example `Unknown condition key "url" for filter_type custom. Allowed: has_user, min_actions`. An update is validated after merging it into the stored rule. The SDK fails closed too: a `custom` rule with any other key never matches.
+`/rum/{app_id}/filters` is a view over the recording rules in the older shape (`filter_type`, `conditions`, `capture_replay`, `priority`). It lists and changes only the rules SDK 1.x can express. Writes are validated as before:
+
+| `filter_type` | Allowed keys | Other rules |
+|---|---|---|
+| `error` | `has_error`: bool | `{}` allowed. Stored as an `error` rule; read back as `{}`. |
+| `slow_performance` | `lcp_gt_ms`: number in (0, 600000]; `cls_gt`: number in (0, 10] | At least one key. With both, stored as two rules. |
+| `custom` | `has_user`: bool; `min_actions`: integer 1 to 10000 | `{}` allowed. `min_actions` is stored as one required interaction and read back as `1`. |
+
+Any other key, a wrong type or an out-of-range value returns `400`.
 
 ## Source-map releases
 
@@ -69,13 +91,15 @@ Managed under `/rum/{app_id}/releases`. See [Source maps](/observability/rum/how
 
 ## SDK config
 
-The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/config`, authenticated by the client token, at init and every 5 minutes after. The dashboard API exposes the same payload at `GET /rum/{app_id}/config` (session-authed):
+SDK 1.x fetches its config from the RUM ingest host at `GET {ingestBase}/v1/config`, authenticated by the client token, at init and every 5 minutes after. The dashboard API exposes the same payload at `GET /rum/{app_id}/config`:
 
 | Field | Description |
 |---|---|
 | `application_id` | The application. |
-| `filters` | Enabled recording rules only. |
-| `settings` | Privacy settings (`mask_inputs`, `mask_text`, `hide_action_text`), `resource_exclusions` and `frustration_ignore_selectors`. |
+| `filters` | The enabled recording rules SDK 1.x can express, in the session-filter shape. |
+| `settings` | The application's stored settings. |
+
+SDK 2.0 reads `https://cdn.siteqwality.com/rum/config/v2/{app_id}.json`, published on every change and cached for up to 6 minutes. Its schema is `SdkConfigV2` in the [API reference](/api-reference/); a deleted application's file is `{"v":2,"status":"paused"}`.
 
 ## Analytics conventions
 
@@ -183,11 +207,14 @@ No params. Returns `last_seen_at` (the newest page view or vital in the last 24 
 |---|---|---|
 | `POST` | `/rum` | Create application. |
 | `GET` | `/rum` | List applications. |
-| `GET` / `PUT` / `DELETE` | `/rum/{app_id}` | Detail / update / delete. |
+| `GET` / `PUT` / `PATCH` / `DELETE` | `/rum/{app_id}` | Detail / update / partial update / delete. |
 | `POST` | `/rum/{app_id}/rotate-token` | Rotate the client token. |
-| `GET` | `/rum/{app_id}/config` | SDK config (filters + settings). |
-| `POST` / `GET` | `/rum/{app_id}/filters` | Create / list recording rules. Invalid conditions return `400`. |
-| `PUT` / `DELETE` | `/rum/{app_id}/filters/{filter_id}` | Update / delete a recording rule. |
+| `GET` | `/rum/{app_id}/config` | SDK 1.x config (filters + settings). |
+| `POST` / `GET` | `/rum/{app_id}/rules` | Create / list recording rules. |
+| `PUT` / `DELETE` | `/rum/{app_id}/rules/{rule_id}` | Update / delete a recording rule. |
+| `POST` | `/rum/{app_id}/rules/preview` | Estimate what a rule would record. Read access. |
+| `POST` / `GET` | `/rum/{app_id}/filters` | Deprecated: create / list rules in the session-filter shape. |
+| `PUT` / `DELETE` | `/rum/{app_id}/filters/{filter_id}` | Deprecated: update / delete a rule in the session-filter shape. |
 | `POST` / `GET` | `/rum/{app_id}/releases` | Create / list source-map releases. |
 | `POST` | `/rum/{app_id}/releases/{version}/sourcemaps` | Request an upload URL for a source map. |
 | `GET` | `/rum/{app_id}/releases/{version}/sourcemaps` | List the source maps recorded against a release. |

@@ -1,7 +1,7 @@
 ---
 title: Change SDK behaviour without redeploying
 description: How the browser SDK fetches its configuration, what you can change remotely, and how long changes take to reach live sessions.
-last_verified: 2026-10-03
+last_verified: 2026-10-04
 owner: jj
 ---
 
@@ -10,6 +10,8 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 The RUM SDK does not carry its capture rules in your bundle. It fetches them from SiteQwality at startup and refreshes them periodically, so you can change what gets captured without shipping a new build.
 
 ## What is served
+
+SDK 1.x fetches its configuration from the ingest host:
 
 ```
 GET https://rum.siteqwality.com/v1/config
@@ -25,9 +27,9 @@ The same public client token the SDK already holds authenticates the request, an
     "filters": [
       {
         "id": "<uuid>",
-        "name": "Sessions with errors",
+        "name": "Errored sessions",
         "filter_type": "error",
-        "conditions": { "has_error": true },
+        "conditions": {},
         "capture_replay": true,
         "enabled": true,
         "priority": 0,
@@ -35,7 +37,8 @@ The same public client token the SDK already holds authenticates the request, an
       }
     ],
     "settings": {
-      "privacy": { "mask_inputs": true, "mask_text": false, "hide_action_text": false },
+      "privacy": { "level": "balanced", "mask_inputs": true, "mask_text": false, "hide_action_text": false,
+                   "pii_patterns": ["email", "card", "digits9"], "honor_gpc": true },
       "retention": { "observe_days": null, "analyze_days": null },
       "resource_exclusions": ["/api/heartbeat", "https://analytics.example.com"],
       "frustration_ignore_selectors": [".carousel-next"]
@@ -44,52 +47,53 @@ The same public client token the SDK already holds authenticates the request, an
 }
 ```
 
-`filters` holds your [recording rules](/observability/rum/how-to/session-filters/) (the API's name for them). Only **enabled** rules are sent. Disabling one in the dashboard removes it from the payload entirely rather than shipping it with a flag.
+`filters` holds the enabled [recording rules](/observability/rum/how-to/session-filters/) that SDK 1.x can express, in its older session-filter shape. Rules it cannot express, such as sampled or Auto rules, are left out; see [SDK versions](/observability/rum/how-to/session-filters/#sdk-versions). `settings` is the application's stored settings.
 
-`priority` is accepted and returned but not used. Rules are evaluated as a set, and a session activates if **any** of them matches.
+SDK 2.0 reads a static file from the CDN instead, with no client token and no preflight:
+
+```
+GET https://cdn.siteqwality.com/rum/config/v2/<application_id>.json
+```
+
+It carries a `revision` that increases on every change, the enabled rules with the rate in force, and the privacy and capture settings with the [privacy level](#privacy-levels) already applied. A deleted application's file becomes `{"v":2,"status":"paused"}`, and SDK 2.0 then sends nothing. The schema is `SdkConfigV2` in the [API reference](/api-reference/).
 
 ## What you can change remotely
 
-Six things, and it is worth being clear about the boundary:
-
 | Change | Effect |
 |---|---|
-| Add, edit or disable a [recording rule](/observability/rum/how-to/session-filters/) | Controls whether detail capture turns on for a session |
-| Set `capture_replay` on a rule | Controls whether [session replay](/observability/replay/overview/) starts |
-| Change `mask_inputs` / `mask_text` | Controls replay masking |
-| Turn on [`hide_action_text`](#hiding-element-text-in-click-names) | Drops element text from click names |
-| Edit [excluded resources](#excluded-resources) | Stops matching resource timings from being recorded |
-| Edit [frustration ignore selectors](#ignoring-elements-for-frustration-signals) | Stops rage and dead clicks on matching elements |
+| Add, edit or disable a [recording rule](/observability/rum/how-to/session-filters/) | Which sessions record Analyze detail and replay |
+| Set the [privacy level](#privacy-levels) and masking | How replays and click names are masked, and which personal data patterns are scrubbed |
+| Edit [excluded resources](#excluded-resources) | Which resource timings are not recorded |
+| Edit [frustration ignore selectors](#ignoring-elements-for-frustration-signals) | Which elements never get rage or dead clicks |
+| Edit [allowed origins](#allowed-origins) | Which pages may send data |
+| Edit [network capture](#network-capture) | Which request headers and bodies SDK 2.0 records, and which requests carry `traceparent` |
 
-**What you cannot change remotely:** there are no sample rates in the configuration, and no global kill switch. Flush intervals, batch sizes and session timeouts are fixed in the SDK. Endpoint hosts can only be set locally in `init()`.
-
-If you need to stop collection entirely, disable every rule to stop detail and replay capture, and remove the `init()` call to stop the always-on measurements.
+Flush intervals, batch sizes and session timeouts are fixed in the SDK. Endpoint hosts can only be set locally in `init()`. To stop detail and replay for an application, disable its rules; to stop everything, remove the `init()` call.
 
 ## Where you set it
 
-| What | Where |
-|---|---|
-| Privacy settings | **RUM → Settings → Session Replay Privacy** and **Click Names**, or `settings.privacy` in a full-settings `PUT /rum/{app_id}` |
-| Recording rules | **RUM → Recording rules**, or the `/rum/{app_id}/filters` endpoints |
-| Excluded resources | **RUM → Settings → Excluded resources**, or `settings.resource_exclusions` in a full-settings `PUT /rum/{app_id}` |
-| Frustration ignore selectors | **RUM → Settings → Frustration signals**, or `settings.frustration_ignore_selectors` in a full-settings `PUT /rum/{app_id}` |
+In the dashboard, **RUM → Settings** holds the masking toggles, click names, excluded resources and frustration selectors, and **RUM → Recording rules** the rules SDK 1.x can express. Everything else is set through the API:
 
-Defaults for a newly created application: `mask_inputs` is **on**, `mask_text` and `hide_action_text` are **off**, nothing is excluded or ignored, and there are no rules, meaning no detail capture and no replay.
+- `PATCH /rum/{app_id}` with `settings` holding only the keys you change. Nested objects merge key by key, arrays and single values replace, and `null` clears a nullable key such as `privacy.level`. An unknown key returns `400`, so a typo cannot pass as a save. The same request takes `allowed_origins` and `replay_monthly_target`.
+- `PUT /rum/{app_id}` with `settings` merges the same way: keys you leave out keep their stored value. Unlike PATCH, it ignores unknown keys.
+- Recording rules: the `/rum/{app_id}/rules` endpoints.
 
-<Aside type="caution" title="PUT replaces the whole settings object">
-Fetch `GET /rum/{app_id}`, change only the key you need, and send `settings` back with every other key exactly as returned. Any key you leave out is reset to its default, so saving only `privacy` clears your excluded resources, your frustration ignore selectors and your retention limits.
-</Aside>
+Changing `privacy`, `retention`, `capture.network.body_urls` or `capture.network.header_allowlist` needs an account admin, or an API key with no scope restriction. Any other change needs write access.
+
+Every change that alters the configuration publishes it before the request returns. If it cannot be published, the request returns `503` and nothing is changed. Changes are recorded in the [audit log](/enterprise/audit-log/) with the names of the settings changed.
+
+A new application starts on the Balanced [privacy level](#privacy-levels), honours Global Privacy Control, and has the [default recording rules](/observability/rum/how-to/session-filters/#the-rules-a-new-application-starts-with). Nothing is excluded or ignored.
 
 <Aside type="danger" title="An existing application may not carry those defaults">
-Privacy settings are written into the application record when it is created, and nothing rewrites them afterwards. An application created earlier can have `mask_inputs` stored as `false`, in which case its recordings capture input values however this page describes the default.
+Applications created before the privacy levels have no level (shown as Custom) and keep the masking flags stored at creation, and nothing rewrites them. One created earlier can have `mask_inputs` stored as `false`, in which case its recordings capture input values.
 
-The config payload above is the authority: `GET {ingestBase}/v1/config` returns exactly what the SDK will obey for your application, and the dashboard's **RUM → Settings → Privacy** toggles show the same stored values. Check them per application. There is no backfill.
+The configuration is the authority: `GET {ingestBase}/v1/config` returns exactly what SDK 1.x will obey for your application, and **RUM → Settings → Privacy** shows the same stored values. Check them per application.
 </Aside>
 
 ## How long changes take to land
 
 <Aside type="note" title="Budget about ten minutes, and understand the latches">
-Two delays stack. The SDK refreshes its configuration on a **5 minute** cycle, and the authorisation decision for the config request is cached at the edge for up to a further **5 minutes**.
+For SDK 1.x, two delays stack. The SDK refreshes its configuration on a **5 minute** cycle, and the authorisation decision for the config request is cached at the edge for up to a further **5 minutes**. SDK 2.0 caches its file for up to 5 minutes in the browser, behind a CDN copy at most 1 minute old, so a change reaches new page loads within **6 minutes**.
 
 More importantly, **activation is one-way within a session**. Once detail capture or replay has turned on for a session, it stays on for the rest of that session, across page loads in the same tab; a later config refresh cannot turn it back off. The one exception is replay on a new page load: it resumes only if an enabled rule still has `capture_replay: true`. Replay masking is applied when recording starts, so changing it does not re-apply to a recorder that is already running.
 
@@ -98,17 +102,24 @@ So a tightening change ("stop capturing this") applies to *new* sessions, not to
 
 ## Rule conditions
 
-The condition keys the SDK evaluates, and the only ones the API accepts:
+Conditions, sample rates and how SDK 1.x reads rules are on [Configure recording rules](/observability/rum/how-to/session-filters/#conditions).
 
-| `filter_type` | Condition keys | Matches when |
-|---|---|---|
-| `error` | `has_error` | The session has sent at least one error. Filtered browser noise never counts. |
-| `slow_performance` | `lcp_gt_ms`, `cls_gt` | LCP or CLS exceeds the threshold. |
-| `custom` | `has_user`, `min_actions` | A user is identified, and/or the action count is reached. `{}` matches every session. |
+## Privacy levels
 
-Evaluation happens in the browser against the running session, immediately: when the config loads or refreshes, and after every sent error, Web Vital, action and `setUser` call. A session that turns bad partway through activates at that moment. A `custom` rule carrying any other key never matches, and the API rejects it with a `400`; see the [validation table](/observability/rum/reference/#conditions-by-filter-type).
+`settings.privacy.level` is `strict`, `balanced` or `relaxed`. With no level (an older application, shown as Custom), the individual flags apply as stored.
 
-Note that an `error` rule fires on **any** sent error in the session, regardless of what its conditions say.
+| | Strict | Balanced | Relaxed | Custom |
+|---|---|---|---|---|
+| Input values | Masked | Masked | Masked | `mask_inputs` |
+| Page text | Masked | Visible | Visible | `mask_text` |
+| Click names | Selector only | Text | Text | `hide_action_text` |
+| Emails, card numbers, runs of 9+ digits | Scrubbed | Scrubbed | Kept | Kept |
+| Images and video | Blocked | Recorded | Recorded | Recorded |
+| Console levels (SDK 2.0) | error | error, warn | as configured | error, warn |
+
+A level overrides the flags it governs, and saving a level writes them, so SDK 1.x, which reads only the masking flags, follows the level too. A flag can still add privacy on top of a level: `hide_action_text` on a Balanced application hides click text. `pii_patterns` is written from the level. Ingest scrubs those patterns from free text and hides click text for every SDK version.
+
+SDK 2.0 also reads `mask_selectors`, `unmask_selectors` (Strict only), `block_selectors`, `ignore_input_selectors`, `never_record_urls`, `require_consent`, `honor_gpc`, `cookieless` and `capture_user_email`. Selector lists hold up to 50 CSS selectors each, which must be valid CSS: pseudo-elements, namespaces and unknown pseudo-classes return `400`, as does `*` alone in a mask or block list and a selector ending in `*` in the unmask list.
 
 ## Excluded resources
 
@@ -132,6 +143,36 @@ Each application takes up to **50** rules of up to 512 characters each. A rule m
 Wildcards are not supported, so list each host separately.
 
 Ingest drops matching resource events within a minute of saving, from every SDK version, before they are stored. From SDK **1.0.5** the browser also skips them, so they are never sent, and it picks up changes on its 5 minute config refresh without a page reload.
+
+## Network capture
+
+`settings.capture.network` controls what SDK 2.0 records for each request. Method, status, timing and sizes are always recorded.
+
+| Key | Default | Description |
+|---|---|---|
+| `header_allowlist` | `["content-type", "x-request-id"]` | Lower-case header names recorded on requests and responses. Names that can carry credentials (`authorization`, `cookie`, `set-cookie`, `proxy-authorization`, or containing `token`, `secret`, `key` or `auth`) return `400`. |
+| `body_urls` | `[]` | URL prefixes whose JSON or text bodies are recorded, up to `max_body_bytes`. Ingest keeps bodies only for these URLs and scrubs sensitive keys. |
+| `trace_urls` | `[]` | URL prefixes whose requests get a `traceparent` header, linking them to your [traces](/observability/traces/overview/). |
+| `max_body_bytes` | `10240` | 1 to 65,536. |
+
+`body_urls` and `trace_urls` are URL prefixes, never patterns, so they cannot reach a third party by accident. Each entry is a path starting with `/`, which matches only requests to the page's own origin, or an `http://` or `https://` URL with an optional path. They match like [excluded resources](#excluded-resources): same origin, and the path equal to the prefix or continuing it after a `/`. Entries that read as a regular expression (`/api/`, `/(orders|carts)`), bare words (`api.example.com`) and wildcards return `400`; write `/api` or `https://api.example.com/v1`.
+
+Changing `body_urls` or `header_allowlist` needs an admin, as privacy settings do.
+
+## Allowed origins
+
+`allowed_origins` lists the pages that may send an application's data. Set it with `PATCH /rum/{app_id}`; an empty list allows every origin.
+
+| Entry | Allows |
+|---|---|
+| `https://shop.example.com` | That origin, on the default port |
+| `https://*.example.com` | Any subdomain of `example.com`, not `example.com` itself |
+| `example.com` | `example.com` over http and https |
+| `http://localhost:3000`, `https://shop.example.com:*` | That port, or any port |
+
+Entries are lower-cased and deduplicated, up to 100. A path, query, username or a wildcard anywhere but the first label returns `400`.
+
+When the list is not empty, ingest refuses requests from other origins with `403`, and requests without an `Origin` header too unless `settings.allow_requests_without_origin` is on (for server-side senders).
 
 ## Hiding element text in click names
 
@@ -165,7 +206,7 @@ Some controls draw rapid clicks by design (a carousel arrow, a stepper) or legit
 "frustration_ignore_selectors": [".carousel-next", "[data-role=stepper] button"]
 ```
 
-A click on an element matching any selector, or inside one, gets no rage or dead click. A click followed by an error is still an error click. Up to **50** selectors of 1 to 256 printable characters each; anything else returns a `400`. A selector the browser cannot parse is skipped. The SDK picks up changes on its 5 minute config refresh.
+A click on an element matching any selector, or inside one, gets no rage or dead click. A click followed by an error is still an error click. Up to **50** selectors of 1 to 256 printable characters each, which must be valid CSS: pseudo-elements, namespaces and unknown pseudo-classes return a `400`. A list saved earlier is not re-checked until you change it. The SDK picks up changes on its 5 minute config refresh.
 
 To exclude an element in your markup instead, add the `data-sq-no-frustration` attribute to it or an ancestor. See [frustration signals](/sdk/reference/#frustration-signals) for how each signal is defined.
 
