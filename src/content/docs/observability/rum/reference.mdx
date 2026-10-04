@@ -226,7 +226,7 @@ Every event carries `id`, `kind`, `t`, `offset_ms` (from the session's start), `
 
 #### Body access
 
-Request and response bodies and headers, console messages, error breadcrumbs, and the message, title, stack and cause of errors captured from the console need body access. People have it unless the account limits it to admins. API keys and M2M clients need the `read:rum_replay` scope, even unrestricted keys; connected apps never get it. Without access those fields are left out (in the summary, such error messages are empty), they cannot be searched or filtered on, and `bodies_withheld` is `true`. A response that shows any of them is recorded in the [audit log](/enterprise/audit-log/) as `rum.network_body.viewed`, once per person, key or client and session every 30 minutes.
+Request and response bodies and headers, console messages, error breadcrumbs, and the message, title, stack and cause of errors captured from the console need body access. Members and above have it unless the account limits it to admins. Viewers and auditors can read session metadata but cannot read these fields. API keys and M2M clients need the `read:rum_replay` scope, even unrestricted keys; connected apps never get it. Without access those fields are left out (in the summary, such error messages are empty), they cannot be searched or filtered on, and `bodies_withheld` is `true`. A response that shows any of them is recorded in the [audit log](/enterprise/audit-log/) as `rum.network_body.viewed`, once per person, key or client, application and session every 30 minutes. If the audit cannot be recorded, the API refuses the response with `500` and returns no captured content.
 
 ### `GET /rum/{app_id}/errors`
 
