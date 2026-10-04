@@ -7,6 +7,8 @@ owner: jj
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
+> **SDK 1.x:** This page documents the legacy SDK. For SDK 2 installation, config CDN, Observe error billing, consent and replay v2, use the [SDK 2 guide](/sdk/v2/).
+
 The SiteQwality client SDK is a single browser-side package: **`@siteqwality/rum`**. It collects [Real User Monitoring](/observability/rum/overview/) data and (when activated) [session replay](/observability/replay/overview/) segments.
 
 It is **not** a back-end ingestion library. For back-end metrics/logs/traces, ship via the OTel SDK or direct HTTP to the ingestion endpoints. See [Observability](/observability/overview/).
@@ -31,8 +33,10 @@ The SDK does not inject `traceparent` headers or otherwise participate in distri
 ### NPM
 
 ```bash
-npm install @siteqwality/rum
+npm install @siteqwality/rum@1.0.7
 ```
+
+At the 2026-10-04 checkpoint, npm has 1.0.7; CDN `/rum/v1/` is reported to serve 1.1. SDK 1.1 options such as `ignoreErrors`, `beforeSend` and `recorderUrl` are not available in the 1.0.7 npm package. For SDK2, check the [release channels](/sdk/v2/#install) before choosing an install path.
 
 ### CDN
 
@@ -47,14 +51,10 @@ SiteQwalityRUM.init({
   applicationId: 'abc123',          // from RUM application
   clientToken: 'pub_def456',        // from RUM application (public token)
   version: '1.4.2',                  // your release (used for source-map matching)
-
-  // Optional
-  ignoreErrors: ['Request aborted'], // drop errors whose message contains this
-  beforeSend: (event) => event,      // inspect, change or drop each error
 });
 ```
 
-`init` is fire-and-forget. Collection starts synchronously, and the Promise it returns (settled once remote config is applied or fails) never needs an `await`. It is idempotent; calling it twice is a no-op. With the npm package, calls to other methods before `init()` are ignored. Every option, including `recorderUrl` for self-hosting the replay recorder, is in the [SDK reference](/sdk/reference/#init-options-rumconfig).
+On CDN SDK 1.1, `init` is fire-and-forget. Collection starts synchronously, and the Promise it returns (settled once remote config is applied or fails) never needs an `await`. It is idempotent; calling it twice is a no-op. With the npm package, calls to other methods before `init()` are ignored. Every option, including `recorderUrl` for self-hosting the replay recorder, is in the [SDK reference](/sdk/reference/#init-options-rumconfig).
 
 No public method throws: invalid input is ignored and internal failures are swallowed.
 

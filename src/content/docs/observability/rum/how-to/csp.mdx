@@ -1,0 +1,50 @@
+---
+title: Configure CSP and intake endpoints
+description: Allow SDK scripts, config fetches, event intake and replay, including the SDK 2.1 replay index header.
+last_verified: 2026-10-04
+owner: jj
+---
+
+For SDK 2.1, add these origins to your existing Content Security Policy directives:
+
+```text
+script-src 'self' https://cdn.siteqwality.com;
+connect-src 'self' https://in.siteqwality.com https://in-replay.siteqwality.com https://cdn.siteqwality.com;
+```
+
+This is a fragment to merge into your policy, not a replacement for the site's full policy. Authorize the inline [install snippet](/sdk/v2/#cdn-snippet) with your existing nonce or a matching hash, or put the bootstrap in an allowed external script. A CDN host allowlist does not authorize inline scripts by itself.
+
+The CDN belongs in **both** directives: `script-src` loads the core, recorder and gzip fallback; `connect-src` permits the public config JSON fetch at `/rum/config/v2/<applicationId>.json`.
+
+## Keep hosts for the versions you serve
+
+| SDK | Event host | Replay host | Config |
+|---|---|---|---|
+| 1.x | `https://rum.siteqwality.com` | `https://replay.siteqwality.com` | `GET /v1/config` on the event host |
+| 2.0 | `https://in.siteqwality.com` | `https://replay.siteqwality.com` | CDN `/rum/config/v2/<applicationId>.json` |
+| 2.1 | `https://in.siteqwality.com` | `https://in-replay.siteqwality.com` | Same CDN config |
+
+During migration, retain the old hosts in `connect-src` until no cached pages or pinned SDKs need them. Do not change the legacy replay host's path to `/v2/segments`; replay v2 is on its own host.
+
+## First-party proxies
+
+Set `ingestBase`, `replayBase` and `configBase` to your proxy's host bases. Forward:
+
+- Event `POST /v2/batch` and identity `POST /v2/identity` to `in.siteqwality.com`.
+- Config `GET /rum/config/v2/<applicationId>.json` to `cdn.siteqwality.com`, without adding a token.
+- Replay `POST /v2/segments` to `in-replay.siteqwality.com`, preserving `Authorization`, `Content-Type`, `Origin` and `x-sq-replay-index`, and the original gzip or JSON body.
+
+For the fixed-URL replay transport, the index is a query-string-encoded **header value**, not URL parameters. Keep `Authorization: Bearer <clientToken>` in its header. Never move tokens to query strings, path components or access logs. Preserve response status and `Retry-After`; do not turn an intake refusal into a success response.
+
+A cross-origin replay proxy or intake must answer preflight with `POST` allowed and `authorization, content-type, x-sq-replay-index` allowed as request headers. Expose `Retry-After` to the browser. The replay HTTP API's intended preflight cache lifetime is 7,200 seconds; browsers may impose a lower cap. A fixed URL makes cache reuse possible but does not remove the first preflight.
+
+## Verify before switching SDKs
+
+```bash
+curl -i -X OPTIONS https://in-replay.siteqwality.com/v2/segments \
+  -H 'Origin: https://YOUR_SITE.example' \
+  -H 'Access-Control-Request-Method: POST' \
+  -H 'Access-Control-Request-Headers: authorization,content-type,x-sq-replay-index'
+```
+
+Check the response permits all three headers and your origin. This proves only the preflight response, not authenticated intake or replay playback. In the browser, verify that the config GET succeeds and that the event and replay POSTs reach the correct hosts without CSP or CORS errors. A replay 403 can mean your application is not enabled for v2, an origin is refused or the token is invalid. Do not retry by moving authentication into the URL.
