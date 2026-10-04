@@ -145,7 +145,7 @@ There was **no backfill**: sessions recorded before each dimension shipped keep 
 
 ## In the dashboard
 
-**Overview** leads with LCP, INP and CLS at the 75th percentile (p75), each coloured by Google's thresholds, with a bar showing the share of page views rated good, needs improvement and poor. FCP and TTFB sit in a second row. Each page view counts once per vital, with its latest valid value. The top row shows sessions, page views, errors and the share of sessions with an error. **Sessions** counts only sessions with at least one page view, and the error numbers come from the error events themselves.
+**Overview** leads with LCP, INP and CLS at the 75th percentile (p75), each coloured by Google's thresholds, with a bar showing the share of page views rated good, needs improvement and poor. FCP and TTFB sit in a second row. Each page view counts once per vital, with its latest valid value; above 400,000 page views in the range, vitals come from an even sample of them. The top row shows sessions, page views, errors and the share of sessions with an error. **Sessions** counts only sessions with at least one page view, and the error numbers come from the error events themselves.
 
 | Vital | Good | Poor |
 |---|---|---|
@@ -161,7 +161,7 @@ Anything between the two is "needs improvement".
 
 **Vitals charts** plot p50, p75 and p95 in your local time zone, with dates on ranges over 24 hours. Buckets are 5 minutes for the last 1 or 6 hours, 1 hour for 24 hours, 6 hours for 7 days and 1 day (aligned to your time zone) for 30 days. Empty buckets show as gaps, buckets with fewer than 10 samples are drawn faded, and lines mark the good and poor thresholds.
 
-**Sessions** lists sessions active in the range that have at least one page view. Search matches a user ID or email, a session ID prefix, any visited URL or any error message in the session, ignoring case. The browser, OS, country and device filters offer only values seen in the range, with session counts. Filters, sort and range live in the URL, so a copied link reopens the same view.
+**Sessions** lists sessions active in the range that have at least one page view. Search matches any user ID or email the session carried, a session ID prefix, any visited URL or any error message in the session, ignoring case. The browser, OS, country and device filters offer only values seen in the range, with session counts. Filters, sort and range live in the URL, so a copied link reopens the same view.
 
 **Errors** groups errors and shows events, sessions and identified users per group for the selected range. Search runs on the server across every group in the range. An error's page lists the affected sessions, and **View all sessions** opens Sessions filtered to that error. **Watch replay** appears only when the session has a replay, and opens it at the error.
 

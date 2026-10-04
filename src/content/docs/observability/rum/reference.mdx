@@ -82,12 +82,14 @@ The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/conf
 | Topic | Rule |
 |---|---|
 | Timestamps | Every timestamp in a RUM API response is ISO 8601 UTC ending in `Z`, such as `2026-10-03T13:00:00.000Z`. Request params accept any ISO 8601 string. |
-| `interval` | `5m`, `1h`, `6h` or `1d`. When absent it follows the span: up to 6 hours `5m`, up to 48 hours `1h`, up to 8 days `6h`, longer `1d`. |
-| `tz` | IANA time zone name such as `Europe/Berlin`, up to 64 characters; default `UTC`. Buckets align to it, which matters for `1d`. An unknown zone returns `400`. |
+| Range | At most 90 days, and `from` must not be after `to`; anything else returns `400`. |
+| `interval` | `5m`, `1h`, `6h` or `1d`. When absent it follows the span: up to 6 hours `5m`, up to 48 hours `1h`, up to 8 days `6h`, longer `1d`. An interval that would return more than 10,000 buckets returns `400`. |
+| `tz` | IANA time zone name such as `Europe/Berlin`, up to 64 characters; default `UTC`. Buckets align to it, which matters for `1d`. A well-formed name the server does not know falls back to `UTC`; a malformed one returns `400`. |
 | Dimension filters | `browser`, `os`, `country`, `device_type`: exact, case-sensitive match. |
 | `url` | Case-insensitive substring of the page URL. |
 | Web Vitals | One value per page view (its latest valid value). Valid: `lcp_ms`, `fcp_ms`, `inp_ms`, `ttfb_ms` 0 to 600,000; `cls` 0 to 10. Anything else is ignored. Percentiles are approximate (t-digest). |
 | Text params | `search` and `url` are trimmed and capped at 200 characters; empty means absent. |
+| Session counts | `session_count`, `error_session_count`, the breakdowns and the facets are exact up to about 1,500 sessions and approximate above that, within about 0.2%. |
 
 ### `GET /rum/{app_id}/overview`
 
@@ -101,8 +103,9 @@ The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/conf
 | `session_count` | Sessions with at least one page view in the range. |
 | `view_count` | Page views in the range. |
 | `error_count`, `error_rate` | Error events in the range, and errors per session. |
-| `error_session_count`, `error_session_rate` | Sessions with an error, and their share of `session_count` (0 to 1). |
+| `error_session_count`, `error_session_rate` | Sessions counted in `session_count` that have an error event in the range, and their share of `session_count` (0 to 1). |
 | `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `p75_fcp_ms`, `p75_ttfb_ms` | p75 per vital; `null` with no samples. |
+| `vitals_sample_rate` | Share of page views the p75 values, `vitals_distribution` and top page vitals were computed from: `1` up to 400,000 page views in the range, otherwise an even sample with counts scaled back up. |
 | `vitals_distribution` | Per vital (`lcp`, `inp`, `cls`, `fcp`, `ttfb`): `samples`, `good`, `needs_improvement`, `poor` page-view counts, using the [thresholds](/observability/rum/overview/#in-the-dashboard). |
 | `avg_lcp_ms`, `avg_fcp_ms`, `avg_cls`, `avg_inp_ms`, `avg_ttfb_ms` | Deprecated. Means of the per-view values; prefer the p75 fields. |
 | `top_pages` | Top 10 URLs by page views: `url`, `view_count`, `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `p75_load_time_ms` (initial loads only), `vitals_samples`, and the deprecated `avg_lcp_ms`, `avg_load_time_ms`. |
@@ -118,7 +121,7 @@ The SDK fetches its config from the RUM ingest host at `GET {ingestBase}/v1/conf
 | `interval`, `tz` | Bucket size and zone (see conventions). |
 | `country`, `browser`, `os`, `device_type`, `url` | Optional filters, as on the overview. |
 
-Each point carries `timestamp`, `p50`, `p75`, `p95` and `count` (page views). A page view lands in the bucket of its last valid sample. Buckets without samples are left out.
+Each point carries `timestamp`, `p50`, `p75`, `p95` and `count` (page views). A page view lands in the bucket of its last valid sample. Buckets without samples are left out. Above 400,000 page views in the range, points come from the same even sample as the overview, with `count` scaled back up.
 
 ### `GET /rum/{app_id}/sessions`
 
@@ -127,7 +130,7 @@ A session is listed when it has a page view or vital in `[from, to]` and at leas
 | Param | Description |
 |---|---|
 | `from`, `to` | Time range. Default: the 30 days ending now. |
-| `search` | Case-insensitive match on part of the user ID or email, a session ID prefix, any visited URL, or any error message in the session. |
+| `search` | Case-insensitive match on part of any user ID or email the session carried, a session ID prefix, any visited URL, or any error message in the session. |
 | `url` | Case-insensitive substring of any page URL the session visited. |
 | `browser`, `os`, `country`, `device_type` | Exact-match filters. |
 | `has_error`, `has_replay`, `has_frustration` | `true` keeps only sessions with an error event, a replay, or a rage, dead or error click. |
@@ -137,7 +140,7 @@ A session is listed when it has a page view or vital in `[from, to]` and at leas
 | `limit` | Page size. Default 50, maximum 100. |
 | `offset` | Page offset. Default 0. |
 
-`total` counts every session matching the filters. Each session adds `duration_ms` (first to last activity across page views, events and replay) and `entry_url` (its first page view). `error_count` and `has_error` come from error events. `GET /rum/{app_id}/sessions/{session_id}` returns the same fields, and its `events` include one `type: "view"` row per page view (`event_id` and `view_id` are the view's ID; fields that do not apply are `null`).
+`total` counts every session matching the filters. Each session adds `duration_ms` (first to last activity across page views, events and replay) and `entry_url` (its first page view). `error_count` and `has_error` come from error events. `GET /rum/{app_id}/sessions/{session_id}` returns the same fields, and its `events` include one `type: "view"` row per page view (`event_id` and `view_id` are the view's ID; fields that do not apply are `null`). It returns `404` for an unknown session and for one without a page view.
 
 ### `GET /rum/{app_id}/errors`
 

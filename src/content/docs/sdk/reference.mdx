@@ -177,7 +177,8 @@ From 1.0.5 the SDK skips resource timings matching the application's [excluded r
 
 ## Page views and Web Vitals
 
-- A page view is recorded at `init` and whenever the page URL changes through `pushState`, `replaceState` or `popstate`, but only if the URL differs from the current view's after sanitising. Query strings and fragments are removed by default, so a change to only those (including hash-based routing) is not a new view.
+- A page view is recorded at `init` and whenever the page URL changes through `pushState`, `replaceState`, `popstate` or `hashchange`, but only if the URL differs from the current view's after sanitising. Query strings are removed by default, so a change to only those is not a new view.
+- Fragments are removed too, except a hash route (`#/path` or `#!/path`), which is kept like a path so hash-routed apps get one view per route. A hash route that carries parameters (`=` or `&`, such as `#/access_token=...`) is removed like any other fragment.
 - Each view carries `loading_type`: `initial_load` for the document's first view, `route_change` for the rest.
 - Load timing comes from the browser's navigation timing, for the initial load only: `load_time_ms` is `loadEventEnd` and `dom_ready_ms` is `domContentLoadedEventEnd`, each sent only when above zero. If the page has not finished loading at `init`, the view is sent without them and a separate measure with the two timings follows after the `load` event. Route changes carry no timings.
 - Web Vitals belong to the document's initial view: its session, view ID and URL as captured at `init`. A vital reported late, after a route change or a long idle spell, still goes there, and never starts a new session.
