@@ -1,7 +1,7 @@
 ---
 title: Change SDK behaviour without redeploying
 description: How the browser SDK fetches its configuration, what you can change remotely, and how long changes take to reach live sessions.
-last_verified: 2026-08-02
+last_verified: 2026-10-03
 owner: jj
 ---
 
@@ -37,44 +37,47 @@ The same public client token the SDK already holds authenticates the request, an
     "settings": {
       "privacy": { "mask_inputs": true, "mask_text": false, "hide_action_text": false },
       "retention": { "observe_days": null, "analyze_days": null },
-      "resource_exclusions": ["/api/heartbeat", "https://analytics.example.com"]
+      "resource_exclusions": ["/api/heartbeat", "https://analytics.example.com"],
+      "frustration_ignore_selectors": [".carousel-next"]
     }
   }
 }
 ```
 
-Only **enabled** filters are sent. Disabling one in the dashboard removes it from the payload entirely rather than shipping it with a flag.
+`filters` holds your [recording rules](/observability/rum/how-to/session-filters/) (the API's name for them). Only **enabled** rules are sent. Disabling one in the dashboard removes it from the payload entirely rather than shipping it with a flag.
 
-`priority` is stored and returned but is not currently used to order evaluation. Filters are evaluated as a set, and a session activates if **any** of them matches.
+`priority` is accepted and returned but not used. Rules are evaluated as a set, and a session activates if **any** of them matches.
 
 ## What you can change remotely
 
-Five things, and it is worth being clear about the boundary:
+Six things, and it is worth being clear about the boundary:
 
 | Change | Effect |
 |---|---|
-| Add, edit or disable a [session filter](/observability/rum/how-to/session-filters/) | Controls whether detail capture turns on for a session |
-| Set `capture_replay` on a filter | Controls whether [session replay](/observability/replay/overview/) starts |
+| Add, edit or disable a [recording rule](/observability/rum/how-to/session-filters/) | Controls whether detail capture turns on for a session |
+| Set `capture_replay` on a rule | Controls whether [session replay](/observability/replay/overview/) starts |
 | Change `mask_inputs` / `mask_text` | Controls replay masking |
 | Turn on [`hide_action_text`](#hiding-element-text-in-click-names) | Drops element text from click names |
 | Edit [excluded resources](#excluded-resources) | Stops matching resource timings from being recorded |
+| Edit [frustration ignore selectors](#ignoring-elements-for-frustration-signals) | Stops rage and dead clicks on matching elements |
 
 **What you cannot change remotely:** there are no sample rates in the configuration, and no global kill switch. Flush intervals, batch sizes and session timeouts are fixed in the SDK. Endpoint hosts can only be set locally in `init()`.
 
-If you need to stop collection entirely, disable every filter to stop detail and replay capture, and remove the `init()` call to stop the always-on measurements.
+If you need to stop collection entirely, disable every rule to stop detail and replay capture, and remove the `init()` call to stop the always-on measurements.
 
 ## Where you set it
 
 | What | Where |
 |---|---|
 | Privacy settings | **RUM → Settings → Session Replay Privacy** and **Click Names**, or `settings.privacy` in a full-settings `PUT /rum/{app_id}` |
-| Session filters | **RUM → Filters**, or the `/rum/{app_id}/filters` endpoints |
+| Recording rules | **RUM → Recording rules**, or the `/rum/{app_id}/filters` endpoints |
 | Excluded resources | **RUM → Settings → Excluded resources**, or `settings.resource_exclusions` in a full-settings `PUT /rum/{app_id}` |
+| Frustration ignore selectors | **RUM → Settings → Frustration signals**, or `settings.frustration_ignore_selectors` in a full-settings `PUT /rum/{app_id}` |
 
-Defaults for a newly created application: `mask_inputs` is **on**, `mask_text` and `hide_action_text` are **off**, nothing is excluded, and there are no filters, meaning no detail capture and no replay.
+Defaults for a newly created application: `mask_inputs` is **on**, `mask_text` and `hide_action_text` are **off**, nothing is excluded or ignored, and there are no rules, meaning no detail capture and no replay.
 
 <Aside type="caution" title="PUT replaces the whole settings object">
-Fetch `GET /rum/{app_id}`, change only the key you need, and send `settings` back with every other key exactly as returned. Any key you leave out is reset to its default, so saving only `privacy` clears your excluded resources and your retention limits.
+Fetch `GET /rum/{app_id}`, change only the key you need, and send `settings` back with every other key exactly as returned. Any key you leave out is reset to its default, so saving only `privacy` clears your excluded resources, your frustration ignore selectors and your retention limits.
 </Aside>
 
 <Aside type="danger" title="An existing application may not carry those defaults">
@@ -88,24 +91,24 @@ The config payload above is the authority: `GET {ingestBase}/v1/config` returns 
 <Aside type="note" title="Budget about ten minutes, and understand the latches">
 Two delays stack. The SDK refreshes its configuration on a **5 minute** cycle, and the authorisation decision for the config request is cached at the edge for up to a further **5 minutes**.
 
-More importantly, **activation is one-way within a session**. Once detail capture or replay has turned on for a session, it stays on for the rest of that session; a later config refresh cannot turn it back off. Replay masking is applied when recording starts, so changing it does not re-apply to a recorder that is already running.
+More importantly, **activation is one-way within a session**. Once detail capture or replay has turned on for a session, it stays on for the rest of that session, across page loads in the same tab; a later config refresh cannot turn it back off. The one exception is replay on a new page load: it resumes only if an enabled rule still has `capture_replay: true`. Replay masking is applied when recording starts, so changing it does not re-apply to a recorder that is already running.
 
-So a tightening change ("stop capturing this") applies to *new* sessions, not to sessions already in flight. Plan privacy changes accordingly.
+So a tightening change ("stop capturing this") applies to *new* sessions, not to sessions already in flight. Plan privacy changes accordingly. A loosening change (a new rule) is evaluated on the next refresh and can activate a session in progress.
 </Aside>
 
-## Filter conditions
+## Rule conditions
 
-The condition keys the SDK evaluates:
+The condition keys the SDK evaluates, and the only ones the API accepts:
 
 | `filter_type` | Condition keys | Matches when |
 |---|---|---|
-| `error` | `has_error` | The session has thrown at least one error. |
+| `error` | `has_error` | The session has sent at least one error. Filtered browser noise never counts. |
 | `slow_performance` | `lcp_gt_ms`, `cls_gt` | LCP or CLS exceeds the threshold. |
-| `custom` | `has_user`, `min_actions` | A user is identified, and/or the action count is reached. |
+| `custom` | `has_user`, `min_actions` | A user is identified, and/or the action count is reached. `{}` matches every session. |
 
-Evaluation happens in the browser against the running session, so a session that turns bad partway through activates partway through.
+Evaluation happens in the browser against the running session, immediately: when the config loads or refreshes, and after every sent error, Web Vital, action and `setUser` call. A session that turns bad partway through activates at that moment. A `custom` rule carrying any other key never matches, and the API rejects it with a `400`; see the [validation table](/observability/rum/reference/#conditions-by-filter-type).
 
-Note that an `error` filter fires on **any** error in the session, regardless of what its conditions say.
+Note that an `error` rule fires on **any** sent error in the session, regardless of what its conditions say.
 
 ## Excluded resources
 
@@ -154,8 +157,20 @@ To give an element a stable, readable name instead, add `data-sq-action-name`. I
 
 Names passed to `addAction()` are never changed by this setting.
 
+## Ignoring elements for frustration signals
+
+Some controls draw rapid clicks by design (a carousel arrow, a stepper) or legitimately change nothing on screen. To stop their clicks being marked as rage or dead clicks, list CSS selectors under **RUM → Settings → Frustration signals**, one per line, or set `settings.frustration_ignore_selectors`:
+
+```json
+"frustration_ignore_selectors": [".carousel-next", "[data-role=stepper] button"]
+```
+
+A click on an element matching any selector, or inside one, gets no rage or dead click. A click followed by an error is still an error click. Up to **50** selectors of 1 to 256 printable characters each; anything else returns a `400`. A selector the browser cannot parse is skipped. The SDK picks up changes on its 5 minute config refresh.
+
+To exclude an element in your markup instead, add the `data-sq-no-frustration` attribute to it or an ancestor. See [frustration signals](/sdk/reference/#frustration-signals) for how each signal is defined.
+
 ## See also
 
-<LinkCard title="Session filters" description="Designing the filters this config delivers." href="/observability/rum/how-to/session-filters/" />
+<LinkCard title="Recording rules" description="Designing the rules this config delivers." href="/observability/rum/how-to/session-filters/" />
 <LinkCard title="SDK reference" description="Init options and public methods." href="/sdk/reference/" />
 <LinkCard title="Session replay" description="What capture_replay turns on." href="/observability/replay/overview/" />

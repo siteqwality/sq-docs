@@ -1,7 +1,7 @@
 ---
 title: Upload source maps
 description: Symbolicate minified production JS errors by uploading source maps against a release.
-last_verified: 2026-08-02
+last_verified: 2026-10-03
 owner: jj
 ---
 
@@ -64,7 +64,9 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/releases" \
 
 ## 3. Upload each map
 
-Uploading is **two steps**: ask for an upload URL, then send the file to it.
+You can upload from the dashboard or through the API. In the dashboard, open **RUM → Source Maps**, create the release with **+ Create Release**, then click **Upload .map** on it: enter the bundle name as it appears in stack traces and pick the `.map` file. The dashboard runs the same two steps for you, and expanding a release lists its maps.
+
+Through the API, uploading is **two steps**: ask for an upload URL, then send the file to it.
 
 <Steps>
 
@@ -162,7 +164,14 @@ Common causes, roughly in order of likelihood:
 | Some frames resolve, others do not | Normal for a stack spanning several bundles. Upload a map for each. |
 | Frames from Firefox or Safari users stay minified | Frame parsing targets V8-style stack syntax, which is what Chromium and Node produce. Other engines' formats pass through unchanged. |
 
-There is no endpoint for listing the maps you have uploaded, so when debugging a setup, re-uploading is cheaper than trying to inspect state.
+To see what a release holds, list its maps:
+
+```bash
+curl "https://api.siteqwality.com/rum/$APP_ID/releases/1.4.2/sourcemaps" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+Each entry has `id`, `original_file` (the bundle name frames are matched against) and `created_at`. Check that `original_file` matches the file name in your stack frames. An entry is recorded when the upload URL is requested, so it does not prove the `PUT` succeeded; if in doubt, upload again.
 
 ## Cleanup
 
@@ -188,4 +197,4 @@ These generate the maps without writing the `sourceMappingURL` comment. Browsers
 ## See also
 
 <LinkCard title="RUM overview" description="The pillar concepts." href="/observability/rum/overview/" />
-<LinkCard title="Session filters" description="Capture detailed errors selectively." href="/observability/rum/how-to/session-filters/" />
+<LinkCard title="Recording rules" description="Capture detail and replay selectively." href="/observability/rum/how-to/session-filters/" />

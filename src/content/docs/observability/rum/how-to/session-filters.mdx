@@ -1,32 +1,38 @@
 ---
-title: Configure session filters
+title: Configure recording rules
 description: Activate detail collection and replay only for sessions that match interesting conditions, so costs stay down.
-last_verified: 2026-05-03
+last_verified: 2026-10-03
 owner: jj
 ---
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
-By default, RUM sends light measurements (web vitals, view counts, error *counts*) for every session. Detail collection (full error stacks, click targets, resource timings) and session replay activate **only when a session matches a filter**.
+By default, RUM sends page views, Web Vitals and errors (with their stacks) for every session. Detail collection (resource timings, click events with frustration signals, long tasks) and session replay activate **only when a session matches a recording rule**.
 
 This is the core cost-control mechanism: capture every user lightly, and only the interesting ones in detail.
 
-## Filter types
+Manage rules under **RUM → Recording rules** in the dashboard. The API calls them session filters: they live under `/rum/{app_id}/filters` and carry a `filter_type`.
 
-| `filter_type` | Activates on |
-|---|---|
-| `error` | The session has thrown one or more errors. |
-| `slow_performance` | A web vital exceeded a threshold (LCP, FCP, CLS). |
-| `custom` | Any condition you define via the `conditions` map. |
+A new application has no rules, so it records no detail and no replay until you add one. The Sessions page shows a banner saying replay is off until a rule with `capture_replay: true` exists.
 
-Each filter has:
+## Rule types
 
-- `name`: display label.
+| `filter_type` | Conditions | Activates when |
+|---|---|---|
+| `error` | `has_error` (bool), or `{}` | The session sends an error. Filtered browser noise never counts. |
+| `slow_performance` | `lcp_gt_ms` (0 to 600,000), `cls_gt` (0 to 10); at least one | LCP or CLS exceeds the threshold. |
+| `custom` | `has_user` (bool), `min_actions` (1 to 10,000), or `{}` | All given conditions hold. `{}` matches every session. |
+
+Any other key is rejected with a `400`, and the SDK never matches a `custom` rule carrying one. There is no condition on FCP, on user attributes or on URLs. See the [validation table](/observability/rum/reference/#conditions-by-filter-type).
+
+Each rule has:
+
+- `name`: display label, 1 to 255 characters.
 - `filter_type`: one of the above.
 - `conditions`: type-specific config.
-- `capture_replay`: if `true`, also activate session replay (loads the rrweb chunk).
+- `capture_replay`: if `true`, also start session replay.
 - `enabled`: toggle off without deleting.
-- `priority`: when multiple filters could match, lowest priority wins (today, all matching filters activate).
+- `priority`: accepted by the API but not used. Every enabled rule is evaluated, and any match activates.
 
 ## Examples
 
@@ -41,12 +47,11 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
     "filter_type": "error",
     "conditions": {},
     "capture_replay": false,
-    "enabled": true,
-    "priority": 100
+    "enabled": true
   }'
 ```
 
-Result: any session that hits an error gets full error stacks, click targets, and resource timings.
+Result: from its first error on, the session sends click targets, resource timings and long tasks.
 
 ### "Replay errored sessions"
 
@@ -59,12 +64,11 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
     "filter_type": "error",
     "conditions": {},
     "capture_replay": true,
-    "enabled": true,
-    "priority": 50
+    "enabled": true
   }'
 ```
 
-Result: errored sessions get full detail **and** replay.
+Result: errored sessions get full detail **and** replay. The replay starts at the error; it does not show what came before it (see [what replay records](#what-replay-records)).
 
 ### "Replay slow LCP sessions"
 
@@ -75,32 +79,46 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
   -d '{
     "name": "Slow LCP",
     "filter_type": "slow_performance",
-    "conditions": { "lcp_ms_threshold": 2500 },
+    "conditions": { "lcp_gt_ms": 2500 },
     "capture_replay": true,
-    "enabled": true,
-    "priority": 75
+    "enabled": true
   }'
 ```
 
 Result: any session with LCP > 2.5s gets replay.
 
-### "Custom: match logged-in admin users"
+### "Custom: replay engaged signed-in users"
 
 ```bash
 curl -X POST "https://api.siteqwality.com/rum/$APP_ID/filters" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Admin sessions",
+    "name": "Signed-in, 5+ actions",
     "filter_type": "custom",
-    "conditions": { "user_attribute": "role", "user_attribute_value": "admin" },
+    "conditions": { "has_user": true, "min_actions": 5 },
     "capture_replay": true,
-    "enabled": true,
-    "priority": 25
+    "enabled": true
   }'
 ```
 
-Custom filter conditions are a free-form JSON object. The dashboard builder gives you a UI for them; via API you compose them by key/value matches against session metadata.
+`has_user` matches any user identified with [`setUser`](/sdk/reference/#siteqwalityrumsetuseruser); rules cannot pick out particular users or roles. `min_actions` counts clicks and `addAction` calls across the whole session, including earlier page loads in the same tab.
+
+## When rules are evaluated
+
+The SDK evaluates rules in the browser, immediately:
+
+- when the config loads at startup, and on every refresh (every 5 minutes),
+- after every error it sends,
+- after every Web Vital,
+- after every action (click or `addAction`),
+- after `setUser`.
+
+There is no timer, so a session that matches does so at that moment. Activation is one-way: once detail or replay turns on for a session it stays on, and the SDK remembers that per session and tab across page loads.
+
+## What replay records
+
+Replay starts when a rule with `capture_replay: true` matches, and there is no buffer of what came before: the recorder only starts at that moment. So an `error` rule's replay starts at the error, and a `custom {}` rule's replay starts as soon as the config arrives. On later page loads in the same session and tab, recording resumes from the start of each page once the config loads, as long as an enabled rule still has `capture_replay: true`.
 
 ## Sampling vs filtering
 
@@ -109,20 +127,19 @@ Both reduce volume. The difference:
 - **Sampling** is random, keeping N% of sessions regardless of content.
 - **Filtering** is targeted, keeping only the sessions that match a condition.
 
-SiteQwality currently uses filtering, not sampling. For "I want 1% of all sessions replayed at random" the workaround today is a `custom` filter that matches based on a hash of the session ID. Talk to support for the canonical pattern.
+SiteQwality uses filtering only. There is no random sampling.
 
-## Recommended starting filter set
+## Recommended starting rule set
 
 For a production SaaS:
 
-1. **Error sessions (replay)**, capture_replay: true. All errored sessions get the full picture.
-2. **Slow LCP (capture detail)**, capture_replay: false. LCP > 4s; gets click targets and resource timings to diagnose.
-3. **Admin/internal sessions (replay)**, capture_replay: true. For when staff trip over a bug.
+1. **Error sessions (replay)**, `capture_replay: true`. Errored sessions get detail and a replay from the error on.
+2. **Slow LCP (capture detail)**, `lcp_gt_ms: 4000`, `capture_replay: false`. Gets click targets and resource timings to diagnose.
 
 Keep total active replay volume low. Replay segments are large and storage adds up.
 
 <Aside type="tip">
-The SDK fetches the filter list at session start. Changes apply to **new sessions**, not in-flight ones. Account-level changes propagate within ~5 minutes thanks to a small in-memory cache on the SDK config endpoint.
+The SDK fetches rules on every page load and refreshes them every 5 minutes, re-evaluating each time, so a new rule can turn capture on for a session already in progress. Turning a rule off only affects sessions that have not activated yet. Budget about ten minutes for a change to land; see [how long changes take](/observability/rum/how-to/remote-config/#how-long-changes-take-to-land).
 </Aside>
 
 ## See also
