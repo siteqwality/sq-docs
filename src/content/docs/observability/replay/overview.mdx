@@ -7,6 +7,8 @@ owner: jj
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
+> **SDK versions:** The recorder behavior and examples below describe SDK 1.x unless stated otherwise. SDK 2.1 has a different endpoint, pre-trigger memory buffer and privacy enforcement. Read [replay 2.1 transport](/sdk/v2/#replay-21-transport) and [buffer and privacy](/sdk/v2/#replay-buffer-and-privacy) before upgrading; replay v2 must be enabled for your application.
+
 **Session Replay** reconstructs a user's session as a video: every page view, every DOM mutation, every click, every keystroke (with privacy controls). Use it for the "what did the user actually do?" debugging that no amount of metrics or logs can answer.
 
 ## When to use replay
@@ -46,8 +48,8 @@ Replay records only sessions that match a Replay [recording rule](/observability
 
 SDK 1.x evaluates rules immediately: when its config loads or refreshes, and after every sent error, Web Vital, action and `setUser` call. Once replay activates for a session, it records from that moment onward, not from session start. An error rule's replay therefore starts at the error. On later page loads in the same session and tab, recording resumes from the start of each page once the config loads, as long as an enabled Replay rule still applies. SDK 1.x applies only full-rate rules it can express; see [SDK versions](/observability/rum/how-to/session-filters/#sdk-versions).
 
-<Aside type="caution" title="Nothing is buffered before the trigger">
-There is no pre-trigger buffer yet. The recorder is lazy-loaded: the SDK only fetches it once a replay rule matches, so nothing is being recorded, or even downloaded, before that moment. Playback starts at the activation point and never includes the lead-up to it.
+<Aside type="caution" title="SDK 1.x has no pre-trigger buffer">
+SDK 1.x has no pre-trigger buffer. The recorder is lazy-loaded: the SDK only fetches it once a replay rule matches, so nothing is being recorded, or even downloaded, before that moment. Playback starts at the activation point and never includes the lead-up to it.
 
 This page previously claimed that recording with an `error` rule included "the few seconds before the error". It does not.
 </Aside>
@@ -106,13 +108,13 @@ This page previously documented `rr-unmask`. It was never implemented. If you ad
 
 ## Pricing
 
-Replay is paid. Sessions with replay are billed per recorded session and per stored MB. Set conservative recording rules. Do not "replay everyone."
+Replay includes 100 recorded sessions per month on the free tier. Paid packs increase the recorded-session allowance. The first accepted segment counts the replay session; stored MB are not a separate customer billing unit. Use recording rules to control which sessions are recorded.
 
 ## Limits
 
 - **Segment size**: ~1MB per segment. Larger sessions are split into multiple segments.
 - **Retention**: **30 days, fixed, on every plan.** It is the same on the free tier and on every paid replay pack, and it is not configurable. Two independent mechanisms both enforce 30 days: a TTL on the `rum_replay_segments` index and a flat 30-day expiry rule on the S3 bucket holding the recordings. Buying a larger replay pack raises the number of sessions you can record, not how long they are kept.
-- **Replay can be 10–100× the cost of plain RUM** depending on session length and DOM complexity. Filter aggressively.
+- **Usage**: Replay has its own session allowance, separate from Observe and Analyze. See [capture and billing](/sdk/v2/#capture-and-billing).
 
 ## See also
 

@@ -394,7 +394,8 @@ export default defineConfig({
 					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'sdk/overview' },
-						{ label: 'Reference', slug: 'sdk/reference' },
+						{ label: 'SDK 2 installation and reference', slug: 'sdk/v2' },
+						{ label: 'SDK 1 reference', slug: 'sdk/reference' },
 					],
 				},
 				...openAPISidebarGroups,
