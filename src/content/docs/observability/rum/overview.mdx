@@ -1,7 +1,7 @@
 ---
 title: RUM (Real User Monitoring)
 description: Web vitals, errors, user actions, resource timing, collected from real browsers via the JS SDK, optionally with session replay.
-last_verified: 2026-10-03
+last_verified: 2026-10-04
 owner: jj
 ---
 
@@ -37,7 +37,7 @@ The SDK is **two layers**:
 - **Always-on collection** of page views, Web Vitals and errors (with their stacks), sent on every session.
 - **Detail collection** (resource timings, click events with frustration signals, long tasks), activated only when a [recording rule](/observability/rum/how-to/session-filters/) matches the session. Keeps cost down by not capturing every detail for every user.
 
-[Session replay](/observability/replay/overview/) is the third tier: pixel playback, activated only by recording rules with `capture_replay: true`. A new application has no rules, so replay stays off until you add one. See its own page.
+[Session replay](/observability/replay/overview/) is the third tier: pixel playback, activated only by Replay recording rules. A new application starts with a rule that replays every errored session and an Auto sample within your replay quota. See its own page.
 
 ## RUM application
 
@@ -46,7 +46,7 @@ Each install of the SDK targets a **RUM application**, typically one per domain 
 - A unique `application_id` and a public `client_token`.
 - A `domain` for the dashboard's "Open in app" links.
 - Privacy settings (`mask_inputs`, `mask_text`).
-- Recording rules that activate detail/replay capture (the API calls them session filters).
+- Recording rules that activate detail and replay capture.
 - [Excluded resources](/observability/rum/how-to/remote-config/#excluded-resources): resource URLs it never records.
 
 Create one in **RUM → New application**.
@@ -95,7 +95,7 @@ For static sites, paste this into the page's `<head>`:
 </script>
 ```
 
-The snippet loads the SDK asynchronously, queues calls and captures errors until it arrives, then replays them. It is a classic script and defines a single global, `SiteQwalityRUM`. The replay recorder is a separate file loaded only when a recording rule with `capture_replay: true` matches, so sessions that are not replayed never download it.
+The snippet loads the SDK asynchronously, queues calls and captures errors until it arrives, then replays them. It is a classic script and defines a single global, `SiteQwalityRUM`. The replay recorder is a separate file loaded only when a Replay recording rule matches, so sessions that are not replayed never download it.
 
 `init()` is fire-and-forget: collection starts synchronously, and the Promise it returns (settled once remote config is applied or fails) never needs an `await`.
 

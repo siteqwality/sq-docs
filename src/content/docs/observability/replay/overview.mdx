@@ -1,7 +1,7 @@
 ---
 title: Session Replay
-description: Pixel-perfect playback of user sessions, recorded by the RUM SDK and activated only by recording rules with capture_replay.
-last_verified: 2026-10-03
+description: Pixel-perfect playback of user sessions, recorded by the RUM SDK and activated only by Replay recording rules.
+last_verified: 2026-10-04
 owner: jj
 ---
 
@@ -42,9 +42,9 @@ Playback in the dashboard:
 
 ## Activation
 
-Replay is **off by default**. A new application has no recording rules, so nothing is replayed until you add a [recording rule](/observability/rum/how-to/session-filters/) with `capture_replay: true`. Until then the Sessions page shows a banner saying replay is off.
+Replay records only sessions that match a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application starts with **Errored sessions**, which replays every session with an error, and an Auto sample that stays within your replay quota. An application created before recording rules v2 keeps the rules copied from its session filters, and replays nothing if it had none.
 
-The SDK evaluates rules immediately: when its config loads or refreshes, and after every sent error, Web Vital, action and `setUser` call. Once replay activates for a session, it records from that moment onward, not from session start. An `error` rule's replay therefore starts at the error. On later page loads in the same session and tab, recording resumes from the start of each page once the config loads, as long as an enabled rule still has `capture_replay: true`.
+SDK 1.x evaluates rules immediately: when its config loads or refreshes, and after every sent error, Web Vital, action and `setUser` call. Once replay activates for a session, it records from that moment onward, not from session start. An error rule's replay therefore starts at the error. On later page loads in the same session and tab, recording resumes from the start of each page once the config loads, as long as an enabled Replay rule still applies. SDK 1.x applies only full-rate rules it can express; see [SDK versions](/observability/rum/how-to/session-filters/#sdk-versions).
 
 <Aside type="caution" title="Nothing is buffered before the trigger">
 There is no pre-trigger buffer yet. The recorder is lazy-loaded: the SDK only fetches it once a replay rule matches, so nothing is being recorded, or even downloaded, before that moment. Playback starts at the activation point and never includes the lead-up to it.
