@@ -120,8 +120,10 @@ SDK 2.0 reads `https://cdn.siteqwality.com/rum/config/v2/{app_id}.json`, publish
 
 | Param | Description |
 |---|---|
-| `from`, `to` | Time range (required). |
-| `country`, `browser`, `os`, `device_type`, `url` | Optional filters (see conventions). |
+| `from`, `to` | Time range. Default: the 30 days ending now; maximum 90 days. |
+| `f`, `country`, `browser`, `os`, `device_type`, `url` | Repeated shared Analytics filters or legacy filters (see conventions). |
+| `device_class` | `all`, `desktop` or `mobile`; mobile includes tablets. |
+| `compare` | `previous` adds the preceding equal-length interval under `previous`. |
 
 | Field | Description |
 |---|---|
@@ -130,7 +132,9 @@ SDK 2.0 reads `https://cdn.siteqwality.com/rum/config/v2/{app_id}.json`, publish
 | `error_count`, `error_rate` | Error events in the range, and errors per session. |
 | `error_session_count`, `error_session_rate` | Sessions counted in `session_count` that have an error event in the range, and their share of `session_count` (0 to 1). |
 | `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `p75_fcp_ms`, `p75_ttfb_ms` | p75 per vital; `null` with no samples. |
-| `vitals_sample_rate` | Share of page views the p75 values, `vitals_distribution` and top page vitals were computed from: `1` up to 400,000 page views in the range, otherwise an even sample with counts scaled back up. |
+| `vitals_sample_rate` | `1` for the current per-view aggregation. |
+| `visitor_count`, `bounce_rate`, `median_active_ms` | Visitors, the fraction of one-view sessions with known active time below 10 seconds, and nullable median active time. |
+| `session_query` | Query string for Sessions that preserves this analytics cohort and its filters. |
 | `vitals_distribution` | Per vital (`lcp`, `inp`, `cls`, `fcp`, `ttfb`): `samples`, `good`, `needs_improvement`, `poor` page-view counts, using the [thresholds](/observability/rum/overview/#in-the-dashboard). |
 | `avg_lcp_ms`, `avg_fcp_ms`, `avg_cls`, `avg_inp_ms`, `avg_ttfb_ms` | Deprecated. Means of the per-view values; prefer the p75 fields. |
 | `top_pages` | Top 10 URLs by page views: `url`, `view_count`, `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `p75_load_time_ms` (initial loads only), `vitals_samples`, and the deprecated `avg_lcp_ms`, `avg_load_time_ms`. |
@@ -141,12 +145,44 @@ SDK 2.0 reads `https://cdn.siteqwality.com/rum/config/v2/{app_id}.json`, publish
 
 | Param | Description |
 |---|---|
-| `from`, `to` | Time range (required). |
+| `from`, `to` | Time range. Default: the 30 days ending now; maximum 90 days. |
 | `vital` | `lcp` (default), `inp`, `cls`, `fcp` or `ttfb`. |
 | `interval`, `tz` | Bucket size and zone (see conventions). |
 | `country`, `browser`, `os`, `device_type`, `url` | Optional filters, as on the overview. |
 
-Each point carries `timestamp`, `p50`, `p75`, `p95` and `count` (page views). A page view lands in the bucket of its last valid sample. Buckets without samples are left out. Above 400,000 page views in the range, points come from the same even sample as the overview, with `count` scaled back up.
+Each point carries `timestamp`, `p50`, `p75`, `p95` and `count` (page views). A page view lands in the bucket of its last valid sample. Buckets without samples are left out. Latest valid values are selected by sequence and timestamp. A valid vital update inside the range can contribute even when the view started earlier.
+
+### Traffic, panels, pages and attribution
+
+These endpoints accept the Overview range and Analytics filters. Requests that exceed the query time budget return 503. See [analytics investigations](/observability/rum/how-to/analytics/).
+
+| Endpoint | Parameters and response |
+|---|---|
+| `GET /rum/{app_id}/timeseries` | `metric=sessions\|views\|errors\|sessions_with_errors_pct`, `interval`, `tz`. Returns `{timestamp,value}[]`; only the percentage metric uses 0..100. |
+| `GET /rum/{app_id}/panels/{panel}` | `routes`, `entry`, `exit`, `referrers`, `channels`, `utm`, `countries`, `devices`, `browsers`, `os`, `releases`, `frustration_elements`. Returns values, view/session/error counts, frustration counters and `session_query`. |
+| `GET /rum/{app_id}/pages` | `group_by=route\|path`. Returns route, view/session counts, nullable p75 vitals and load times, error rate and `session_query`. |
+| `GET /rum/{app_id}/pages/attribution` | `metric=lcp\|inp\|cls`, optional exact `route`. Returns `targets`, `scripts` and `resources`, including sample counts, percentiles, example session IDs and `session_query`. |
+
+Panels and Pages accept `limit` (default 50, maximum 100) and `offset` (maximum 10000). Attribution accepts the same limit. Target `poor_share` is a fraction of all poor samples in the cohort. Resource rows expose `approximate` when representative resource timings were aggregated by the SDK.
+
+Use the returned `session_query` verbatim for Sessions. Retain its opaque `cohort` parameter during pagination or sorting so the Sessions total matches the source row for unchanged data.
+
+### Saved views and comments
+
+See [saved views and comments](/observability/rum/how-to/collaboration/) for authorship, privacy, mention and queue-failure behavior.
+
+| Endpoint | Contract |
+|---|---|
+| `GET /rum/{app_id}/views` | Optional `page=sessions\|errors\|overview\|pages`; returns visible shared and own private views. |
+| `POST /rum/{app_id}/views` | `page`, `name`, `query`, optional `shared` (default true) and `position` (default 0). Returns 201 and the saved view. |
+| `PUT /rum/{app_id}/views/{id}` | Replaces editable fields. Author, or administrator for shared views. |
+| `DELETE /rum/{app_id}/views/{id}` | Deletes an accessible owned/shared-admin view; returns 204. |
+| `GET /rum/{app_id}/comments` | Required `target=session:<UUID>` or `error:<32hex>`, optional `limit` (default 50, maximum 100) and `cursor`. Returns `{comments,next_cursor}`, oldest first. |
+| `POST /rum/{app_id}/comments` | `target`, plain-text `body`, optional session `at_ms` and account user UUID `mentions`. Returns 201 and the comment. |
+| `PATCH /rum/{app_id}/comments/{id}` | Changes `body`, `mentions` or `resolved`. Author or administrator only. |
+| `DELETE /rum/{app_id}/comments/{id}` | Clears and soft-deletes the comment; returns 204. |
+
+Saved views and comments include `can_edit`. Comment writes include `mention_delivery: {queued,failed}`. A notification failure does not undo the saved comment. Queued is transport acceptance, not inbox delivery. Viewer/auditor roles and machine-only callers cannot write collaboration records.
 
 ### `GET /rum/{app_id}/sessions`
 
