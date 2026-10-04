@@ -1,0 +1,62 @@
+---
+title: Alert on browser errors
+description: Configure issue lifecycle and threshold alerts using existing SiteQwality notification groups.
+---
+
+:::caution[Phase4 release gate]
+These RUM rules require the deployed Phase4 backend, dashboard and validated issue-tick schedule. This guide is a release candidate and does not announce availability.
+:::
+
+Use issue alerts to detect a new bug, a resolved bug returning, or a sharp increase in an existing issue. Threshold and metric rules evaluate a time window. Delivery uses your existing SiteQwality notification groups and channels, with existing plan limits.
+
+## Choose a trigger
+
+| Trigger | Meaning |
+| --- | --- |
+| New issue | A fingerprint is first observed. |
+| Regression | A resolved issue occurs again after resolution, subject to its resolution mode. |
+| Escalating | The trailing-hour count exceeds 10 and five times the trailing seven-day hourly average. |
+| Threshold | Error events, affected users, or percentage of sessions affected. |
+| Metric | p75 LCP, p75 INP, p75 CLS, sessions with errors, or failed requests. |
+
+Filter issue rules by supported Errors dimensions and metric rules by Analytics dimensions. Filters can restrict a rule to a release, environment or route. An action interval controls repeated delivery, defaulting to one hour. Five or more matching new issues in the same rule and minute are grouped into one digest.
+
+## Issue workflow
+
+Resolve now to reopen as a regression when a later error occurs. Resolve in the next release waits for an observed release after resolution. Creating a source-map release alone does not count as that release being observed.
+
+Ignore indefinitely or until a date, event count or escalation condition. Suppress to stop future collection through application configuration. Assign, bulk-update and merge related issues in the issue workflow. Merging preserves aliases and combines session/user counts without double-counting them.
+
+Open issues auto-resolve after the application's configured inactive period, default 14 days. Setting that period to null disables automatic resolution. New issues become ongoing after seven days.
+
+## API example
+
+Use the existing `/alert-rules` API with `kind: "rum"`:
+
+```json
+{
+  "name": "New checkout issues",
+  "kind": "rum",
+  "threshold": 1,
+  "query": {
+    "type": "rum",
+    "application_id": "00000000-0000-4000-8000-000000000001",
+    "trigger": "new_issue",
+    "filters": ["route:eq:/checkout"],
+    "action_interval_seconds": 3600
+  },
+  "group_notification_ids": []
+}
+```
+
+Replace the application ID and add your notification-group IDs. Event triggers are `new_issue`, `regression` and `escalating`, with no measure. For `threshold`, set `measure` to `events`, `users` or `sessions_pct`. For `metric`, use `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `sessions_with_errors_pct` or `failed_request_pct`. Existing window, comparison and pending-duration fields apply to evaluated rules. Test a rule using `/alert-rules/{id}/test` before relying on it.
+
+Scoped API keys and M2M callers need both `write:logs` and `write:rum` for RUM rule changes, and both `read:logs` and `read:rum` for reads and evaluation tests. This reflects the existing alert-rule API scope plus RUM resource authorization. Application and notification groups must belong to your account.
+
+## Delivery and catch-up
+
+Lifecycle delivery uses these webhook event names: `rum.issue.created`, `rum.issue.regressed` and `rum.issue.escalating`. Evaluated rules emit `rum.alert.firing` and `rum.alert.resolved`.
+
+Initial catch-up reconstructs issue counts and activity without sending historical notifications. Lifecycle notifications require a triggering occurrence in the tick's recent two-minute window and after the rule was created. An outage longer than that window does not replay missed notifications. Previously pending deliveries can retry. Delivery is at least once, so receivers should tolerate duplicates.
+
+Quiet, ignored and suppressed issues have distinct meanings. Missing notifications can also mean the filter did not match, the action interval has not elapsed, the account is inactive, or the scheduler has not been enabled. Check the rule and notification group before changing collection settings.
