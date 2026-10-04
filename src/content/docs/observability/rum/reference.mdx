@@ -149,7 +149,7 @@ Each point carries `timestamp`, `p50`, `p75`, `p95` and `count` (page views). A 
 
 ### `GET /rum/{app_id}/sessions`
 
-A session is listed when it **started** in `[from, to]` and has at least one page view. Its counts, `first_seen`, `last_seen` and duration cover its whole life, not only the part inside the range. Sessions come from a per-session rollup kept at ingest, so the list stays fast over 90 days.
+A session is listed when it has a measure in `[from, to]` and at least one page view in the extended range (four hours either side), as in the Wave 1 contract. Its counts, `first_seen`, `last_seen` and duration cover its whole life, not only the part inside the range. Session metadata comes from a per-session rollup kept at ingest.
 
 | Param | Description |
 |---|---|
@@ -226,7 +226,7 @@ Every event carries `id`, `kind`, `t`, `offset_ms` (from the session's start), `
 
 #### Body access
 
-Request and response bodies and headers, console messages, error breadcrumbs, and the message and title of errors captured from the console need body access. People have it unless the account limits it to admins. API keys and M2M clients need the `read:rum_replay` scope, even unrestricted keys; connected apps never get it. Without access those fields are left out (in the summary, such error messages are empty), they cannot be searched or filtered on, and `bodies_withheld` is `true`. A response that shows any of them is recorded in the [audit log](/enterprise/audit-log/) as `rum.network_body.viewed`, once per person, key or client and session every 30 minutes.
+Request and response bodies and headers, console messages, error breadcrumbs, and the message, title, stack and cause of errors captured from the console need body access. People have it unless the account limits it to admins. API keys and M2M clients need the `read:rum_replay` scope, even unrestricted keys; connected apps never get it. Without access those fields are left out (in the summary, such error messages are empty), they cannot be searched or filtered on, and `bodies_withheld` is `true`. A response that shows any of them is recorded in the [audit log](/enterprise/audit-log/) as `rum.network_body.viewed`, once per person, key or client and session every 30 minutes.
 
 ### `GET /rum/{app_id}/errors`
 
@@ -253,7 +253,7 @@ Adds `session_count` and `affected_session_count` (equal). `affected_sessions` l
 
 ### `GET /rum/{app_id}/facets`
 
-The values the session filters can take, with session counts: up to 50 non-empty values per list, by listed sessions that started in the range.
+The values the session filters can take, with session counts: up to 50 non-empty values per list, by listed sessions active in the range.
 
 | Param | Description |
 |---|---|
