@@ -1,7 +1,7 @@
 ---
 title: Customer audit log
 description: Every change made through the dashboard, the API or an AI assistant, with who made it, readable for the last 90 days.
-last_verified: 2026-09-28
+last_verified: 2026-10-04
 owner: jj
 ---
 
@@ -17,7 +17,7 @@ Find it under **Account → Audit Log**. Only **super admins, admins, and audito
 
 **Not recorded:**
 
-- **Reads.** `GET` requests are never logged. Nothing tells you who *looked* at something, only who changed it. A handful of read endpoints that use `POST` purely to carry a request body (the dashboard's batch monitor lookup, the log-parser test preview, the consent page loading what an AI assistant is asking for) are treated as reads and excluded too.
+- **Reads.** `GET` requests are not logged, so the log tells you who changed something, not who *looked* at it. The one exception is session replay: every view is recorded as `rum.replay.viewed` (see [who watched](/observability/replay/reference/#who-watched)). A handful of read endpoints that use `POST` purely to carry a request body (the dashboard's batch monitor lookup, the log-parser test preview, the consent page loading what an AI assistant is asking for) are treated as reads and excluded too.
 - **Unauthenticated requests**, including ones whose credentials were rejected.
 - **SiteQwality staff actions**, which live in a separate internal audit log. Staff acting *as* one of your users through impersonation do appear here, marked as such.
 
@@ -61,6 +61,7 @@ Each entry carries:
 | `POST /account/m2m_client` | `account.m2m_client` |
 | `POST /oauth/authorize` (a member allowing or refusing an AI assistant) | `oauth.authorize` |
 | `DELETE /account/connected_apps/{id}` (a member disconnecting an AI assistant) | `account.connected_apps` |
+| `GET /rum/{app_id}/sessions/{session_id}/replay` (watching a replay, at most once per viewer per 30 minutes) | `rum.replay.viewed` |
 
 The verb lives in `http_method`, so filter on both when you want "who deleted a monitor" rather than "who touched monitors".
 
@@ -114,7 +115,7 @@ Worth being precise about what that does and does not mean: **rows older than 90
 
 ## Reliability
 
-Audit writes are best-effort. If a write fails, the underlying request still succeeds and the failure is logged internally rather than surfaced to you.
+Audit writes are best-effort. If a write fails, the underlying request still succeeds and the failure is logged internally rather than surfaced to you. Replay views are the exception: a replay is not served unless its view was recorded.
 
 That means the log is an excellent record and not a guaranteed-complete ledger. It is designed so that auditing can never take your account down.
 

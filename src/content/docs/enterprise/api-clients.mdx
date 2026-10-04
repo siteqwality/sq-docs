@@ -1,7 +1,7 @@
 ---
 title: M2M API clients
 description: OAuth2 client-credentials access with scoped permissions, one-time secrets, rotation, and immediate revocation.
-last_verified: 2026-08-02
+last_verified: 2026-10-04
 owner: jj
 ---
 
@@ -112,6 +112,8 @@ Scopes are `read:<family>` or `write:<family>`. Nine families exist:
 | `dashboards` | Dashboards and widgets |
 
 `write` covers `POST`, `PUT`, `PATCH` and `DELETE`. Everything else is `read`. **Granting `write` does not imply `read`**; if a client needs both, grant both.
+
+One scope sits outside the families: `read:rum_replay` lets a client watch [session replays](/observability/replay/reference/#who-can-watch-a-replay). It is never implied, not by `read:rum` and not by a key with no scope list, so a client that downloads replays needs both `read:rum` and `read:rum_replay`.
 
 <Aside type="caution" title="Anything outside those nine families is refused">
 Scope checking is fail-closed. Account management, billing, authentication, staff endpoints, webhooks, per-user settings and services are **not** covered by any family, so an M2M client gets a `403` on them no matter what scopes it holds.
