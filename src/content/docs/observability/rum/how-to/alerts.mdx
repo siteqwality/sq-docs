@@ -3,11 +3,11 @@ title: Alert on browser errors
 description: Configure issue lifecycle and threshold alerts using existing SiteQwality notification groups.
 ---
 
-:::caution[Phase4 release gate]
-These RUM rules require the deployed Phase4 backend, dashboard and validated issue-tick schedule. This guide is a release candidate and does not announce availability.
-:::
-
 Use issue alerts to detect a new bug, a resolved bug returning, or a sharp increase in an existing issue. Threshold and metric rules evaluate a time window. Delivery uses your existing SiteQwality notification groups and channels, with existing plan limits.
+
+## Create a rule
+
+In Alerts, create a rule with type **RUM**, select your application, and choose a trigger. Add filters and a notification group, then save the enabled rule. Capturing errors does not automatically create a notification rule. Viewers and read-only impersonation sessions cannot change rules or issue status.
 
 ## Choose a trigger
 
@@ -19,13 +19,13 @@ Use issue alerts to detect a new bug, a resolved bug returning, or a sharp incre
 | Threshold | Error events, affected users, or percentage of sessions affected. |
 | Metric | p75 LCP, p75 INP, p75 CLS, sessions with errors, or failed requests. |
 
-Filter issue rules by supported Errors dimensions and metric rules by Analytics dimensions. Filters can restrict a rule to a release, environment or route. An action interval controls repeated delivery, defaulting to one hour. Five or more matching new issues in the same rule and minute are grouped into one digest.
+Filter issue rules by supported Errors dimensions and metric rules by Analytics dimensions. Filters can restrict a rule to a release, environment or route. For lifecycle triggers, an action interval controls repeated delivery for the same rule and issue, defaulting to one hour. Five or more matching new issues in the same rule and minute are grouped into one digest.
 
 ## Issue workflow
 
 Resolve now to reopen as a regression when a later error occurs. Resolve in the next release waits for an observed release after resolution. Creating a source-map release alone does not count as that release being observed.
 
-Ignore indefinitely or until a date, event count or escalation condition. Suppress to stop future collection through application configuration. Assign, bulk-update and merge related issues in the issue workflow. Merging preserves aliases and combines session/user counts without double-counting them.
+Ignore indefinitely or until a date, event count or escalation condition. Suppress capture updates application configuration so a supporting SDK can drop matching errors after refreshing that configuration. It does not delete existing occurrences. Assign, bulk-update and merge related issues in the issue workflow. Merging preserves aliases and combines session/user counts without double-counting them.
 
 Open issues auto-resolve after the application's configured inactive period, default 14 days. Setting that period to null disables automatic resolution. New issues become ongoing after seven days.
 
@@ -49,7 +49,9 @@ Use the existing `/alert-rules` API with `kind: "rum"`:
 }
 ```
 
-Replace the application ID and add your notification-group IDs. Event triggers are `new_issue`, `regression` and `escalating`, with no measure. For `threshold`, set `measure` to `events`, `users` or `sessions_pct`. For `metric`, use `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `sessions_with_errors_pct` or `failed_request_pct`. Existing window, comparison and pending-duration fields apply to evaluated rules. Test a rule using `/alert-rules/{id}/test` before relying on it.
+Replace the application ID and add your notification-group IDs. Event triggers are `new_issue`, `regression` and `escalating`, with no measure. For `threshold`, set `measure` to `events`, `users` or `sessions_pct`. For `metric`, use `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `sessions_with_errors_pct` or `failed_request_pct`. Existing window, comparison and pending-duration fields apply to evaluated rules. Percent measures use a 0–100 scale; LCP and INP use milliseconds, and CLS is unitless. The threshold measure `sessions_pct` compares matching error sessions with all application sessions in the window. The metric `sessions_with_errors_pct` applies Analytics filters to the measured view population.
+
+`POST /alert-rules/{id}/test` evaluates threshold and metric rules without sending notifications. Lifecycle rules (`new_issue`, `regression`, `escalating`) return no evaluation value and do not simulate an issue event or send a test notification. Verify notification-channel setup separately.
 
 Scoped API keys and M2M callers need both `write:logs` and `write:rum` for RUM rule changes, and both `read:logs` and `read:rum` for reads and evaluation tests. This reflects the existing alert-rule API scope plus RUM resource authorization. Application and notification groups must belong to your account.
 

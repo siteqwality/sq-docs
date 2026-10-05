@@ -3,18 +3,20 @@ title: Upload source maps
 description: Match production JavaScript errors to original source with Debug IDs and private source maps.
 ---
 
-:::caution[Phase4 release gate]
-This guide describes the Phase4 release candidate. The CLI and bundler packages are not yet published to npm. Public installation and upload examples below require npm publication and the deployed Phase4 backend. Until then, use the existing release-based upload API or locally packed tooling for a canary.
-:::
-
 Source maps translate generated JavaScript locations into original files, functions and lines. Debug IDs identify the exact emitted bundle independently of its URL or release name. Source maps remain included on every plan.
+
+## SDK compatibility
+
+Debug ID capture is supported by SDK **2.1.0**. Its npm rollout tag is `next`; the `latest` tag still selects SDK 1. Follow the [SDK 2 rollout and installation guide](/sdk/v2/) before changing your browser SDK. CLI or bundler installation alone does not upgrade the browser SDK or enable Debug ID capture.
+
+For errors without a Debug ID, matching by the SDK's configured release and generated bundle filename remains supported. Keep the SDK release value and uploaded release version aligned.
 
 ## Build and inject
 
-After publication, install the CLI with Node.js 22 or newer:
+Install the published CLI with Node.js 22 or newer:
 
 ```sh
-npm install --save-dev @siteqwality/cli
+npm install --save-dev @siteqwality/cli@0.1.0
 npm run build
 npx siteqwality sourcemaps inject ./dist
 ```
@@ -43,10 +45,10 @@ Without a release, uploads use the reserved `__debug_id__` release and require D
 
 ## Bundler adapters
 
-After publication:
+Install the published bundler adapters with Node.js 22 or newer:
 
 ```sh
-npm install --save-dev @siteqwality/unplugin
+npm install --save-dev @siteqwality/unplugin@0.1.0
 ```
 
 Vite example:
@@ -71,7 +73,7 @@ API requests use `Authorization: Bearer <API_KEY>` and `Content-Type: applicatio
 
 1. Create or reuse a release with `POST /releases` and `{"version":"web-v1"}`.
 2. Call `POST /releases/web-v1/sourcemaps` with the batch shown below.
-3. PUT the exact bytes to each returned `upload_url`, using every returned header. Do not send API authorization to storage.
+3. PUT the exact bytes to each returned `data.files[].upload_url` within its 300-second lifetime, using every returned header and the declared byte length. Do not send API authorization to storage.
 4. Call `POST /sourcemaps/confirm` with `{ "ids": ["returned-upload-uuid"] }`.
 
 ```json
@@ -86,7 +88,7 @@ API requests use `Authorization: Bearer <API_KEY>` and `Content-Type: applicatio
 }
 ```
 
-`size_bytes` is the exact uploaded size, including gzip encoding. Filenames identify source maps and may include a relative directory, such as `assets/main.js.map`. Pending uploads are excluded from symbolication until confirmation succeeds. The original single-map `POST /releases/{version}/sourcemaps` endpoint remains compatible with existing release/filename integrations.
+`size_bytes` is the exact uploaded size, including gzip encoding. Use a byte buffer or Blob so the HTTP client supplies Content-Length, or set it when streaming from a CLI. URL-encode release versions in path segments. Filenames identify source maps and may include a relative directory, such as `assets/main.js.map`. Pending uploads are excluded from symbolication until confirmation succeeds. The original single-map `POST /releases/{version}/sourcemaps` endpoint remains compatible with existing release/filename integrations.
 
 ## Late maps and troubleshooting
 
