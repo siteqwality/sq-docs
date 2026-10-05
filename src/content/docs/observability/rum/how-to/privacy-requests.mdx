@@ -1,12 +1,12 @@
 ---
 title: Delete a subject's RUM data
-description: Candidate admin API for scoped erasure, optional do-not-record and shorter replay retention.
+description: Admin API for scoped erasure, optional do-not-record and shorter replay retention, with rollout verification limits.
 last_verified: 2026-10-04
 owner: jj
 ---
 
-:::caution[Privacy cleanup verification pending]
-The identity check is live over GET and POST. The privacy writer guards and cleanup worker have been deployed, but the admin API rollout and full production cleanup verification are still pending. This guide describes the reviewed deletion and retention contract, not a completed production erasure. Do not treat a successful identity check, settings save or queued deletion as proof that stored data has been removed. Until the full rollout is confirmed, request erasure through support.
+:::caution[Live API; production erasure verification pending]
+The admin API, identity routes and privacy writer guards are live. The cleanup schedule is enabled every five minutes. Deletion and retention workers passed local integration tests; production verification has covered a no-op maintenance run, not erasure of customer data. Do not treat a successful identity check, settings save or queued deletion as proof that stored data has been removed. Track each request through its status and confirmed counts; contact support for help with an erasure request.
 :::
 
 ## Request erasure
@@ -27,7 +27,7 @@ Generate a fresh UUID for `id`. Reuse it when retrying the same request; changin
 
 Omit `application_id` to capture all applications currently owned by your account, up to 1,000. An account with more applications must submit one application at a time. An unknown or foreign application returns `404`. The captured scope does not grow when an application is created later.
 
-A `202` response confirms that the request is queued. The scheduled worker is intended to start within 15 minutes; the completion target is 24 hours and the escalation deadline is seven days. Check the returned deadlines and status. An interrupted writer can delay cleanup while its durable write intent expires.
+A `202` response confirms that the request is queued. The scheduled worker is intended to start within 15 minutes; the completion target is 24 hours and the escalation deadline is seven days. These are operational targets, not a guaranteed 24-hour SLA. Check the returned deadlines and status. An interrupted writer can delay cleanup while its durable write intent expires.
 
 ## Track the result
 
@@ -58,7 +58,7 @@ Use the existing [CSP and proxy guide](/observability/rum/how-to/csp/) for SDK h
 
 ## Shorten retention
 
-The candidate settings API accepts this admin-only patch:
+The settings API accepts this admin-only patch:
 
 ```json
 {

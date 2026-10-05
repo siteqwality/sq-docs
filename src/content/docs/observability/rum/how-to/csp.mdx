@@ -49,4 +49,4 @@ curl -i -X OPTIONS https://in-replay.siteqwality.com/v2/segments \
 
 Check the response permits all three headers and your origin. This proves only the preflight response, not authenticated intake or replay playback. In the browser, verify that the config GET succeeds and that the event and replay POSTs reach the correct hosts without CSP or CORS errors. A replay 403 can mean your application is not enabled for v2, an origin is refused or the token is invalid. Do not retry by moving authentication into the URL.
 
-For candidate deletion, DNR and retention controls, see [privacy requests](/observability/rum/how-to/privacy-requests/). Working identity routes do not establish completion of production deletion or retention cleanup.
+For deletion, DNR and retention controls and their verification limits, see [privacy requests](/observability/rum/how-to/privacy-requests/). Working identity routes do not establish completion of production deletion or retention cleanup.
