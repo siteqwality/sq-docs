@@ -1,0 +1,64 @@
+---
+title: Alert on browser errors
+description: Configure issue lifecycle and threshold alerts using existing SiteQwality notification groups.
+---
+
+Use issue alerts to detect a new bug, a resolved bug returning, or a sharp increase in an existing issue. Threshold and metric rules evaluate a time window. Delivery uses your existing SiteQwality notification groups and channels, with existing plan limits.
+
+## Create a rule
+
+In Alerts, create a rule with type **RUM**, select your application, and choose a trigger. Add filters and a notification group, then save the enabled rule. Capturing errors does not automatically create a notification rule. Viewers and read-only impersonation sessions cannot change rules or issue status.
+
+## Choose a trigger
+
+| Trigger | Meaning |
+| --- | --- |
+| New issue | A fingerprint is first observed. |
+| Regression | A resolved issue occurs again after resolution, subject to its resolution mode. |
+| Escalating | The trailing-hour count exceeds 10 and five times the trailing seven-day hourly average. |
+| Threshold | Error events, affected users, or percentage of sessions affected. |
+| Metric | p75 LCP, p75 INP, p75 CLS, sessions with errors, or failed requests. |
+
+Filter issue rules by supported Errors dimensions and metric rules by Analytics dimensions. Filters can restrict a rule to a release, environment or route. For lifecycle triggers, an action interval controls repeated delivery for the same rule and issue, defaulting to one hour. Five or more matching new issues in the same rule and minute are grouped into one digest.
+
+## Issue workflow
+
+Resolve now to reopen as a regression when a later error occurs. Resolve in the next release waits for an observed release after resolution. Creating a source-map release alone does not count as that release being observed.
+
+Ignore indefinitely or until a date, event count or escalation condition. Suppress capture updates application configuration so a supporting SDK can drop matching errors after refreshing that configuration. It does not delete existing occurrences. Assign, bulk-update and merge related issues in the issue workflow. Merging preserves aliases and combines session/user counts without double-counting them.
+
+Open issues auto-resolve after the application's configured inactive period, default 14 days. Setting that period to null disables automatic resolution. New issues become ongoing after seven days.
+
+## API example
+
+Use the existing `/alert-rules` API with `kind: "rum"`:
+
+```json
+{
+  "name": "New checkout issues",
+  "kind": "rum",
+  "threshold": 1,
+  "query": {
+    "type": "rum",
+    "application_id": "00000000-0000-4000-8000-000000000001",
+    "trigger": "new_issue",
+    "filters": ["route:eq:/checkout"],
+    "action_interval_seconds": 3600
+  },
+  "group_notification_ids": []
+}
+```
+
+Replace the application ID and add your notification-group IDs. Event triggers are `new_issue`, `regression` and `escalating`, with no measure. For `threshold`, set `measure` to `events`, `users` or `sessions_pct`. For `metric`, use `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `sessions_with_errors_pct` or `failed_request_pct`. Existing window, comparison and pending-duration fields apply to evaluated rules. Percent measures use a 0–100 scale; LCP and INP use milliseconds, and CLS is unitless. The threshold measure `sessions_pct` compares matching error sessions with all application sessions in the window. The metric `sessions_with_errors_pct` applies Analytics filters to the measured view population.
+
+`POST /alert-rules/{id}/test` evaluates threshold and metric rules without sending notifications. Lifecycle rules (`new_issue`, `regression`, `escalating`) return no evaluation value and do not simulate an issue event or send a test notification. Verify notification-channel setup separately.
+
+Scoped API keys and M2M callers need both `write:logs` and `write:rum` for RUM rule changes, and both `read:logs` and `read:rum` for reads and evaluation tests. This reflects the existing alert-rule API scope plus RUM resource authorization. Application and notification groups must belong to your account.
+
+## Delivery and catch-up
+
+Lifecycle delivery uses these webhook event names: `rum.issue.created`, `rum.issue.regressed` and `rum.issue.escalating`. Evaluated rules emit `rum.alert.firing` and `rum.alert.resolved`.
+
+Initial catch-up reconstructs issue counts and activity without sending historical notifications. Lifecycle notifications require a triggering occurrence in the tick's recent two-minute window and after the rule was created. An outage longer than that window does not replay missed notifications. Previously pending deliveries can retry. Delivery is at least once, so receivers should tolerate duplicates.
+
+Quiet, ignored and suppressed issues have distinct meanings. Missing notifications can also mean the filter did not match, the action interval has not elapsed, the account is inactive, or the scheduler has not been enabled. Check the rule and notification group before changing collection settings.
