@@ -145,7 +145,7 @@ There was **no backfill**: sessions recorded before each dimension shipped keep 
 
 ## In the dashboard
 
-**Overview** leads with LCP, INP and CLS at the 75th percentile (p75), each coloured by Google's thresholds, with a bar showing the share of page views rated good, needs improvement and poor. FCP and TTFB sit in a second row. Each page view counts once per vital, with its latest valid value; above 400,000 page views in the range, vitals come from an even sample of them. The top row shows sessions, page views, errors and the share of sessions with an error. **Sessions** counts only sessions with at least one page view, and the error numbers come from the error events themselves.
+**Overview** leads with LCP, INP and CLS at the 75th percentile (p75), each coloured by Google's thresholds, with a bar showing the share of page views rated good, needs improvement and poor. FCP and TTFB sit in a second row. Each page view counts once per vital, using its latest valid value ordered by sequence and timestamp. The top row shows sessions, page views, errors and the share of sessions with an error. **Sessions** counts only sessions with at least one page view, and the error numbers come from the error events themselves.
 
 | Vital | Good | Poor |
 |---|---|---|
@@ -166,9 +166,13 @@ Anything between the two is "needs improvement".
 **Errors** groups errors and shows events, sessions and identified users per group for the selected range. Search runs on the server across every group in the range. An error's page lists the affected sessions, and **View all sessions** opens Sessions filtered to that error. **Watch replay** appears only when the session has a replay, and opens it at the error.
 
 
+Overview also reports visitors, bounce rate and median active time, with comparison to the previous period. Pages separates initial loads from route changes and connects poor Web Vitals to recorded element, script and resource details. Save an investigation privately or share it with your account, and discuss sessions or issues in comments. The same features are available through the API.
+
 ## See also
 
 <CardGrid>
+  <LinkCard title="Analytics" description="Compare traffic, page performance and the matching sessions." href="/observability/rum/how-to/analytics/" />
+  <LinkCard title="Saved views and comments" description="Save filters, discuss a timestamp and mention teammates." href="/observability/rum/how-to/collaboration/" />
   <LinkCard title="Quickstart" description="Install the SDK in your app, see your first session." href="/observability/rum/quickstart/" />
   <LinkCard title="Source maps" description="Symbolicate JS errors with original source code." href="/observability/rum/how-to/source-maps/" />
   <LinkCard title="Dimensions" description="Segment by browser, OS, device and country." href="/observability/rum/how-to/dimensions/" />

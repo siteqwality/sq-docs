@@ -1,0 +1,46 @@
+---
+title: Save investigations and discuss sessions
+description: Share saved RUM views, comment at a session timestamp and mention teammates.
+last_verified: 2026-10-04
+owner: jj
+---
+
+Saved views preserve a page's query string so you can return to an investigation. Comments attach a discussion to a session or error issue within an application.
+
+## Saved views
+
+Save a query for Overview, Sessions, Errors or Pages. Give it a name and choose whether it is shared. Shared views are readable within the account; private views are visible only to their author. Only the author can edit a private view. The author or an account administrator can edit a shared view.
+
+The API accepts a query string, not a complete URL. It preserves filters and the selected range. A fixed range remains fixed when you reopen it. The query is at most 4096 characters; names are at most 128 characters.
+
+```http
+POST /rum/{app_id}/views
+Content-Type: application/json
+
+{"page":"sessions","name":"Checkout errors","query":"f=route:eq:/checkout&f=has_error:eq:true","shared":true}
+```
+
+List views with `GET /views`, optionally filtering by `page`. `PUT /views/{id}` replaces the editable fields; `DELETE /views/{id}` removes the saved view. These paths are relative to `/rum/{app_id}`.
+
+## Comments at a timestamp
+
+A comment target is `session:<UUID>` or `error:<fingerprint>`. Session comments can include `at_ms`, an absolute UTC epoch timestamp in milliseconds. Comment text is plain text, up to 10000 characters. An author or account administrator can edit, resolve, reopen or delete a comment. Deleted comments disappear from lists and their stored body and mentions are cleared.
+
+```http
+POST /rum/{app_id}/comments
+Content-Type: application/json
+
+{"target":"session:00000000-0000-0000-0000-000000000001","body":"The checkout stalls here.","at_ms":1791000000000,"mentions":[]}
+```
+
+List comments with `GET /comments?target=...`. Results are oldest first. Pass the returned `next_cursor` to retrieve the next page. Use `PATCH /comments/{id}` with `{"resolved":true}` to resolve, or `{"resolved":false}` to reopen. `DELETE /comments/{id}` returns 204.
+
+## Mentioning teammates
+
+The `mentions` array accepts up to 20 distinct account user IDs. Mention emails link to the comment and include the absolute timestamp for a session comment. Editing a comment notifies only newly added recipients; the person making the write is not notified about their own mention.
+
+A successful comment write returns `mention_delivery` with `queued` and `failed` counts. Queued means accepted by the notification transport, not delivered to an inbox. A queue failure does not undo the comment. Show the failure to the user and do not automatically repost the comment, which would duplicate the discussion.
+
+Collaboration writes require a named member or administrator. Viewer and auditor roles cannot write. Machine-only API keys and M2M clients can read shared records with the appropriate RUM scope, but cannot author them. Captured network and console bodies retain their separate access and audit rules.
+
+See the [RUM API reference](/observability/rum/reference/) for endpoint and response details.

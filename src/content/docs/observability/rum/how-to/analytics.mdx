@@ -1,0 +1,44 @@
+---
+title: Investigate performance with RUM analytics
+description: Compare traffic, inspect page performance and follow analytics results into matching sessions.
+last_verified: 2026-10-04
+owner: jj
+---
+
+RUM analytics connects aggregate traffic and performance results to the sessions behind them. Choose an application, time range and filters before comparing results. The default range is 30 days; a request can cover at most 90 days.
+
+## Overview and traffic
+
+Overview reports sessions, views, visitors, errors, bounce rate, median active time and Web Vitals. Compare with the previous period to use an equal-length, non-overlapping window. Desktop and mobile selectors combine with the other filters; mobile includes tablets.
+
+Bounce rate is the fraction of matching sessions with one matching view and known active time below 10 seconds. Missing active-time measurements are not treated as zero. Visitors use anonymous ID, then a retained user ID, then session ID when neither identity is available. Explicit user and anonymous-ID filters follow the Sessions 30-day identity boundary, including when opening sessions from an analytics row. Aggregate visitor counts use a separate policy.
+
+Traffic charts support sessions, views, errors and the percentage of sessions with errors. Daily buckets respect the selected timezone. Missing buckets are absent from the API response. Web Vitals charts include only valid samples and use the latest valid value for each view.
+
+## Pages and attribution
+
+Group Pages by normalized route or raw URL path. Each row includes views, sessions, error rate and p75 LCP, INP, CLS and loading times. Initial page loads and route changes have separate loading-time columns. A null percentile means no valid sample exists, not zero milliseconds.
+
+Document loads marked by the SDK remain separate samples even when their timings are equal. Repeated-timing deduplication applies only to unmarked legacy records.
+
+For LCP, INP or CLS, open attribution to inspect the elements associated with poor samples. Each row includes its share of poor samples and example sessions. Script rows report recorded Long Animation Frame script durations; resource rows report resource timing. An `approximate` flag identifies results based on representative SDK resource aggregates.
+
+## Dimensions and frustration
+
+Panels group matching activity by route, entry page, exit page, referrer, channel, UTM campaign, country, device, browser, operating system and release. Frustration elements show action targets with rage, dead and error clicks. Empty dimension values represent unknown values.
+
+Follow a result into Sessions using the returned `session_query`. Keep its opaque `cohort` parameter when changing sort or pagination. This preserves the originating analytics membership, including per-view filters. For unchanged data, the Sessions total agrees with the source row's session count. Continued ingestion can change counts between requests.
+
+An ordinary Sessions search can include later activity from a session whose page view preceded the selected range. Overview requires a view within the range. The cohort parameter preserves this distinction when navigating from analytics.
+
+## API examples
+
+```http
+GET /rum/{app_id}/overview?from=2026-10-01&to=2026-10-03&compare=previous&device_class=mobile
+GET /rum/{app_id}/timeseries?metric=views&interval=1h&tz=Europe/Rome
+GET /rum/{app_id}/panels/frustration_elements?limit=20
+GET /rum/{app_id}/pages?group_by=route&f=browser:eq:Firefox
+GET /rum/{app_id}/pages/attribution?metric=lcp&route=%2Fcheckout
+```
+
+Use repeated `f` parameters for multiple filters. Invalid filters or ranges return 400. A query that exceeds its time budget returns 503; narrow the range or filters before retrying. See the [RUM API reference](/observability/rum/reference/) and [saved views and comments](/observability/rum/how-to/collaboration/).
