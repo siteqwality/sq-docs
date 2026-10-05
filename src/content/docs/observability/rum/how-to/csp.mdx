@@ -30,7 +30,7 @@ During migration, retain the old hosts in `connect-src` until no cached pages or
 
 Set `ingestBase`, `replayBase` and `configBase` to your proxy's host bases. Forward:
 
-- Event `POST /v2/batch` to `in.siteqwality.com`. Forward identity checks using the method sent by your SDK: compatibility `GET /v2/identity?h=<hash>`, or candidate `POST /v2/identity` with a JSON body once the privacy backend rollout is enabled. Preserve the body and suppress identity query strings in proxy access logs.
+- Event `POST /v2/batch` to `in.siteqwality.com`. Forward identity checks using the method sent by your SDK: `GET /v2/identity?h=<hash>` (used by published SDK 2.1), or `POST /v2/identity` with a JSON body. Both routes are live. Preserve Authorization, Content-Type, the body and the private/no-store response; suppress identity query strings in proxy access logs.
 - Config `GET /rum/config/v2/<applicationId>.json` to `cdn.siteqwality.com`, without adding a token.
 - Replay `POST /v2/segments` to `in-replay.siteqwality.com`, preserving `Authorization`, `Content-Type`, `Origin` and `x-sq-replay-index`, and the original gzip or JSON body.
 
@@ -49,4 +49,4 @@ curl -i -X OPTIONS https://in-replay.siteqwality.com/v2/segments \
 
 Check the response permits all three headers and your origin. This proves only the preflight response, not authenticated intake or replay playback. In the browser, verify that the config GET succeeds and that the event and replay POSTs reach the correct hosts without CSP or CORS errors. A replay 403 can mean your application is not enabled for v2, an origin is refused or the token is invalid. Do not retry by moving authentication into the URL.
 
-For candidate deletion, DNR and retention controls, see [privacy requests](/observability/rum/how-to/privacy-requests/). A working proxy does not establish that the privacy worker is deployed.
+For candidate deletion, DNR and retention controls, see [privacy requests](/observability/rum/how-to/privacy-requests/). Working identity routes do not establish completion of production deletion or retention cleanup.

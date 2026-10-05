@@ -5,8 +5,8 @@ last_verified: 2026-10-04
 owner: jj
 ---
 
-:::caution[Rollout candidate]
-This guide describes the Phase 6 privacy implementation. Availability requires the reviewed database migration, API, both ingestors, compactor and scheduled privacy worker to be deployed together. Do not treat a successful settings save or a queued deletion as proof that stored data has been removed. Until rollout is confirmed, request erasure through support.
+:::caution[Privacy cleanup verification pending]
+The identity check is live over GET and POST. The privacy writer guards and cleanup worker have been deployed, but the admin API rollout and full production cleanup verification are still pending. This guide describes the reviewed deletion and retention contract, not a completed production erasure. Do not treat a successful identity check, settings save or queued deletion as proof that stored data has been removed. Until the full rollout is confirmed, request erasure through support.
 :::
 
 ## Request erasure
@@ -52,7 +52,7 @@ Permanent session tombstones prevent another upload or compaction of an erased s
 
 The SDK config sets `limits.dnr` after the DNR update is published. Intake also checks stored DNR state before writing, including replay requests whose session was previously linked to an identity. If that check is unavailable, intake returns a retryable failure instead of accepting recording data.
 
-For an identity check, SDK clients send the application-scoped SHA-256 hash. The candidate backend supports `POST /v2/identity` with `{"h":"<64 hex characters>"}` and the compatibility `GET /v2/identity?h=<hash>`. The response is `{"record":true}` or `{"record":false}` and is not cacheable. Keep GET query strings out of proxy access logs; a hash is still an identifier.
+For an identity check, SDK clients send the application-scoped SHA-256 hash. The intake supports `POST /v2/identity` with `{"h":"<64 hex characters>"}` and the compatibility `GET /v2/identity?h=<hash>`. Published SDK 2.1 uses GET, so proxies must retain it. Keep the bearer client token in `Authorization`; POST also requires `Content-Type: application/json`. The response is `{"record":true}` or `{"record":false}` with `Cache-Control: private, no-store`. Keep GET query strings out of proxy access logs; a hash is still an identifier. A successful check alone does not verify DNR publication or historical cleanup.
 
 Use the existing [CSP and proxy guide](/observability/rum/how-to/csp/) for SDK host allowlists, config fetches and replay preflights. A first-party proxy must preserve authorization, origin, request bodies, refusals and retry headers. A proxy does not replace consent, masking or allowed-origin checks.
 
