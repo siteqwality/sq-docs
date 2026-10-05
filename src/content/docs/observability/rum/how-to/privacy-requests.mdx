@@ -1,0 +1,79 @@
+---
+title: Delete a subject's RUM data
+description: Request RUM erasure, track its status, prevent further recording and shorten retention per application.
+last_verified: 2026-10-04
+owner: jj
+---
+
+Account admins can request erasure in **RUM → Settings → Data requests** or through the API. Choose an identifier and application scope, optionally select **Also add to do-not-record**, then review and confirm the request. The history shows status, deleted row and object counts, and timing.
+
+Deletion runs asynchronously. A queued request or saved retention setting does not mean cleanup has finished. Check the request status and counts before treating erasure as complete.
+
+## Request erasure
+
+An account admin, or an API key without scope restrictions, can submit `POST /rum/deletion-requests`. Keep privileged credentials on your server. These endpoints are deliberately unavailable through MCP, including `call_api`.
+
+```json
+{
+  "id": "11111111-1111-4111-8111-111111111111",
+  "application_id": "22222222-2222-4222-8222-222222222222",
+  "subject_kind": "user_id",
+  "subject_value": "customer-123",
+  "do_not_record": true
+}
+```
+
+Generate a fresh UUID for `id`. Reuse it when retrying the same request; changing its input returns `409`. Supported subjects are `user_id`, `user_email`, `anonymous_id` and `session_id`. Email matching trims surrounding whitespace and lowercases the address. Other identifiers match their stored values. A session ID must be a UUID.
+
+Omit `application_id` to capture all applications currently owned by your account, up to 1,000. An account with more applications must submit one application at a time. An unknown or foreign application returns `404`. The captured scope does not grow when an application is created later.
+
+A `202` response confirms that the request is queued. The completion target is 24 hours, with escalation after seven days. These are operational targets, not a guaranteed completion time. Check the returned deadlines and status; retries and in-flight uploads can delay cleanup.
+
+## Track the result
+
+- `GET /rum/deletion-requests/{id}` returns `pending`, `running`, `failed` or `done`, progress counts and deadlines.
+- `GET /rum/deletion-requests` returns the newest 50 requests. Pass the last returned ID as `?before=<id>` for the next page.
+- `failed` retains completed work and retries on subsequent scheduled passes. It is not a successful erasure result.
+- `done` means the captured applications finished discovery and cleanup. The submitted value is replaced with a hash in the request record. Request responses and history never return that value.
+
+Counts describe stored rows matched for erasure and acknowledged object removals, not unique events or users. A repeated request can report fewer rows because an earlier request already removed them. A retry within the same job keeps its saved counts. Deleting an application is blocked while a privacy request for it remains unfinished.
+
+## What is removed and retained
+
+Erasure resolves sessions from retained RUM data and the ingest identity registry. It removes those sessions' measures, events, replay indexes, compaction queue rows and session summaries. It removes raw recordings, compacted blocks and legacy replay objects. Session comments, usage deduplication records and stored identity links are removed too.
+
+Affected error and network aggregate buckets are rebuilt from surviving events. Error descriptions derived from erased events are cleared while issue workflow state remains. Application and account boundaries apply to every query and object key.
+
+Shared stylesheet assets retain their shared storage lifecycle. Audit records, aggregate billing usage and operational ingest/compactor statistics remain. They are not per-subject recording data. This endpoint does not delete an account, erase unrelated telemetry, purge backups or refund usage.
+
+Permanent session tombstones prevent another upload or compaction of an erased session. With `do_not_record: true`, an application-scoped identity hash also prevents future recording under the matching identifier. Without DNR, a later new session may be recorded again. DNR cannot recognize a person who changes all identifiers or stops sending an identifying field.
+
+## DNR and first-party proxies
+
+The SDK config sets `limits.dnr` after the DNR update is published. Intake also checks stored DNR state before writing, including replay requests whose session was previously linked to an identity. If that check is unavailable, intake returns a retryable failure instead of accepting recording data.
+
+For an identity check, SDK clients send the application-scoped SHA-256 hash. The intake supports `POST /v2/identity` with `{"h":"<64 hex characters>"}` and the compatibility `GET /v2/identity?h=<hash>`. Published SDK 2.1 uses GET, so proxies must retain it. Keep the bearer client token in `Authorization`; POST also requires `Content-Type: application/json`. The response is `{"record":true}` or `{"record":false}` with `Cache-Control: private, no-store`. Keep GET query strings out of proxy access logs; a hash is still an identifier. An identity check controls future recording; it does not report deletion progress.
+
+Use the existing [CSP and proxy guide](/observability/rum/how-to/csp/) for SDK host allowlists, config fetches and replay preflights. A first-party proxy must preserve authorization, origin, request bodies, refusals and retry headers. A proxy does not replace consent, masking or allowed-origin checks.
+
+## Shorten retention
+
+In **RUM → Settings → Data settings**, account admins can set the Observe, Analyze and Replay retention ceilings. Leave a ceiling empty to use the plan limit. Shortening a ceiling permanently removes older data asynchronously.
+
+The same settings are available through this admin-only API patch:
+
+```json
+{
+  "settings": {
+    "retention": {
+      "observe_days": 30,
+      "analyze_days": 14,
+      "session_replay_days": 7
+    }
+  }
+}
+```
+
+Send it to `PATCH /rum/{application_id}`. Observe and Analyze ceilings are positive day counts. Replay accepts 7, 14 or 30 days. Each value is capped by the account entitlement; it cannot purchase a longer window. `null` removes a customer ceiling and cannot restore data already erased.
+
+New writes use the current ceiling. Existing data is processed asynchronously by a durable retention job. Replay objects are removed or retagged before their indexes are shortened, and legacy objects receive an explicit cleanup pass. Shared assets keep their shared lifecycle. Shorter retention does not change subscription prices or recorded-session billing.
