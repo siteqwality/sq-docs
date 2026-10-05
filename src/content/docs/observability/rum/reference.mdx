@@ -113,7 +113,7 @@ SDK 2.0 reads `https://cdn.siteqwality.com/rum/config/v2/{app_id}.json`, publish
 | `url` | Case-insensitive substring of the page URL. |
 | Web Vitals | One value per page view (its latest valid value). Valid: `lcp_ms`, `fcp_ms`, `inp_ms`, `ttfb_ms` 0 to 600,000; `cls` 0 to 10. Anything else is ignored. Percentiles are approximate (t-digest). |
 | Text params | `search` and `url` are trimmed and capped at 200 characters; empty means absent. |
-| Session counts | `session_count`, `error_session_count`, the breakdowns and the facets are exact up to about 1,500 sessions and approximate above that, within about 0.2%. |
+| Session counts | `session_count`, `error_session_count` and the breakdowns are exact up to about 1,500 sessions and approximate above that, within about 0.2%. The session list's totals and the facets are exact. |
 
 ### `GET /rum/{app_id}/overview`
 
@@ -149,22 +149,84 @@ Each point carries `timestamp`, `p50`, `p75`, `p95` and `count` (page views). A 
 
 ### `GET /rum/{app_id}/sessions`
 
-A session is listed when it has a page view or vital in `[from, to]` and at least one page view. Its counts, `first_seen`, `last_seen` and duration cover its whole life (at most 4 hours), not only the part inside the range.
+A session is listed when it has a measure in `[from, to]` and at least one page view in the extended range (four hours either side), as in the Wave 1 contract. Its counts, `first_seen`, `last_seen` and duration cover its whole life, not only the part inside the range. Session metadata comes from a per-session rollup kept at ingest.
 
 | Param | Description |
 |---|---|
 | `from`, `to` | Time range. Default: the 30 days ending now. |
-| `search` | Case-insensitive match on part of any user ID or email the session carried, a session ID prefix, any visited URL, or any error message in the session. |
-| `url` | Case-insensitive substring of any page URL the session visited. |
-| `browser`, `os`, `country`, `device_type` | Exact-match filters. |
-| `has_error`, `has_replay`, `has_frustration` | `true` keeps only sessions with an error event, a replay, or a rage, dead or error click. |
-| `error_fingerprint` | Sessions where that error group occurred in the range. |
-| `sort` | `started` (default), `duration`, `errors`, `friction` (frustration signals) or `pages`. Anything else returns `400`. |
+| `f` | Filters in the [filter grammar](#filter-grammar), repeatable, at most 20. All must hold. |
+| `search` | Case-insensitive match on part of any user ID or email the session carried (within the 30-day identity window), a session ID prefix, any visited URL, or any error message in the session (messages of errors captured from the console need [body access](#body-access)). |
+| `url` | Same as `f=url:contains:<value>`. |
+| `browser`, `os`, `country`, `device_type` | Same as `f=browser:eq:<value>` (and `os`, `country`, `device`). |
+| `has_error`, `has_replay`, `has_frustration` | `true` keeps only sessions with an error event, a replay that can still be played, or a rage, dead or error click. `false` means no filter. |
+| `error_fingerprint` | Same as `f=error_issue:eq:<value>`. |
+| `sort` | `started` (default), `duration`, `active_time`, `errors`, `frustration` (the score), `friction` (rage, dead and error clicks) or `pages`. Anything else returns `400`. |
 | `order` | `desc` (default) or `asc`. Anything else returns `400`. |
 | `limit` | Page size. Default 50, maximum 100. |
-| `offset` | Page offset. Default 0. |
+| `cursor` | `next_cursor` of the previous page. The rest of the query must be the same; `from` and `to` may be left out and then come from the cursor, so new sessions never shift later pages. A cursor from another query returns `400`. |
+| `offset` | Rows to skip, at most 10,000. Prefer `cursor`; the two cannot be combined. |
 
-`total` counts every session matching the filters. Each session adds `duration_ms` (first to last activity across page views, events and replay) and `entry_url` (its first page view). `error_count` and `has_error` come from error events. `GET /rum/{app_id}/sessions/{session_id}` returns the same fields, and its `events` include one `type: "view"` row per page view (`event_id` and `view_id` are the view's ID; fields that do not apply are `null`). It returns `404` for an unknown session and for one without a page view.
+`total` counts every session matching the query exactly, and `total_with_replay` those of them with a replay that can still be played. `next_cursor` is absent on the last page. Ties in the sort order break by session, so paging returns every session once.
+
+Each session carries:
+
+| Field | Description |
+|---|---|
+| `session_id`, `first_seen`, `last_seen`, `duration_ms` | Start, last activity across page views, events and replay, and the time between, at most 4 hours 5 minutes. |
+| `live` | Activity in the last 2 minutes. |
+| `active_ms` | Time the user was active (input, visible tab), from SDK 2.0. `0` for older SDKs. |
+| `user_id`, `user_email`, `anonymous_id` | Identity, shown and matched only for sessions from the last 30 days. |
+| `entry_url`, `entry_route`, `exit_url` | First and last page view. |
+| `view_count`, `window_count` | Page views and browser tabs (tabs from SDK 2.0). |
+| `error_count`, `failed_request_count`, `console_error_count` | Error events (repeats included), requests with status `0` or `400` and above, console errors. |
+| `action_count` | User actions the SDK counted on its page views (as in Wave 1). SDK 1.x versions that do not count them report `0`. |
+| `rage_click_count`, `dead_click_count`, `error_click_count` | Frustration signals among clicks and taps. |
+| `frustration_score` | [Frustration score](#frustration-score), `0` to `100`. |
+| `browser`, `os`, `device_type`, `country`, `region` | Device and location. |
+| `release`, `env`, `service`, `sdk_version` | From the SDK's context. |
+| `has_replay`, `replay_bytes` | Whether a replay can still be played, and its stored size (a retried upload counts once). |
+| `replay_reason` | Why there is no replay: `expired` (past the replay retention), or the SDK's reason: `not_sampled`, `consent`, `gpc`, `opted_out`, `privacy_url`, `too_large`, `request_budget`. Absent when there is a replay or no reason is known. |
+| `viewed_by_me` | You watched this session's replay in the last 90 days. |
+
+Filtering on `console_message` needs [body access](#body-access). A query that runs past its time limit returns `503`; narrow the range or the filters.
+
+### `GET /rum/{app_id}/sessions/{session_id}`
+
+The session page's summary: the session's fields (as in the list), and:
+
+| Field | Description |
+|---|---|
+| `views` | Page views, oldest first, at most 1,000 (`views_truncated`): `view_id`, `url`, `route`, `start`, `time_spent_ms`, the latest valid `lcp_ms`, `inp_ms` and `cls`, and `error_count`. |
+| `windows` | Browser tabs (SDK 2.0): `window_id`, `first_seen`, `last_seen`. |
+| `counts` | Rows per kind over the whole session, as [`/events`](#get-rumapp_idsessionssession_idevents) counts them (a retried upload counts once): `action`, `network`, `resource`, `console`, `error`, `long_frame`, `long_task` (SDK 1.x), `custom`. |
+| `referrer_host`, `utm`, `channel`, `viewport` | Acquisition and screen, from the first page views. |
+| `attributes` | The session's latest global attributes, without the reserved `sq.` keys. |
+| `user_name`, `traits` | From `setUser`, for sessions from the last 30 days. |
+| `other_session_count` | Sessions of the same user (or anonymous visitor, without a user) that started up to 30 days before or after this one. |
+| `events`, `events_truncated` | The first 2,000 rows (and about 2.5 MB of JSON) of detail events and page views, oldest first, in the shape below. Their `user_id` and `user_email` are `null` past the 30-day identity window. Page through [`/events`](#get-rumapp_idsessionssession_idevents) for the rest. |
+
+`events` rows: one `type: "view"` row per page view (`event_id` and `view_id` are the view's ID; fields that do not apply are `null`). A session without a page view is returned too, with `view_count` `0`; an unknown session returns `404`.
+
+### `GET /rum/{app_id}/sessions/{session_id}/events`
+
+One page of the session's events, oldest first, in the shapes of the ingest kinds.
+
+| Param | Description |
+|---|---|
+| `kinds` | Comma-separated: `view`, `view_end`, `vital` (SDK 1.x), `custom`, `action`, `error`, `network`, `resource`, `console`, `long_frame`, `long_task` (SDK 1.x), `status`. Default: all. |
+| `from_ms`, `to_ms` | Bounds in milliseconds from the session's start, inclusive. |
+| `q` | Case-insensitive substring of a page URL or route, a request URL, an error type, title or message, an action name or selector, a custom event name, or (with body access) a console message or the message of an error captured from the console. |
+| `collapse` | `true` folds repeated successful requests, resources and identical console lines of one page view into their first row. |
+| `cursor` | `next_cursor` of the previous page; the other params must be the same. |
+| `limit` | Page size. Default 500, maximum 1,000. A page also ends at about 2.5 MB of JSON. |
+
+Every event carries `id`, `kind`, `t`, `offset_ms` (from the session's start), `view_id`, `window_id` (`null` for SDK 1.x), `page_load_id`, and the page it happened on, `page_url` and `page_route`, plus its kind's fields: for example `method`, `url`, `status`, timings, `trace_id` and `n` (requests a row aggregates) on `network`; `error_type`, `message`, `stack`, `frames`, `cause`, `breadcrumbs`, `fingerprint` and `attributes` on `error`; `level`, `message` and `repeat` on `console`. A collapsed row that stands for more than one stored row adds `group`: `rows`, `count` (occurrences) and `last_offset_ms`. The schemas are in the [API reference](/api-reference/).
+
+`counts` gives rows per kind over the whole session for this `q` and `collapse`, on every page. `next_cursor` is absent on the last page.
+
+#### Body access
+
+Request and response bodies and headers, console messages, error breadcrumbs, and the message, title, stack and cause of errors captured from the console need body access. Members and above have it unless the account limits it to admins. Viewers and auditors can read session metadata but cannot read these fields. API keys and M2M clients need the `read:rum_replay` scope, even unrestricted keys; connected apps never get it. Without access those fields are left out (in the summary, such error messages are empty), they cannot be searched or filtered on, and `bodies_withheld` is `true`. A response that shows any of them is recorded in the [audit log](/enterprise/audit-log/) as `rum.network_body.viewed`, once per person, key or client, application and session every 30 minutes. If the audit cannot be recorded, the API refuses the response with `500` and returns no captured content.
 
 ### `GET /rum/{app_id}/errors`
 
@@ -191,11 +253,58 @@ Adds `session_count` and `affected_session_count` (equal). `affected_sessions` l
 
 ### `GET /rum/{app_id}/facets`
 
+The values the session filters can take, with session counts: up to 50 non-empty values per list, by listed sessions active in the range.
+
 | Param | Description |
 |---|---|
-| `from`, `to` | Time range. |
+| `from`, `to` | Time range. Default: the 30 days ending now. |
+| `field` | Comma-separated lists to fill: `browser`, `os`, `country`, `device_type`, `region`, `release`, `env`, `route` (sessions per visited route), `channel`, `referrer_host`, `sdk_version`. Default: the first four. |
+| `q` | Case-insensitive substring the values must contain, for autocomplete. |
+| `f` | Session filters in the [filter grammar](#filter-grammar). A list ignores the filters on its own field, so every value stays pickable. |
 
-Returns `browser`, `os`, `country` and `device_type`, each a list of `{ value, session_count }`: the top 50 non-empty values by sessions in the range.
+Each list is `{ value, session_count }`. `browser`, `os`, `country` and `device_type` are always present (empty when not asked for); the others only when asked for.
+
+### Filter grammar
+
+`f=<field>:<op>[:<value>]`, repeatable, at most 20, values at most 512 characters, URL-encoded. In `in`, values are comma separated, with `\,` for a comma and `\\` for a backslash. An unknown field or operator, or one that does not apply to the field, returns `400`.
+
+| Op | Meaning |
+|---|---|
+| `eq`, `neq` | Equal, not equal (exact, case-sensitive). |
+| `in` | One of the listed values. |
+| `contains`, `ncontains` | Case-insensitive substring, and its negation. |
+| `starts` | Starts with (case-sensitive). |
+| `gt`, `gte`, `lt`, `lte` | Numeric comparison. |
+| `exists`, `nexists` | Has a value (non-zero for numbers), and has none. |
+
+Session fields:
+
+| Field | Kind | Matches |
+|---|---|---|
+| `user` | text | User ID or email, for sessions from the last 30 days. |
+| `anonymous_id` | text | The session's anonymous ID, for sessions from the last 30 days. |
+| `referrer_host`, `channel`, `utm_source`, `utm_medium`, `utm_campaign`, `country`, `region`, `device`, `browser`, `os`, `release`, `env`, `service`, `sdk_version` | text | The session's value. |
+| `device_class` | `desktop`, `mobile` | `mobile` includes tablets. |
+| `url`, `route` | text | Any page the session visited (the first 100 of each upload). |
+| `entry_url`, `entry_route`, `exit_url` | text | First or last page view. |
+| `has_replay`, `has_error`, `live` | `true`, `false` | A playable replay, an error event, activity in the last 2 minutes. |
+| `error_issue` | text | An error group (fingerprint) the session hit. |
+| `error_type`, `error_message` | text | Any error event. Without [body access](#body-access), `error_message` skips errors captured from the console. |
+| `network_status` | number | Any request's status (`0` for a network failure). |
+| `network_url` | text | Any request's URL. |
+| `console_level` | `error`, `warn`, `info`, `log`, `debug` | Any console line. |
+| `console_message` | text | Any console line; needs [body access](#body-access). |
+| `frustration` | `rage_click`, `dead_click`, `error_click` | Any such click. |
+| `frustration_score`, `duration_ms`, `active_ms`, `views` | number | The session's value. |
+| `commented` | `true`, `false` | A comment on the session. |
+| `viewed_by_me` | `true`, `false` | You watched its replay in the last 90 days. |
+| `attr.<key>` | text | A global attribute, such as `attr.plan:eq:pro`. Reserved `sq.` keys (user name, traits) return `400`. |
+
+Negations (`neq`, `ncontains`, `nexists`) mean no match: `error_type:neq:TypeError` keeps sessions without a `TypeError`. Event fields (`error_*`, `network_*`, `console_*`) look back as far as Analyze data is kept (30 days by default).
+
+### Frustration score
+
+`round(100 × (1 − e^(−(3 × rage clicks + 2 × error clicks + dead clicks + 2 × errors + failed requests) / 10)))`, from `0` (none) to `100`. One rage click scores 26, a session with an error, a failed request and a rage click 45. The inputs are the session's `rage_click_count`, `error_click_count`, `dead_click_count`, `error_count` and `failed_request_count`.
 
 ### `GET /rum/{app_id}/ingest-status`
 
@@ -222,7 +331,8 @@ No params. Returns `last_seen_at` (the newest page view or vital in the last 24 
 | `GET` | `/rum/{app_id}/overview` | Aggregate overview (p75 vitals and their distribution, top pages, top errors, breakdowns). |
 | `GET` | `/rum/{app_id}/vitals` | Vital timeseries (p50/p75/p95). |
 | `GET` | `/rum/{app_id}/sessions` | Session list. |
-| `GET` | `/rum/{app_id}/sessions/{session_id}` | Session detail with events. |
+| `GET` | `/rum/{app_id}/sessions/{session_id}` | Session summary. |
+| `GET` | `/rum/{app_id}/sessions/{session_id}/events` | A page of a session's events. |
 | `GET` | `/rum/{app_id}/errors` | Error groups. |
 | `GET` | `/rum/{app_id}/errors/{fingerprint}` | Error detail, timeline, affected sessions. |
 | `GET` | `/rum/{app_id}/facets` | Dimension values seen in a range, with session counts. |
