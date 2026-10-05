@@ -1,13 +1,13 @@
 ---
 title: Delete a subject's RUM data
-description: Admin API for scoped erasure, optional do-not-record and shorter replay retention, with rollout verification limits.
+description: Request RUM erasure, track its status, prevent further recording and shorten retention per application.
 last_verified: 2026-10-04
 owner: jj
 ---
 
-:::caution[Live API; production erasure verification pending]
-The admin API, identity routes and privacy writer guards are live. The cleanup schedule is enabled every five minutes. Deletion and retention workers passed local integration tests; production verification has covered a no-op maintenance run, not erasure of customer data. Do not treat a successful identity check, settings save or queued deletion as proof that stored data has been removed. Track each request through its status and confirmed counts; contact support for help with an erasure request.
-:::
+Account admins can request erasure in **RUM → Settings → Data requests** or through the API. Choose an identifier and application scope, optionally select **Also add to do-not-record**, then review and confirm the request. The history shows status, deleted row and object counts, and timing.
+
+Deletion runs asynchronously. A queued request or saved retention setting does not mean cleanup has finished. Check the request status and counts before treating erasure as complete.
 
 ## Request erasure
 
@@ -27,7 +27,7 @@ Generate a fresh UUID for `id`. Reuse it when retrying the same request; changin
 
 Omit `application_id` to capture all applications currently owned by your account, up to 1,000. An account with more applications must submit one application at a time. An unknown or foreign application returns `404`. The captured scope does not grow when an application is created later.
 
-A `202` response confirms that the request is queued. The scheduled worker is intended to start within 15 minutes; the completion target is 24 hours and the escalation deadline is seven days. These are operational targets, not a guaranteed 24-hour SLA. Check the returned deadlines and status. An interrupted writer can delay cleanup while its durable write intent expires.
+A `202` response confirms that the request is queued. The completion target is 24 hours, with escalation after seven days. These are operational targets, not a guaranteed completion time. Check the returned deadlines and status; retries and in-flight uploads can delay cleanup.
 
 ## Track the result
 
@@ -52,13 +52,15 @@ Permanent session tombstones prevent another upload or compaction of an erased s
 
 The SDK config sets `limits.dnr` after the DNR update is published. Intake also checks stored DNR state before writing, including replay requests whose session was previously linked to an identity. If that check is unavailable, intake returns a retryable failure instead of accepting recording data.
 
-For an identity check, SDK clients send the application-scoped SHA-256 hash. The intake supports `POST /v2/identity` with `{"h":"<64 hex characters>"}` and the compatibility `GET /v2/identity?h=<hash>`. Published SDK 2.1 uses GET, so proxies must retain it. Keep the bearer client token in `Authorization`; POST also requires `Content-Type: application/json`. The response is `{"record":true}` or `{"record":false}` with `Cache-Control: private, no-store`. Keep GET query strings out of proxy access logs; a hash is still an identifier. A successful check alone does not verify DNR publication or historical cleanup.
+For an identity check, SDK clients send the application-scoped SHA-256 hash. The intake supports `POST /v2/identity` with `{"h":"<64 hex characters>"}` and the compatibility `GET /v2/identity?h=<hash>`. Published SDK 2.1 uses GET, so proxies must retain it. Keep the bearer client token in `Authorization`; POST also requires `Content-Type: application/json`. The response is `{"record":true}` or `{"record":false}` with `Cache-Control: private, no-store`. Keep GET query strings out of proxy access logs; a hash is still an identifier. An identity check controls future recording; it does not report deletion progress.
 
 Use the existing [CSP and proxy guide](/observability/rum/how-to/csp/) for SDK host allowlists, config fetches and replay preflights. A first-party proxy must preserve authorization, origin, request bodies, refusals and retry headers. A proxy does not replace consent, masking or allowed-origin checks.
 
 ## Shorten retention
 
-The settings API accepts this admin-only patch:
+In **RUM → Settings → Data settings**, account admins can set the Observe, Analyze and Replay retention ceilings. Leave a ceiling empty to use the plan limit. Shortening a ceiling permanently removes older data asynchronously.
+
+The same settings are available through this admin-only API patch:
 
 ```json
 {
