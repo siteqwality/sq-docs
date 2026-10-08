@@ -172,6 +172,14 @@ A keyword assertion is evaluated against the live response while the check
 runs, never against the stored copy, so a keyword failure always carries the
 body that failed it even though the status code was `200`.
 
+Keyword and JSON path assertions look at the first 10 MB of the response. A
+keyword found there passes. When the response is larger and the first 10 MB
+cannot decide the assertion (the keyword is not there, the keyword is inverted,
+or any JSON path), the check fails with `failure_reason` `body_too_large`
+instead of guessing. The rest of the response is still read, so a connection
+that drops late still fails the check. The downloadable copy holds at most the
+first 3 MB, while `body_bytes` reports the true size.
+
 ### How long a captured body stays readable
 
 | Plan | Failure bodies readable for |
