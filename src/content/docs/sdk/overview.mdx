@@ -11,7 +11,7 @@ import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
 The SiteQwality client SDK is a single browser-side package: **`@siteqwality/rum`**. It collects [Real User Monitoring](/observability/rum/overview/) data and (when activated) [session replay](/observability/replay/overview/) segments.
 
-It is **not** a back-end ingestion library. For back-end metrics/logs/traces, ship via the OTel SDK or direct HTTP to the ingestion endpoints. See [Observability](/observability/overview/).
+It is **not** a back-end ingestion library, and there are no SiteQwality logging or metrics libraries for back-end languages. Send back-end traces with an OpenTelemetry SDK over OTLP/HTTP, and send logs and metrics as JSON over HTTPS to their ingest endpoints. See [Observability](/observability/overview/).
 
 ## What it does
 
@@ -26,7 +26,7 @@ It is **not** a back-end ingestion library. For back-end metrics/logs/traces, sh
 | Long tasks (>50ms) | no | yes |
 | DOM snapshots + mutations (rrweb) | no | yes (`capture_replay: true`) |
 
-The SDK does not inject `traceparent` headers or otherwise participate in distributed tracing. To correlate RUM sessions with back-end traces, propagate your own IDs via `setUser` / custom attributes.
+SDK 1.x does not inject `traceparent` headers or otherwise participate in distributed tracing. SDK 2 can add a `traceparent` header to requests whose URLs match the application's [`trace_urls`](/observability/rum/how-to/remote-config/) setting; on 1.x, propagate your own IDs via `setUser` / custom attributes.
 
 ## Install
 

@@ -1,7 +1,7 @@
 ---
 title: Traces
 description: OpenTelemetry-compatible distributed tracing, with span trees showing where a request spent its time across services.
-last_verified: 2026-08-02
+last_verified: 2026-10-08
 owner: jj
 ---
 
@@ -32,9 +32,9 @@ Authorization: Bearer <api-key>
 Content-Type: application/json | application/x-protobuf
 ```
 
-The body shape is the standard OTLP `ExportTraceServiceRequest`. Most language SDKs handle this for you, and most default to protobuf, which is supported. See [sending OTLP over HTTP/protobuf](/observability/traces/how-to/otlp-protobuf/) for the exporter settings and the limits worth knowing (gRPC is not supported, and compression must stay off).
+The body shape is the standard OTLP `ExportTraceServiceRequest`. Most language SDKs handle this for you, and most default to protobuf, which is supported. See [sending OTLP over HTTP/protobuf](/observability/traces/how-to/otlp-protobuf/) for the exporter settings and the limits worth knowing (gRPC is not supported, only traces are accepted, and large batches should be split).
 
-Span attributes follow OTel semantic conventions: `http.method`, `http.status_code`, `db.system`, `service.name`, etc. Custom attributes are accepted on every span.
+Span attributes are stored as sent, so use the OTel semantic conventions (`http.request.method`, `http.response.status_code`, `db.system`, and so on) for consistent names across services. Custom attributes are accepted on every span.
 
 ## Anatomy of a span
 
@@ -45,10 +45,10 @@ Span attributes follow OTel semantic conventions: `http.method`, `http.status_co
 | `parent_span_id` | The span that triggered this one. Empty for the root span. |
 | `service_name` | Logical service emitting the span (`web`, `api`, `db-proxy`). |
 | `operation_name` | What this span did (`POST /checkout`, `SELECT users`). |
-| `span_kind` | `server`, `client`, `producer`, `consumer`, `internal`. |
+| `span_kind` | `SERVER`, `CLIENT`, `PRODUCER`, `CONSUMER`, `INTERNAL` (or `UNSPECIFIED`). |
 | `start_time` / `end_time` | Wall-clock span boundaries. |
 | `duration_ms` | Computed span length. |
-| `status_code` | `OK`, `ERROR`. |
+| `status_code` | `UNSET`, `OK` or `ERROR`. |
 | `attributes` | Free-form span metadata. |
 | `resource_attributes` | Service-level metadata (host, region, version) shared across spans. |
 | `events` | Timestamped log-like events within the span. |
@@ -56,20 +56,20 @@ Span attributes follow OTel semantic conventions: `http.method`, `http.status_co
 
 ## Querying
 
-Traces have their own search index. Common queries:
+Trace search reads your stored spans and groups them by trace. Common queries:
 
 | Query | Use |
 |---|---|
-| `service_name=billing` | All spans in one service. |
-| `min_duration_ms=1000` | Slow requests. |
-| `status=error` | Failing spans. |
-| `search=user_id_abc123` | Free-text search across attributes. |
+| `service_name=billing` | Traces with spans in one service. |
+| `min_duration_ms=1000` | Traces with a span slower than one second. |
+| `status=ERROR` | Traces with failing spans. Write the status in uppercase. |
+| `tags={"http.route":"/checkout"}` | Exact match on a span attribute. See [tag filters](/observability/traces/reference/#tag-filters). |
 
-The dashboard's **Trace Explorer** composes these. For programmatic access, use `GET /traces/search`.
+The dashboard's **Traces** page composes these. For programmatic access, use `GET /traces/search` with a full-access API key.
 
 ## Service map
 
-`GET /traces/service-map` returns nodes (services) and edges (caller→callee with call counts and latencies p50/p95/p99). Useful for:
+`GET /traces/service-map` returns nodes (services) and edges (caller→callee with call counts, error counts and latencies p50/p95/p99). An edge appears where a span in one instrumented service is the parent of a span in another, so databases and third-party APIs without their own spans do not appear as nodes. A node's numbers cover every span the service emitted (database calls and internal spans included), not just its incoming requests. Useful for:
 
 - Finding unexpected dependencies ("we still call legacy-svc?").
 - Spotting hot paths (the edge with the most calls).
@@ -79,9 +79,9 @@ The dashboard renders this as an interactive graph.
 
 ## Correlation
 
-- Every log can include a `trace_id` and `span_id` field. SiteQwality auto-correlates and offers a "View trace" link from any log.
+- A log entry can carry a `trace_id` (top level or in `metadata`) and a `span_id` (in `metadata`). The trace view then lists that log, and a log whose `metadata` holds the `trace_id` shows a **View trace** link. See [correlate traces with logs](/observability/traces/how-to/correlate-logs/).
 - `GET /traces/{trace_id}/logs` returns all logs tagged with the trace ID.
-- The RUM SDK injects a `traceparent` header on outgoing fetch/XHR requests, allowing browser → backend trace stitching.
+- RUM SDK 2 adds a `traceparent` header to fetch/XHR requests whose URLs match the application's [`trace_urls`](/observability/rum/how-to/remote-config/) setting, allowing browser → backend trace stitching.
 
 <Aside type="tip">
 For the most useful traces, instrument **at service boundaries** (incoming and outgoing HTTP, database calls, message queue ops). Don't instrument every internal function. The noise drowns the signal.
@@ -89,7 +89,7 @@ For the most useful traces, instrument **at service boundaries** (incoming and o
 
 ## Pricing
 
-Traces are billed per span ingested + retention. Sampling is your friend. See the [sampling how-to](/observability/traces/how-to/sampling/).
+Traces count toward your telemetry allowance, which is measured in GB per month and pooled with logs and metrics; they are not priced per span. Retention follows the pack (3, 15 or 30 days). Sampling reduces volume, but it also changes what counts and error rates show; see the [sampling how-to](/observability/traces/how-to/sampling/) and the [observability overview](/observability/overview/#pricing).
 
 ## See also
 

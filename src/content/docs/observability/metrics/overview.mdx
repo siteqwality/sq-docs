@@ -1,7 +1,7 @@
 ---
 title: Metrics
-description: Counters, gauges, and histograms with tags. Charted, summarised, and alertable from the same query fabric.
-last_verified: 2026-05-03
+description: Counters, gauges, and histograms with tags. Charted, summarised, and alertable from the metrics explorer.
+last_verified: 2026-10-08
 owner: jj
 ---
 
@@ -11,7 +11,7 @@ A **metric** is a numeric time-series made of a value, a timestamp, and a set of
 
 ## When to use metrics
 
-- You want to alert on a numeric threshold (`error_rate > 1%`, `queue_depth > 1000`).
+- You want to alert on a numeric threshold (`queue_depth > 1000`, `error_count > 50`). Alerts compare one aggregated value with a number; ratios between two metrics are not supported.
 - You want a chart over time, optionally split by a tag (`requests by region`).
 - You're sending data with high cardinality you can't afford to log every event of (e.g. 10K req/s).
 
@@ -39,22 +39,25 @@ Examples: queue depth, connection pool size, in-flight requests, memory usage.
 
 ### `counter`
 
-Monotonically increasing value. SiteQwality computes deltas/rates server-side.
+A count of events. Values are stored as sent; SiteQwality does not track resets or compute deltas for you.
 
 ```json
 {
   "type": "counter",
   "name": "http.requests.total",
-  "value": 1,
+  "value": 37,
+  "timestamp": "2026-05-03T14:32:00Z",
   "tags": { "method": "GET", "status": "200" }
 }
 ```
+
+Report the number of events since your last report (here, 37 requests in the last interval) with a timestamp, and chart it with `sum`. Avoid sending one point per event: points of the same series that share a timestamp are stored once, and points sent without a timestamp in the same request get the same timestamp, so increments are lost.
 
 Examples: requests served, errors, jobs processed.
 
 ### `histogram`
 
-Distribution of values bucketed by an upper bound (`le`). Same shape as Prometheus histograms.
+Distribution of values bucketed by an upper bound (`le`), in Prometheus's cumulative bucket layout. Send the observations of one reporting interval in each point. See [histograms](/observability/metrics/how-to/histograms/).
 
 ```json
 {
@@ -73,7 +76,7 @@ Distribution of values bucketed by an upper bound (`le`). Same shape as Promethe
 }
 ```
 
-Examples: request latency, request body size, computation time. Allows p50/p95/p99 queries.
+Examples: request latency, request body size, computation time. Charted as p50/p90/p95/p99 lines or a heatmap.
 
 ## Tag conventions
 
@@ -91,17 +94,21 @@ Tags are arbitrary key/value strings. Use them consistently:
 
 ## Aggregations
 
-When querying:
+When querying gauges and counters with `GET /metrics/query`:
 
-- `avg`, `min`, `max`, `sum` work on any metric type.
-- `p50`, `p95`, `p99` work only on histograms.
-- `rate` works only on counters, computing a per-second rate over the bucket.
+- `avg`, `min`, `max`, `sum` aggregate the raw points in each time bucket, across every series that matches your filters.
+- `p50`, `p75`, `p90`, `p95`, `p99` are percentiles of those raw point values.
+- `rate` takes the bucket average, subtracts the previous bucket's average, divides by the bucket width in seconds and floors at zero. It only makes sense for a single series whose value is a running total; for counters reported as per-interval counts (as above), use `sum`.
 
-Group by any tag to split the series. Filter by any tag to scope.
+Histograms are read with `GET /metrics/histogram`, which returns per-bucket counts and p50/p90/p95/p99. See [histograms](/observability/metrics/how-to/histograms/).
+
+Group by one tag key to split the series. Filter by any number of tags to scope.
 
 ## Pricing notes
 
-Metrics ingestion is billed per data point per month. Histograms count as one data point regardless of bucket count. There's a hard cap of **1000 metrics per ingest request**, so batch larger payloads into multiple requests.
+Metrics count toward your telemetry allowance, which is measured in GB per month and pooled with logs and traces; it is not priced per data point. Each point is metered by the size of its encoded form, name and tags included, so long names and many tags cost more than short ones. See the [observability overview](/observability/overview/#pricing).
+
+An ingest request accepts up to 1,000 metrics, but keep batches to about 500 points: a large batch of heavily tagged points can be rejected before it reaches 1,000.
 
 ## See also
 

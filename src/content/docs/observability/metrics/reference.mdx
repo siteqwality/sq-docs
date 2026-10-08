@@ -1,7 +1,7 @@
 ---
 title: Metrics reference
 description: Ingest endpoint, query parameters, naming rules, and aggregation list.
-last_verified: 2026-08-02
+last_verified: 2026-10-08
 owner: jj
 ---
 
@@ -23,7 +23,7 @@ Body:
     {
       "type": "gauge | counter | histogram",
       "name": "<metric_name>",
-      "timestamp": "2026-05-03T14:32:00Z",   // optional; defaults to ingest time
+      "timestamp": "2026-05-03T14:32:00Z",   // optional RFC 3339 string; defaults to ingest time
       "value": 42.0,                           // gauge / counter
       "buckets": [{ "le": "10", "count": 0 }], // histogram
       "sum": 4250.0,                            // histogram
@@ -35,9 +35,10 @@ Body:
 }
 ```
 
-- Max **1000 metrics per request**. Larger payloads must be batched.
-- Returns `202 Accepted` on enqueue.
-- Returns `400` for malformed payloads, `401` for missing/invalid auth.
+- Max **1,000 metrics per request**. Keep batches to about 500 points: the whole batch travels as one internal message with a size limit of about 250 KB, so a batch of heavily tagged points can be rejected before it reaches 1,000.
+- `timestamp` must be an RFC 3339 string. A numeric (epoch) timestamp makes the request fail with `400`.
+- Returns `202 Accepted` on enqueue. Points are usually queryable within about 30 seconds.
+- Returns `400` for malformed payloads, `401` when the `Authorization` header is missing, and `403` for an unknown, revoked or expired key.
 
 ## Naming rules
 
@@ -52,15 +53,13 @@ job.duration_seconds
 
 ## Tags
 
-Free-form `string → string`. Tags are indexed for query filtering; cardinality matters.
+Free-form `string → string`. Tags can be filtered on and grouped by; cardinality matters. The `host` and `env` tags are also stored as their own columns.
 
 **Reasonable**: `service`, `env`, `region`, `endpoint`, `status_class`, `queue`, `team`.
 
 **Risky**: `user_id`, `request_id`, `full_url`, `session_id`, `email`, and anything else unique per request.
 
-**Default tags** (added server-side at ingest):
-
-- `account_id` is derived from the API key.
+The account is derived from the API key; you never send it.
 
 ## Query endpoints
 
@@ -71,15 +70,18 @@ Free-form `string → string`. Tags are indexed for query filtering; cardinality
 | `GET` | `/metrics/tag-values` | List values for a (`metric_name`, `tag_key`). |
 | `GET` | `/metrics/query` | Time-series chart data. |
 | `GET` | `/metrics/summary` | Aggregated table (`avg/min/max/latest` per group). |
-| `GET` | `/metrics/sources` | List ingest sources (e.g. inferred from `service` tag). |
+| `GET` | `/metrics/histogram` | Histogram buckets and percentiles. See [histograms](/observability/metrics/how-to/histograms/). |
+| `GET` | `/metrics/sources` | Distinct `source` values. Every metric sent to the ingest endpoint has the source `app`. |
+
+These endpoints are on `https://api.siteqwality.com` and need a full-access API key; an ingest key gets `403`.
 
 ### `/metrics/query` parameters
 
 | Param | Type | Description |
 |---|---|---|
 | `metric_name` | string | Required. |
-| `aggregation` | string | `avg` (default), `max`, `min`, `sum`, `p50`, `p95`, `p99`, `rate`. |
-| `group_by` | string | Tag key to split series by. |
+| `aggregation` | string | `avg` (default), `max`, `min`, `sum`, `p50`, `p75`, `p90`, `p95`, `p99`, `rate`. |
+| `group_by` | string | One tag key to split series by. |
 | `start_time` / `end_time` | RFC 3339 | Time window. Default last 1 hour. |
 | `resolution` | string | `auto`, `1m`, `5m`, `1h`, `6h`. Bucket width. |
 | `filters` | string | JSON-encoded `{tag_key: tag_value}` map for filtering. |
@@ -88,35 +90,38 @@ Response:
 
 ```json
 {
-  "metric_type": "gauge",
-  "unit": "ms",
-  "series": [
-    {
-      "group": { "endpoint": "/api/checkout" },
-      "points": [
-        { "timestamp": "2026-05-03T14:00:00Z", "value": 42.5 },
-        ...
-      ]
-    }
-  ]
+  "data": {
+    "metric_type": "gauge",
+    "unit": "ms",
+    "series": [
+      {
+        "group": { "endpoint": "/api/checkout" },
+        "points": [
+          { "timestamp": "2026-05-03T14:00:00Z", "value": 42.5 },
+          ...
+        ]
+      }
+    ]
+  }
 }
 ```
 
-### Aggregation × type compatibility
+### What each aggregation computes
 
-| Aggregation | Gauge | Counter | Histogram |
-|---|---|---|---|
-| `avg`, `min`, `max`, `sum` | yes | yes (sum is cumulative) | yes (`sum` field) |
-| `rate` | n/a | yes | n/a |
-| `p50`, `p95`, `p99` | n/a | n/a | yes |
+`/metrics/query` reads gauges and counters. Histograms are stored separately and read with `/metrics/histogram`; querying a histogram name here returns no series.
+
+| Aggregation | Computes, per time bucket |
+|---|---|
+| `avg`, `min`, `max`, `sum` | Over every raw point in the bucket, across all series that match the filters (or within each group when `group_by` is set). |
+| `p50` to `p99` | Percentiles of those raw point values. |
+| `rate` | The change in the bucket average since the previous bucket, divided by the bucket width in seconds, floored at zero. Meaningful only for a single series whose value is a running total. For per-interval counts, use `sum`. |
 
 ## Limits
 
 | Constraint | Value |
 |---|---|
-| Metrics per ingest request | 1000 |
-| Max metric name length | 255 |
-| Max tag key/value length | 255 |
+| Metrics per ingest request | 1,000 (keep batches to about 500 points) |
+| Metric name characters | `^[a-zA-Z0-9._]+$` |
 | Retention (free tier) | 3 days |
 | Retention (paid telemetry packs) | 15 days on the 50 GB pack; 30 days on the 200 GB and 1 TB packs |
 | Maximum purchasable retention | 30 days |

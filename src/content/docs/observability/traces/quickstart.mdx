@@ -1,13 +1,17 @@
 ---
 title: Traces quickstart
 description: Instrument a Node service with OpenTelemetry and see your first trace in 10 minutes.
-last_verified: 2026-05-03
+last_verified: 2026-10-08
 owner: jj
 ---
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have an instrumented Node service emitting OTLP traces to SiteQwality and a working trace visible in the Trace Explorer.
+By the end of this guide you'll have an instrumented Node service emitting OTLP traces to SiteQwality and a working trace visible on the **Traces** page.
+
+<Aside type="note" title="Which API key">
+Use a **full-access** API key for this guide: step 4 calls `api.siteqwality.com`, which rejects ingest keys with a `403`. In production, give your services an **ingest** key, which can only send telemetry.
+</Aside>
 
 ## 1. Install the OpenTelemetry SDK
 
@@ -56,9 +60,12 @@ const express = require('express');
 Start the app, hit any endpoint:
 
 ```bash
+OTEL_METRICS_EXPORTER=none OTEL_LOGS_EXPORTER=none \
 SITEQWALITY_API_KEY=<your API key> node index.js
 curl http://localhost:3000/api/anything
 ```
+
+The two `OTEL_*_EXPORTER=none` variables switch off the SDK's default metrics and logs exporters. SiteQwality accepts only traces over OTLP, and without them the SDK keeps trying to export metrics and logs to `localhost:4318` and logs connection errors.
 
 The `auto-instrumentations-node` package automatically traces Express, HTTP, fs, common DB drivers, and more, so you don't have to write spans by hand.
 
@@ -67,13 +74,14 @@ The `auto-instrumentations-node` package automatically traces Express, HTTP, fs,
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-**Traces → Explorer** → filter `service_name = demo-api`. Your trace appears within ~10 seconds. Click into it to see the span tree.
+Open **Traces** and filter by the service `demo-api`. Your trace appears within about 30 seconds. Click into it to see the span tree.
 
 </TabItem>
 <TabItem label="API">
 
 ```bash
-START=$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)
+# macOS/BSD date first, then GNU date (Linux)
+START=$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ)
 END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 curl -G https://api.siteqwality.com/traces/search \
@@ -83,7 +91,7 @@ curl -G https://api.siteqwality.com/traces/search \
   --data-urlencode "end_time=$END"
 ```
 
-Each trace summary includes `trace_id`. Pull spans:
+The response is wrapped in `data`; each summary in `data.traces` includes `trace_id`. Pull spans:
 
 ```bash
 curl https://api.siteqwality.com/traces/$TRACE_ID \
@@ -124,7 +132,7 @@ This wraps your Stripe call in a custom span with attributes you can search on.
 
 ## 6. Other languages
 
-The OTLP HTTP endpoint accepts the standard format from any OTel SDK. The pattern is the same: install the SDK + OTLP exporter, point at `https://traces.siteqwality.com/v1/traces`, set the `Authorization` header.
+The endpoint accepts the standard OTLP format over HTTP from any OTel SDK. The pattern is the same: install the SDK + OTLP exporter, point at `https://traces.siteqwality.com/v1/traces`, set the `Authorization` header, and switch off the metrics and logs exporters. gRPC is not accepted, so where an SDK defaults to gRPC (the Python distro does), set `OTEL_EXPORTER_OTLP_TRACES_PROTOCOL=http/protobuf`. See [OTLP over HTTP/protobuf](/observability/traces/how-to/otlp-protobuf/).
 
 | Language | OTel docs |
 |---|---|
@@ -134,11 +142,11 @@ The OTLP HTTP endpoint accepts the standard format from any OTel SDK. The patter
 | .NET | https://opentelemetry.io/docs/instrumentation/net/ |
 
 <Aside type="tip">
-For high-volume production, configure a tail-based sampler to keep all error traces and 1–10% of successful ones. See [sampling](/observability/traces/how-to/sampling/).
+For busy services, lower the export batch size (`OTEL_BSP_MAX_EXPORT_BATCH_SIZE=100`) as described in [batch sizing](/observability/traces/how-to/otlp-protobuf/#batch-sizing), and read [sampling](/observability/traces/how-to/sampling/) before you sample: counts, error rates and percentiles describe the spans you keep.
 </Aside>
 
 ## What's next
 
 <LinkCard title="Sampling" description="Reduce volume without losing signal." href="/observability/traces/how-to/sampling/" />
 <LinkCard title="Reference" description="Span attributes and search params." href="/observability/traces/reference/" />
-<LinkCard title="Logs correlation" description="Tag your logs with trace_id for end-to-end debugging." href="/observability/logs/overview/" />
+<LinkCard title="Logs correlation" description="Tag your logs with trace_id for end-to-end debugging." href="/observability/traces/how-to/correlate-logs/" />

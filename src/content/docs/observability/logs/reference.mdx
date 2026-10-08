@@ -1,7 +1,7 @@
 ---
 title: Logs reference
 description: Ingest endpoint, query parameters, parser types, and the saved-view shape.
-last_verified: 2026-05-03
+last_verified: 2026-10-08
 owner: jj
 ---
 
@@ -21,20 +21,21 @@ Three body shapes:
 |---|---|
 | `application/json` | Single JSON object **or** array of objects. |
 | `application/x-ndjson` | One JSON object per newline. |
-| `text/plain` | Raw text. Runs through the configured parser if a `source` matches. |
+| `text/plain` | Raw text, one entry per line. Each line runs through your enabled [parsers](/observability/logs/how-to/parsers/) in priority order; the first one whose `source_filter` and `detect_pattern` match and that parses the line is applied. |
 
-Optional headers:
+Optional header:
 
-- `X-Log-Source: <name>` applies `source` to every entry in this request.
-- `X-Log-Parser: <parser-id>` applies a specific parser to every entry.
+- `X-Log-Source: <name>` applies `source` to every entry in this request that does not carry its own. Plain-text lines never do, so send it with them.
+
+A `202 Accepted` means the entries were queued; they are searchable about a minute later. Keep each line under 100 KB and each request to about 1,000 lines. Top-level fields not listed below are dropped: put your own fields under `metadata` or `tags`.
 
 ## Log entry fields
 
 | Field | Type | Description |
 |---|---|---|
-| `timestamp` | RFC 3339 | Defaults to ingest time. |
-| `level` | string | `trace`, `debug`, `info`, `warn`, `error`, `fatal`. |
-| `message` | string | Full-text indexed. |
+| `timestamp` | RFC 3339 string | Defaults to ingest time. Numeric (epoch) values are ignored and get ingest time too. |
+| `level` | string | `trace`, `debug`, `info`, `warn`, `error`, `fatal`. Defaults to `info`. Send lowercase. |
+| `message` | string | Searched as a case-insensitive substring. |
 | `host` | string | Pod/container/VM identity. |
 | `env` | string | `prod`, `staging`, etc. |
 | `source` | string | Logical source. |
@@ -42,18 +43,21 @@ Optional headers:
 | `device` | string | Browser/device for client-side logs. |
 | `tags` | `{string: string}` | Filterable map. |
 | `metadata` | object | Arbitrary structured. Searchable via `metadata_search`. |
+| `trace_id` | string | Optional. 32 lowercase hex characters. Also read from `metadata.trace_id`. |
 
 ## Query: `GET /logs/query`
+
+The query endpoints are on `https://api.siteqwality.com` and need a full-access API key; an ingest key gets `403`.
 
 | Param | Description |
 |---|---|
 | `start_time`, `end_time` | RFC 3339 window; default last 1h. |
 | `level` | Comma-separated levels (`error,warn`). |
-| `source`, `env`, `host` | Exact-match filters. |
-| `search` | Full-text in `message`. |
-| `metadata_search` | Full-text across `metadata` values. |
-| `tags` | JSON-encoded `{key: value}` to require. |
-| `excluded` | JSON-encoded `{key: value}` to exclude. |
+| `source`, `env`, `host` | Exact-match filters; comma-separate several values. |
+| `search` | Case-insensitive substring in `message`. |
+| `metadata_search` | JSON object, e.g. `{"user_id":"usr_abc"}`. Each value is matched as a case-insensitive substring anywhere in the metadata; keys are not checked. Non-JSON input is ignored. |
+| `tags` | JSON-encoded `{key: value}` to require (exact match). |
+| `excluded` | JSON object mapping `level`, `source`, `env` or `host` to an array of values to exclude, e.g. `{"level":["debug"]}`. |
 | `limit` (default 100), `offset` | Pagination. |
 | `sort_field` (`timestamp`), `sort_order` (`asc|desc`) | Ordering. |
 
@@ -61,23 +65,27 @@ Response:
 
 ```json
 {
-  "logs": [
-    {
-      "timestamp": "...",
-      "level": "error",
-      "message": "...",
-      "host": "...",
-      "env": "...",
-      "source": "...",
-      "version": "...",
-      "device": "...",
-      "tags": { "endpoint": "/api/charge" },
-      "metadata": { "user_id": "usr_abc" }
-    }
-  ],
-  "total": 1234
+  "data": {
+    "logs": [
+      {
+        "timestamp": "...",
+        "level": "error",
+        "message": "...",
+        "host": "...",
+        "env": "...",
+        "source": "...",
+        "version": "...",
+        "device": "...",
+        "tags": { "endpoint": "/api/charge" },
+        "metadata": { "user_id": "usr_abc" }
+      }
+    ],
+    "total": 1234
+  }
 }
 ```
+
+The response does not include `trace_id`. To find the logs of one trace, use [`GET /traces/{trace_id}/logs`](/observability/traces/how-to/correlate-logs/).
 
 ## Adjacent endpoints
 
@@ -88,8 +96,11 @@ Response:
 | `GET` | `/logs/sources` | Distinct `source` values seen. |
 | `GET` | `/logs/stats` | Counts by level + source for the time window. |
 | `GET` | `/logs/timeline` | Bucketed counts by level for charting. |
-| `GET` | `/logs/insights` | ML-derived insights (error spikes, new errors, etc.). |
+| `GET` | `/logs/insights` | Heuristic insights (error spikes, new errors, silent sources), computed on request. They do not notify. |
+| `GET` | `/logs/patterns` | Message templates clustered from the matching lines. See [patterns](/observability/logs/how-to/patterns/). |
+| `GET` | `/logs/analytics` | Volume, top sources and error-rate aggregations. |
 | `GET` | `/logs/tail/poll` | Polling tail; pass returned `cursor` on next call. |
+| `GET` | `/logs/export` | CSV export of matching lines, up to 10,000. |
 
 ## Parsers
 
@@ -100,7 +111,7 @@ Response:
 | `POST` | `/log_parsers/test` | Test a sample against a parser config. |
 | `GET` / `PUT` / `DELETE` | `/log_parsers/{parser_id}` | Detail/update/delete. |
 
-`parse_type` values: `json`, `regex`, `apache_combined`, `nginx`, `syslog`, `csv`, `kv`.
+`parse_type` values: `json`, `regex`, `apache_combined`, `nginx`, `syslog`, `csv`, `kv`. Parsers only apply to plain-text lines.
 
 ## Saved views
 
@@ -110,7 +121,7 @@ Response:
 | `POST` | `/log_saved_views` | Create. |
 | `GET` / `PUT` / `DELETE` | `/log_saved_views/{view_id}` | Detail/update/delete. |
 
-`filters` is a free-form JSON object; the dashboard treats keys matching `LogQueryParams` field names as filters.
+`filters` is a free-form JSON object holding the dashboard's filter state. Only the user who created a view can update or delete it, and a view created with an API key cannot be updated or deleted at all. See [saved views](/observability/logs/how-to/saved-views/).
 
 ## See also
 

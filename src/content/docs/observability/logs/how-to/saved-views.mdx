@@ -1,7 +1,7 @@
 ---
 title: Save and share log views
 description: Pin frequently-used log searches as saved views, share them with your team.
-last_verified: 2026-05-03
+last_verified: 2026-10-08
 owner: jj
 ---
 
@@ -18,7 +18,7 @@ A **saved view** is a named, reusable filter set on the Logs Explorer. Use them 
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-In **Logs → Explorer**, apply your filters. Click **Save view**. Name it. Toggle **Shared** if it should be visible to teammates. Save.
+On the **Logs** page, apply your filters. Click **Save view**. Name it. Toggle **Shared** if it should be visible to teammates. Save.
 
 </TabItem>
 <TabItem label="API">
@@ -39,7 +39,11 @@ curl -X POST https://api.siteqwality.com/log_saved_views \
   }'
 ```
 
-The `filters` object accepts any params from `GET /logs/query`.
+The `filters` object is stored as given. The dashboard stores its own filter state there, so a view saved from the API may not load the filters you expect: save one from the dashboard and read it back to see the shape.
+
+<Aside type="caution" title="API-created views cannot be changed">
+Only the user who created a view can update or delete it. A view created with an API key has no creating user, so nobody can update or delete it afterwards, from the API or the dashboard. Create views you may want to change from the dashboard.
+</Aside>
 
 </TabItem>
 </Tabs>
@@ -49,7 +53,7 @@ The `filters` object accepts any params from `GET /logs/query`.
 - **Personal** views are visible only to the user who created them. Use for ad-hoc, "remember this for me" filters.
 - **Shared** views appear in everyone's sidebar. Use for runbook-style queries the whole team should reach for.
 
-A shared view is editable by any account member. Update with `PUT /log_saved_views/{view_id}`.
+Only the user who created a view can update or delete it, even when it is shared. Update with `PUT /log_saved_views/{view_id}` while signed in as that user.
 
 ## Naming conventions
 
@@ -64,7 +68,7 @@ For shared views, prefix with a category for sortability:
 ## Maintenance
 
 - **Delete unused views.** They accumulate, so a quarterly cleanup is healthy.
-- **Bump filter time windows.** Saved views store the relative time range (`last 1h`, `last 24h`). Re-save to update.
+- **Mind the time range.** A view saved from the dashboard stores the exact start and end time that were selected, not a relative range like "last 1h". After loading an older view, set the time range you want.
 - **Don't bake in user IDs.** For one-off customer investigations, run the filter in Explorer; don't save a permanent view per customer.
 
 <Aside type="tip">

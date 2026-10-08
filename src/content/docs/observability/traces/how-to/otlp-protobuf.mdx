@@ -1,7 +1,7 @@
 ---
 title: Send OTLP over HTTP/protobuf
 description: Point an OpenTelemetry SDK at SiteQwality using the protobuf encoding most exporters default to.
-last_verified: 2026-08-02
+last_verified: 2026-10-08
 owner: jj
 ---
 
@@ -15,7 +15,7 @@ Authorization: Bearer <api-key>
 Content-Type: application/x-protobuf
 ```
 
-A successful export returns `202 Accepted`.
+A successful export returns a `2xx` status. If your exporter logs an error about parsing the response while your spans keep arriving, the export succeeded.
 
 ## Configure your SDK
 
@@ -29,6 +29,8 @@ export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="https://traces.siteqwality.com/v1/tra
 export OTEL_EXPORTER_OTLP_TRACES_PROTOCOL="http/protobuf"
 export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer $SITEQWALITY_API_KEY"
 export OTEL_SERVICE_NAME="billing-api"
+export OTEL_METRICS_EXPORTER="none"
+export OTEL_LOGS_EXPORTER="none"
 ```
 
 The signal-specific variable is used **verbatim**, so it must include the full `/v1/traces` path.
@@ -41,9 +43,11 @@ export OTEL_EXPORTER_OTLP_ENDPOINT="https://traces.siteqwality.com"
 export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
 export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer $SITEQWALITY_API_KEY"
 export OTEL_SERVICE_NAME="billing-api"
+export OTEL_METRICS_EXPORTER="none"
+export OTEL_LOGS_EXPORTER="none"
 ```
 
-With the base variable the SDK appends `/v1/traces` itself. Do not include the path here or you will export to `/v1/traces/v1/traces`.
+With the base variable the SDK appends `/v1/traces` itself. Do not include the path here or you will export to `/v1/traces/v1/traces`. It would also send metrics and logs to `/v1/metrics` and `/v1/logs`, which do not exist, so the two `none` variables are required with this form.
 
 </TabItem>
 </Tabs>
@@ -66,16 +70,22 @@ Both spellings appear in the wild. Only `application/x-protobuf` is declared as 
 Getting these wrong produces confusing failures, so they are worth stating plainly.
 
 - **gRPC is not supported.** This is an HTTP endpoint only. `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` will not work; use `http/protobuf`.
-- **Only traces.** There is no OTLP endpoint for logs or metrics. Use the [logs](/observability/logs/reference/#ingest) and [metrics](/observability/metrics/reference/#ingest-endpoint) ingest APIs for those.
-- **Compression is not handled.** Leave `OTEL_EXPORTER_OTLP_COMPRESSION` unset. A gzipped body cannot be decoded and the export is rejected.
+- **Only traces.** There is no OTLP endpoint for logs or metrics. Set `OTEL_METRICS_EXPORTER=none` and `OTEL_LOGS_EXPORTER=none`, because most SDKs turn those exporters on by default, and use the [logs](/observability/logs/reference/#ingest) and [metrics](/observability/metrics/reference/#ingest-endpoint) ingest APIs instead.
+- **gzip is fine, zstd is not.** `OTEL_EXPORTER_OTLP_COMPRESSION=gzip` (the Collector's default) works and makes exports several times smaller. A `zstd`-compressed body is rejected with `415`.
 - **An empty export is rejected** with a `400`, rather than silently accepted.
 - **Instrumentation scope name and version are discarded.** Put anything you need to query on into span or resource attributes.
 
 ## Batch sizing
 
-Each `ResourceSpans` group becomes one internal message with a **250 KiB** ceiling. The default OpenTelemetry batch size of 512 spans sits comfortably inside that.
+All the spans of one `ResourceSpans` group (in practice, one service's spans in an export) become one internal message with a **250 KiB** ceiling, measured after SiteQwality re-encodes the spans as JSON. Compression and protobuf do not help here. A typical HTTP server span takes about 1 KB, so the default OpenTelemetry batch of 512 spans can exceed the ceiling. When it does, the export fails with a `502`, which the SDK retries and eventually drops.
 
-If you have raised `max_export_batch_size` substantially, or your spans carry unusually large attributes, bring it back down rather than debugging intermittent export failures.
+Set the batch size to 100 spans:
+
+```bash
+export OTEL_BSP_MAX_EXPORT_BATCH_SIZE=100
+```
+
+In the Collector, set both `send_batch_size: 100` and `send_batch_max_size: 100` on the `batch` processor. If your spans carry large attributes, go lower.
 
 ## Verify it worked
 
