@@ -1,7 +1,7 @@
 ---
 title: HTTP check reference
 description: Every field on an HTTP check, with defaults, validation limits, and status meanings.
-last_verified: 2026-08-05
+last_verified: 2026-10-07
 owner: jj
 ---
 
@@ -19,8 +19,8 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `run_interval_seconds` | int | required | Seconds between checks. Must be at least `60` and a multiple of `60`. |
 | `run_interval_thirty_seconds` | bool | `false` | Run every 30 seconds instead. Only valid together with `run_interval_seconds: 60`. |
 | `timeout_ms` | int | required | Per-request timeout in milliseconds. Maximum `60000`. |
-| `check_regions` | string[] | `["aws-us-east-1"]` | Locations the check runs from. Omitted or empty falls back to the default. Only the default has a runner behind it. See [check regions](#check-regions). |
-| `min_healthy_regions` | int | `1` | Minimum locations that must pass for the check to count as healthy. At least `1`, at most the number of `check_regions`. Setting more than one location requires a paid plan. |
+| `check_regions` | string[] | `["aws-us-east-1"]` | Location ids the check runs from. Omitted or empty falls back to the default. More than one requires a paid plan. See [check locations](#check-locations). |
+| `min_healthy_regions` | int | `1` | Minimum locations that must pass for the check to count as healthy. At least `1`, at most the number of `check_regions`. In a run where some locations return no result, it is capped at the number that did. |
 | `confirmation_threshold` | int | `1` | Consecutive failed checks required before the monitor transitions to `failed` and alerts. `1` to `10`. See [requiring N failed checks](/uptime-monitoring/http-checks/how-to/confirmation-threshold/). |
 | `follow_redirects` | bool | `true` | Follow HTTP redirects before evaluating the response. |
 | `request_body` | string | none | Body sent with the request. |
@@ -31,7 +31,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `auth_bearer_token` | string | none | Token for `bearer` auth. |
 | `success_http_codes` | int[] | none | Status codes that force a success. Each must be a valid HTTP status code. |
 | `failure_http_codes` | int[] | none | Status codes that force a failure. Each must be a valid HTTP status code. |
-| `custom_http_headers` | map | none | Extra request headers as `{name: value}`. |
+| `custom_http_headers` | map | none | Extra request headers as `{name: value}`. A secret header here is how you [allowlist our checks](/uptime-monitoring/http-checks/allowlisting/). |
 | `keyword_search` | string | none | Text to search for in the response body. Maximum 1000 characters; an empty string is treated as unset. |
 | `keyword_search_inverted` | bool | `false` | Invert the assertion: fail when the keyword IS found. |
 | `keyword_search_case_sensitive` | bool | `false` | Match case-sensitively. |
@@ -71,24 +71,39 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `failed` | Confirmed failure. Notifications fire and an incident opens. |
 | `pending_failure` | Legacy value. Nothing sets it today; debouncing is handled by [`confirmation_threshold`](/uptime-monitoring/http-checks/how-to/confirmation-threshold/). Treat it as `success` if you encounter it on an old record. |
 
-## Check regions
+## Check locations
 
-The field validates against these four values and rejects anything else with a `400` carrying `Invalid check_regions <value>`. **Only the first one runs checks.**
+Location ids follow `<provider>-<region>`, for example `aws-us-east-1` or `gcp-europe-west3`. The live list, with each location's city, country and provider, is on the [locations page](https://siteqwality.com/locations/). From the API, call `GET /check-locations` (the location below is an example of the shape):
 
-| Region value | Location | Runs checks today |
-|---|---|---|
-| `aws-us-east-1` | N. Virginia, USA | Yes. The default. |
-| `aws-us-west-1` | N. California, USA | No |
-| `aws-us-east-2` | Ohio, USA | No |
-| `aws-eu-west-2` | London, UK | No |
+```json
+{
+  "default_location_id": "aws-us-east-1",
+  "locations": [
+    {
+      "id": "gcp-europe-west3", "provider": "gcp", "provider_name": "Google Cloud",
+      "provider_region": "europe-west3", "city": "Frankfurt", "country_code": "DE",
+      "continent": "europe", "label": "Frankfurt · Google Cloud", "status": "live",
+      "is_default": false, "capabilities": ["http"]
+    }
+  ]
+}
+```
 
-<Aside type="danger" title="Setting a location with no runner does not fail loudly">
-Validation checks the value against the list above, not against whether anything is deployed there, so a check configured for `aws-eu-west-2` is created successfully and simply never produces a result from London.
+Only locations with `status: "live"` and `"http"` in `capabilities` can be selected for an HTTP check. The list also carries `draining` and `retired` locations so older results keep a readable label: a `draining` location keeps serving monitors that already use it but cannot be newly selected, and a `retired` one no longer runs.
 
-The quorum counts only locations that returned a success, and a configured location that reports nothing counts as **not healthy** rather than absent. So `check_regions: ["aws-us-east-1", "aws-eu-west-2"]` with `min_healthy_regions: 2` creates a monitor that can never report healthy.
+How `check_regions` is validated on create and update:
 
-Additional check locations are on the roadmap. Until then, leave the field unset.
-</Aside>
+| You send | Result |
+|---|---|
+| A live location id | Accepted. |
+| A retired id: `aws-us-east-2` or `aws-us-west-1` | Accepted and replaced with `aws-us-east-1`, its replacement. |
+| An id that does not exist | `400` with `Invalid check_regions <value>`. |
+| A location that cannot run this check type | `400`. |
+| More than one location without a paid plan | `403` with `multi_region_requires_paid_plan`. |
+
+On every scheduled run, each selected location makes the request and returns its own result, recorded with that location's id in `check_region`. Each result counts as one check toward your monthly check volume. A location that cannot return a result in a run (its provider is unreachable, for example) is left out of that run: nothing is recorded for it, it is not billed, and the quorum is evaluated over the locations that did report. If a monitor has exactly one location and it cannot report, that run is made from the default location instead and recorded under the default's id.
+
+Checks do not come from fixed IP addresses. See [allowlisting our checks](/uptime-monitoring/http-checks/allowlisting/).
 
 ## HTTP versions
 
@@ -121,7 +136,8 @@ The negotiated version actually observed on each run is recorded on the check re
 | `GET` | `/http/jobs` | List, with sort/filter query params. |
 | `GET` | `/http/tags` | Distinct tags across your checks. |
 | `GET` | `/http/job/{job_id}/recent` | Recent check runs. |
-| `GET` | `/http/job/{job_id}/recent-checks` | Recent per-region check results. |
+| `GET` | `/http/job/{job_id}/recent-checks` | Recent check results per location. |
+| `GET` | `/check-locations` | Every check location, with its status and capabilities. |
 | `GET` | `/http/job/{job_id}/events` | Status-transition events. |
 | `GET` | `/http/job/{job_id}/uptime_percentage` | Uptime percentage and incident count for a date range. |
 | `GET` | `/http/job/{job_id}/performance` | Per-phase timing (dns/tcp/tls/ttfb/download). |
@@ -179,4 +195,5 @@ schedule, and it is not the same number.
 
 - [HTTP checks overview](/uptime-monitoring/http-checks/overview/) for the concept and lifecycle.
 - [TLS check reference](/uptime-monitoring/ssl-tls-checks/reference/) for the paired certificate check.
+- [Allowlisting our checks](/uptime-monitoring/http-checks/allowlisting/) for firewalls and bot protection.
 - [API Reference](/api-reference/) for wire-level shapes.

@@ -1,7 +1,7 @@
 ---
 title: Uptime monitoring
-description: Five check types (HTTP, SSL/TLS, domain expiry, cron heartbeats, and full-browser synthetic) running on a schedule from AWS us-east-1.
-last_verified: 2026-05-03
+description: Five check types (HTTP, SSL/TLS, domain expiry, cron heartbeats, and full-browser synthetic) running on a schedule, with HTTP checks from the locations you choose.
+last_verified: 2026-10-07
 owner: jj
 ---
 
@@ -27,29 +27,18 @@ Every uptime monitor in SiteQwality follows the same lifecycle: configure → ru
 
 ## Cross-cutting concerns
 
-### Regions
+### Check locations
 
-Every check runs from **AWS `us-east-1` (N. Virginia)**. It is the only location with check infrastructure, and it is the default for every monitor type. If you leave `check_regions` unset, this is what you get.
+HTTP checks run from the **check locations** you select on each monitor, on AWS, Google Cloud and Microsoft Azure. The live list is on the [locations page](https://siteqwality.com/locations/), and `GET /check-locations` returns it to API clients (see [check locations](/uptime-monitoring/http-checks/reference/#check-locations) in the HTTP reference).
 
-<Aside type="danger" title="Three of the four accepted region values have nothing behind them">
-The `check_regions` field still accepts four values, because the API enum has not changed:
+- **Default.** A monitor with `check_regions` unset or empty runs from `aws-us-east-1` (Virginia, AWS).
+- **Plans.** The free plan allows one location per monitor. Paid plans can select any number. Selecting more than one without a paid plan returns `403` with `multi_region_requires_paid_plan`, on HTTP and browser checks.
+- **Billing.** Each location a check runs from counts as one check toward your monthly check volume. A monitor checked from three locations every minute uses three checks a minute.
+- **Other check types.** Browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1` only. Location selection applies to HTTP checks.
 
-| Value | Location | Runs checks today |
-|---|---|---|
-| `aws-us-east-1` | N. Virginia, USA | Yes. The default. |
-| `aws-us-east-2` | Ohio, USA | No |
-| `aws-us-west-1` | N. California, USA | No |
-| `aws-eu-west-2` | London, UK | No |
+Every selected location runs on each scheduled tick, and the results are evaluated together. `min_healthy_regions` sets how many of them must pass for the monitor to count as healthy. A location that cannot return a result in a run (because its provider is unreachable, for example) is left out of that run instead of counting as a failure. See [location quorum](/uptime-monitoring/http-checks/how-to/confirmation-threshold/#2-location-quorum) for the details.
 
-Selecting one of the bottom three does not produce checks from that location, and the API accepts it without complaint. Two consequences follow, and both bite:
-
-- A configured location that never reports counts as **not healthy**, not as absent. A monitor set to `["aws-us-east-1", "aws-eu-west-2"]` with `min_healthy_regions: 2` can therefore never report healthy, because the quorum counts only locations that returned a success.
-- `min_healthy_regions` only means anything across locations that actually run. With one location it is always 1 of 1.
-
-Leave `check_regions` unset unless you have a reason not to. Additional check locations are on the roadmap and are not available today.
-</Aside>
-
-`min_healthy_regions` controls how many of a monitor's configured locations must report healthy before the monitor itself counts as healthy. Configuring more than one location requires a paid plan; the API returns `403 Forbidden` otherwise.
+Checks do not come from fixed IP addresses. To let them through a firewall or bot protection, see [allowlisting our checks](/uptime-monitoring/http-checks/allowlisting/).
 
 ### Schedules
 

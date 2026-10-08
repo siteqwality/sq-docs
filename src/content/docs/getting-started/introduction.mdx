@@ -1,7 +1,7 @@
 ---
 title: Welcome to SiteQwality
 description: A unified platform for uptime monitoring, observability, on-call, and public status, without paying Datadog prices.
-last_verified: 2026-05-03
+last_verified: 2026-10-07
 owner: jj
 ---
 
@@ -15,7 +15,7 @@ If you're tired of stitching Pingdom + Datadog + PagerDuty + Statuspage and watc
 
 <CardGrid>
   <Card title="Uptime monitoring" icon="approve-check">
-    HTTP, SSL/TLS, DNS, cron heartbeats, and full-browser synthetic checks, run on a schedule from AWS us-east-1, as often as every 30 seconds on paid plans.
+    HTTP, SSL/TLS, DNS, cron heartbeats, and full-browser synthetic checks, run on a schedule as often as every 30 seconds on paid plans. HTTP checks run from the locations you choose on AWS, Google Cloud and Microsoft Azure.
   </Card>
   <Card title="Observability" icon="bars">
     Metrics, logs, traces, RUM, and session replay. One query language across all five.
@@ -68,9 +68,9 @@ To work with SiteQwality from Claude, ChatGPT, Cursor or another AI assistant, s
 
 ## A note on plans
 
-Most features in these docs work on the free plan. A few are paid: sub-minute check intervals, custom status-page domains, and session replay. Where that's the case the relevant page calls it out in an `Aside`.
+Most features in these docs work on the free plan. A few are paid: sub-minute check intervals, more than one check location per monitor, custom status-page domains, and session replay. Where that's the case the relevant page calls it out in an `Aside`.
 
-Checks run from one location, AWS `us-east-1`. Additional check locations are on the roadmap and are not available today, on any plan. See [check locations](/uptime-monitoring/overview/#regions).
+On the free plan each monitor checks from one location, by default `aws-us-east-1` (Virginia, AWS). Paid plans can check from any number, and each location counts as one check toward your check volume. See [check locations](/uptime-monitoring/overview/#check-locations).
 
 <Aside type="tip">
 Need help picking a plan, or want to see a demo before signing up? Email <a href="mailto:hello@siteqwality.com">hello@siteqwality.com</a>.
