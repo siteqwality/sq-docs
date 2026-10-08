@@ -69,7 +69,7 @@ Backends:
 Logs, metrics and traces share one **telemetry** allowance, measured in GB per month and pooled across the three signals: 1 GB with 3-day retention on the free tier, then paid packs of 50 GB (15 days), 200 GB (30 days) and 1 TB (30 days). Telemetry has no per-seat charge. RUM and session replay are priced separately, per session and per replay. See [pricing](https://siteqwality.com/pricing/).
 
 <Aside type="caution" title="What happens at the limit">
-Usage can run 10% past your telemetry allowance. After that, logs, metrics and traces sent for the rest of the billing period are acknowledged but not stored, and no usage email is sent for telemetry, so keep an eye on the **Usage** tab of your account settings.
+You get usage emails at 80% and 100% of your telemetry allowance, as for other products. Usage can then run 10% past the allowance. After that, logs, metrics and traces sent for the rest of the billing period are still accepted with a success response, but they are not stored. The **Usage** tab of your account settings shows where you stand.
 </Aside>
 
 ## See also

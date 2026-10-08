@@ -32,7 +32,7 @@ Authorization: Bearer <api-key>
 Content-Type: application/json | application/x-protobuf
 ```
 
-The body shape is the standard OTLP `ExportTraceServiceRequest`. Most language SDKs handle this for you, and most default to protobuf, which is supported. See [sending OTLP over HTTP/protobuf](/observability/traces/how-to/otlp-protobuf/) for the exporter settings and the limits worth knowing (gRPC is not supported, only traces are accepted, and large batches should be split).
+The body shape is the standard OTLP `ExportTraceServiceRequest`. Most language SDKs handle this for you, and most default to protobuf, which is supported. See [sending OTLP over HTTP/protobuf](/observability/traces/how-to/otlp-protobuf/) for the exporter settings and the limits worth knowing (gRPC is not supported, and only traces are accepted).
 
 Span attributes are stored as sent, so use the OTel semantic conventions (`http.request.method`, `http.response.status_code`, `db.system`, and so on) for consistent names across services. Custom attributes are accepted on every span.
 
@@ -62,8 +62,9 @@ Trace search reads your stored spans and groups them by trace. Common queries:
 |---|---|
 | `service_name=billing` | Traces with spans in one service. |
 | `min_duration_ms=1000` | Traces with a span slower than one second. |
-| `status=ERROR` | Traces with failing spans. Write the status in uppercase. |
+| `status=error` | Traces with failing spans. `error`, `ok` and `unset` are accepted in any case. |
 | `tags={"http.route":"/checkout"}` | Exact match on a span attribute. See [tag filters](/observability/traces/reference/#tag-filters). |
+| `search=card_declined` | Case-insensitive text search in operation names, status messages, and span and resource attribute values. |
 
 The dashboard's **Traces** page composes these. For programmatic access, use `GET /traces/search` with a full-access API key.
 

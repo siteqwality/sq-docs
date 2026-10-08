@@ -40,7 +40,7 @@ curl -X POST https://metrics.siteqwality.com/metrics \
 A `202 Accepted` means the metrics were queued. Points are usually queryable within about 30 seconds.
 
 <Aside type="tip">
-Batch where you can: fewer requests means faster ingestion. The endpoint accepts up to 1,000 metrics per request, but keep batches to about 500 points, because a large batch of heavily tagged points can be rejected before it reaches 1,000.
+Batch where you can: fewer requests means faster ingestion. The endpoint accepts up to 1,000 metrics per request.
 </Aside>
 
 ## 2. Send some more so we have a series

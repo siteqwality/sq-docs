@@ -13,7 +13,18 @@ Authorization: Bearer <api-key>
 Content-Type: application/x-protobuf | application/json
 ```
 
-Body: standard OTLP `ExportTraceServiceRequest`. Most OTel SDK exporters handle the format for you. gzip and deflate request compression are accepted; zstd is rejected with `415`. See [OTLP over HTTP/protobuf](/observability/traces/how-to/otlp-protobuf/) for batch sizing and what is not supported.
+Body: standard OTLP `ExportTraceServiceRequest`. Most OTel SDK exporters handle the format for you. `application/protobuf` is accepted as well. gzip and deflate request compression are accepted; zstd is rejected with `415`.
+
+Responses:
+
+| Status | When |
+|---|---|
+| `200` | Accepted. The body is an empty `ExportTraceServiceResponse` in the request's encoding: an empty protobuf body, or `{}` for JSON. An export with no spans also gets `200`. |
+| `400` | The payload cannot be decoded as OTLP (bad protobuf, invalid or blank JSON). Retrying will not help. |
+| `401` / `403` | Missing key / unknown, revoked or expired key. |
+| `413` | One span, with its resource attributes, encodes to more than the per-span limit (see [batch sizing](/observability/traces/how-to/otlp-protobuf/#batch-sizing)). Nothing from the request is stored. |
+
+See [OTLP over HTTP/protobuf](/observability/traces/how-to/otlp-protobuf/) for exporter settings and what is not supported.
 
 ## Span attribute conventions
 
@@ -95,7 +106,8 @@ The search and detail endpoints are on `https://api.siteqwality.com` and need a 
 | `service_name` | Exact match. |
 | `operation_name` | Exact match. |
 | `min_duration_ms`, `max_duration_ms` | Range filter. |
-| `status` | `OK`, `ERROR` or `UNSET`, in uppercase. Matches traces with at least one span in that status. |
+| `status` | `error`, `ok` or `unset`, in any case. Matches traces with at least one span in that status. Any other value gets `400`. |
+| `search` | Case-insensitive text search in operation names, status messages, and span and resource attribute values. |
 | `tags` | URL-encoded JSON object of span-attribute filters. See [tag filters](#tag-filters). |
 | `limit` (default 50, max 200), `offset` | Pagination. |
 | `sort_field`, `sort_order` | Order. |

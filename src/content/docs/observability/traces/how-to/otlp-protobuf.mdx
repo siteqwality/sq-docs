@@ -15,7 +15,7 @@ Authorization: Bearer <api-key>
 Content-Type: application/x-protobuf
 ```
 
-A successful export returns a `2xx` status. If your exporter logs an error about parsing the response while your spans keep arriving, the export succeeded.
+A successful export returns `200` with an empty `ExportTraceServiceResponse` in the request's encoding: an empty protobuf body, or `{}` for JSON. That is what OTLP exporters and the Collector expect, so they report the export as sent.
 
 ## Configure your SDK
 
@@ -56,14 +56,11 @@ With the base variable the SDK appends `/v1/traces` itself. Do not include the p
 
 | Header | Handling |
 |---|---|
-| `application/x-protobuf` | Protobuf. **Use this one.** |
+| `application/x-protobuf` | Protobuf. What most exporters send. |
+| `application/protobuf` | Protobuf, the other common spelling. Also accepted. |
 | `application/json` | OTLP JSON. |
 
-Both produce identical stored spans. Parameters after a semicolon are ignored, so `application/x-protobuf; charset=utf-8` is fine.
-
-<Aside type="caution" title="Use application/x-protobuf, not application/protobuf">
-Both spellings appear in the wild. Only `application/x-protobuf` is declared as a binary media type at the gateway, so that is the one to configure. The other spelling risks the body being mangled in transit before anything can decode it.
-</Aside>
+All produce identical stored spans. Parameters after a semicolon are ignored, so `application/x-protobuf; charset=utf-8` is fine. The response uses the same encoding as the request.
 
 ## What is not supported
 
@@ -72,20 +69,14 @@ Getting these wrong produces confusing failures, so they are worth stating plain
 - **gRPC is not supported.** This is an HTTP endpoint only. `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` will not work; use `http/protobuf`.
 - **Only traces.** There is no OTLP endpoint for logs or metrics. Set `OTEL_METRICS_EXPORTER=none` and `OTEL_LOGS_EXPORTER=none`, because most SDKs turn those exporters on by default, and use the [logs](/observability/logs/reference/#ingest) and [metrics](/observability/metrics/reference/#ingest-endpoint) ingest APIs instead.
 - **gzip is fine, zstd is not.** `OTEL_EXPORTER_OTLP_COMPRESSION=gzip` (the Collector's default) works and makes exports several times smaller. A `zstd`-compressed body is rejected with `415`.
-- **An empty export is rejected** with a `400`, rather than silently accepted.
+- **Payloads that cannot be decoded get `400`.** Invalid protobuf, invalid or blank JSON, or JSON without `resourceSpans` is a permanent error, so exporters do not retry it. An export that decodes but holds no spans gets `200` and stores nothing.
 - **Instrumentation scope name and version are discarded.** Put anything you need to query on into span or resource attributes.
 
 ## Batch sizing
 
-All the spans of one `ResourceSpans` group (in practice, one service's spans in an export) become one internal message with a **250 KiB** ceiling, measured after SiteQwality re-encodes the spans as JSON. Compression and protobuf do not help here. A typical HTTP server span takes about 1 KB, so the default OpenTelemetry batch of 512 spans can exceed the ceiling. When it does, the export fails with a `502`, which the SDK retries and eventually drops.
+The default OpenTelemetry batch of 512 spans works, and there is nothing to tune. SiteQwality re-encodes each export as JSON and splits a service's spans across as many internal messages as it needs.
 
-Set the batch size to 100 spans:
-
-```bash
-export OTEL_BSP_MAX_EXPORT_BATCH_SIZE=100
-```
-
-In the Collector, set both `send_batch_size: 100` and `send_batch_max_size: 100` on the `batch` processor. If your spans carry large attributes, go lower.
+The one limit is per span: a span, together with its resource attributes, must encode to under **1,023,948 bytes** of JSON (about 1,000 KiB). A larger span gets `413`, the response names the span and its size, and nothing from that request is stored. Only a span carrying a very large attribute, such as a whole request body, comes near it.
 
 ## Verify it worked
 

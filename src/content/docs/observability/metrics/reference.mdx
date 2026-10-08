@@ -35,7 +35,7 @@ Body:
 }
 ```
 
-- Max **1,000 metrics per request**. Keep batches to about 500 points: the whole batch travels as one internal message with a size limit of about 250 KB, so a batch of heavily tagged points can be rejected before it reaches 1,000.
+- Max **1,000 metrics per request**; more is a `400`. The request has no byte limit of its own: points are packed into as many internal messages as they need. One metric may encode to at most about 1,000 KiB (1,023,948 bytes, less a few bytes of framing); a larger one gets `413` and nothing from the request is stored. Separately, request bodies over about 6 MB are refused before they reach SiteQwality's code.
 - `timestamp` must be an RFC 3339 string. A numeric (epoch) timestamp makes the request fail with `400`.
 - Returns `202 Accepted` on enqueue. Points are usually queryable within about 30 seconds.
 - Returns `400` for malformed payloads, `401` when the `Authorization` header is missing, and `403` for an unknown, revoked or expired key.
@@ -120,7 +120,8 @@ Response:
 
 | Constraint | Value |
 |---|---|
-| Metrics per ingest request | 1,000 (keep batches to about 500 points) |
+| Metrics per ingest request | 1,000 |
+| Size of one encoded metric | About 1,000 KiB (`413` above that) |
 | Metric name characters | `^[a-zA-Z0-9._]+$` |
 | Retention (free tier) | 3 days |
 | Retention (paid telemetry packs) | 15 days on the 50 GB pack; 30 days on the 200 GB and 1 TB packs |

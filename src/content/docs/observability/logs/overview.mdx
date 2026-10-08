@@ -56,14 +56,14 @@ A `202 Accepted` means the logs were queued. They become searchable about a minu
 
 Only the fields in the table below are kept. Anything else at the top level of an entry, such as `service`, `msg` or `user_id`, is dropped, so put your own fields under `metadata` (or `tags` for values you filter on). Many logging libraries and forwarders use different names (`msg`, `log`, `levelname`, `time`): rename them to `message`, `level` and `timestamp` before sending.
 
-Keep each line under 100 KB and each request to about 1,000 lines.
+One entry may encode to at most 1,023,948 bytes (about 1,000 KiB). Each entry carries its line twice internally, so a single line of about 500 KB already reaches that. A request with an entry over the limit gets `413` and none of it is stored. Keep requests to about 1,000 lines.
 
 ## Anatomy of a log entry
 
 | Field | Description |
 |---|---|
 | `timestamp` | RFC 3339 string, for example `2026-05-03T14:32:17.345Z`. Numbers (epoch seconds or milliseconds) are not read: the entry gets the ingest time instead, which can be up to a minute late. Ingest time is also used when the field is missing. |
-| `level` | `trace`, `debug`, `info`, `warn`, `error`, `fatal`. Defaults to `info`. Send lowercase values (`error`, not `ERROR`) so filters, insights and alerts match them. |
+| `level` | `trace`, `debug`, `info`, `warn`, `error`, `fatal`. Defaults to `info`. Stored as sent; filters, insights and alerts match it in any case, and `error` also matches `err`, `fatal` and `critical`, and `warn` also matches `warning`. |
 | `message` | Human-readable summary. Searched by the `search` parameter (case-insensitive substring). |
 | `source` | Logical source name (`billing-api`, `worker-fleet`): the service that produced the line. Avoid high-cardinality values. |
 | `host` | Pod/container/VM identity. |
@@ -79,7 +79,7 @@ Keep each line under 100 KB and each request to about 1,000 lines.
 Logs are queried via `GET /logs/query` with these params:
 
 - `start_time`, `end_time`: RFC 3339 window (defaults to last 1h).
-- `level`: comma-separated levels (`error,warn`).
+- `level`: comma-separated levels (`error,warn`), in any case. `error` also matches `err`, `fatal` and `critical`, and `warn` also matches `warning`.
 - `source`, `env`, `host`: exact filters; comma-separate several values.
 - `search`: case-insensitive substring match on `message`.
 - `metadata_search`: a JSON object such as `{"user_id":"usr_abc123"}`. Each value is matched as a case-insensitive substring anywhere in the entry's metadata; the key is not checked. Input that is not a JSON object is ignored.
@@ -105,7 +105,7 @@ Returns logs since the cursor, plus a new cursor to use on the next poll. Poll e
 
 `GET /logs/insights` returns heuristic insights, computed when you request them. They do not send notifications; create a log alert in the dashboard for that.
 
-- **Error spike**: sudden increase in `error` level vs baseline.
+- **Error spike**: sudden increase in error-level lines (`error`, `err`, `fatal` or `critical`, in any case) vs baseline.
 - **New error**: a never-seen-before error message.
 - **Silent source**: a normally-chatty source has gone quiet.
 - **Top errors**: most frequent error messages in the window.

@@ -125,7 +125,7 @@ This sends one request per line and blocks while it does, so in a busy service b
 
 **Ship via your existing log pipeline** (Vector, Fluent Bit, Filebeat). Point its HTTP output at `https://logs.siteqwality.com/ingest` with the API key in the `Authorization` header, and map its records to our field names first: the line goes in `message` (Fluent Bit and Docker put it in `log`, many JSON loggers in `msg`), and anything you want to keep goes under `metadata`. Fields with other names are dropped.
 
-For high-volume apps, batch via NDJSON: use `Content-Type: application/x-ndjson` and submit one JSON object per line, up to about 1,000 lines per request, each under 100 KB.
+For high-volume apps, batch via NDJSON: use `Content-Type: application/x-ndjson` and submit one JSON object per line, up to about 1,000 lines per request. A line of about 500 KB or more gets `413`, and nothing from that request is stored.
 
 ## What's next
 

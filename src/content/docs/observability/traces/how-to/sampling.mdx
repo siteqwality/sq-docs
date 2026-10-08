@@ -58,9 +58,7 @@ processors:
       - name: sample-rest
         type: probabilistic
         probabilistic: { sampling_percentage: 5 }
-  batch:
-    send_batch_size: 100
-    send_batch_max_size: 100
+  batch: {}
 
 exporters:
   otlphttp:
@@ -76,7 +74,7 @@ service:
       exporters: [otlphttp]
 ```
 
-Use `traces_endpoint`, not `endpoint`: the exporter appends `/v1/traces` to `endpoint`, which would send to `/v1/traces/v1/traces`. The `batch` settings keep each export under SiteQwality's [batch size limit](/observability/traces/how-to/otlp-protobuf/#batch-sizing).
+Use `traces_endpoint`, not `endpoint`: the exporter appends `/v1/traces` to `endpoint`, which would send to `/v1/traces/v1/traces`.
 
 Use tail sampling when:
 

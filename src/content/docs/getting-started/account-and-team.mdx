@@ -97,7 +97,7 @@ Whichever you use, every change either one makes is recorded in the [audit log](
 
 </Steps>
 
-Usage-relevant counters (monitor count, ingested logs/metrics/traces volume, RUM session count) live under **Settings → Billing → Usage**. Hard limits are enforced at the API layer, so you'll get a `403 Forbidden` if a request would push you over. Telemetry is the exception: past the allowance and its 10% grace buffer, the ingest endpoints still answer `202` but logs, metrics and traces are not stored.
+Usage-relevant counters (monitor count, ingested logs/metrics/traces volume, RUM session count) live under **Settings → Billing → Usage**. Hard limits are enforced at the API layer, so you'll get a `403 Forbidden` if a request would push you over. Telemetry is the exception: past the allowance and its 10% grace buffer, the ingest endpoints still answer with a success status, but logs, metrics and traces are not stored.
 
 ## Set up integrations early
 

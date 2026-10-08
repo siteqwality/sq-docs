@@ -27,14 +27,14 @@ Optional header:
 
 - `X-Log-Source: <name>` applies `source` to every entry in this request that does not carry its own. Plain-text lines never do, so send it with them.
 
-A `202 Accepted` means the entries were queued; they are searchable about a minute later. Keep each line under 100 KB and each request to about 1,000 lines. Top-level fields not listed below are dropped: put your own fields under `metadata` or `tags`.
+A `202 Accepted` means the entries were queued; they are searchable about a minute later. One entry may encode to at most 1,023,948 bytes (about 1,000 KiB). Each entry carries its line twice internally, so a single line of about 500 KB already reaches that. A request with an entry over the limit gets `413` and none of it is stored. Keep requests to about 1,000 lines. Top-level fields not listed below are dropped: put your own fields under `metadata` or `tags`.
 
 ## Log entry fields
 
 | Field | Type | Description |
 |---|---|---|
 | `timestamp` | RFC 3339 string | Defaults to ingest time. Numeric (epoch) values are ignored and get ingest time too. |
-| `level` | string | `trace`, `debug`, `info`, `warn`, `error`, `fatal`. Defaults to `info`. Send lowercase. |
+| `level` | string | `trace`, `debug`, `info`, `warn`, `error`, `fatal`. Defaults to `info`. Stored as sent, matched in any case. |
 | `message` | string | Searched as a case-insensitive substring. |
 | `host` | string | Pod/container/VM identity. |
 | `env` | string | `prod`, `staging`, etc. |
@@ -52,7 +52,7 @@ The query endpoints are on `https://api.siteqwality.com` and need a full-access 
 | Param | Description |
 |---|---|
 | `start_time`, `end_time` | RFC 3339 window; default last 1h. |
-| `level` | Comma-separated levels (`error,warn`). |
+| `level` | Comma-separated levels (`error,warn`), in any case. `error` also matches `err`, `fatal` and `critical`, and `warn` also matches `warning`. |
 | `source`, `env`, `host` | Exact-match filters; comma-separate several values. |
 | `search` | Case-insensitive substring in `message`. |
 | `metadata_search` | JSON object, e.g. `{"user_id":"usr_abc"}`. Each value is matched as a case-insensitive substring anywhere in the metadata; keys are not checked. Non-JSON input is ignored. |

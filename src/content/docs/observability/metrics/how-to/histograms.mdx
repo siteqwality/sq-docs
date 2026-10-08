@@ -50,7 +50,7 @@ Rules the ingest endpoint enforces, each a `400` for the whole batch if broken:
 | Buckets must not be empty | At least one bucket. |
 | The last bucket must be `+Inf` | Spelled exactly `+Inf`. `inf`, `Inf` and `+inf` are all rejected. |
 | Bounds must ascend strictly | No duplicates, no out-of-order bounds. |
-| Max 1,000 metrics per request | Keep batches to about 500 points; a large batch can be rejected before it reaches 1,000. |
+| Max 1,000 metrics per request | More is a `400`. Batch larger payloads into several requests. |
 | Name charset | `^[a-zA-Z0-9._]+$`. No hyphens, colons or slashes. |
 
 `sum` and `count` are required alongside the buckets. `timestamp` defaults to ingest time; `unit` and `tags` are optional. A successful call returns `202 Accepted` and the write happens asynchronously.

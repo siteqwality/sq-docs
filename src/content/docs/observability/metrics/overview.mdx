@@ -108,7 +108,7 @@ Group by one tag key to split the series. Filter by any number of tags to scope.
 
 Metrics count toward your telemetry allowance, which is measured in GB per month and pooled with logs and traces; it is not priced per data point. Each point is metered by the size of its encoded form, name and tags included, so long names and many tags cost more than short ones. See the [observability overview](/observability/overview/#pricing).
 
-An ingest request accepts up to 1,000 metrics, but keep batches to about 500 points: a large batch of heavily tagged points can be rejected before it reaches 1,000.
+An ingest request accepts up to 1,000 metrics. See the [reference](/observability/metrics/reference/#limits) for the size limits.
 
 ## See also
 

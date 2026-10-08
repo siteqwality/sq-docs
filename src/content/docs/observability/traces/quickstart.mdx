@@ -142,7 +142,7 @@ The endpoint accepts the standard OTLP format over HTTP from any OTel SDK. The p
 | .NET | https://opentelemetry.io/docs/instrumentation/net/ |
 
 <Aside type="tip">
-For busy services, lower the export batch size (`OTEL_BSP_MAX_EXPORT_BATCH_SIZE=100`) as described in [batch sizing](/observability/traces/how-to/otlp-protobuf/#batch-sizing), and read [sampling](/observability/traces/how-to/sampling/) before you sample: counts, error rates and percentiles describe the spans you keep.
+For high-volume production, read [sampling](/observability/traces/how-to/sampling/) before you sample: counts, error rates and percentiles describe the spans you keep.
 </Aside>
 
 ## What's next
