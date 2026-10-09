@@ -1,7 +1,7 @@
 ---
 title: Concepts and glossary
 description: The vocabulary used across the SiteQwality docs and product, defined precisely.
-last_verified: 2026-08-01
+last_verified: 2026-10-07
 owner: jj
 ---
 
@@ -17,21 +17,19 @@ The umbrella term for any scheduled health check. SiteQwality has five monitor f
 
 ### Check
 
-A single execution of a monitor: one HTTP request, one DNS lookup, one TLS handshake. Each check produces a *result* (`success`, `failure`, plus latency and any captured payload). One check location runs today, so a monitor produces one check per tick.
+A single execution of a monitor: one HTTP request, one DNS lookup, one TLS handshake. Each check produces a *result* (`success`, `failure`, plus latency and any captured payload). An HTTP monitor with several check locations produces one check per location per tick, and each one counts toward your check volume.
 
 ### Run interval
 
 How often a monitor's checks fire. Free plan minimum is 5 minutes (300 seconds); paid plans go down to 30 seconds. Browser checks have their own discrete intervals (`5m`, `10m`, `15m`, `30m`, `1h`).
 
-### Region
+### Check location
 
-A geographic location SiteQwality runs checks from. There is exactly one today: `aws-us-east-1`, N. Virginia. It is the default, and it is the only value with check infrastructure behind it.
-
-The `check_regions` field accepts three other values (`aws-us-east-2`, `aws-us-west-1`, `aws-eu-west-2`) that no runner serves. Setting one does not produce checks from that location. See [check locations](/uptime-monitoring/overview/#regions) for what happens if you do.
+A place SiteQwality runs checks from, on AWS, Google Cloud or Microsoft Azure. Each has a stable id of the form `<provider>-<region>`, such as `aws-us-east-1`, and the API field that holds them is `check_regions`. The default is `aws-us-east-1` (Virginia, AWS). The free plan allows one location per monitor; paid plans allow any number. HTTP checks can use any live location; browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1`. The live list is on the [locations page](https://siteqwality.com/locations/). See [check locations](/uptime-monitoring/overview/#check-locations).
 
 ### Min healthy regions
 
-When a monitor runs in N locations, this knob says "consider the monitor failing only if fewer than M locations report healthy." With one location it is always 1 of 1. A configured location that reports nothing counts as **not healthy**, not as absent, which is why setting it above the number of locations that actually run leaves a monitor permanently failing.
+When a monitor runs in N locations, this knob says "consider the monitor failing only if fewer than M locations report healthy." With one location it is always 1 of 1. A location that returns no result in a run is left out of that run, so it never counts against the monitor.
 
 ## Incident vocabulary
 

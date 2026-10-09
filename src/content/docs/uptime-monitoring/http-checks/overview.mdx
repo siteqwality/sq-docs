@@ -20,10 +20,10 @@ For ping-style "is the box up" checks where there's no HTTP server, use a [cron 
 
 ## How it works
 
-Every HTTP check has a **schedule** (default: every 10 minutes; minimum 30 seconds on paid plans) and a **target URL**. On each tick:
+Every HTTP check has a **schedule** (default: every 10 minutes; minimum 30 seconds on paid uptime plans) and a **target URL**. On each tick:
 
-1. SiteQwality issues the configured HTTP request from AWS `us-east-1`, the only [check location](/uptime-monitoring/overview/#regions) that runs checks today.
-2. The response is evaluated against your **assertions**: status code, response body keyword search, response time.
+1. SiteQwality issues the configured HTTP request from each [check location](/uptime-monitoring/overview/#check-locations) you selected (by default `aws-us-east-1`, Virginia, AWS).
+2. Each response is evaluated against your **assertions**: status code, response body keyword search, response time. With several locations, `min_healthy_regions` decides how many must pass.
 3. If the result differs from the previous status (e.g., success → failure), an **incident** opens and your **notification rules** fire.
 4. The result is recorded for uptime/latency dashboards and historical reporting.
 
@@ -42,7 +42,7 @@ These are opt-in via the `monitor_tls`, `monitor_dns`, and `monitor_page_speed` 
 | **Request** | method, URI, custom headers, request body, content type, follow-redirects |
 | **Auth** | Basic, Digest, or Bearer token |
 | **Assertions** | success/failure status code lists, keyword search (substring or regex, optionally case-sensitive or inverted), timeout |
-| **Schedule** | run interval (30 s on paid plans, otherwise 60 s minimum), check regions and minimum healthy regions (both settable, both effectively fixed at one location today) |
+| **Schedule** | run interval (30 s on paid uptime plans, 5 min minimum on the free plan), check locations (one on the free plan, any number on paid uptime plans) and minimum healthy locations |
 | **Notifications** | one or more notification groups |
 
 Full field-by-field reference: see the auto-generated [`POST /http/job`](/api-reference/operations/create_http_job/).

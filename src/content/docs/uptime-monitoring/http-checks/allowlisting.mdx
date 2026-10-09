@@ -1,0 +1,69 @@
+---
+title: Allowlisting our checks
+description: Let SiteQwality checks through a firewall, WAF or bot protection with a secret header or the User-Agent, and what the bot_protection failure reason means.
+last_verified: 2026-10-07
+owner: jj
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+If your site sits behind a firewall, a WAF or bot protection, it can block or challenge our checks, and the monitor reports an outage your users never saw. This page shows how to let the checks through.
+
+## There are no fixed IP addresses
+
+HTTP checks run from [check locations](/uptime-monitoring/overview/#check-locations) on AWS, Google Cloud and Microsoft Azure. Each location sends its requests from its cloud provider's shared address ranges, and those addresses change, so there is no list of IPs to allowlist. Allowlist by something the request carries instead: a secret header (recommended) or our User-Agent.
+
+## Option 1: a secret custom header
+
+Add a header with a long random value to the monitor, then tell your firewall or bot protection to allow requests that carry it. A sufficiently random secret distinguishes your checks from unrelated requests. Keep it private and rotate it if it leaks.
+
+<Steps>
+
+1. Generate a long random value, for example with `openssl rand -hex 32`.
+
+2. Open the monitor and choose **Edit**, then **Advanced**. Under **Custom HTTP Headers**, enter `X-Uptime-Check` as the header name and your random value as the header value. Save. Use this custom name rather than a standard metadata header such as `User-Agent`, whose value can remain visible in results.
+
+   When using the API, first read the current monitor with `GET /http/job/{job_id}`. Include its current `auth_type`, `content_type`, and complete `custom_http_headers` map in `PUT /http/job/{job_id}`, adding `X-Uptime-Check` to that map. Omitting those three fields clears them. Existing masked header values can be sent back unchanged to preserve their stored values; omit password and bearer-token fields to retain the stored credentials.
+
+3. In your firewall, WAF or bot protection, add a rule that allows requests whose `X-Uptime-Check` header equals the value, or lets them skip the challenge. In Cloudflare, for example, that is a WAF custom rule with the expression `any(http.request.headers["x-uptime-check"][*] eq "<your random value>")` and the **Skip** action.
+
+4. Wait for the next check, or run the monitor now, and confirm it passes.
+
+</Steps>
+
+Treat the value like a password. SiteQwality masks the `X-Uptime-Check` value when it returns a monitor or check result in the dashboard and API. Standard metadata headers, including `User-Agent`, are not all masked. If it leaks, generate a new one and update both the monitor and the rule.
+
+## Option 2: the User-Agent
+
+Every check sends this User-Agent:
+
+```
+site-qwality-check/1.0
+```
+
+You can match on it to skip a bot challenge or a rate limit. Anyone can send the same string, though, so it identifies our checks without proving a request came from us. Use it where a false match costs little, or together with the secret header.
+
+## Why IP allowlisting is not offered by default
+
+- Locations run on serverless platforms in three clouds. They take their outbound addresses from each provider's shared pools, which is what lets us run checks from many places at a reasonable cost.
+- Allowlisting those shared ranges would also let in every other customer of the same cloud, so it would protect very little.
+- A secret header lets in requests that carry your secret and nothing else.
+
+If your setup cannot match on a header and you need checks from a fixed IP address, email [hello@siteqwality.com](mailto:hello@siteqwality.com).
+
+## Blocked by bot protection
+
+When a check fails and the response carries the signature of a known bot-protection service, the result's `failure_reason` is `bot_protection`, shown in the dashboard as **Blocked by bot protection**. The signatures recognised include Cloudflare challenges, AWS WAF CAPTCHA and challenge actions, Akamai, Imperva, DataDome and PerimeterX (HUMAN). The label is only applied to a check that already failed on its status code, so a passing check is never relabelled.
+
+It still counts as a failure: the monitor goes down and alerts like any other failed check. The site refused our request, and from the outside we cannot tell whether your users are being refused too.
+
+What to do about it:
+
+- **Allowlist our checks** with a [secret header](#option-1-a-secret-custom-header). This is the fix that lasts.
+- **Add a location on another provider.** Bot protection often scores cloud networks differently, so checking from another network can help. More than one location per monitor needs a paid uptime plan; see [check locations](/uptime-monitoring/http-checks/reference/#check-locations).
+- **Try HTTP/1.1.** Some bot-management edges treat HTTP/2 and HTTP/1.1 clients differently. Set `http_version` to `http1_1`; see [HTTP versions](/uptime-monitoring/http-checks/reference/#http-versions).
+- **Monitor an endpoint that is not challenged**, such as a health check path your protection lets through, if the page itself is always behind a challenge.
+
+<Aside type="tip">
+`confirmation_threshold` can stop an occasional challenge from paging you, but it does not stop the failures being recorded. See [requiring N failed checks](/uptime-monitoring/http-checks/how-to/confirmation-threshold/).
+</Aside>

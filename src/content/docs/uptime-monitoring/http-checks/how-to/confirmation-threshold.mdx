@@ -81,7 +81,7 @@ Three independent layers sit between a network blip and your phone. They run in 
 3. confirmation        counts consecutive failed evaluations
 ```
 
-With one check location, which is all there is today, layer 2 is a 1-of-1 pass-through and only layers 1 and 3 do any work. It is described in full below because the mechanism is real and applies the moment a second location exists.
+With one check location, layer 2 is a 1-of-1 pass-through and only layers 1 and 3 do any work. With several locations, all three apply.
 
 ### 1. Transport retry, inside one check
 
@@ -93,19 +93,19 @@ A check that fails once and succeeds on retry is recorded as a plain success. It
 
 ### 2. Location quorum
 
-`min_healthy_regions` decides whether a single evaluation counts as failed: the check is healthy when at least that many of its configured locations are passing. Today every monitor runs from one location, `aws-us-east-1`, so this is 1 of 1 and the verdict is simply whether that check passed.
+`min_healthy_regions` decides whether a single evaluation counts as failed: every selected location runs on the same tick, and the evaluation is healthy when at least that many of them passed. For a monitor with one location this is 1 of 1, and the verdict is simply whether that check passed.
 
-<Aside type="caution" title="Configuring a location that does not run makes this permanent">
-The quorum counts only configured locations that returned a success. A location that reported nothing counts as **not healthy**, not as absent, and three of the four values `check_regions` accepts have no runner behind them. A monitor set to `["aws-us-east-1", "aws-eu-west-2"]` with `min_healthy_regions: 2` therefore fails the quorum on every single evaluation, and no confirmation threshold will save it. See [check locations](/uptime-monitoring/overview/#regions).
+<Aside type="note" title="A location that returns nothing is left out">
+If a location cannot return a result in a run (its provider is unreachable, for example), nothing is recorded for it and it is left out of that evaluation: `min_healthy_regions` is capped at the number of locations that did report. A monitor set to three locations with `min_healthy_regions: 2` whose third location is unreachable is evaluated as 2 of 2 for that run, not failed. For a single-location monitor, the executor attempts the default location when it is different and enough execution time remains. If no location reports a result, the monitor's status stays unchanged. See [check locations](/uptime-monitoring/http-checks/reference/#check-locations).
 </Aside>
 
 ### 3. Confirmation threshold
 
 The threshold then counts how many consecutive checks that quorum verdict has held for. The quorum decides *whether a check failed*; the threshold decides *how many failed checks in a row you need*.
 
-For a single-location monitor, which is every monitor today, this is exactly "the last N checks all failed".
+For a single-location monitor this is exactly "the last N checks all failed".
 
-Across several locations it would be measured in scheduler ticks, and the streak length would be the largest number of checks any single configured location contributed to it. Any moment at which the quorum was healthy resets the streak, including one location recovering between two others' failures. That path is implemented and none of it is reachable while only one location runs.
+Across several locations it is measured in scheduler ticks: N consecutive ticks whose quorum evaluation failed. Any tick at which the quorum was healthy resets the streak.
 
 <Aside type="tip">
 If the thing you actually want is "do not page me for a blip that clears within a minute", `delay_send_after_minutes` on the [notification group](/incident-management/notifications/overview/#notification-groups) is often the better tool: it delays the page but still opens the incident on the first failure. Use `confirmation_threshold` when you want the monitor to genuinely not consider itself down yet.

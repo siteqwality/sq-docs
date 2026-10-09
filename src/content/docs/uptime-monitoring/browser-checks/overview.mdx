@@ -77,7 +77,7 @@ Anything you can do with Playwright works inside a step.
 Available frequencies: `5m`, `10m`, `15m`, `30m`, `1h`. Browser checks are billed per run; the dashboard shows your current monthly count under **Settings → Billing → Usage**.
 
 <Aside type="caution">
-Browser checks are paid-only. Every run happens in `aws-us-east-1` whatever you select, so there is no multi-location browser check to buy today.
+Browser checks are paid-only, and every run happens in `aws-us-east-1` (Virginia, AWS). Unlike HTTP checks, they cannot be spread across several locations.
 </Aside>
 
 ## Failure alerts carry the failed step and a screenshot
@@ -98,26 +98,23 @@ The screenshot URL in an alert is pre-signed with the alerting service's own tem
 Open it while triaging. After that, get the screenshot from the check's run detail in the dashboard, where it does not expire.
 </Aside>
 
-## Regions
+## Location
 
-<Aside type="danger" title="Browser checks all run from US East today">
-The region selector accepts the same four values as HTTP checks, but **only one browser-runner exists in production, in `aws-us-east-1`**. Whichever regions you select:
+<Aside type="caution" title="Browser checks run from Virginia (AWS) only">
+HTTP checks can run from any of the [check locations](/uptime-monitoring/overview/#check-locations) on AWS, Google Cloud and Microsoft Azure. Browser checks cannot: **every browser check runs in `aws-us-east-1`**, the only location that can run them.
 
-- the check executes in US East (Virginia);
-- the result is recorded against `aws-us-east-1`, which is where it genuinely ran, not the region you asked for;
-- selecting several regions produces **one** run and one result, not one per region;
-- `min_healthy_regions` is capped to the number of regions that can actually serve the check, so a 3-of-3 configuration is evaluated as 1-of-1. Without that cap such a monitor could never report healthy.
+- Leave `check_regions` unset, or set it to `["aws-us-east-1"]`.
+- A location that cannot run browser checks is rejected with `400`. The retired ids `aws-us-east-2` and `aws-us-west-1` are accepted and replaced with `aws-us-east-1`.
+- More than one location without a paid uptime plan is rejected with `403` and `multi_region_requires_paid_plan`, the same rule as HTTP checks.
 
-`POST /browser_check/{id}/run` tells you the truth in its response: it reports the region the run actually executed in.
-
-**This is not a browser-check limitation.** `aws-us-east-1` is the only location with check infrastructure of any kind: HTTP checks run from there too, and the other three values have no runner behind them either. The difference is that browser checks fall back to the US East runner and record the truth, while an HTTP check configured for a location that does not run simply never reports from it. See [check locations](/uptime-monitoring/overview/#regions).
+`POST /browser_check/{id}/run` reports the location the run executed in.
 </Aside>
 
 ## Constraints
 
 - **Script size**: anything under 50KB. The script is stored in Postgres alongside the check config.
 - **Timeout**: `1`–`300` seconds per run. Includes browser startup; the user script gets `timeout - 30s`.
-- **Regions**: accepts `aws-us-east-1`, `aws-us-east-2`, `aws-us-west-1`, `aws-eu-west-2`. Only `aws-us-east-1` runs anything; see the caveat above.
+- **Location**: `aws-us-east-1` only; see [location](#location) above.
 
 ## See also
 

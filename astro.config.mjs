@@ -132,6 +132,7 @@ export default defineConfig({
 								{ label: 'Overview', slug: 'uptime-monitoring/http-checks/overview' },
 								{ label: 'Quickstart', slug: 'uptime-monitoring/http-checks/quickstart' },
 								{ label: 'Reference', slug: 'uptime-monitoring/http-checks/reference' },
+								{ label: 'Allowlisting our checks', slug: 'uptime-monitoring/http-checks/allowlisting' },
 								{
 									label: 'How-to guides',
 									collapsed: true,

@@ -87,7 +87,7 @@ Omitting `group_notification_ids` attaches the monitor to your account's auto-cr
 
 1. Open the monitor's detail page. The status badge should flip to **Success** within one minute.
 
-2. Scroll down to **Recent runs**. You'll see one row per check result with status code, latency, and the region it ran from.
+2. Scroll down to **Recent runs**. You'll see one row per check result with status code, latency, and the location it ran from.
 
 3. Force a failure: edit the check, change the URL to `https://mock.codes/500`, save.
 
@@ -103,7 +103,7 @@ If the email never arrives, check your spam folder and confirm the channel email
 
 ## What just happened
 
-- Your check ran on a schedule from AWS `us-east-1`, which is the only check location.
+- Your check ran on a schedule from the default check location, `aws-us-east-1` (Virginia, AWS). On a paid plan you can add more [check locations](/uptime-monitoring/overview/#check-locations) to the same monitor.
 - The result was compared against the assertions on the monitor (status code in the success list, no body keyword search).
 - A change in monitor status (success → failure) opened an **incident** automatically.
 - The incident's `notification group` was looked up, fanned out to its `notification channels`, and each channel rendered the alert in its own format.
