@@ -1,13 +1,17 @@
 ---
 title: Metrics quickstart
 description: Send your first metric via curl, see it on a chart in 5 minutes.
-last_verified: 2026-08-02
+last_verified: 2026-10-08
 owner: jj
 ---
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
 By the end of this guide you'll have sent a counter and a gauge from your laptop, queried them via the API, and seen them on a dashboard chart.
+
+<Aside type="note" title="Which API key">
+Use a **full-access** API key for this guide: step 3 calls `api.siteqwality.com`, which rejects ingest keys with a `403`. In production, give your apps an **ingest** key, which can only send telemetry.
+</Aside>
 
 ## 1. Send a metric
 
@@ -33,10 +37,10 @@ curl -X POST https://metrics.siteqwality.com/metrics \
   }'
 ```
 
-A `202 Accepted` means the metrics were queued. Datapoints land in ClickHouse within ~10 seconds.
+A `202 Accepted` means the metrics were queued. Points are usually queryable within about 30 seconds.
 
 <Aside type="tip">
-The ingest endpoint accepts up to 1000 metrics per request. Batch where you can. Fewer requests = lower API gateway costs and faster ingestion.
+Batch where you can: fewer requests means faster ingestion. The endpoint accepts up to 1,000 metrics per request.
 </Aside>
 
 ## 2. Send some more so we have a series
@@ -66,13 +70,14 @@ This gives you 30 points over 2.5 minutes, enough to render a chart.
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-**Metrics → Explorer**, type `demo.queue_depth` in the metric name, leave defaults. The chart renders.
+Open **Metrics**, pick `demo.queue_depth` in the metric picker and leave the defaults. The chart renders.
 
 </TabItem>
 <TabItem label="API">
 
 ```bash
-START=$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)
+# macOS/BSD date first, then GNU date (Linux)
+START=$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ)
 END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 curl -G https://api.siteqwality.com/metrics/query \
@@ -84,7 +89,7 @@ curl -G https://api.siteqwality.com/metrics/query \
   --data-urlencode "resolution=1m"
 ```
 
-Response includes `series[]` with `points[]` of `{timestamp, value}`.
+The response is wrapped in `data`: `{"data": {"series": [{"group": {}, "points": [{"timestamp": "...", "value": 42.5}]}], "metric_type": "gauge", "unit": ""}}`.
 
 </TabItem>
 </Tabs>
@@ -98,7 +103,7 @@ Response includes `series[]` with `points[]` of `{timestamp, value}`.
 
 1. **Dashboards → New dashboard.** Name it `Demo`.
 
-2. **Add widget → Timeseries.** Pick the metric `demo.queue_depth`. Aggregation `avg`. Layout to taste.
+2. **Add widget → Timeseries.** Choose the **Metrics** data source and the metric `demo.queue_depth`. The widget charts the metric's average over the dashboard's time range. Layout to taste.
 
 3. Save.
 
@@ -114,31 +119,47 @@ See [Dashboards quickstart](/dashboards/quickstart/) for the wire-level shape.
 
 ## 5. Wire your real app
 
-Most languages have a Prometheus client that can convert to SiteQwality's format trivially. The shape closely mirrors OpenTelemetry / Prometheus.
+There is no Prometheus remote-write or OpenTelemetry (OTLP) metrics endpoint. Send metrics as JSON from your own code.
 
-For ad-hoc instrumentation:
+Count events in memory and send the totals once a minute, with a timestamp, rather than one request per event:
 
 ```python
-import os, time, requests
+import os, threading, time, requests
+from collections import Counter
+from datetime import datetime, timezone
 
 API = "https://metrics.siteqwality.com/metrics"
-KEY = os.environ["SITEQWALITY_API_KEY"]
+KEY = os.environ["SITEQWALITY_INGEST_KEY"]
+counts = Counter()
+lock = threading.Lock()
 
-def send_counter(name, value=1, tags=None):
-    requests.post(API, json={
-        "metrics": [{
-            "type": "counter",
-            "name": name,
-            "value": value,
-            "tags": tags or {},
-        }]
-    }, headers={"Authorization": f"Bearer {KEY}"}, timeout=5)
+def incr(name, **tags):
+    with lock:
+        counts[(name, tuple(sorted(tags.items())))] += 1
+
+def flush_every(seconds=60):
+    while True:
+        time.sleep(seconds)
+        with lock:
+            batch = dict(counts)
+            counts.clear()
+        if not batch:
+            continue
+        now = datetime.now(timezone.utc).isoformat()
+        metrics = [
+            {"type": "counter", "name": name, "value": n, "timestamp": now, "tags": dict(tags)}
+            for (name, tags), n in batch.items()
+        ]
+        requests.post(API, json={"metrics": metrics},
+                      headers={"Authorization": f"Bearer {KEY}"}, timeout=5)
+
+threading.Thread(target=flush_every, daemon=True).start()
 
 # In your code
-send_counter("orders.created", tags={"region": "us-east-1"})
+incr("orders.created", region="us-east-1")
 ```
 
-For production, batch + flush periodically rather than one-request-per-metric.
+Chart `orders.created` with the `sum` aggregation to see orders per time bucket.
 
 ## What's next
 

@@ -1,7 +1,7 @@
 ---
 title: Sample traces
 description: Reduce trace volume (and cost) without losing the signal you actually need.
-last_verified: 2026-05-03
+last_verified: 2026-10-08
 owner: jj
 ---
 
@@ -33,10 +33,18 @@ Use head sampling for sustained-high-volume services where you can afford to los
 
 Decision made after the trace completes. Expensive (you have to buffer everything until you decide) but smart, because it keeps all errors, all slow traces, plus a sample of normal ones.
 
-OpenTelemetry has a [tail sampling collector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor) that runs as a sidecar / daemon between your apps and SiteQwality:
+OpenTelemetry has a [tail sampling processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor), part of the Collector contrib distribution, that runs as a sidecar / daemon between your apps and SiteQwality. Point your apps' OTLP exporters at the Collector, and the Collector at SiteQwality:
 
 ```yaml
 # otel-collector-config.yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
 processors:
   tail_sampling:
     decision_wait: 30s
@@ -50,19 +58,23 @@ processors:
       - name: sample-rest
         type: probabilistic
         probabilistic: { sampling_percentage: 5 }
+  batch: {}
 
 exporters:
   otlphttp:
-    endpoint: https://traces.siteqwality.com/v1/traces
+    traces_endpoint: https://traces.siteqwality.com/v1/traces
     headers:
-      Authorization: Bearer ${SITEQWALITY_API_KEY}
+      Authorization: Bearer ${env:SITEQWALITY_API_KEY}
 
 service:
   pipelines:
     traces:
-      processors: [tail_sampling]
+      receivers: [otlp]
+      processors: [tail_sampling, batch]
       exporters: [otlphttp]
 ```
+
+Use `traces_endpoint`, not `endpoint`: the exporter appends `/v1/traces` to `endpoint`, which would send to `/v1/traces/v1/traces`.
 
 Use tail sampling when:
 
@@ -77,6 +89,10 @@ For most teams:
 - **Low volume (under 10 spans/sec):** No sampling. Send everything.
 - **Mid volume (10–500 spans/sec):** Head sample at 30–50% in app, send the rest.
 - **High volume (over 500 spans/sec):** Tail sample via a collector. Keep 100% errors + 5% successful.
+
+<Aside type="caution" title="Sampled data is not re-weighted">
+SiteQwality does not record the sampling rate, so the trace counts, error rates and latency percentiles on the Traces timeline and the service map describe the spans you sent, not your full traffic. With the tail policy above (every error, 5% of the rest), a service whose real error rate is 1% shows about 17%, and its percentiles lean towards the errors and slow traces the policy keeps. With 10% head sampling, every count is ten times lower than reality. Read sampled numbers as relative, not absolute.
+</Aside>
 
 ## Per-request override
 

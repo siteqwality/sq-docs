@@ -48,7 +48,7 @@ Digits inside an identifier are kept (`error123` stays), but a trailing unit is 
 
 | Setting | Value |
 |---|---|
-| Levels clustered | `error` and `warn`, unless you select others |
+| Levels clustered | `error` and `warn` (with `err`, `fatal`, `critical` and `warning`), unless you select others |
 | Patterns returned | 20 by default, 50 maximum |
 | Distinct messages examined | 1000, by frequency |
 
@@ -81,12 +81,12 @@ The **Analytics** tab runs a fixed set of aggregations over whatever filters are
 |---|---|
 | Log volume over time | Stacked counts by level, bucketed automatically |
 | Volume by source | The 10 busiest sources |
-| Top hosts by errors | The 10 hosts with the most `error` lines, and their totals |
+| Top hosts by errors | The 10 hosts with the most error-level lines, and their totals |
 | Error rate by hour of day (UTC) | Errors as a percentage of all lines, per hour of the day |
 
 Two things to keep in mind when reading it:
 
-- **"Error" means the level is exactly `error`.** A line logged at `fatal`, or at `ERROR` in different casing, is not counted.
+- **"Error" means a level of `error`, `err`, `fatal` or `critical`, in any case.** The volume chart folds levels the same way, with `warning` counted as `warn`.
 - **The hour-of-day chart is UTC**, not your local timezone. A spike at "hour 14" is 14:00 UTC.
 
 Bucket width for the volume chart is chosen from the time range, from 1 minute for a one-hour window up to 1 day for anything beyond two weeks. It is not adjustable.

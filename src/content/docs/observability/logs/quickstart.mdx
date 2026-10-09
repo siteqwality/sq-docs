@@ -1,13 +1,17 @@
 ---
 title: Logs quickstart
 description: Send a log, search it, and save the search as a view in 5 minutes.
-last_verified: 2026-05-03
+last_verified: 2026-10-08
 owner: jj
 ---
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
 By the end of this guide you'll have ingested a few logs, queried them via the API, and pinned a saved view in the dashboard.
+
+<Aside type="note" title="Which API key">
+Use a **full-access** API key for this guide: step 3 calls `api.siteqwality.com`, which rejects ingest keys with a `403`. In production, give your apps and forwarders an **ingest** key, which can only send telemetry.
+</Aside>
 
 ## 1. Send a log
 
@@ -31,7 +35,7 @@ curl -X POST https://logs.siteqwality.com/ingest \
   }'
 ```
 
-`202 Accepted`. The log appears in ClickHouse within ~10 seconds.
+`202 Accepted`. The log becomes searchable about a minute later: ingestion runs in batches that wait up to 60 seconds to fill. If step 3 returns nothing, wait a minute and run it again.
 
 ## 2. Send a few more
 
@@ -61,13 +65,14 @@ That's 20 logs over 40 seconds, with 4 errors mixed in.
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-**Logs → Explorer**. Filter `source = billing-api`, `level = error`. The matching logs render in a table with the message and metadata expanded.
+Open **Logs** and type `source:billing-api level:error` in the search bar. The matching logs render in a table; click one to see its metadata.
 
 </TabItem>
 <TabItem label="API">
 
 ```bash
-START=$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)
+# macOS/BSD date first, then GNU date (Linux)
+START=$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ)
 END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 curl -G https://api.siteqwality.com/logs/query \
@@ -79,49 +84,35 @@ curl -G https://api.siteqwality.com/logs/query \
   --data-urlencode "limit=50"
 ```
 
-Returns `{logs: [...], total: N}`.
+Returns `{"data": {"logs": [...], "total": N}}`.
 
 </TabItem>
 </Tabs>
 
 ## 4. Save the search
 
-In the dashboard's Logs Explorer, after applying your filters click **Save view**, name it `Billing errors (prod)`. It now appears in the **Saved views** sidebar; share with your team by toggling **Shared**.
+On the **Logs** page, after applying your filters click **Save view** and name it `Billing errors (prod)`. It now appears in your saved views; share it with your team by toggling **Shared**.
 
-Or via the API:
-
-```bash
-curl -X POST https://api.siteqwality.com/log_saved_views \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Billing errors (prod)",
-    "description": "All errors from billing-api in prod",
-    "is_shared": true,
-    "filters": {
-      "source": "billing-api",
-      "env": "prod",
-      "level": "error"
-    }
-  }'
-```
+Create views from the dashboard rather than the API. A view created with an API key has no owner, so nobody can edit or delete it afterwards. See [saved views](/observability/logs/how-to/saved-views/).
 
 ## 5. Wire your real app
 
-Most logging libraries can ship to a HTTP sink. Two common patterns:
+Most logging libraries can ship to an HTTP sink. Two common patterns:
 
 **Direct ship from your app** (small services):
 
 ```python
-import logging, requests, json, os
+import logging, os, requests
+from datetime import datetime, timezone
 
 class SqHandler(logging.Handler):
     def emit(self, record):
         requests.post(
             "https://logs.siteqwality.com/ingest",
-            headers={"Authorization": f"Bearer {os.environ['SITEQWALITY_API_KEY']}"},
+            headers={"Authorization": f"Bearer {os.environ['SITEQWALITY_INGEST_KEY']}"},
             json={
-                "timestamp": record.created,
+                # timestamps must be RFC 3339 strings; numbers are ignored
+                "timestamp": datetime.fromtimestamp(record.created, timezone.utc).isoformat(),
                 "level": record.levelname.lower(),
                 "message": record.getMessage(),
                 "source": "my-app",
@@ -130,12 +121,14 @@ class SqHandler(logging.Handler):
         )
 ```
 
-**Ship via your existing log pipeline** (Vector, Fluent Bit, Filebeat). Point it at `https://logs.siteqwality.com/ingest` with the API key in the Authorization header.
+This sends one request per line and blocks while it does, so in a busy service buffer lines and send them in batches from a background thread.
 
-For high-volume apps, batch via NDJSON: stick to `Content-Type: application/x-ndjson` and submit one JSON object per line, up to ~1MB per request.
+**Ship via your existing log pipeline** (Vector, Fluent Bit, Filebeat). Point its HTTP output at `https://logs.siteqwality.com/ingest` with the API key in the `Authorization` header, and map its records to our field names first: the line goes in `message` (Fluent Bit and Docker put it in `log`, many JSON loggers in `msg`), and anything you want to keep goes under `metadata`. Fields with other names are dropped.
+
+For high-volume apps, batch via NDJSON: use `Content-Type: application/x-ndjson` and submit one JSON object per line, up to about 1,000 lines per request. A line of about 500 KB or more gets `413`, and nothing from that request is stored.
 
 ## What's next
 
 <LinkCard title="Parsers" description="Auto-extract structured fields from unstructured lines." href="/observability/logs/how-to/parsers/" />
 <LinkCard title="Saved views" description="More on sharing and organising saved searches." href="/observability/logs/how-to/saved-views/" />
-<LinkCard title="Logs reference" description="Full query syntax." href="/observability/logs/reference/" />
+<LinkCard title="Logs reference" description="Ingestion details and query parameters." href="/observability/logs/reference/" />
