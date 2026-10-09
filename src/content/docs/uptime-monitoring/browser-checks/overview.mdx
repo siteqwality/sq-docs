@@ -70,7 +70,7 @@ Anything you can do with Playwright works inside a step.
 | **Video** | 1280×720 MP4 of the entire run. |
 | **Web vitals** | LCP, FCP, CLS, TTFB extracted via PerformanceObserver. |
 | **Console errors** | Anything logged at `console.error` or thrown. |
-| **Trace IDs** | Outgoing requests get a `traceparent` header injected, allowing distributed-tracing correlation. |
+| **Trace IDs** | Every request the browser makes, to any origin, carries a W3C `traceparent` header with its own trace ID, and the run records those IDs. If the server that received a request is instrumented with OpenTelemetry and sends its traces to SiteQwality, the ID opens that backend trace; otherwise the trace has no spans. |
 
 ## Frequencies and pricing
 

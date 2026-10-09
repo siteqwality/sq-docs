@@ -1,13 +1,13 @@
 ---
 title: Dashboards quickstart
 description: Build a dashboard with a metrics chart and a log stream in 5 minutes.
-last_verified: 2026-05-03
+last_verified: 2026-10-08
 owner: jj
 ---
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have a dashboard called `Service health` with two widgets (a metrics timeseries and a live log stream), both sharing a 1-hour global time range that auto-refreshes every minute.
+By the end of this guide you'll have a dashboard called `Service health` with two widgets (a metrics timeseries and a log stream), both sharing a 1-hour global time range that auto-refreshes every minute.
 
 ## 1. Create the dashboard
 
@@ -51,7 +51,7 @@ Note: dashboards can only be created by users (not API keys) because they need a
 
 1. **Add widget → Timeseries.**
 
-2. **Title:** `Request latency p99`. **Data source:** `metrics`. **Metric:** `http.request.duration_ms`. **Aggregation:** `p99`. **Group by:** `endpoint`. Save.
+2. **Title:** `Request latency (avg)`. **Data source:** `Metrics`. **Metric:** `http.request.duration_ms`. Save. The widget charts the metric's average across all its series; dashboard widgets have no aggregation or group-by setting, so use the Metrics page for percentiles or a per-endpoint split.
 
 </Steps>
 
@@ -63,15 +63,10 @@ curl -X POST https://api.siteqwality.com/dashboard/$DASHBOARD_ID/widget \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Request latency p99",
+    "title": "Request latency (avg)",
     "widget_type": "timeseries",
     "data_source": "metrics",
-    "query_config": {
-      "metric_name": "http.request.duration_ms",
-      "aggregation": "p99",
-      "group_by": "endpoint"
-    },
-    "visualization_config": { "y_unit": "ms" },
+    "query_config": { "metric_name": "http.request.duration_ms" },
     "layout": { "x": 0, "y": 0, "w": 6, "h": 4 }
   }'
 ```
@@ -88,7 +83,7 @@ curl -X POST https://api.siteqwality.com/dashboard/$DASHBOARD_ID/widget \
 
 1. **Add widget → Log stream.**
 
-2. **Title:** `Errors`. **Data source:** `logs`. Filter `level = error`. Save.
+2. **Title:** `Recent logs`. **Data source:** `Logs`. Save. The widget shows the newest log lines in the dashboard's time range, across your whole account; it has no filters, so open the Logs page to narrow it down.
 
 </Steps>
 
@@ -100,11 +95,10 @@ curl -X POST https://api.siteqwality.com/dashboard/$DASHBOARD_ID/widget \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Errors",
+    "title": "Recent logs",
     "widget_type": "log_stream",
     "data_source": "logs",
-    "query_config": { "level": "error" },
-    "visualization_config": { "limit": 50 },
+    "query_config": {},
     "layout": { "x": 6, "y": 0, "w": 6, "h": 4 }
   }'
 ```

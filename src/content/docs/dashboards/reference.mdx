@@ -1,7 +1,7 @@
 ---
 title: Widget reference
 description: Every widget type with its query/visualization config shape.
-last_verified: 2026-05-03
+last_verified: 2026-10-08
 owner: jj
 ---
 
@@ -35,115 +35,76 @@ import { Aside } from '@astrojs/starlight/components';
 | `widget_type` | enum | required | See widget types table. |
 | `data_source` | enum | `none` | See data sources table. |
 | `query_config` | object | `{}` | Source-specific query (see below). |
-| `visualization_config` | object | `{}` | Display options (units, colors, limits). |
+| `visualization_config` | object | `{}` | Stored with the widget; the dashboard does not read it. |
 | `layout` | object | `{x: 0, y: 0, w: 6, h: 4}` | Position on the 12-col grid. |
-| `time_range_override` | object \| null | null | If set, overrides dashboard's global range. |
+| `time_range_override` | object \| null | null | Stored with the widget; the dashboard does not apply it, and every widget uses the dashboard's range. |
 
 ## Widget types
 
 | `widget_type` | Description |
 |---|---|
-| `timeseries` | Line/area chart over time. |
-| `stat` | Single big number. |
-| `table` | Tabular results (group-by, top-N). |
-| `log_stream` | Live log feed. |
-| `monitor_status` | Grid showing current status of selected monitors. |
-| `text` | Markdown content. No `data_source` needed. |
+| `timeseries` | Line chart over time (`metrics` or `uptime`). |
+| `stat` | Single big number (`metrics` or `uptime`). |
+| `table` | Rows of recent log lines, recent traces, or a metric's points (`logs`, `traces` or `metrics`). |
+| `log_stream` | The newest log lines in the time range (`logs`). |
+| `monitor_status` | Current status of one HTTP monitor (`uptime`). |
+| `text` | Plain text. No `data_source` needed. |
 
 ## Data sources
 
 | `data_source` | Use |
 |---|---|
-| `metrics` | Metric queries. |
-| `logs` | Log queries. |
-| `traces` | Trace queries. |
-| `uptime` | Monitor status + uptime %. |
-| `rum` | RUM session and vitals data. |
+| `metrics` | One metric, by name. |
+| `logs` | The newest log lines in the time range, account-wide. |
+| `traces` | The most recent traces in the time range, account-wide. |
+| `uptime` | One HTTP monitor's response time and success rate. |
 | `none` | For `text` widgets. |
+
+The API also accepts `rum`, but the dashboard has no RUM widget and shows nothing for it.
 
 ## Query config by widget type
 
-### `timeseries` + `metrics`
+The dashboard reads only the keys shown here. Anything else you put in `query_config` is stored and ignored, so filters, aggregations, group-by and limits have no effect on a widget.
+
+### `timeseries`, `stat` or `table` + `metrics`
 
 ```json
-{
-  "metric_name": "http.request.duration_ms",
-  "aggregation": "p99",          // avg | max | min | sum | p50 | p95 | p99 | rate
-  "group_by": "endpoint",         // optional tag key
-  "filters": { "env": "prod" },   // optional tag filters
-  "resolution": "1m"              // optional bucket width
-}
+{ "metric_name": "http.request.duration_ms" }
 ```
 
-### `stat` + `metrics`
+Charts the metric's average per time bucket across every series of that name, with the bucket width chosen from the time range. A `stat` shows the latest bucket's value; a `table` lists the points.
+
+### `timeseries`, `stat` or `monitor_status` + `uptime`
 
 ```json
-{
-  "metric_name": "http.requests.total",
-  "aggregation": "sum",
-  "filters": { "status_class": "5xx" }
-}
+{ "job_id": "<http-monitor-id>" }
 ```
 
-Renders as a big number, the sum of 5xx counts in the time window.
+A `timeseries` charts the monitor's response time and success rate; a `stat` shows its latest response time; `monitor_status` shows Operational (99% success or more), Degraded (90% or more) or Down, with the uptime percentage.
 
-### `log_stream` + `logs`
-
-```json
-{
-  "level": "error,warn",
-  "source": "billing-api",
-  "search": "stripe",
-  "limit": 50
-}
-```
-
-Shape matches `LogQueryParams`.
-
-### `monitor_status` + `uptime`
-
-```json
-{
-  "monitor_ids": ["<job-id-1>", "<job-id-2>"]
-}
-```
-
-Renders a grid of status badges.
-
-### `table` + `metrics`
-
-```json
-{
-  "metric_name": "http.requests.total",
-  "group_by": "endpoint",
-  "aggregations": ["sum", "avg"]
-}
-```
-
-Returns a table grouped by `endpoint` with sum and avg.
-
-### `text`
+### `log_stream` or `table` + `logs`
 
 ```json
 {}
 ```
 
-Visualization config holds the markdown:
+Shows the newest 100 log lines in the time range, across your whole account.
+
+### `table` + `traces`
 
 ```json
-{ "markdown": "## Service health\n\n[Runbook](https://...)" }
+{}
 ```
 
-## Visualization config
+Lists the most recent traces in the time range, across your whole account.
 
-Free-form per widget type. Common keys:
+### `text`
 
-| Key | Used by | Description |
-|---|---|---|
-| `y_unit` | timeseries, stat | `ms`, `bytes`, `percent`, `count`. |
-| `color` | timeseries | Series color override. |
-| `limit` | log_stream, table | Max rows. |
-| `markdown` | text | Body markdown. |
+```json
+{ "content": "Service health\nRunbook: https://..." }
+```
+
+The text is shown as plain text, with line breaks kept. Markdown is not rendered.
 
 ## Endpoints
 

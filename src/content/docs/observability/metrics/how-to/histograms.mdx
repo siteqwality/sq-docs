@@ -1,7 +1,7 @@
 ---
 title: Chart histograms as percentiles or a heatmap
 description: Send Prometheus-style bucketed histograms and read them back as p50/p90/p95/p99 lines or a distribution heatmap.
-last_verified: 2026-08-02
+last_verified: 2026-10-08
 owner: jj
 ---
 
@@ -50,7 +50,7 @@ Rules the ingest endpoint enforces, each a `400` for the whole batch if broken:
 | Buckets must not be empty | At least one bucket. |
 | The last bucket must be `+Inf` | Spelled exactly `+Inf`. `inf`, `Inf` and `+inf` are all rejected. |
 | Bounds must ascend strictly | No duplicates, no out-of-order bounds. |
-| Max 1000 metrics per request | Batch larger payloads. |
+| Max 1,000 metrics per request | More is a `400`. Batch larger payloads into several requests. |
 | Name charset | `^[a-zA-Z0-9._]+$`. No hyphens, colons or slashes. |
 
 `sum` and `count` are required alongside the buckets. `timestamp` defaults to ingest time; `unit` and `tags` are optional. A successful call returns `202 Accepted` and the write happens asynchronously.
@@ -84,22 +84,24 @@ One response drives both views:
 
 ```json
 {
-  "bounds": ["0.1", "0.5", "1", "+Inf"],
-  "buckets": [
-    {
-      "timestamp": "2026-08-02T12:00:00Z",
-      "counts": [24, 31, 23, 22],
-      "total": 100,
-      "sum": 43.21,
-      "p50": 0.42, "p90": 0.87, "p95": 0.93, "p99": 0.99
-    }
-  ],
-  "unit": "seconds",
-  "interval_seconds": 300
+  "data": {
+    "bounds": ["0.1", "0.5", "1"],
+    "buckets": [
+      {
+        "timestamp": "2026-08-02T12:00:00Z",
+        "counts": [24, 31, 23, 22],
+        "total": 100,
+        "sum": 43.21,
+        "p50": 0.42, "p90": 0.87, "p95": 0.93, "p99": 0.99
+      }
+    ],
+    "unit": "seconds",
+    "interval_seconds": 300
+  }
 }
 ```
 
-`counts` are per-bucket (not cumulative) so a heatmap can render them directly. The percentile fields drive the percentile view.
+`counts` are per-bucket (not cumulative) so a heatmap can render them directly. The `+Inf` bound is not returned, so `counts` has one more entry than `bounds`: the last count is the overflow above the highest finite bound. The percentile fields drive the percentile view.
 
 ## Things that will surprise you
 

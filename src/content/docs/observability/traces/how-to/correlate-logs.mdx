@@ -1,7 +1,7 @@
 ---
 title: Correlate traces with logs
 description: Emit a trace_id on your log lines so you can jump from a slow span straight to the log output it produced.
-last_verified: 2026-08-02
+last_verified: 2026-10-08
 owner: jj
 ---
 
@@ -9,11 +9,11 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 
 A trace tells you *where* a request spent its time. The logs tell you *why*. Correlation stitches the two together, so a slow span is one click from the lines it emitted.
 
-It works in both directions: the log detail pane shows **View trace** for any line carrying a trace ID, and a trace can pull up every log line belonging to it.
+It works in both directions: a trace can pull up every log line belonging to it, and the log detail pane shows **View trace** for a line whose `metadata` carries the trace ID.
 
 ## What your log lines must carry
 
-Include a `trace_id` field on the log entry. Both of these work, and the top-level form is preferred because it is indexed:
+Include a `trace_id` field on the log entry, at the top level or inside `metadata`. Both forms fill the indexed `trace_id` column, so the trace view finds the line either way:
 
 ```json
 {
@@ -46,9 +46,11 @@ The value has to byte-match what the trace pipeline stored, and nothing normalis
 If correlation "does nothing", check the casing first. It is the most common cause.
 </Aside>
 
+Prefer the `metadata` form. The logs search API does not return the top-level `trace_id`, so the **View trace** link in the log detail pane only appears when the ID is also in `metadata`.
+
 `span_id` is optional and enables per-span drill-down. Note the asymmetry: **`span_id` is only read from inside `metadata`**, never from the top level.
 
-If you use a [log parser](/observability/logs/how-to/parsers/) to extract fields from unstructured lines, mapping a field to `trace_id` populates the indexed column too, so parsed logs correlate just as well as structured ones.
+If you use a [log parser](/observability/logs/how-to/parsers/) to extract fields from unstructured lines, mapping a capture to `metadata.trace_id` (or `trace_id`) populates the indexed column too, so parsed logs correlate just as well as structured ones.
 
 ## Fetch a trace's logs
 
@@ -63,7 +65,7 @@ curl -G "https://api.siteqwality.com/traces/4bf92f3577b34da6a3ce929d0e0e4736/log
 | `span_id` | none | Narrow to one span. Read from `metadata.span_id`. |
 | `limit` | 100 | Maximum 500. |
 
-Each entry returns `timestamp`, `level`, `message`, `host`, `source`, `span_id` and `trace_id`, in ascending time order. This is a slimmer shape than `GET /logs/query`: there is no `env`, `tags` or `metadata`. The `total` field is the unlimited match count, so it can exceed the number of entries returned when the limit bites.
+The response is wrapped in `data` (`{"data": {"logs": [...], "total": N}}`). Each entry returns `timestamp`, `level`, `message`, `host`, `source`, `span_id` and `trace_id`, in ascending time order. This is a slimmer shape than `GET /logs/query`: there is no `env`, `tags` or `metadata`. The `total` field is the unlimited match count, so it can exceed the number of entries returned when the limit bites.
 
 The trace ID in the path must be pure hexadecimal or the request is rejected with a `400`.
 

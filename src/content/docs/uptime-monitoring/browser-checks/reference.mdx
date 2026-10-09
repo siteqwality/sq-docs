@@ -126,7 +126,7 @@ For every result:
 | Video | 1280×720 MP4 of the run, S3 | same artifact_url endpoint |
 | Web vitals | Inline JSON: `{lcp_ms, fcp_ms, cls, ttfb_ms}` | `GET /browser_check/{id}/vitals` |
 | Console errors | Inline JSON array | embedded in result |
-| Trace IDs | List of traceparent IDs from outgoing requests | embedded in result |
+| Trace IDs | Trace IDs of the `traceparent` headers added to outgoing requests; they resolve only for backends that send traces to SiteQwality | embedded in result |
 
 The HAR and video URLs are presigned, expire in 1 hour, and are S3-direct (no proxying through SiteQwality's API).
 
