@@ -105,7 +105,7 @@ HTTP checks can run from any of the [check locations](/uptime-monitoring/overvie
 
 - Leave `check_regions` unset, or set it to `["aws-us-east-1"]`.
 - A location that cannot run browser checks is rejected with `400`. The retired ids `aws-us-east-2` and `aws-us-west-1` are accepted and replaced with `aws-us-east-1`.
-- More than one location without a paid plan is rejected with `403` and `multi_region_requires_paid_plan`, the same rule as HTTP checks.
+- More than one location without a paid uptime plan is rejected with `403` and `multi_region_requires_paid_plan`, the same rule as HTTP checks.
 
 `POST /browser_check/{id}/run` reports the location the run executed in.
 </Aside>

@@ -33,7 +33,7 @@ The full request schema is in the auto-generated [API Reference](/api-reference/
 | A retired id: `aws-us-east-2` or `aws-us-west-1` | Accepted and replaced with `aws-us-east-1`. |
 | A location that cannot run browser checks | `400`. |
 | An id that does not exist | `400` with `Invalid check_regions <value>`. |
-| More than one location without a paid plan | `403` with `multi_region_requires_paid_plan`. |
+| More than one location without a paid uptime plan | `403` with `multi_region_requires_paid_plan`. |
 
 <Aside type="caution" title="HTTP checks have more locations than browser checks">
 `GET /check-locations` lists every location, and each one's `capabilities` says which check types it can run. Browser checks need `browser`, which only `aws-us-east-1` has. See [location](/uptime-monitoring/browser-checks/overview/#location) for the full behavior, and [check locations](/uptime-monitoring/http-checks/reference/#check-locations) for HTTP checks.

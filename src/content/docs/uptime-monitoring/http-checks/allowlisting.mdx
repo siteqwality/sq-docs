@@ -5,7 +5,7 @@ last_verified: 2026-10-07
 owner: jj
 ---
 
-import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Aside, Steps } from '@astrojs/starlight/components';
 
 If your site sits behind a firewall, a WAF or bot protection, it can block or challenge our checks, and the monitor reports an outage your users never saw. This page shows how to let the checks through.
 
@@ -15,33 +15,15 @@ HTTP checks run from [check locations](/uptime-monitoring/overview/#check-locati
 
 ## Option 1: a secret custom header
 
-Add a header with a long random value to the monitor, then tell your firewall or bot protection to allow requests that carry it. Only you and SiteQwality know the value, so nobody else can send it by accident or on purpose, which is not true of an IP range or a User-Agent.
+Add a header with a long random value to the monitor, then tell your firewall or bot protection to allow requests that carry it. A sufficiently random secret distinguishes your checks from unrelated requests. Keep it private and rotate it if it leaks.
 
 <Steps>
 
 1. Generate a long random value, for example with `openssl rand -hex 32`.
 
-2. Add it to the monitor as a custom header. Any header name your edge can match on works; this guide uses `X-Uptime-Check`.
+2. Open the monitor and choose **Edit**, then **Advanced**. Under **Custom HTTP Headers**, enter `X-Uptime-Check` as the header name and your random value as the header value. Save. Use this custom name rather than a standard metadata header such as `User-Agent`, whose value can remain visible in results.
 
-   <Tabs syncKey="interface">
-   <TabItem label="Dashboard">
-
-   Open the monitor and choose **Edit**. Click **Advanced**, then under **Custom HTTP Headers** enter `X-Uptime-Check` as the header name and your random value as the header value. Save.
-
-   </TabItem>
-   <TabItem label="API">
-
-   ```bash
-   curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
-     -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-     -H "Content-Type: application/json" \
-     -d '{"custom_http_headers": {"X-Uptime-Check": "<your random value>"}}'
-   ```
-
-   `custom_http_headers` replaces the monitor's whole header map, so include any headers you already send. To keep an existing header without retyping it, send it back with the masked placeholder value the API returned for it.
-
-   </TabItem>
-   </Tabs>
+   When using the API, first read the current monitor with `GET /http/job/{job_id}`. Include its current `auth_type`, `content_type`, and complete `custom_http_headers` map in `PUT /http/job/{job_id}`, adding `X-Uptime-Check` to that map. Omitting those three fields clears them. Existing masked header values can be sent back unchanged to preserve their stored values; omit password and bearer-token fields to retain the stored credentials.
 
 3. In your firewall, WAF or bot protection, add a rule that allows requests whose `X-Uptime-Check` header equals the value, or lets them skip the challenge. In Cloudflare, for example, that is a WAF custom rule with the expression `any(http.request.headers["x-uptime-check"][*] eq "<your random value>")` and the **Skip** action.
 
@@ -49,7 +31,7 @@ Add a header with a long random value to the monitor, then tell your firewall or
 
 </Steps>
 
-Treat the value like a password. SiteQwality masks custom header values whenever it returns a monitor or a check result, in the dashboard and the API, so it is not shown back after you save it. If it leaks, generate a new one and update both the monitor and the rule.
+Treat the value like a password. SiteQwality masks the `X-Uptime-Check` value when it returns a monitor or check result in the dashboard and API. Standard metadata headers, including `User-Agent`, are not all masked. If it leaks, generate a new one and update both the monitor and the rule.
 
 ## Option 2: the User-Agent
 
@@ -78,7 +60,7 @@ It still counts as a failure: the monitor goes down and alerts like any other fa
 What to do about it:
 
 - **Allowlist our checks** with a [secret header](#option-1-a-secret-custom-header). This is the fix that lasts.
-- **Add a location on another provider.** Bot protection often scores cloud networks differently, so checking from another network can help. More than one location per monitor needs a paid plan; see [check locations](/uptime-monitoring/http-checks/reference/#check-locations).
+- **Add a location on another provider.** Bot protection often scores cloud networks differently, so checking from another network can help. More than one location per monitor needs a paid uptime plan; see [check locations](/uptime-monitoring/http-checks/reference/#check-locations).
 - **Try HTTP/1.1.** Some bot-management edges treat HTTP/2 and HTTP/1.1 clients differently. Set `http_version` to `http1_1`; see [HTTP versions](/uptime-monitoring/http-checks/reference/#http-versions).
 - **Monitor an endpoint that is not challenged**, such as a health check path your protection lets through, if the page itself is always behind a challenge.
 

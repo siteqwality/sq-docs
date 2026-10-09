@@ -32,7 +32,7 @@ Every uptime monitor in SiteQwality follows the same lifecycle: configure → ru
 HTTP checks run from the **check locations** you select on each monitor, on AWS, Google Cloud and Microsoft Azure. The live list is on the [locations page](https://siteqwality.com/locations/), and `GET /check-locations` returns it to API clients (see [check locations](/uptime-monitoring/http-checks/reference/#check-locations) in the HTTP reference).
 
 - **Default.** A monitor with `check_regions` unset or empty runs from `aws-us-east-1` (Virginia, AWS).
-- **Plans.** The free plan allows one location per monitor. Paid plans can select any number. Selecting more than one without a paid plan returns `403` with `multi_region_requires_paid_plan`, on HTTP and browser checks.
+- **Plans.** The free plan allows one location per monitor. Paid plans can select any number. Selecting more than one without a paid uptime plan returns `403` with `multi_region_requires_paid_plan`, on HTTP and browser checks.
 - **Billing.** Each location a check runs from counts as one check toward your monthly check volume. A monitor checked from three locations every minute uses three checks a minute.
 - **Other check types.** Browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1` only. Location selection applies to HTTP checks.
 

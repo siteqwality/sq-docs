@@ -19,7 +19,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `run_interval_seconds` | int | required | Seconds between checks. Must be at least `60` and a multiple of `60`. |
 | `run_interval_thirty_seconds` | bool | `false` | Run every 30 seconds instead. Only valid together with `run_interval_seconds: 60`. |
 | `timeout_ms` | int | required | Per-request timeout in milliseconds. Maximum `60000`. |
-| `check_regions` | string[] | `["aws-us-east-1"]` | Location ids the check runs from. Omitted or empty falls back to the default. More than one requires a paid plan. See [check locations](#check-locations). |
+| `check_regions` | string[] | `["aws-us-east-1"]` | Location ids the check runs from. Omitted or empty falls back to the default. More than one requires a paid uptime plan. See [check locations](#check-locations). |
 | `min_healthy_regions` | int | `1` | Minimum locations that must pass for the check to count as healthy. At least `1`, at most the number of `check_regions`. In a run where some locations return no result, it is capped at the number that did. |
 | `confirmation_threshold` | int | `1` | Consecutive failed checks required before the monitor transitions to `failed` and alerts. `1` to `10`. See [requiring N failed checks](/uptime-monitoring/http-checks/how-to/confirmation-threshold/). |
 | `follow_redirects` | bool | `true` | Follow HTTP redirects before evaluating the response. |
@@ -43,9 +43,9 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `tags` | string[] | none | Free-form tags. Used for grouping and [maintenance-window](/incident-management/maintenance/overview/) matching. |
 | `http_version` | enum | `auto` | Preferred HTTP version for the check transport. See [HTTP versions](#http-versions). |
 | `state` | enum | `active` | Update only. `active` or `paused`. Paused checks stop running and alerting. |
-| `final_uri` | string | none | Accepted by the API but not evaluated by the check runner today. |
+| `final_uri` | string | none | Expected final URL after redirects. A mismatch fails the check. |
 
-`PUT /http/job/{job_id}` takes the same fields, all optional; a request with no fields is rejected. Sending `check_regions: []` on update leaves regions unchanged.
+`PUT /http/job/{job_id}` takes the same fields, all optional; a request with no fields is rejected. Sending `check_regions: []` on update leaves regions unchanged. Include the current `auth_type`, `content_type`, and complete `custom_http_headers` map when changing other fields: omitting these fields clears them.
 
 ## Read-only fields
 
@@ -99,9 +99,9 @@ How `check_regions` is validated on create and update:
 | A retired id: `aws-us-east-2` or `aws-us-west-1` | Accepted and replaced with `aws-us-east-1`, its replacement. |
 | An id that does not exist | `400` with `Invalid check_regions <value>`. |
 | A location that cannot run this check type | `400`. |
-| More than one location without a paid plan | `403` with `multi_region_requires_paid_plan`. |
+| More than one location without a paid uptime plan | `403` with `multi_region_requires_paid_plan`. |
 
-On every scheduled run, each selected location makes the request and returns its own result, recorded with that location's id in `check_region`. Each result counts as one check toward your monthly check volume. A location that cannot return a result in a run (its provider is unreachable, for example) is left out of that run: nothing is recorded for it, it is not billed, and the quorum is evaluated over the locations that did report. If a monitor has exactly one location and it cannot report, that run is made from the default location instead and recorded under the default's id.
+On every scheduled run, each selected location makes the request and returns its own result, recorded with that location's id in `check_region`. Each result counts as one check toward your monthly check volume. A location that cannot return a result in a run (its provider is unreachable, for example) is left out of that run: nothing is recorded for it, it is not billed, and the quorum is evaluated over the locations that did report. If a monitor has exactly one location and it cannot report, the executor attempts the default location when it is different and enough execution time remains. A returned result is recorded under the default's id. If no location returns a result, the monitor's status stays unchanged.
 
 Checks do not come from fixed IP addresses. See [allowlisting our checks](/uptime-monitoring/http-checks/allowlisting/).
 
@@ -160,11 +160,11 @@ When a check fails, the result carries:
 - `body_bytes`: the true size of the captured body. If it is larger than
   `response_body`, the inline copy is the head of a bigger document.
 - `body_truncated`, `body_available`, `body_expired`: whether the snippet is
-  partial, whether the full body can be downloaded now, and whether one was
+  partial, whether the stored body can be downloaded now, and whether one was
   captured but has aged out of your plan's window.
 
 Call `GET /http/job/result/{job_result_id}/body` for a pre-signed URL to the
-complete body, valid for one hour. It answers `404` when no body was captured
+stored body, valid for one hour. The stored download contains at most the first 3 MiB of a failed response; it may be shorter than `body_bytes`, and `body_truncated` indicates truncation. It answers `404` when no body was captured
 (a passing check) and `410` when one was captured but falls outside your
 retention window.
 
@@ -185,7 +185,7 @@ first 3 MB, while `body_bytes` reports the true size.
 | Plan | Failure bodies readable for |
 |---|---|
 | Free | 5 days |
-| Any paid plan | 30 days |
+| Any paid uptime plan | 30 days |
 | On request | Up to 365 days |
 
 These are **read windows, not deletion schedules.** The window is evaluated at

@@ -96,7 +96,7 @@ A check that fails once and succeeds on retry is recorded as a plain success. It
 `min_healthy_regions` decides whether a single evaluation counts as failed: every selected location runs on the same tick, and the evaluation is healthy when at least that many of them passed. For a monitor with one location this is 1 of 1, and the verdict is simply whether that check passed.
 
 <Aside type="note" title="A location that returns nothing is left out">
-If a location cannot return a result in a run (its provider is unreachable, for example), nothing is recorded for it and it is left out of that evaluation: `min_healthy_regions` is capped at the number of locations that did report. A monitor set to three locations with `min_healthy_regions: 2` whose third location is unreachable is evaluated as 2 of 2 for that run, not failed. A single-location monitor runs that check from the default location instead. See [check locations](/uptime-monitoring/http-checks/reference/#check-locations).
+If a location cannot return a result in a run (its provider is unreachable, for example), nothing is recorded for it and it is left out of that evaluation: `min_healthy_regions` is capped at the number of locations that did report. A monitor set to three locations with `min_healthy_regions: 2` whose third location is unreachable is evaluated as 2 of 2 for that run, not failed. For a single-location monitor, the executor attempts the default location when it is different and enough execution time remains. If no location reports a result, the monitor's status stays unchanged. See [check locations](/uptime-monitoring/http-checks/reference/#check-locations).
 </Aside>
 
 ### 3. Confirmation threshold
