@@ -1,0 +1,48 @@
+---
+// Fills Starlight's social-icons slot (header and mobile menu) with links back to the product.
+import { Icon } from '@astrojs/starlight/components';
+---
+
+<a class="sq-header-link sq-site-link" href="https://siteqwality.com/">siteqwality.com</a>
+<a class="sq-header-link sq-app-link" href="https://app.siteqwality.com/">
+	Dashboard
+	<Icon name="external" size="0.875em" />
+</a>
+
+<style>
+	.sq-header-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4em;
+		font-size: var(--sl-text-sm);
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		white-space: nowrap;
+		text-decoration: none;
+		color: var(--sl-color-gray-2);
+		transition:
+			color var(--at-t-fast) var(--at-ease),
+			border-color var(--at-t-fast) var(--at-ease);
+	}
+	.sq-header-link:hover {
+		color: var(--sl-color-white);
+	}
+	.sq-app-link {
+		padding: 0.4rem 0.75rem;
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: 9px;
+		color: var(--sl-color-white);
+	}
+	.sq-app-link:hover {
+		border-color: var(--sl-color-accent);
+	}
+	.sq-app-link :global(svg) {
+		color: var(--sl-color-gray-3);
+	}
+	/* The header gets crowded next to the search box below this width. */
+	@media (min-width: 50rem) and (max-width: 72rem) {
+		:global(header) .sq-site-link {
+			display: none;
+		}
+	}
+</style>
