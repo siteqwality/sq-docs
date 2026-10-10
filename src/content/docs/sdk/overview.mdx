@@ -1,46 +1,41 @@
 ---
-title: SDK Reference
+title: SDK overview
 description: The @siteqwality/rum JavaScript SDK for RUM, replay, errors, and user actions from the browser.
-last_verified: 2026-10-03
+last_verified: 2026-10-10
 owner: jj
 ---
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-> **SDK 1.x:** This page documents the legacy SDK. For SDK 2 installation, config CDN, Observe error billing, consent and replay v2, use the [SDK 2 guide](/sdk/v2/).
-
-The Site Qwality client SDK is a single browser-side package: **`@siteqwality/rum`**. It collects [Real User Monitoring](/observability/rum/overview/) data and (when activated) [session replay](/observability/replay/overview/) segments.
+The Site Qwality client SDK is a single browser-side package: **`@siteqwality/rum`**. It collects [Real User Monitoring](/observability/rum/overview/) data and, when a recording rule activates it, [session replay](/observability/replay/overview/). Every option and behaviour is in the [SDK reference](/sdk/v2/). SDK 1.x is retired and no longer accepts data; install SDK 2.
 
 It is **not** a back-end ingestion library, and there are no Site Qwality logging or metrics libraries for back-end languages. Send back-end traces with an OpenTelemetry SDK over OTLP/HTTP, and send logs and metrics as JSON over HTTPS to their ingest endpoints. See [Observability](/observability/overview/).
 
 ## What it does
 
-| Capture | Always-on | Activated by a recording rule |
-|---|---|---|
-| Web Vitals (LCP, FCP, CLS, INP, TTFB) | yes | no |
-| View counts, page loads | yes | no |
-| Individual error events (message, stack; known browser noise filtered) | yes | no |
-| Aggregate error / action counts | yes | no |
-| Click targets and frustration signals | no | yes |
-| Resource timings (fetch/XHR) | no | yes |
-| Long tasks (>50ms) | no | yes |
-| DOM snapshots + mutations (rrweb) | no | yes (`capture_replay: true`) |
+| Capture | Tier |
+|---|---|
+| Page views, load timing and Web Vitals (LCP, FCP, CLS, INP, TTFB) with attribution | Observe: every sampled session |
+| Errors with message, stack, causes and breadcrumbs (known browser noise filtered) | Observe |
+| Failed requests, frustration signals and custom events | Observe |
+| Clicks, taps and form actions, successful requests, resource timings, console entries and long animation frames | Analyze: activated by a recording rule |
+| DOM snapshots and mutations (rrweb) | Replay: activated by a Replay recording rule |
 
-SDK 1.x does not inject `traceparent` headers or otherwise participate in distributed tracing. SDK 2 can add a `traceparent` header to requests whose URLs match the application's [`trace_urls`](/observability/rum/how-to/remote-config/) setting; on 1.x, propagate your own IDs via `setUser` / custom attributes.
+See [what is collected when](/sdk/v2/#what-is-collected-when) for the details.
+
+The SDK can add a W3C `traceparent` header to fetch and XHR requests whose URLs match the application's [`trace_urls`](/observability/rum/how-to/remote-config/#network-capture) setting, linking a user's request to your back-end [traces](/observability/traces/overview/).
 
 ## Install
 
 ### NPM
 
 ```bash
-npm install @siteqwality/rum@1.0.7
+npm install @siteqwality/rum
 ```
-
-At the 2026-10-04 checkpoint, npm has 1.0.7; CDN `/rum/v1/` is reported to serve 1.1. SDK 1.1 options such as `ignoreErrors`, `beforeSend` and `recorderUrl` are not available in the 1.0.7 npm package. For SDK2, check the [release channels](/sdk/v2/#install) before choosing an install path.
 
 ### CDN
 
-Paste the snippet from the [RUM quickstart](/observability/rum/quickstart/#2-install-the-sdk) into your page's `<head>`. It loads `https://cdn.siteqwality.com/rum/v1/sdk.min.js` asynchronously, queues your calls and captures early errors until the SDK arrives.
+Paste the [CDN snippet](/sdk/v2/#cdn-snippet) into your page's `<head>`. It loads `https://cdn.siteqwality.com/rum/v2/sdk.min.js` asynchronously, queues your calls and captures early errors until the SDK arrives.
 
 ## Initialize
 
@@ -54,13 +49,15 @@ SiteQwalityRUM.init({
 });
 ```
 
-On CDN SDK 1.1, `init` is fire-and-forget. Collection starts synchronously, and the Promise it returns (settled once remote config is applied or fails) never needs an `await`. It is idempotent; calling it twice is a no-op. With the npm package, calls to other methods before `init()` are ignored. Every option, including `recorderUrl` for self-hosting the replay recorder, is in the [SDK reference](/sdk/reference/#init-options-rumconfig).
+`init` starts collection synchronously, and the Promise it returns (settled once remote config is applied or fails) never needs an `await`. A second call is ignored. With the npm package, calls to other methods before `init()` are ignored, except the opt-out methods. Every option is in the [SDK reference](/sdk/v2/#init-options).
 
 No public method throws: invalid input is ignored and internal failures are swallowed.
 
 ## Public methods
 
-### `setUser(user)`
+The full list, including consent, opt-out, replay control and `getStatus()`, is under [public methods](/sdk/v2/#public-methods).
+
+### `setUser(user)` / `clearUser()`
 
 Identify the user. Call after login, or as soon as you know who's there.
 
@@ -74,22 +71,23 @@ SiteQwalityRUM.setUser({
 
 | Field | Required | Description |
 |---|---|---|
-| `id` | optional | Your internal user ID. Shown on the session, searchable, and used by `has_user` filters. |
-| `email` | optional | User's email. Shown on the session and searchable. |
-| `name` | optional | Display name. Kept in the browser, not sent. |
+| `id` | optional | Your internal user ID. Shown on the session, searchable, and used by `identified` recording rule conditions. |
+| `email` | optional | User's email. Shown on the session and searchable, unless the application does not capture user emails. |
+| `name` | optional | Display name, shown on the session. |
+| `traits` | optional | Up to 20 string labels, such as `{ plan: 'pro' }`. Used by `attribute` recording rule conditions. |
 
-From SDK 1.0.6 the user attaches to every event recorded after the call, page views and vitals included, so the session shows its user even without detail capture. Call `setUser({})` on logout. Call after `init()`; calls made before it are ignored.
+The user attaches to every batch sent after the call, page views included. Each call replaces the previous user; call `clearUser()` on logout.
 
 ### `setGlobalAttribute(key, value)` / `removeGlobalAttribute(key)`
 
-Attach a string attribute to every error and detail event recorded after the call, or stop attaching it. Call after `init()`; calls made before it are ignored. Added in 1.0.6.
+Attach a string attribute to every batch sent after the call, or stop attaching it.
 
 ```javascript
 SiteQwalityRUM.setGlobalAttribute('plan', 'pro');
 SiteQwalityRUM.removeGlobalAttribute('plan');
 ```
 
-Up to 50 attributes, keys up to 128 characters and values up to 1,024 (longer values are cut). Invalid input is ignored, never thrown. Values are stored like `context` below, so the same warning applies. See the [SDK reference](/sdk/reference/#siteqwalityrumsetglobalattributekey-value).
+Up to 50 attributes, keys up to 128 characters, values up to 1,024 (longer values are cut) and 4 KB in all. Invalid input is ignored, never thrown.
 
 ### `addError(error, context?)`
 
@@ -106,14 +104,14 @@ try {
 
 | Param | Type | Description |
 |---|---|---|
-| `error` | any | An `Error`, or any other value (recorded with `String(value)` as the message and no stack). |
-| `context` | `Record<string, string>` | **Stored.** Merged into the event's `custom_attributes` and retained for 30 days. Read the warning below before putting anything in here. |
+| `error` | any | An `Error`, or any other value (recorded as text, with no stack). |
+| `context` | `Record<string, string>` | **Stored** with the error. `sq.fingerprint` sets your own grouping. Read the warning below before putting anything in here. |
 
-Custom errors pass the same [error filtering](/sdk/reference/#error-filtering) as captured ones.
+Custom errors pass the same [error filtering](/sdk/v2/#error-filtering) as captured ones.
 
 ### `addAction(name, context?)`
 
-Track a custom action (click-equivalent business event).
+Track a custom event, such as a business milestone. Custom events are recorded for every sampled session, whether or not a recording rule matched.
 
 ```javascript
 SiteQwalityRUM.addAction('checkout_completed', { variant: 'A' });
@@ -121,67 +119,60 @@ SiteQwalityRUM.addAction('checkout_completed', { variant: 'A' });
 
 | Param | Type | Description |
 |---|---|---|
-| `name` | `string` | Action label. |
-| `context` | `Record<string, string>` | **Stored.** Merged into the event's `custom_attributes` and retained for 30 days. Read the warning below before putting anything in here. |
+| `name` | `string` | Event name, up to 256 characters. Used by `event` recording rule conditions. |
+| `context` | `Record<string, string>` | **Stored** with the event. Read the warning below before putting anything in here. |
 
 <Aside type="danger" title="Do not put personal data in context">
-The `context` argument of `addError` and `addAction` **is stored**. The SDK merges it into the event's `custom_attributes`, a `Map(String, String)` column on the `rum_events` table, and it is retained for **30 days** on every plan, free and paid alike. Buying a larger RUM Analyze pack raises the number of sessions you can record, not how long their events are kept, so there is no way to make that window longer.
-
-An earlier version of this page said `context` was "accepted for forward compatibility; not attached to the event today". That was wrong. If you have been passing user objects, email addresses, order contents or anything else that identifies a person, that data is in `rum_events` now and stays there until its 30-day window expires.
-
-No dashboard screen or API response renders `custom_attributes` today. Do not treat that as a safeguard. The data is stored, it is readable by anyone with database access, and a future release may surface it in the product.
-
-Global attributes from `setGlobalAttribute` are stored the same way.
+The `context` argument of `addError` and `addAction` **is stored**, and so are user traits and global attributes. Global attributes can be used in [session filters](/observability/rum/reference/#filter-grammar).
 
 Pass low-cardinality, non-personal labels only, as in the `{ feature: 'checkout', step: '3' }` example above.
 </Aside>
 
 ### Naming clicks
 
-Auto-captured clicks are attributed to the nearest link, button, form control or similar element at or above the click target, and named from it, including up to 30 characters of its text. Set `data-sq-action-name` on an element (or an ancestor) to name its clicks yourself, or turn on [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names) for the application. See [click names](/sdk/reference/#click-names).
+Auto-captured clicks are attributed to the nearest link, button, form control or similar element at or above the click target, and recorded with a name (its `data-sq-action-name`, `aria-label` or text, up to 64 characters) and a stable selector. Set `data-sq-action-name` on an element (or an ancestor) to name its clicks yourself, or turn on [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names) for the application. See [click names](/sdk/v2/#click-names).
 
 ## Behaviour worth knowing
 
-- **Errors are filtered.** Known browser noise (ResizeObserver loop warnings, detail-less `Script error.`, errors raised entirely inside browser extensions) is dropped, and each message is limited to 10 errors and then one every 10 seconds, with at most 500 per page load. The ingest server applies the same noise rules. A dropped error never marks a session as errored, never triggers a recording rule and is never billed. Add your own with `ignoreErrors` and `beforeSend`. See [error filtering](/sdk/reference/#error-filtering).
-- **Page views follow real URL changes.** A view is recorded only when the sanitised URL changes, and carries `loading_type` (`initial_load` or `route_change`). Load timing is sent for the initial load only, and Web Vitals always belong to the document's initial view. See [page views and Web Vitals](/sdk/reference/#page-views-and-web-vitals).
-- **Sessions follow the user, not the SDK.** Only user input, the tab becoming visible and new page views keep a session alive; it ends after 15 minutes without them or 4 hours in all. See [sessions](/sdk/reference/#sessions).
-- **Recording rules are evaluated immediately**: when the config loads or refreshes, and after every sent error, Web Vital, action and `setUser`. The decision persists across page loads in the same tab. See [rule evaluation](/sdk/reference/#rule-evaluation).
-- **Frustration signals.** A click carries at most one of `error_click`, `rage_click` or `dead_click`, in that order of precedence. Add `data-sq-no-frustration` to an element, or list selectors in the application settings, to exempt controls that draw rapid or no-op clicks by design from rage and dead clicks. See [frustration signals](/sdk/reference/#frustration-signals).
+- **Errors are filtered.** Known browser noise (ResizeObserver loop warnings, detail-less `Script error.`, errors raised entirely inside browser extensions) is dropped, identical errors within 5 seconds are folded into one, and each error is limited to 10 and then one every 10 seconds, with at most 500 per page load. Ingest applies the same noise rules. A dropped error never marks a session as errored, never triggers a recording rule and is never billed. Add your own with `ignoreErrors`, `denyUrls` and `beforeSend`. See [error filtering](/sdk/v2/#error-filtering).
+- **Page views follow real URL changes.** A view is recorded only when the minimised URL changes, and carries `loading_type` (`initial_load`, `route_change` or `bfcache_restore`). Web Vitals always belong to the document's initial view. See [page views and Web Vitals](/sdk/v2/#page-views-and-web-vitals).
+- **Sessions are shared by tabs and follow the user.** Only user input, the tab becoming visible and new page views keep a session alive; it ends after 15 minutes without them or 4 hours in all. See [sessions](/sdk/v2/#sessions).
+- **Recording rules are evaluated in the browser**, when the config arrives and on every relevant input, with per-session sampling. The decision lasts for the rest of the session, in every tab. See [rule evaluation](/sdk/v2/#rule-evaluation).
+- **Frustration signals.** A click carries at most one of `error_click`, `rage_click` or `dead_click`, in that order of precedence. Add `data-sq-no-frustration` to an element, or list selectors in the application settings, to exempt controls that draw rapid or no-op clicks by design from rage and dead clicks. See [frustration signals](/sdk/v2/#frustration-signals).
+- **Delivery is bounded.** Batches are gzipped, retried with backoff, and capped by a hard request budget per session and page load. See [batching and delivery](/sdk/v2/#batching-and-delivery).
 
 ## TypeScript types
 
 The SDK ships with TypeScript types:
 
 ```typescript
-import type { RumConfig, UserContext } from '@siteqwality/rum';
+import type { InitOptions, UserContext } from '@siteqwality/rum';
 ```
 
 Notable types:
 
-- `RumConfig`: `init` argument shape.
+- `InitOptions`: `init` argument shape.
 - `UserContext`: `setUser` argument shape.
-- `RumMeasureEvent`, `RumDetailEvent`, `RumErrorEvent`: payload shapes. `RumErrorEvent` is what `beforeSend` receives.
-- `SessionFilterRule`, `SdkConfig`: server-fetched config shape.
+- `SdkStatus`: what `getStatus()` returns.
+- `SqEvent`, `SqEventKind`: the event and kind `beforeSend` receives.
+
+See [exported types](/sdk/v2/#exported-types).
 
 ## Pricing
 
-The SDK is free; what costs is the data it sends. See [RUM pricing](/observability/rum/overview/#pricing) and [Replay pricing](/observability/replay/overview/#pricing).
+The SDK is free; what costs is the data it sends. See [capture and billing](/sdk/v2/#capture-and-billing) and [Replay pricing](/observability/replay/overview/#pricing).
 
 ## Compatibility
 
-- Modern browsers: Chrome, Firefox, Safari, Edge (last 2 versions).
-- ES2020+ output. The CDN bundle is a classic script that defines a single global, `window.SiteQwalityRUM` (it also works when loaded with `type="module"`). The replay recorder is a separate file, loaded only when needed.
-- For older browsers, transpile via your bundler. The npm bundle is published as both ESM and CJS.
-
-<Aside type="caution">
-The SDK uses `crypto.randomUUID()`, `PerformanceObserver`, and `fetch`, all widely available since ~2020. There's no IE11 support.
-</Aside>
+- Modern browsers. The bundles target ES2020, and there's no IE11 support.
+- The CDN bundle is a classic script that defines a single global, `window.SiteQwalityRUM` (it also works when loaded with `type="module"`). The replay recorder is a separate file, loaded only when needed, and browsers without `CompressionStream` load a small gzip fallback.
+- The npm package is published as both ESM and CJS, with types. Transpile further via your bundler if you support older browsers.
 
 ## See also
 
 <CardGrid>
+  <LinkCard title="SDK reference" description="Every option, method and behaviour." href="/sdk/v2/" />
   <LinkCard title="RUM quickstart" description="First-install walkthrough." href="/observability/rum/quickstart/" />
   <LinkCard title="Source maps" description="Symbolicate your error stacks." href="/observability/rum/how-to/source-maps/" />
   <LinkCard title="Recording rules" description="Activate detail and replay capture." href="/observability/rum/how-to/session-filters/" />
-  <LinkCard title="Replay quickstart" description="Capture pixel-perfect session playback." href="/observability/replay/quickstart/" />
 </CardGrid>
