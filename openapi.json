@@ -10892,53 +10892,6 @@
         ]
       }
     },
-    "/rum/{app_id}/config": {
-      "get": {
-        "tags": [
-          "RUM Applications"
-        ],
-        "summary": "Get the JS SDK configuration snippet for a RUM application.",
-        "operationId": "get_sdk_config",
-        "parameters": [
-          {
-            "name": "app_id",
-            "in": "path",
-            "description": "RUM application identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "SDK config",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RumSdkConfig"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "404": {
-            "description": "Application not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
     "/rum/{app_id}/errors": {
       "get": {
         "tags": [
@@ -11020,213 +10973,6 @@
           },
           "404": {
             "description": "Error not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
-    "/rum/{app_id}/filters/": {
-      "get": {
-        "tags": [
-          "RUM Applications"
-        ],
-        "summary": "List session filters for a RUM application.",
-        "operationId": "list_rum_session_filters",
-        "parameters": [
-          {
-            "name": "app_id",
-            "in": "path",
-            "description": "RUM application identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Session filters"
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "RUM Applications"
-        ],
-        "summary": "Create a session filter on a RUM application.",
-        "operationId": "create_rum_session_filter",
-        "parameters": [
-          {
-            "name": "app_id",
-            "in": "path",
-            "description": "RUM application identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateRumSessionFilterRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Filter created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RumSessionFilter"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request body"
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
-    "/rum/{app_id}/filters/{filter_id}": {
-      "put": {
-        "tags": [
-          "RUM Applications"
-        ],
-        "summary": "Update a RUM session filter.",
-        "operationId": "update_rum_session_filter",
-        "parameters": [
-          {
-            "name": "app_id",
-            "in": "path",
-            "description": "RUM application identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "filter_id",
-            "in": "path",
-            "description": "Session filter identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateRumSessionFilterRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Filter updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RumSessionFilter"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "404": {
-            "description": "Filter not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "RUM Applications"
-        ],
-        "summary": "Delete a RUM session filter.",
-        "operationId": "delete_rum_session_filter",
-        "parameters": [
-          {
-            "name": "app_id",
-            "in": "path",
-            "description": "RUM application identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "filter_id",
-            "in": "path",
-            "description": "Session filter identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Filter deleted"
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "404": {
-            "description": "Filter not found"
           },
           "500": {
             "description": "Internal server error"
@@ -11517,56 +11263,6 @@
           },
           "404": {
             "description": "Release not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
-    "/rum/{app_id}/replay/{session_id}": {
-      "get": {
-        "tags": [
-          "RUM Analytics"
-        ],
-        "summary": "Get pre-signed S3 URLs for the session-replay segments of a RUM session.",
-        "operationId": "get_replay_segments",
-        "parameters": [
-          {
-            "name": "app_id",
-            "in": "path",
-            "description": "RUM application identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "session_id",
-            "in": "path",
-            "description": "Session identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Replay segment URLs"
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "404": {
-            "description": "Session or replay not found"
           },
           "500": {
             "description": "Internal server error"
@@ -16935,39 +16631,6 @@
           }
         }
       },
-      "CreateRumSessionFilterRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "filter_type",
-          "conditions"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "filter_type": {
-            "type": "string"
-          },
-          "conditions": {
-            "type": "object",
-            "additionalProperties": {},
-            "propertyNames": {
-              "type": "string"
-            }
-          },
-          "capture_replay": {
-            "type": "boolean"
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "priority": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
       "CreateRumSourceMapReleaseRequest": {
         "type": "object",
         "required": [
@@ -21586,35 +21249,6 @@
           }
         }
       },
-      "ReplaySegmentUrl": {
-        "type": "object",
-        "required": [
-          "segment_index",
-          "url",
-          "size_bytes",
-          "expires_in_seconds"
-        ],
-        "properties": {
-          "segment_index": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "url": {
-            "type": "string"
-          },
-          "size_bytes": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "expires_in_seconds": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          }
-        }
-      },
       "ResponseTimeDataPoint": {
         "type": "object",
         "description": "One aggregate bucket on the dashboard response-time trends chart.",
@@ -21989,13 +21623,6 @@
               "null"
             ]
           },
-          "long_task_duration_ms": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "format": "double"
-          },
           "user_id": {
             "type": [
               "string",
@@ -22124,29 +21751,6 @@
           }
         }
       },
-      "RumSdkConfig": {
-        "type": "object",
-        "required": [
-          "application_id",
-          "filters",
-          "settings"
-        ],
-        "properties": {
-          "application_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "filters": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RumSessionFilter"
-            }
-          },
-          "settings": {
-            "$ref": "#/components/schemas/RumApplicationSettings"
-          }
-        }
-      },
       "RumSessionDetailResponse": {
         "type": "object",
         "required": [
@@ -22162,57 +21766,6 @@
             "items": {
               "$ref": "#/components/schemas/RumEventRow"
             }
-          }
-        }
-      },
-      "RumSessionFilter": {
-        "type": "object",
-        "required": [
-          "id",
-          "application_id",
-          "name",
-          "filter_type",
-          "conditions",
-          "capture_replay",
-          "enabled",
-          "priority",
-          "created_at"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "application_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "filter_type": {
-            "type": "string"
-          },
-          "conditions": {
-            "type": "object",
-            "additionalProperties": {},
-            "propertyNames": {
-              "type": "string"
-            }
-          },
-          "capture_replay": {
-            "type": "boolean"
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "priority": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       },
@@ -25803,52 +25356,6 @@
           }
         }
       },
-      "UpdateRumSessionFilterRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "filter_type": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "conditions": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "additionalProperties": {},
-            "propertyNames": {
-              "type": "string"
-            }
-          },
-          "capture_replay": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "enabled": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "priority": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32"
-          }
-        }
-      },
       "UpdateSamlConnectionRequest": {
         "type": "object",
         "description": "Body for `PUT /account/sso/saml/connection`. Every field is optional;\nonly supplied fields are forwarded to Stytch.\n\nTwo ways to configure the IdP side: paste a `metadata_url` (Stytch fetches\nentity id, SSO URL, and certificate) or fill the three fields by hand.",
@@ -26587,7 +26094,7 @@
     },
     {
       "name": "RUM Applications",
-      "description": "Real-User-Monitoring applications, SDK tokens, and session filters."
+      "description": "Real-User-Monitoring applications and SDK tokens."
     },
     {
       "name": "RUM Source Maps",
