@@ -791,6 +791,8 @@ starlight-tabs .tab > [role='tab'][aria-selected='true'] {
 .sl-markdown-content .sl-table-wrap tbody tr:last-child > * { border-bottom: 0; }
 /* identifiers in the first column never break mid-name */
 .sl-markdown-content .sl-table-wrap td:first-child code { white-space: nowrap; }
+/* long values elsewhere break at the plugin's <wbr> marks, mid-word only as a last resort */
+.sl-markdown-content .sl-table-wrap td:not(:first-child) code { overflow-wrap: break-word; }
 
 /* narrow screens: wide tables scroll at a readable width instead of squeezing */
 @media (max-width: 49.99rem) {
