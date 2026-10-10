@@ -1,7 +1,7 @@
 ---
 title: RUM quickstart
 description: Install the JS SDK, create an application, see your first session in 5 minutes.
-last_verified: 2026-10-04
+last_verified: 2026-10-10
 owner: jj
 ---
 
@@ -44,16 +44,14 @@ The response includes `id` (the `application_id`) and `client_token`.
 
 ## 2. Install the SDK
 
-For an application enabled for the SDK 2 rollout, follow [SDK 2 installation](/sdk/v2/#install) and update [CSP and endpoints](/observability/rum/how-to/csp/) first. The examples below deliberately install **SDK 1.x** while that rollout is pending; do not combine an unpinned npm install with this legacy reference.
+If your site sets a Content Security Policy, allow the SDK's hosts first; see [CSP and intake endpoints](/observability/rum/how-to/csp/).
 
 <Tabs syncKey="install">
 <TabItem label="NPM">
 
 ```bash
-npm install @siteqwality/rum@1.0.7
+npm install @siteqwality/rum
 ```
-
-At the 2026-10-04 checkpoint, npm has 1.0.7; CDN `/rum/v1/` is reported to serve 1.1. SDK 1.1 options such as `ignoreErrors`, `beforeSend` and `recorderUrl` are not available in the 1.0.7 npm package. For SDK2, check the [release channels](/sdk/v2/#install) before choosing an install path.
 
 ```javascript
 // In your app's entry point, before any user code
@@ -76,12 +74,14 @@ Paste this into your page's `<head>`, as high as you can:
 ```html
 <script>
   (function(w,d,s,u){var r=w.SiteQwalityRUM=w.SiteQwalityRUM||{_q:[]};if(r._q&&!r._h){
-  ['init','setUser','setGlobalAttribute','removeGlobalAttribute','addError','addAction'].forEach(function(m){
+  ['init','setUser','clearUser','setGlobalAttribute','removeGlobalAttribute',
+   'addError','addAction','setView','setTrackingConsent','optOut','optIn',
+   'isOptedOut','startReplay','stopReplay','getSessionUrl','getStatus'].forEach(function(m){
     r[m]=function(){r._q.push([m,arguments])}});
   r._h=function(e){r._q.push(['_e',[e]])};w.addEventListener('error',r._h);
   w.addEventListener('unhandledrejection',r._h);
   var e=d.createElement(s);e.async=1;e.src=u;(d.head||d.documentElement).appendChild(e)}
-  })(window,document,'script','https://cdn.siteqwality.com/rum/v1/sdk.min.js');
+  })(window,document,'script','https://cdn.siteqwality.com/rum/v2/sdk.min.js');
 
   SiteQwalityRUM.init({
     applicationId: 'abc123',
@@ -91,14 +91,16 @@ Paste this into your page's `<head>`, as high as you can:
 </script>
 ```
 
-The snippet loads the SDK asynchronously, so it never blocks rendering. Until the SDK arrives it queues your `init`, `setUser`, `setGlobalAttribute`, `removeGlobalAttribute`, `addError` and `addAction` calls and captures any error the page throws. When the SDK loads it runs `init` first, then the rest in order, and reports the early errors with their original times. It is a classic script and needs no `type="module"`.
+The snippet loads the SDK asynchronously, so it never blocks rendering. Until the SDK arrives it queues your calls to any public method and captures any error the page throws. When the SDK loads it runs `init` first, then the rest in order, and reports the early errors with their original times. It is a classic script and needs no `type="module"`. To pin a release, load `/rum/v2.2.0/sdk.min.js` instead; see the [release channels](/sdk/v2/#install).
 
 </TabItem>
 </Tabs>
 
-On CDN SDK 1.1, `init()` is fire-and-forget. Collection starts synchronously inside the call, so there is nothing to wait for. It returns a Promise that settles once the remote config is applied (or fails to load); you never need to `await` it, and awaiting it only delays your app.
+`init()` starts collection synchronously inside the call, so there is nothing to wait for. It returns a Promise that settles once the remote config is applied (or fails to load); you never need to `await` it, and awaiting it only delays your app.
 
 With the npm package, calls made before `init()` (`setUser`, `addError` and the rest) are ignored, so call `init()` first. The CDN snippet queues them instead.
+
+If your site needs consent before tracking, pass `trackingConsent: 'pending'` and call `SiteQwalityRUM.setTrackingConsent('granted')` once the visitor agrees. Nothing is sent until then. See [consent and browser signals](/sdk/v2/#consent-and-browser-signals).
 
 ## 3. Open the app
 
@@ -129,7 +131,8 @@ curl https://api.siteqwality.com/rum/$APP_ID/sessions \
 If nothing shows up after a minute, check that:
 
 - The snippet sits in the page's `<head>`.
-- Your [Content Security Policy](/observability/rum/how-to/csp/) allows the hosts for the SDK version installed. SDK 2 needs the config CDN in `connect-src`; SDK 2.1 also needs `https://in-replay.siteqwality.com`.
+- Your [Content Security Policy](/observability/rum/how-to/csp/) allows `https://cdn.siteqwality.com` in `script-src` and `connect-src`, and `https://in.siteqwality.com` and `https://in-replay.siteqwality.com` in `connect-src`.
+- Consent is granted, if you passed `trackingConsent: 'pending'`. `SiteQwalityRUM.getStatus()` in the browser console shows the consent state and what the SDK dropped.
 - No ad blocker is blocking those hosts in your test browser.
 - The client token belongs to this application.
 
@@ -150,7 +153,7 @@ The user then shows on the session in **RUM → Sessions**, and the session sear
 For business events:
 
 ```javascript
-// Track a user action
+// Track a custom event
 SiteQwalityRUM.addAction('checkout_completed', { variant: 'A' });
 
 // Track a manual error (in addition to auto-captured ones)

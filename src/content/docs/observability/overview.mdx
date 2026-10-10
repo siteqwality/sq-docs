@@ -33,7 +33,7 @@ Site Qwality's observability suite has five pillars. Each has its own explorer i
 ```
 
 - A **trace** can pull in **logs** for any of its spans, when your log entries carry a `trace_id` (see [correlate traces with logs](/observability/traces/how-to/correlate-logs/)).
-- **RUM** can add a `traceparent` header to fetch/XHR requests whose URLs you list in the application's [`trace_urls`](/observability/rum/how-to/remote-config/) setting (SDK 2), so a user's request can open the back-end trace.
+- **RUM** can add a `traceparent` header to fetch/XHR requests whose URLs you list in the application's [`trace_urls`](/observability/rum/how-to/remote-config/) setting, so a user's request can open the back-end trace.
 - **Metrics** are the numbers you send. Nothing is derived from your logs or traces automatically, so emit a metric for anything you want to chart or alert on as a number.
 
 ## When to reach for which

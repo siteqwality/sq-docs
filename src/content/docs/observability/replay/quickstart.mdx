@@ -1,13 +1,11 @@
 ---
 title: Session Replay quickstart
 description: Enable replay for errored sessions in your RUM app, then watch a real session in the dashboard.
-last_verified: 2026-10-04
+last_verified: 2026-10-10
 owner: jj
 ---
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
-
-> **SDK versions:** The recorder behavior and examples below describe SDK 1.x unless stated otherwise. SDK 2.1 has a different endpoint, pre-trigger memory buffer and privacy enforcement. Read [replay 2.1 transport](/sdk/v2/#replay-21-transport) and [buffer and privacy](/sdk/v2/#replay-buffer-and-privacy) before upgrading; replay v2 must be enabled for your application.
 
 By the end of this guide you'll have replay activated for any session that throws an error, and you'll have watched a recorded session play back in the dashboard.
 
@@ -16,7 +14,9 @@ By the end of this guide you'll have replay activated for any session that throw
 - A RUM application set up. See the [RUM quickstart](/observability/rum/quickstart/).
 - The SDK installed in your app.
 
-## 1. Set privacy defaults on the application
+## 1. Check the application's privacy settings
+
+New applications start on the **Balanced** [privacy level](/observability/rum/how-to/remote-config/#privacy-levels), which masks inputs and scrubs emails, card numbers and long digit runs from page text. **Strict** also masks all text and blocks images and video.
 
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
@@ -25,9 +25,9 @@ By the end of this guide you'll have replay activated for any session that throw
 
 1. **RUM → Applications → your app → Settings → Privacy.**
 
-2. Enable **Mask inputs**. (Almost always a yes, since your customers shouldn't see other customers' typed passwords.)
+2. Check that **Mask all user inputs** is on. (Almost always a yes, since your customers shouldn't see other customers' typed data.)
 
-3. Enable **Mask text** if your app displays sensitive content (financial info, PII).
+3. Turn on **Mask all text content** if your app displays sensitive content (financial info, PII).
 
 4. Save.
 
@@ -36,13 +36,13 @@ By the end of this guide you'll have replay activated for any session that throw
 </TabItem>
 <TabItem label="API">
 
-Send only the keys you change; the rest keep their stored values. Changing privacy needs an account admin or an API key with no scope restriction:
+Set the level through the API. Send only the keys you change; the rest keep their stored values. Changing privacy needs an account admin or an API key with no scope restriction:
 
 ```bash
 curl -X PATCH https://api.siteqwality.com/rum/$APP_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"settings": {"privacy": {"mask_inputs": true, "mask_text": false}}}'
+  -d '{"settings": {"privacy": {"level": "strict"}}}'
 ```
 
 </TabItem>
@@ -50,7 +50,7 @@ curl -X PATCH https://api.siteqwality.com/rum/$APP_ID \
 
 ## 2. Add a recording rule to enable replay
 
-Replay activates when a session matches a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application already has one, **Errored sessions**, which replays every session with an error, so you can skip this step. An application created before recording rules v2 may have none; add one in **RUM → Recording rules**, or through the API:
+Replay activates when a session matches a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application already has one, **Errored sessions**, which replays every session with an error, so you can skip this step. If you deleted it, add one in **RUM → Recording rules**, or through the API:
 
 ```bash
 curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
@@ -63,13 +63,13 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
   }'
 ```
 
-The SDK fetches rules on every page load and refreshes them every 5 minutes. Allow up to about ten minutes for a new rule to reach every page; see [how long changes take](/observability/rum/how-to/remote-config/#how-long-changes-take-to-land).
+The SDK fetches rules on every page load, and an open tab refetches them when it becomes visible with a copy older than 5 minutes. A new rule reaches new page loads within 6 minutes; see [how long changes take](/observability/rum/how-to/remote-config/#how-long-changes-take-to-land).
 
 ## 3. Trigger an error in your app
 
 Open your app, do something that throws an error in production code. (Or temporarily add `throw new Error('replay test')` to a button handler and click it.)
 
-The SDK evaluates the rule as soon as it sends the error and starts the recorder. The replay starts at the error: it does not include what happened before it. Keep using the page for a few seconds; the first segment uploads within 30 seconds, or when you leave the page.
+The SDK evaluates the rule as soon as it sends the error. Because an error rule could match any session, the recorder has been buffering since the page loaded, so the replay includes up to the last 60 to 120 seconds before the error. Keep using the page for a few seconds; segments upload within about 20 seconds, or when you leave the page.
 
 ## 4. Watch the replay
 
@@ -90,12 +90,12 @@ The SDK evaluates the rule as soon as it sends the error and starts the recorder
 <TabItem label="API">
 
 ```bash
-# Get the segment URLs
-curl https://api.siteqwality.com/rum/$APP_ID/replay/$SESSION_ID \
+# The replay manifest: every window, page load and chunk, without URLs
+curl https://api.siteqwality.com/rum/$APP_ID/sessions/$SESSION_ID/replay \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-You get a list of segments with presigned S3 URLs. The dashboard's player consumes these directly.
+Then request short-lived URLs for the chunks you want to play with `POST /rum/{app_id}/sessions/{session_id}/replay/chunks`. The key needs the `read:rum_replay` and `read:rum` scopes. See [retrieval](/observability/replay/reference/#retrieval).
 
 </TabItem>
 </Tabs>
@@ -104,9 +104,9 @@ You get a list of segments with presigned S3 URLs. The dashboard's player consum
 
 Before rolling out replay broadly:
 
-- [ ] Inputs are masked (`mask_inputs: true`) unless you have a strong reason to capture them.
-- [ ] Sensitive text (PII, financial figures, health info) is wrapped in `<div class="rr-mask">` or behind a `mask_text: true` global setting.
-- [ ] Pages with payment forms have `<div class="rr-block">` on the form (don't record at all).
+- [ ] The application has a privacy level. An application on Custom with `mask_inputs: false` records input values.
+- [ ] Sensitive text (PII, financial figures, health info) is covered by `mask_selectors`, or the application is on Strict.
+- [ ] Payment forms match a `block_selectors` entry (not recorded at all), and pages that should never be recorded are in `never_record_urls`.
 - [ ] Your privacy policy mentions session replay if you collect from EU/CA customers (GDPR/CCPA).
 - [ ] Replay-enabled recording rules are scoped. Don't replay every session, just the interesting ones.
 

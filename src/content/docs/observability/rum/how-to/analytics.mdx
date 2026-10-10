@@ -19,7 +19,7 @@ Traffic charts support sessions, views, errors and the percentage of sessions wi
 
 Group Pages by normalized route or raw URL path. Each row includes views, sessions, error rate and p75 LCP, INP, CLS and loading times. Initial page loads and route changes have separate loading-time columns. A null percentile means no valid sample exists, not zero milliseconds.
 
-Document loads marked by the SDK remain separate samples even when their timings are equal. Repeated-timing deduplication applies only to unmarked legacy records.
+Each document load the SDK records is a separate sample, even when two loads report equal timings.
 
 For LCP, INP or CLS, open attribution to inspect the elements associated with poor samples. Each row includes its share of poor samples and example sessions. Script rows report recorded Long Animation Frame script durations; resource rows report resource timing. An `approximate` flag identifies results based on representative SDK resource aggregates.
 

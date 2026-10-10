@@ -1,25 +1,23 @@
 ---
 title: Session Replay reference
 description: Replay activation settings, privacy toggles, segment mechanics, access rules, compaction and the retrieval endpoints.
-last_verified: 2026-10-04
+last_verified: 2026-10-10
 owner: jj
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-> **SDK versions:** The recorder behavior and examples below describe SDK 1.x unless stated otherwise. SDK 2.1 has a different endpoint, pre-trigger memory buffer and privacy enforcement. Read [replay 2.1 transport](/sdk/v2/#replay-21-transport) and [buffer and privacy](/sdk/v2/#replay-buffer-and-privacy) before upgrading; replay v2 must be enabled for your application.
-
 Replay is configured through the [RUM application](/observability/rum/reference/), not through its own object. This page collects every replay-relevant setting in one place.
 
 ## Activation
 
-Replay records only for sessions matching a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application starts with **Errored sessions** (every errored session) and an Auto sample within the replay quota; an application created before recording rules v2 keeps the rules copied from its session filters. With SDK 1.x, recording starts at the match, with no buffer of what came before, and only rules [SDK 1.x can express](/observability/rum/how-to/session-filters/#sdk-versions) apply. Once replay activates for a session it stays on for that session, and it resumes on later page loads in the same tab while an enabled Replay rule still applies.
+Replay records only for sessions matching a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application starts with **Errored sessions** (every errored session) and an Auto sample within the replay quota. While a Replay rule could still match, the SDK buffers the last 60 to 120 seconds in memory, and a match sends that buffer before streaming; see [replay buffer and privacy](/sdk/v2/#replay-buffer-and-privacy). Once replay activates for a session it stays on for the rest of that session, in every tab and across page loads.
 
 | Setting | Where | Default | Description |
 |---|---|---|---|
 | `capture` | Recording rule | required | `replay` records a replay when the rule matches. |
-| `sample_rate`, `auto_sample` | Recording rule | `1`, `false` | Share of matching sessions; Auto follows the replay quota. SDK 2.0. |
-| `min_duration_ms`, `require_interaction` | Recording rule | `3000`, `true` for Replay | Gates before upload, bypassed by error conditions. SDK 2.0. |
+| `sample_rate`, `auto_sample` | Recording rule | `1`, `false` | Share of matching sessions; Auto follows the replay quota. |
+| `min_duration_ms`, `require_interaction` | Recording rule | `3000`, `true` for Replay | Gates before upload, bypassed by error conditions. |
 | `enabled` | Recording rule | `true` | Disabled rules are never applied. |
 
 ## Privacy settings
@@ -28,56 +26,45 @@ Set on the RUM application under `settings.privacy` and delivered to the SDK wit
 
 | Field | Documented default | Effect |
 |---|---|---|
-| `mask_inputs` | `true` | Masks all input values in the recording (rrweb `maskAllInputs`). |
-| `mask_text` | `false` | Masks all user-visible text in the recording. |
+| `mask_inputs` | `true` | Masks all input values in the recording (rrweb `maskAllInputs`). Any privacy level masks inputs whatever this flag says. |
+| `mask_text` | `false` | Masks all user-visible text in the recording. Strict masks text whatever this flag says. |
 
-`settings.privacy` also carries [`hide_action_text`](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names), which is not a replay setting.
+`settings.privacy` also carries the [privacy level](/observability/rum/how-to/remote-config/#privacy-levels), the personal data patterns, the per-element selectors (`mask_selectors`, `unmask_selectors`, `block_selectors`, `ignore_input_selectors`) and `never_record_urls`; see [replay privacy](/observability/replay/overview/#privacy). It also carries [`hide_action_text`](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names), which is not a replay setting.
 
 <Aside type="danger" title="Read the stored value, not the documented default">
 Applications created earlier can have `mask_inputs` stored as `false`, because the value was written into the application's settings at creation time and nothing rewrites it afterwards. The documented default governs what a new application is created with; **the stored value is what governs what is recorded**.
 
 `GET /rum/{app_id}` returns `settings.privacy` for the application, and the dashboard shows the same two values as toggles under **RUM → Settings → Privacy**. Check them on every application you operate before relying on either one. There is no bulk fix and no backfill.
 
-`mask_text` is off, which is a deliberate default and not a defect: with it off, all user-visible page text is recorded verbatim. Turn it on, or apply `rr-mask` to the elements that matter, if the pages being recorded render anything you would not want in a recording.
+`mask_text` is off, which is a deliberate default and not a defect: with it off, and below Strict, user-visible page text is recorded (Balanced scrubs emails, card numbers and long digit runs from it). Turn it on, choose Strict, or add `mask_selectors` for the elements that matter, if the pages being recorded render anything you would not want in a recording.
 </Aside>
 
 ## Segment mechanics
 
-The SDK records with [rrweb](https://www.rrweb.io), which is lazy-loaded only when replay activates. Recorded events are shipped as **segments**:
+The SDK records with [rrweb](https://www.rrweb.io), in a separate chunk loaded only for sessions a Replay rule has matched or could still match. Every tab records its own window, and each page load is its own stream of **segments**:
 
-- A segment is flushed when it reaches 100 rrweb events, and at least every 30 seconds.
-- `segment_index` starts at 0 and increments per flush within the session.
-- A failed upload is retried like an event batch (see [batching and delivery](/sdk/reference/#batching-and-delivery)). Up to 10 segments or 4 MB wait in memory, oldest dropped first.
-
-Ingest request (sent by the SDK):
-
-```
-POST https://replay.siteqwality.com/v1/segments?session_id={id}&segment_index={n}
-Authorization: Bearer <client_token>
-Content-Type: application/json
-
-{ "session_id": "...", "segment_index": 0, "events": [ ... ] }
-```
+- A segment closes at 20 seconds or about 2.5 MB of JSON, and when the tab is hidden. A page's first full snapshot is sent at once.
+- Segments are numbered from 0 per page load (`q`) and carry the session, window and page load IDs, the event range and, on the last one, a final marker.
+- Each segment is a JSON array of rrweb events, gzipped where the browser can, sent to `POST https://in-replay.siteqwality.com/v2/segments` with the client token in `Authorization` and the index in the `x-sq-replay-index` header.
+- A failed upload is retried with backoff, and a `Retry-After` holds every send. See [replay transport](/sdk/v2/#replay-transport) for the full contract.
 
 ## Stored segment fields
 
 | Field | Type | Description |
 |---|---|---|
-| `session_id` | string | The RUM session. |
-| `segment_index` | int | Position within the session. |
+| `session_id`, `window_id`, `page_load_id` | uuid | The RUM session, browser tab and document. |
+| `seq` | int | Position within the page load, from 0. Gaps mean segments not (yet) received. |
 | `timestamp` | string | When the segment was received. |
-| `s3_key` | string | Storage location (internal). |
-| `content_hash` | string | First 16 hex digits of the payload's SHA-256. |
-| `first_event_ts` | string | Time of the earliest event in the segment. |
-| `size_bytes` | int | Segment payload size. |
+| `first_event_ts`, `last_event_ts` | string | Time of the earliest and latest event in the segment. |
+| `event_count` | int | rrweb events in the segment. |
+| `has_full_snapshot`, `is_final` | bool | Playback can start here; the SDK's last segment of the page load. |
+| `content_hash` | string | First 16 hex digits of the SHA-256 of the segment's JSON. |
+| `size_bytes`, `uncompressed_bytes` | int | Stored (gzip) size and JSON size. |
+| `sdk_version`, `rule_id` | string | The SDK release, and the recording rule that started recording. |
 
 Each distinct payload is stored once. A retried upload with the same content is accepted and not stored again.
 
 ## Who can watch a replay
-
-<Aside type="note" title="Wave 2 rollout candidate">
-The manifest, chunk URLs, compaction and replay access controls below describe the Wave 2 candidate. They become available after the corresponding backend and player rollout. SDK 2.1 replay transport still requires enablement for your application; see the [versioned SDK guide](/sdk/v2/#replay-21-transport).
-</Aside>
 
 A replay shows what a user saw, so reading one needs more than read access to RUM.
 
@@ -115,8 +102,6 @@ The player loads a replay in two steps: a manifest that lists every piece withou
 | `page_loads[]` | One per document: `page_load_id`, `url` (minimised), `start_ms`, `end_ms` and its `chunks[]` in playback order. |
 | `chunks[]` | `id` (opaque), `kind` (`block` or `segment`), `start_ms`, `end_ms`, `bytes`, and `snapshot` (playback can start here). |
 
-SDK 1.x and 2.0 record no tabs or page loads. Until compaction infers their page loads, their segments are listed under the nil `window_id` and `page_load_id`.
-
 ### Chunk URLs
 
 `POST /rum/{app_id}/sessions/{session_id}/replay/chunks` with `{"ids": [...]}`, at most 20 ids, returns one entry per id found (unknown ids are left out):
@@ -134,35 +119,17 @@ How to play each kind:
 
 - **`block`**: a compacted block, one gzip stream holding a JSON array of rrweb events. Gunzip it yourself; the response has no `Content-Encoding`. Every block starts with Meta and a full snapshot and plays on its own. When you continue from the previous block of the same page load, skip the new block's leading Meta and full snapshot events and every event marked `"sqk": 1`: they only rebuild the state the player already has.
 - **`stylesheet`**: plain CSS. A block's `_cssText` attribute or style text that reads `sq-css:<hash>` names one: request `css:<hash>` with the block's other ids and swap in its text before handing events to rrweb.
-- **`segment`**: a raw segment as the SDK sent it, either a JSON array of rrweb events (SDK 2.1+) or `{session_id, segment_index, events}` (SDK 1.x and 2.0).
+- **`segment`**: a raw segment, a JSON array of rrweb events as the SDK sent it: gzip, or plain JSON for an uncompressed tail sent at page close. Check for the gzip header before unpacking.
 
 ### Compaction
 
-About 30 minutes after a page load goes quiet (2 minutes once the SDK marks it ended), its segments are compacted into blocks. Compaction applies the application's current [privacy settings](#privacy-settings) and selectors again on the server, including recordings from older SDKs. These rules apply at compaction time; changing settings does not automatically recompact existing blocks. It also removes duplicated events, moves stylesheets of 1 KB or more into a shared store, and adds a full snapshot about every megabyte so seeking never replays the whole page load. Raw segments stay until their retention ends.
+About 30 minutes after a page load goes quiet (2 minutes once the SDK marks it ended), its segments are compacted into blocks. Compaction applies the application's current [privacy settings](#privacy-settings) and selectors again on the server. These rules apply at compaction time; changing settings does not automatically recompact existing blocks. It also removes duplicated events, moves stylesheets of 1 KB or more into a shared store, and adds a full snapshot about every megabyte so seeking never replays the whole page load. Raw segments stay until their retention ends.
 
 ### Who watched
 
-Every replay view is written to the [audit log](/enterprise/audit-log/) as `rum.replay.viewed`, with `target_kind` `rum_session` and the session as `target_id`, at most once per viewer per 30 minutes. Whenever the manifest, the chunk URLs or the legacy endpoint below return something to play, the view is recorded first; if it cannot be recorded, the request fails with a `500` and returns no content. Within the 30 minutes, further requests by the same viewer add no entries.
+Every replay view is written to the [audit log](/enterprise/audit-log/) as `rum.replay.viewed`, with `target_kind` `rum_session` and the session as `target_id`, at most once per viewer per 30 minutes. Whenever the manifest or the chunk URLs return something to play, the view is recorded first; if it cannot be recorded, the request fails with a `500` and returns no content. Within the 30 minutes, further requests by the same viewer add no entries.
 
 `GET /rum/{app_id}/sessions/{session_id}/viewers` lists who watched over the last 90 days, most recent first: `actor_type`, the person or key (`user_id`, `email`, `api_key_id`, `api_key_name`, `m2m_client_id`), `first_viewed_at`, `last_viewed_at` and `views`.
-
-### Legacy segment list
-
-<Aside type="caution" title="Deprecated">
-`GET /rum/{app_id}/replay/{session_id}` predates compaction and returns raw segments only. It follows the same access rules and records a view like the manifest. Use the manifest for new tooling.
-</Aside>
-
-It returns one entry per stored segment, ordered by `first_event_ms`, then `segment_index`:
-
-| Field | Description |
-|---|---|
-| `segment_index` | Position within the session. Not unique: older SDK versions restart it at 0 on every page load. |
-| `url` | Presigned download URL for the segment payload. |
-| `size_bytes` | Segment payload size. |
-| `first_event_ms` | Time of the earliest event in the segment, in Unix milliseconds. |
-| `expires_in_seconds` | URL lifetime: 900 seconds (15 minutes). Re-fetch the list for fresh URLs. |
-
-Play the segments in the order returned. Do not deduplicate or sort them by `segment_index`.
 
 ## Replay links
 
@@ -179,4 +146,4 @@ When both are present, `t` wins.
 
 - [Replay overview](/observability/replay/overview/) for the concept and privacy guidance.
 - [Recording rules](/observability/rum/how-to/session-filters/) for the activation mechanism.
-- [SDK reference](/sdk/reference/) for the recorder's browser-side behavior.
+- [SDK reference](/sdk/v2/#replay-recording) for the recorder's browser-side behavior.
