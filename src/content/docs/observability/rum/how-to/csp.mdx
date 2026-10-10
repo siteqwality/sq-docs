@@ -1,11 +1,11 @@
 ---
 title: Configure CSP and intake endpoints
-description: Allow SDK scripts, config fetches, event intake and replay, including the SDK 2.1 replay index header.
-last_verified: 2026-10-04
+description: Allow SDK scripts, config fetches, event intake and replay, including the SDK 2.2 replay index header.
+last_verified: 2026-10-10
 owner: jj
 ---
 
-For SDK 2.1, add these origins to your existing Content Security Policy directives:
+For SDK 2.2.0, add these origins to your existing Content Security Policy directives:
 
 ```text
 script-src 'self' https://cdn.siteqwality.com;
@@ -14,7 +14,7 @@ connect-src 'self' https://in.siteqwality.com https://in-replay.siteqwality.com 
 
 This is a fragment to merge into your policy, not a replacement for the site's full policy. Authorize the inline [install snippet](/sdk/v2/#cdn-snippet) with your existing nonce or a matching hash, or put the bootstrap in an allowed external script. A CDN host allowlist does not authorize inline scripts by itself.
 
-The CDN belongs in **both** directives: `script-src` loads the core, recorder and gzip fallback; `connect-src` permits the public config JSON fetch at `/rum/config/v2/<applicationId>.json`.
+The CDN belongs in **both** directives: `script-src` loads the core, recorder, optional canvas chunk and gzip fallback; `connect-src` permits the public config JSON fetch at `/rum/config/v2/<applicationId>.json`.
 
 ## Keep hosts for the versions you serve
 
@@ -22,7 +22,7 @@ The CDN belongs in **both** directives: `script-src` loads the core, recorder an
 |---|---|---|---|
 | 1.x | `https://rum.siteqwality.com` | `https://replay.siteqwality.com` | `GET /v1/config` on the event host |
 | 2.0 | `https://in.siteqwality.com` | `https://replay.siteqwality.com` | CDN `/rum/config/v2/<applicationId>.json` |
-| 2.1 | `https://in.siteqwality.com` | `https://in-replay.siteqwality.com` | Same CDN config |
+| 2.1 and 2.2 | `https://in.siteqwality.com` | `https://in-replay.siteqwality.com` | Same CDN config |
 
 During migration, retain the old hosts in `connect-src` until no cached pages or pinned SDKs need them. Do not change the legacy replay host's path to `/v2/segments`; replay v2 is on its own host.
 
@@ -30,7 +30,7 @@ During migration, retain the old hosts in `connect-src` until no cached pages or
 
 Set `ingestBase`, `replayBase` and `configBase` to your proxy's host bases. Forward:
 
-- Event `POST /v2/batch` to `in.siteqwality.com`. Forward identity checks using the method sent by your SDK: `GET /v2/identity?h=<hash>` (used by published SDK 2.1), or `POST /v2/identity` with a JSON body. Both routes are live. Preserve Authorization, Content-Type, the body and the private/no-store response; suppress identity query strings in proxy access logs.
+- Event `POST /v2/batch` to `in.siteqwality.com`. Forward identity checks using the method sent by your SDK: `GET /v2/identity?h=<hash>` (used by published SDK 2.2.0), or `POST /v2/identity` with a JSON body. Both routes are live. Preserve Authorization, Content-Type, the body and the private/no-store response; suppress identity query strings in proxy access logs.
 - Config `GET /rum/config/v2/<applicationId>.json` to `cdn.siteqwality.com`, without adding a token.
 - Replay `POST /v2/segments` to `in-replay.siteqwality.com`, preserving `Authorization`, `Content-Type`, `Origin` and `x-sq-replay-index`, and the original gzip or JSON body.
 

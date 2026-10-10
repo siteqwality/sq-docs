@@ -1,32 +1,35 @@
 ---
 title: SDK 2 installation and reference
-description: Install SDK 2, configure CSP and consent, and understand Observe billing and the replay v2 rollout.
-last_verified: 2026-10-04
+description: Install SDK 2, configure CSP and consent, and understand Observe billing and replay privacy.
+last_verified: 2026-10-10
 owner: jj
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-This guide describes SDK 2.0 event capture and SDK 2.1 replay. For SDK 1.x, use the [legacy reference](/sdk/reference/).
+This guide describes the published SDK 2.2.0. For SDK 1.x, use the [legacy reference](/sdk/reference/).
 
-<Aside type="caution" title="Check rollout before upgrading replay">
-SDK 2.1 requires the replay v2 intake, compactor and playback API to be deployed, and your application to be enabled for replay v2. The fixed-URL transport also requires the intake and CORS configuration to accept `x-sq-replay-index`. A published SDK or this guide alone does not establish that those services are enabled for your app. Keep the existing SDK until those prerequisites are confirmed.
+<Aside type="note" title="SDK 2.2.0 is available">
+SDK 2.2.0 is published on npm and the CDN. Replay v2 intake, compaction and playback are deployed, and replay v2 is enabled for all applications. Recording still depends on your application's rules, consent, privacy settings and quota.
 </Aside>
 
 ## Install
 
-Release channels at the 2026-10-04 recovery checkpoint:
+```bash
+npm install @siteqwality/rum@2.2.0
+```
+
+Release channels verified October 10, 2026:
 
 | Channel | Availability |
 |---|---|
-| npm `@siteqwality/rum` | 1.0.7. SDK 1.1 and 2.x are not published on npm at this checkpoint. |
-| CDN `/rum/v1/` | SDK 1.1 reported live. |
-| CDN `/rum/v2/` | SDK 2.0 reported live; this moving alias does not yet provide replay 2.1. |
-| SDK 2.1 | Candidate only, not deployed. Its fixed-header transport and backend CORS fix must be released together before the canary. |
+| npm `@siteqwality/rum`, `latest` | SDK 2.2.0. |
+| CDN `/rum/v2/` | Moving 2.x alias, currently SDK 2.2.0. |
+| CDN `/rum/v2.2.0/` | Immutable SDK 2.2.0 and matching lazy chunks. |
+| CDN `/rum/v1/` | Legacy 1.x compatibility channel. |
+| npm `next` | Still 2.1.0; use `latest` or the explicit 2.2.0 version. |
 
-Use the application's public `applicationId` and `clientToken`. Do not use an account API key in a browser. Do not use `npm install @siteqwality/rum@2` for this recovery checkpoint: no 2.x package is available there yet. The existing npm package is not interchangeable with the CDN SDK2 bundle.
-
-The initialization example below applies to a reviewed SDK2 package build once available. For the currently reported CDN2.0 channel, use the [CDN snippet](#cdn-snippet) and retain the legacy replay host in CSP. Replay behavior later in this guide is explicitly labeled 2.1 and describes the candidate, not the live alias.
+Use the application's public `applicationId` and `clientToken`. Do not use an account API key in a browser. The npm package and CDN release provide the same SDK version; npm integrates with your bundler, while the CDN exposes `window.SiteQwalityRUM`.
 
 ```javascript
 import { SiteQwalityRUM } from '@siteqwality/rum';
@@ -48,7 +51,7 @@ Call `init` before mounting your app. It starts collection synchronously and ret
 
 ### CDN snippet
 
-This snippet loads the moving 2.x CDN alias, reported to contain SDK 2.0 at this checkpoint. It does not select the undeployed SDK 2.1 candidate. Before the alias advances to 2.1, complete the replay rollout prerequisites. Authorize the inline bootstrap using your site's CSP nonce or hash; see [CSP and endpoint configuration](/observability/rum/how-to/csp/).
+This snippet loads the moving 2.x CDN alias, currently SDK 2.2.0. Use `/rum/v2.2.0/sdk.min.js` to pin that release. Authorize the inline bootstrap using your site's CSP nonce or hash; see [CSP and endpoint configuration](/observability/rum/how-to/csp/).
 
 ```html
 <script>
@@ -72,16 +75,16 @@ This snippet loads the moving 2.x CDN alias, reported to contain SDK 2.0 at this
 
 The stub queues all 16 public methods and early errors. It runs `init` first when the bundle arrives. A queued getter has no synchronous return value; call `getStatus`, `getSessionUrl` and `isOptedOut` after the real SDK loads when you need their results.
 
-`/rum/v2/sdk.min.js` is the moving 2.x alias. Immutable releases use `/rum/v<version>/sdk.min.js`. Keep the matching `recorder-<version>.min.js` and `gzip-<version>.min.js` beside the core when self-hosting SDK 2.1. The gzip fallback loads only when native compression is unavailable. The `/rum/v1/` alias stays on 1.x.
+`/rum/v2/sdk.min.js` is the moving 2.x alias. Immutable releases use `/rum/v<version>/sdk.min.js`. Keep the matching `recorder-<version>.min.js`, `gzip-<version>.min.js` and `canvas-<version>.min.js` beside the core when self-hosting SDK 2.2.0. The canvas chunk loads only when canvas recording is opted in and permitted. The gzip fallback loads only when native compression is unavailable. The `/rum/v1/` alias stays on 1.x.
 
 ## Endpoints and config
 
 | Purpose | SDK 2 endpoint | Authentication |
 |---|---|---|
 | Events | `POST https://in.siteqwality.com/v2/batch` | `Authorization: Bearer <clientToken>` |
-| Identity check, when enabled | `POST https://in.siteqwality.com/v2/identity` | Same header |
+| Identity check, when enabled | `GET https://in.siteqwality.com/v2/identity?h=<hash>` | Same header; private/no-store response. The server also accepts POST. |
 | Config | `GET https://cdn.siteqwality.com/rum/config/v2/<applicationId>.json` | No token, cookies or custom headers |
-| Replay, SDK 2.1 | `POST https://in-replay.siteqwality.com/v2/segments` | Bearer header and `x-sq-replay-index` |
+| Replay, SDK 2.1 and 2.2 | `POST https://in-replay.siteqwality.com/v2/segments` | Bearer header and `x-sq-replay-index` |
 | Replay, SDK 2.0 | `POST https://replay.siteqwality.com/v1/segments` | Bearer header |
 
 `ingestBase`, `replayBase` and `configBase` override those host bases for a first-party proxy. Do not include the endpoint path in the base. `apiBase` was removed in 2.0. Preserve authentication as a header; never put a client token in the URL. See the [proxy requirements](/observability/rum/how-to/csp/#first-party-proxies).
@@ -127,7 +130,7 @@ With npm, other calls before `init` are ignored. Treat context, traits and globa
 
 ## Capture and billing
 
-With the Phase 1 intake deployed, accepted errors count toward **Observe sessions**, on both `/v2/batch` and the compatibility `/v1/errors` endpoint. An error alone does not make the session Analyze. Filtered browser noise does not claim usage. A recording rule triggered by that error can still activate Analyze or Replay and incur those session counts when data is accepted.
+Accepted errors count toward **Observe sessions**, on both `/v2/batch` and the compatibility `/v1/errors` endpoint. An error alone does not make the session Analyze. Filtered browser noise does not claim usage. A recording rule triggered by that error can still activate Analyze or Replay and incur those session counts when data is accepted.
 
 | Tier | Capture and usage |
 |---|---|
@@ -135,9 +138,9 @@ With the Phase 1 intake deployed, accepted errors count toward **Observe session
 | Analyze | Accepted detail such as actions, successful requests, resources, console and long animation frames after a rule match. A memory buffer holds up to 60 seconds or 500 detail events before activation. |
 | Replay | A Replay rule also enables Analyze. The first accepted replay segment counts the session toward Replay; retries do not add a new replay session. An unmatched memory buffer alone is not a billed replay. |
 
-Free monthly allowances are 1,000 Observe sessions, 100 Analyze sessions and 100 Replay sessions. Paid packs increase those allowances; replay is priced per recorded session, not per stored MB. Before the Phase 1 intake deployment, the legacy error handler counted real errors as Analyze. This billing change is a server deployment gate, not merely an SDK version check.
+Free monthly allowances are 1,000 Observe sessions, 100 Analyze sessions and 100 Replay sessions. Paid packs increase those allowances; replay is priced per recorded session, not per stored MB.
 
-## Replay 2.1 transport
+## Replay v2 transport
 
 The fixed endpoint is `POST /v2/segments`, with no segment-specific query string. Index fields move to the `x-sq-replay-index` header as a URL-encoded query-string value, for example:
 
@@ -154,24 +157,24 @@ The body is a JSON array of rrweb events. Gzip uses `Content-Type: application/o
 
 Segments normally close at 20 seconds or about 2.5 MB of serialized JSON, and on tab hide. The first full snapshot is sent promptly. A snapshot larger than 4 MB after stylesheet references stops recording for that page load (`too_large`). These are SDK segmentation thresholds, not intake limits: intake allows at most 2 MB on the wire and 16 MB inflated.
 
-Requests are sent in order, one at a time. Network errors, 408, ordinary 429 responses and 5xx retry with backoff; `Retry-After` holds sends, including unload. The coordinated 2.1 release distinguishes two explicit response reasons: a 403 with `reason: "not_enabled"` stops replay for the page load while Observe and Analyze continue, without retrying through legacy replay, and a 429 with `reason: "session_cap"` stops replay for that session. Other 401 or 403 responses and an exhausted request budget stop delivery. Other 4xx responses drop a segment. A missing snapshot also drops dependent segments and requests a fresh snapshot. Identical retry bodies are deduplicated by intake.
+Requests are sent in order, one at a time. Network errors, 408, ordinary 429 responses and 5xx retry with backoff; `Retry-After` holds sends, including unload. SDK 2.2.0 distinguishes two explicit response reasons: a 403 with `reason: "not_enabled"` stops replay for the page load while Observe and Analyze continue, without retrying through legacy replay, and a 429 with `reason: "session_cap"` stops replay for that session. Other 401 or 403 responses and an exhausted request budget stop delivery. Other 4xx responses drop a segment. A missing snapshot also drops dependent segments and requests a fresh snapshot. Identical retry bodies are deduplicated by intake.
 
 At page close, the SDK attempts a keepalive tail using already-compressed bytes or JSON within the shared 60 KB keepalive budget. Delivery and the final marker are best-effort. Inspect `getStatus().dropped`, including `replay_tail_dropped` and `replay_segments_dropped`, rather than assuming every closing event arrived.
 
 ## Replay buffer and privacy
 
-SDK 2.1 can download the recorder before a rule matches, but only when a sampled-in Replay rule could still match the session's device, release and environment, and recording is permitted. It keeps the current and previous full-snapshot intervals in memory, with snapshots about 60 seconds apart and a 5 MB buffer target. A match sends retained segments oldest first, then streams new recording.
+SDK 2.2.0 can download the recorder before a rule matches, but only when a sampled-in Replay rule could still match the session's device, release and environment, and recording is permitted. It keeps the current and previous full-snapshot intervals in memory, with snapshots about 60 seconds apart and a 5 MB buffer target. A match sends retained segments oldest first, then streams new recording.
 
 This can include roughly 60 to 120 seconds before a later error. It does **not** guarantee a minute of history: a fresh page, delayed config or consent, a pause, memory pressure or a large snapshot may leave less. Nothing from an unmatched replay buffer is uploaded or persisted. It is discarded on page close, stop, consent withdrawal, opt-out, GPC restrictions or a do-not-record decision. SDK 1.x and 2.0 do not have this pre-trigger replay buffer.
 
-| Privacy mode | Behavior in SDK 2.1 |
+| Privacy mode | Behavior in SDK 2.2.0 |
 |---|---|
 | Strict | Masks page text except configured unmask selectors, masks inputs and blocks media. Block selectors always win. |
 | Balanced | Masks inputs; page text is visible with configured PII patterns scrubbed. Default patterns cover emails, card-like numbers and long digit runs. |
 | Relaxed | Masks inputs; ordinary page text is visible and default text PII patterns are empty. |
 | Legacy Custom | Uses stored masking flags. Review them explicitly; legacy applications can have input masking disabled. |
 
-Password, email and telephone inputs remain masked; hidden inputs are excluded. Credit-card autocomplete fields cannot be exposed through legacy input-unmasking. URLs in page metadata, DOM attributes and CSS are minimized. No canvas recording or iframe document content is captured by this recorder. Stylesheet references can avoid resending acknowledged CSS; images and fonts still depend on their asset URLs.
+Password, email and telephone inputs remain masked; hidden inputs are excluded. Credit-card autocomplete fields cannot be exposed through legacy input-unmasking. URLs in page metadata, DOM attributes and CSS are minimized. Canvas recording is off by default. SDK 2.2.0 supports opt-in canvas capture outside Strict privacy, at up to 2 fps and a 20 MB serialized-frame budget per session; DOM replay continues after that budget is reached. A nonempty explicit `cookieDomain` disables canvas because its capture budget cannot be coordinated across subdomains. Iframe document content is not captured by this recorder. Stylesheet references can avoid resending acknowledged CSS; images and fonts still depend on their asset URLs.
 
 Recording pauses while hidden, after five minutes without input, or on never-record URLs, and resumes with a full snapshot when permitted. Pointer, scroll and media sampling plus mutation throttling mean replay does not preserve every intermediate DOM state. Heavy mutation bursts can leave marked gaps and require a fresh snapshot.
 
@@ -183,11 +186,11 @@ Recording pauses while hidden, after five minutes without input, or on never-rec
 - `optOut()`: stop sending and remember the preference in `_sq_optout`; `optIn()` permits collection again subject to consent and config.
 - Honored GPC: no Analyze, replay, anonymous visitor ID or supplied user identity; Observe can continue using a cookieless session in sessionStorage (or memory when storage is unavailable). This is not a promise of zero requests or zero technical identifiers.
 
-Do not infer a Privacy Center UI, deletion workflow, error alerting, source-map CLI, analytics segmentation or canvas support from the SDK methods and config fields. Those require their separate product rollouts.
+For dashboard deletion, do-not-record and retention controls, see [privacy requests](/observability/rum/how-to/privacy-requests/). Changing consent controls future collection; it does not erase data already uploaded.
 
 ## Migration checklist
 
-1. Confirm the intake, config CDN, replay pipeline and application rollout prerequisites.
+1. Install SDK 2.2.0 and confirm that your application is active in its public config.
 2. Update [CSP](/observability/rum/how-to/csp/) before switching bundles. Retain legacy hosts while old SDKs still run.
 3. Replace `apiBase` and SDK 1-only `beforeSend` fields. Update the CDN stub's method list.
 4. Choose consent explicitly and review the stored privacy config before testing a replay.
