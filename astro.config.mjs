@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi';
 import starlightLlmsTxt from 'starlight-llms-txt';
+import rehypeTableWrap from './src/plugins/rehype-table-wrap.mjs';
 
 // NOTE: Expressive Code (code-block) theming lives in ./ec.config.mjs, not in
 // the Starlight `expressiveCode` option below. starlight-openapi's plugin
@@ -11,6 +12,7 @@ import starlightLlmsTxt from 'starlight-llms-txt';
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://docs.siteqwality.com',
+	markdown: { rehypePlugins: [rehypeTableWrap] },
 	integrations: [
 		starlight({
 			title: 'SiteQwality Docs',
@@ -25,6 +27,7 @@ export default defineConfig({
 			favicon: '/favicon.svg',
 			routeMiddleware: './src/routeData.ts',
 			customCss: ['./src/styles/atlas.css'],
+			components: { SocialIcons: './src/components/HeaderLinks.astro' },
 			head: [
 				{
 					tag: 'meta',

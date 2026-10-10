@@ -49,6 +49,8 @@ export default {
 		codeFontFamily: "'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace",
 		codeFontSize: '0.85rem',
 		codeLineHeight: '1.7',
+		codeSelectionBackground: 'rgba(209, 74, 45, 0.35)',
+		focusBorder: '#D14A2D',
 		frames: {
 			editorActiveTabBackground: '#272320',
 			editorActiveTabForeground: '#F0EBE0',
