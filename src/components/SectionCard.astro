@@ -1,0 +1,16 @@
+---
+import { Card } from '@astrojs/starlight/components';
+import type { ComponentProps } from 'astro/types';
+
+interface Props {
+	title: string;
+	href: string;
+	icon?: ComponentProps<typeof Card>['icon'];
+}
+
+const { title, href, icon } = Astro.props;
+// Card renders its title as HTML; the link's ::after stretches over the whole card.
+const linkedTitle = `<a class="section-card-link" href="${href}">${title}</a>`;
+---
+
+<Card title={linkedTitle} icon={icon}><slot /></Card>
