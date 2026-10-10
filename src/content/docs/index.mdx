@@ -14,22 +14,23 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { CardGrid } from '@astrojs/starlight/components';
+import SectionCard from '../../components/SectionCard.astro';
 
 <CardGrid>
-	<Card title="Uptime Monitoring" icon="approve-check">
+	<SectionCard title="Uptime Monitoring" href="/uptime-monitoring/overview/" icon="approve-check">
 		HTTP, SSL/TLS, DNS, cron, and browser checks.
-	</Card>
-	<Card title="Observability" icon="bars">
+	</SectionCard>
+	<SectionCard title="Observability" href="/observability/overview/" icon="bars">
 		Metrics, logs, traces, RUM, and session replay.
-	</Card>
-	<Card title="Incident Management" icon="warning">
+	</SectionCard>
+	<SectionCard title="Incident Management" href="/incident-management/overview/" icon="warning">
 		Incidents, on-call schedules, escalation policies, and notifications.
-	</Card>
-	<Card title="Status Pages" icon="rocket">
+	</SectionCard>
+	<SectionCard title="Status Pages" href="/status-pages/overview/" icon="rocket">
 		Branded public status pages with components, incidents, and subscribers.
-	</Card>
-	<Card title="Enterprise" icon="seti:lock">
+	</SectionCard>
+	<SectionCard title="Enterprise" href="/enterprise/overview/" icon="seti:lock">
 		Scoped API clients, audit log, CSV exports, and SLA reports.
-	</Card>
+	</SectionCard>
 </CardGrid>
