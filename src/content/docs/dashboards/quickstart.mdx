@@ -1,135 +1,132 @@
 ---
 title: Dashboards quickstart
-description: Build a dashboard with a metrics chart and a log stream in 5 minutes.
-last_verified: 2026-10-08
+description: Build a dashboard from a template, add a widget and a variable, and share it with a public link in 10 minutes.
+last_verified: 2026-10-11
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have a dashboard called `Service health` with two widgets (a metrics timeseries and a log stream), both sharing a 1-hour global time range that auto-refreshes every minute.
+By the end of this guide you will have an uptime dashboard built from a template, with a failure-rate widget you added yourself, a `$region` variable, a saved default time range and a public link.
 
-## 1. Create the dashboard
+You need a paid plan and at least one [monitor](/getting-started/signup-and-first-monitor/). The template used here reads monitor data.
 
-<Tabs syncKey="interface">
-<TabItem label="Dashboard">
-
-<Steps>
-
-1. **Dashboards → New dashboard.**
-
-2. **Name:** `Service health`. **Description:** `Live ops view`. **Global time range:** `Last 1 hour`. **Auto-refresh:** `60s`. Save.
-
-</Steps>
-
-</TabItem>
-<TabItem label="API">
-
-```bash
-curl -X POST https://api.siteqwality.com/dashboard \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Service health",
-    "description": "Live ops view",
-    "global_time_range": { "type": "relative", "value": "1h" },
-    "auto_refresh_seconds": 60
-  }'
-```
-
-Note: dashboards can only be created by users (not API keys) because they need a `created_by` user ID. Use a session-based call from the dashboard for the create step, or generate a token tied to a real user.
-
-</TabItem>
-</Tabs>
-
-## 2. Add a metrics widget
-
-<Tabs syncKey="interface">
-<TabItem label="Dashboard">
+## 1. Create the dashboard from a template
 
 <Steps>
 
-1. **Add widget → Timeseries.**
+1. Open **Dashboards** in the sidebar and choose **New dashboard**.
 
-2. **Title:** `Request latency (avg)`. **Data source:** `Metrics`. **Metric:** `http.request.duration_ms`. Save. The widget charts the metric's average across all its series; dashboard widgets have no aggregation or group-by setting, so use the Metrics page for percentiles or a per-endpoint split.
+2. Pick **Template**. The gallery shows seven boards. Each is marked **Has data** or **No data yet** for your account. Choose **Uptime overview**.
 
 </Steps>
 
-</TabItem>
-<TabItem label="API">
+You now have an ordinary dashboard with a monitor summary, a monitor grid, uptime, response time by region, failed checks, a slowest-monitors list, 30-day uptime bars, expiring certificates and domains, and open incidents. It is yours to edit.
 
-```bash
-curl -X POST https://api.siteqwality.com/dashboard/$DASHBOARD_ID/widget \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Request latency (avg)",
-    "widget_type": "timeseries",
-    "data_source": "metrics",
-    "query_config": { "metric_name": "http.request.duration_ms" },
-    "layout": { "x": 0, "y": 0, "w": 6, "h": 4 }
-  }'
-```
+## 2. Add a widget with the editor
 
-</TabItem>
-</Tabs>
-
-## 3. Add a log stream widget
-
-<Tabs syncKey="interface">
-<TabItem label="Dashboard">
+You will chart the share of checks that failed. That takes two queries and a formula.
 
 <Steps>
 
-1. **Add widget → Log stream.**
+1. Choose **Edit** (or press `e`). The header turns into an edit bar.
 
-2. **Title:** `Recent logs`. **Data source:** `Logs`. Save. The widget shows the newest log lines in the dashboard's time range, across your whole account; it has no filters, so open the Logs page to narrow it down.
+2. Choose **Add widget**, search for **Time series** and click it to place it on the grid.
+
+3. Open the new widget's menu and choose **Edit**. The widget editor opens as a drawer, with a live preview on top.
+
+4. Set query **a** to source **Monitors** and measure **Checks**.
+
+5. Add a second query. Set query **b** to source **Monitors** and measure **Failed checks**. Hide queries **a** and **b** so only the formula is drawn.
+
+6. Add a formula: `b / a * 100`. Set its unit to **Percent** and its alias to `Failure rate`.
+
+7. Leave the title empty to use the suggested one, or type your own. Close the drawer.
 
 </Steps>
 
-</TabItem>
-<TabItem label="API">
-
-```bash
-curl -X POST https://api.siteqwality.com/dashboard/$DASHBOARD_ID/widget \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Recent logs",
-    "widget_type": "log_stream",
-    "data_source": "logs",
-    "query_config": {},
-    "layout": { "x": 6, "y": 0, "w": 6, "h": 4 }
-  }'
-```
-
-</TabItem>
-</Tabs>
-
-## 4. Reorder widgets
-
-Drag widgets around in the editor; the layout updates live. Or batch-update positions:
-
-```bash
-curl -X PUT https://api.siteqwality.com/dashboard/$DASHBOARD_ID/layout \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "widgets": [
-      { "widget_id": "<id-1>", "x": 0, "y": 0, "w": 12, "h": 4 },
-      { "widget_id": "<id-2>", "x": 0, "y": 4, "w": 12, "h": 4 }
-    ]
-  }'
-```
-
-This is the cheapest update path when you're rearranging multiple widgets at once.
+The widget is on the grid. Drag it to move it and drag its corner to resize it. Nothing is saved yet.
 
 <Aside type="tip">
-For per-team or per-service dashboards, prefix the name: `[Platform] Service health`, `[Billing] Webhook deliveries`. Sidebars sort alphabetically and the prefix groups dashboards naturally.
+A formula divides, adds, subtracts and multiplies queries by their letters. Division by zero gives a gap rather than an error. See [queries, formulas and variables](/dashboards/queries/#formulas).
 </Aside>
+
+## 3. Add a variable
+
+<Steps>
+
+1. Still in edit mode, open **Settings** in the edit bar.
+
+2. Add a variable named `region`. Bind it to source **Monitors**, field **Region**. Turn on multi select and **All**, and keep **All** as the default.
+
+3. Apply the changes. A `Region` dropdown appears in the variables bar.
+
+4. Open the menu of the response time by region chart and choose **Edit**. Add a filter on **Region** and choose `$region` as the value. Close the drawer.
+
+</Steps>
+
+Now the widget follows the dropdown. With **All** selected the filter is dropped, so every region shows. Pick one region and only that region remains. The selection is written to the URL as `var-region=us-east-1`.
+
+## 4. Change the time
+
+<Steps>
+
+1. Open the time picker. Choose **7d**, or type `yesterday` or `Oct 1 - Oct 3` and press Enter.
+
+2. Drag across a time chart to zoom in on a spike. Choose **Back** to return to the previous range.
+
+3. Press `[` to step back one window and `]` to step forward.
+
+</Steps>
+
+A time change is a view. It lives in the URL and does not change the dashboard. To store a default range for everyone who opens the dashboard, set the range you want and choose **Save as default** while in edit mode.
+
+## 5. Save
+
+<Steps>
+
+1. Choose **Save** in the edit bar, or press `Cmd+S`.
+
+2. Open **Version history** from the actions menu. Your save is the newest entry, with a short summary of what changed.
+
+</Steps>
+
+If a teammate saved while you were editing, a conflict dialog explains what happened instead of overwriting their changes.
+
+## 6. Share a public link
+
+<Steps>
+
+1. Choose **Share** in the header.
+
+2. Create a public link. Choose which time ranges viewers may pick and which range the page opens with. Leave `region` selectable, or lock it to a value. Set a theme and, if you want one, an expiry date.
+
+3. Copy the link. It looks like `https://app.siteqwality.com/share/d/<token>`.
+
+4. Open it in a private window to see what viewers see.
+
+</Steps>
+
+Anyone with the link can see the data in the widgets. They cannot edit anything. Log stream and Trace list widgets do not appear on shared dashboards. To stop sharing, pause or revoke the link from the same dialog. See [sharing](/dashboards/sharing/).
+
+## Prefer the API?
+
+Everything above has an endpoint. This call creates the same board from the template:
+
+```bash
+curl -X POST https://api.siteqwality.com/dashboards/templates/uptime-overview \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Uptime overview" }'
+```
+
+The response is the full dashboard, including its `definition`. See [the API endpoints](/dashboards/reference/#api-endpoints).
 
 ## What's next
 
-<LinkCard title="Widget reference" description="All widget types with config shapes." href="/dashboards/reference/" />
-<LinkCard title="Metrics" description="The most common widget data source." href="/observability/metrics/overview/" />
-<LinkCard title="Logs" description="For log_stream widgets." href="/observability/logs/overview/" />
+<CardGrid>
+  <LinkCard title="Widgets" description="Every widget type and its options." href="/dashboards/widgets/" />
+  <LinkCard title="Templates" description="What is on each of the seven built-in boards." href="/dashboards/templates/" />
+  <LinkCard title="Queries, formulas and variables" description="The query builder, formula grammar and variable rules." href="/dashboards/queries/" />
+  <LinkCard title="Reference" description="Time syntax, URL parameters, shortcuts, limits and the export format." href="/dashboards/reference/" />
+</CardGrid>

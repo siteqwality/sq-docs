@@ -1,0 +1,279 @@
+---
+title: Widgets
+description: Every dashboard widget type, what it shows, and every option it takes.
+last_verified: 2026-10-11
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+A dashboard holds up to 100 widgets. Each has a `type` and a type-specific `config`. This page lists every type and every option. Option names are the keys in the [dashboard JSON](/dashboards/reference/#json-export-format).
+
+Five widgets chart query results: Time series, Query value, Top list, Table and Pie. They share one query model, covered in [queries, formulas and variables](/dashboards/queries/). The monitoring, logs, traces and RUM widgets read purpose-built data and take `filters` instead of queries. Note and Section hold text and layout.
+
+## Fields every widget has
+
+| Field | Description |
+|---|---|
+| `id` | 1 to 32 characters from `A-Z`, `a-z`, `0-9`, `_` and `-`. Unique in the dashboard. |
+| `type` | One of the types below. |
+| `title` | Up to 200 characters. Empty means an automatic title suggested from the query. |
+| `description` | Up to 2,000 characters. Shown as a tooltip on the title. |
+| `layout` | `{x, y, w, h}` on a 12-column grid. `w` is 1 to 12, `x + w` is at most 12, `h` is 1 to 48 rows of 64 px. |
+| `time` | Optional range that overrides the dashboard range for this widget. A time badge shows when it is set. |
+| `config` | The type's options, below. |
+
+## Widget states
+
+Each widget draws its own state, so one failure never blanks the board.
+
+- **Loading.** A skeleton shows until data arrives.
+- **Error.** The widget shows a message and a **Retry** button. A query that takes longer than 15 seconds shows as a timeout.
+- **No data.** An empty result is labelled **No data**. It is never drawn as zero.
+- **Denied.** A widget you cannot use, because of your plan or a missing RUM application, says so.
+- **Partial data.** The last bucket, which is still filling, is shaded.
+- **Approximate.** A marker shows when a result is approximate.
+- **Warnings.** A widget that hides part of its data says so, for example "Showing the top 10 of 37 series".
+
+## Widget menu
+
+Each widget has a menu that appears on hover and focus:
+
+| Action | What it does |
+|---|---|
+| View full screen | Opens the widget alone. The URL carries `w=<widget id>`. |
+| Edit | Opens the widget editor. |
+| Duplicate | Adds a copy of the widget. |
+| Copy | Copies the widget as JSON. Paste it into any dashboard. |
+| Open in explorer | Opens the matching explorer with the widget's filters and time range. |
+| Export CSV | Downloads the widget's data. |
+| Remove | Deletes the widget from the draft. |
+
+Edit, Duplicate and Remove change the dashboard, so they are for people who can edit it.
+
+## Which widgets use the time range
+
+Time series, Query value, Top list, Table, Pie, Log stream, Trace list and Web Vitals use the dashboard range (or their own `time` override).
+
+A few widgets differ:
+
+- **Uptime bars** use their own `days` setting.
+- **Certificate and domain expiry**, **Monitor status** and **Monitor grid** show current state. On the grid, the range only feeds the uptime and response-time figure on each tile.
+- **Incidents** with `state: open` shows what is open now. With `state: all` it uses the range.
+
+## Charts
+
+All five chart widgets take `queries` (up to 10) and `formulas` (up to 5). Values in Query value, Top list, Table and Pie reduce over the whole window with the measure's aggregation, never the last bucket.
+
+### Time series (`timeseries`)
+
+A line, area or bar chart on a real time axis. Gaps in the data stay gaps. The axis and tooltip use the series unit.
+
+| Option | Values | Description |
+|---|---|---|
+| `display` | `line`, `area`, `bars` | Mark type. |
+| `stacked` | bool | Stack the series. |
+| `series_limit` | default 10, max 50 | How many groups to draw. The rest are counted in a warning. |
+| `legend` | `auto`, `table`, `compact`, `none` | Legend style. Click an entry to isolate it. |
+| `legend_columns` | any of `value`, `avg`, `min`, `max`, `sum` | Columns in the table legend. |
+| `y_axis` | `{min, max, scale, include_zero}` | `scale` is `linear` or `log`. |
+| `unit` | see [units](#units) | Overrides the measure's unit. |
+| `decimals` | number | Decimal places. |
+| `thresholds` | `[{value, tone, style, label}]` | Horizontal markers. `tone` is `ok`, `warn` or `danger`. `style` is `line` or `band`. `label` is optional. |
+| `compare` | `previous_period`, `1d`, `1w` or unset | Draws the same series from earlier as dashed lines, shifted onto the current window. |
+| `overlays` | any of `incidents`, `downtime` | Marks incidents or downtime on the chart. See below. |
+| `palette` | `categorical`, `cool`, `warm`, `status` | Series colours. |
+
+The crosshair is shared across the dashboard, so hovering one chart marks the same moment on all of them. Turn it off with the crosshair setting in **Settings**. Drag across a chart to zoom the dashboard's time range in.
+
+**Overlays.** `incidents` marks incidents that overlap the window. If the widget filters on `service` or `status_page`, only matching incidents show. `downtime` marks failed windows of the monitors the widget's monitor filters select, up to 200 events.
+
+### Query value (`query_value`)
+
+One large number per visible query or formula.
+
+| Option | Values | Description |
+|---|---|---|
+| `unit`, `decimals` | | As above. |
+| `compare` | `previous_period` or unset | Adds a change chip against the previous window. |
+| `higher_is` | `better`, `worse`, `neutral` | Decides whether an increase is coloured as good or bad. |
+| `sparkline` | bool | Draws a small trend under the number. |
+| `thresholds` | `[{op, value, tone}]` | `op` is `gt`, `gte`, `lt` or `lte`. The first match colours the value. |
+
+### Top list (`toplist`)
+
+Groups ranked by a value. Add a `group_by` to the query to say what is ranked.
+
+| Option | Values | Description |
+|---|---|---|
+| `sort_by` | query or formula id | Defaults to the first visible one. |
+| `order` | `desc`, `asc` | Sort order. |
+| `limit` | default 10, max 100 | Rows shown. |
+| `unit`, `decimals`, `thresholds` | | As for Query value. |
+
+### Table (`table`)
+
+Groups as rows, and queries and formulas as columns.
+
+| Option | Values | Description |
+|---|---|---|
+| `columns` | `[{id, label, display, unit, decimals, thresholds}]` | `id` is a query or formula id. `display` is `number`, `bar` or `sparkline`. With no columns, each visible query and formula gets a number column. |
+| `sort_by`, `order` | | As for Top list. |
+| `limit` | max 500 | Rows shown. |
+
+### Pie (`pie`)
+
+Shows one visible query as shares of a whole.
+
+| Option | Values | Description |
+|---|---|---|
+| `limit` | max 12 | Slices shown. The rest are grouped as "Other". |
+| `donut` | bool | Draws a ring instead of a disc. |
+| `unit` | | As above. |
+
+### Units
+
+A `unit` is one of `ms`, `seconds`, `percent`, `count`, `bytes`, `score`, `per_second` or `none`. Leave `unit` unset to use the measure's own unit.
+
+## Monitoring
+
+These widgets read monitors and incidents. Their `filters` use the fields of the [monitors](/dashboards/data-sources/#monitors) or [incidents](/dashboards/data-sources/#incidents) source and accept [variables](/dashboards/queries/#variables).
+
+### Monitor grid (`monitor_grid`)
+
+One tile per monitor, with a status dot, the name and a figure. Down tiles are tinted.
+
+| Option | Values | Description |
+|---|---|---|
+| `filters` | monitors fields | Which monitors to show. |
+| `group_by` | unset, `monitor_type`, `tag`, `status` | Adds group headings. |
+| `sort` | `status`, `name`, `uptime`, `response_time` | Tile order. |
+| `metric` | `uptime`, `response_time`, `none` | The figure on each tile. |
+| `size` | `tile`, `compact`, `list` | Density. |
+| `hide_paused` | bool | Leaves out paused monitors. |
+
+Monitor status is one of `up`, `down`, `degraded`, `paused` or `pending`.
+
+### Monitor status (`monitor_summary`)
+
+Counts of monitors by status, with a total.
+
+| Option | Values | Description |
+|---|---|---|
+| `filters` | monitors fields | Which monitors to count. |
+| `show_list` | bool | Lists the monitors that are not up. |
+
+### Uptime bars (`uptime_bars`)
+
+One row per monitor, one thin bar per day. A tooltip gives the day's uptime and downtime. Days with no data are left empty. Bars are coloured by uptime band.
+
+| Option | Values | Description |
+|---|---|---|
+| `filters` | monitors fields | Which monitors to show. |
+| `days` | 30, 60, 90 | Window length. Overrides the dashboard range. |
+| `limit` | default 10, max 50 | Monitors shown. |
+| `sla_target` | percent, optional | An SLA target to measure against. |
+
+### Incidents (`incident_list`)
+
+A list of incidents with severity, status, service and times.
+
+| Option | Values | Description |
+|---|---|---|
+| `filters` | incidents fields | Which incidents to show. |
+| `state` | `open`, `all` | Open incidents now, or every incident in the range. |
+| `limit` | max 100 | Rows shown. |
+
+### Certificate and domain expiry (`expiry_list`)
+
+The expiry dates of TLS certificates and domain registrations for the monitors you select, each with the days left.
+
+| Option | Values | Description |
+|---|---|---|
+| `filters` | monitors fields | Which monitors to include. |
+| `kinds` | any of `tls`, `domain` | What to list. |
+| `warn_days` | default 30 | Days left at which an item is a warning. |
+| `critical_days` | default 7 | Days left at which an item is critical. |
+| `limit` | number | Rows shown. |
+
+Each row's status is `ok`, `warn`, `critical`, `expired` or `unknown`.
+
+## Logs, traces and RUM
+
+These widgets read your telemetry. Log stream and Trace list do not appear on [shared dashboards](/dashboards/sharing/#what-viewers-see). Web Vitals does.
+
+### Log stream (`log_stream`)
+
+The newest matching log lines.
+
+| Option | Values | Description |
+|---|---|---|
+| `filters` | logs fields | Which logs to show. |
+| `search` | text | Free-text search. |
+| `columns` | any of `level`, `source`, `host`, `env`, `version`, `trace_id` | Extra columns. |
+| `limit` | max 200 | Lines shown. |
+
+Not available on shared dashboards.
+
+### Trace list (`trace_list`)
+
+Traces with root service, root operation, start, duration, span count and error count.
+
+| Option | Values | Description |
+|---|---|---|
+| `filters` | traces fields | Which traces to show. |
+| `sort` | `recent`, `duration`, `errors` | Order. |
+| `limit` | max 100 | Rows shown. |
+
+Not available on shared dashboards.
+
+### Web Vitals (`rum_vitals`)
+
+A rail of LCP, INP, CLS, FCP and TTFB. Each shows its p75 and how many samples were good, needed improvement or were poor.
+
+| Option | Values | Description |
+|---|---|---|
+| `filters` | RUM fields | Usually sets `app`. |
+
+## Text and layout
+
+### Note (`note`)
+
+Markdown text for headings, runbook links and context.
+
+| Option | Values | Description |
+|---|---|---|
+| `markdown` | up to 10,000 characters | The content. |
+| `align` | `left`, `center` | Text alignment. |
+| `tone` | `none`, `info`, `warn` | Tints the note. |
+| `padding` | bool | Pads the content. |
+
+### Section (`section`)
+
+A full-width, collapsible row. Widgets below a section belong to it until the next section.
+
+| Option | Values | Description |
+|---|---|---|
+| `collapsed` | bool | Hides the section's widgets. |
+| `children` | widgets | Filled only while collapsed. They keep their layout and return when you expand the section. |
+
+A section is always 12 columns wide and 1 row tall. Sections cannot contain sections.
+
+<Aside type="note">
+When you collapse a section, its widgets leave the top level of the document and sit in `config.children`. Expanding puts them back and pushes later widgets down.
+</Aside>
+
+## Layout and editing
+
+- **Grid.** 12 columns at 1200 px and wider. Below 768 px widgets stack full width in reading order, and dragging is off.
+- **Add.** The add-widget tray has search and categories. Click a widget or drag it in.
+- **Move and resize.** Drag a widget to move it, and drag its corner to resize it.
+- **Copy and paste.** `Cmd+C` and `Cmd+V` on a focused widget move it between dashboards.
+- **Undo and redo.** `Cmd+Z` and `Shift+Cmd+Z`.
+- **Editor.** The widget editor is a full-height drawer with a live preview on top. It has a visualisation picker, a query builder, formulas and display options per type.
+
+## See also
+
+- [Queries, formulas and variables](/dashboards/queries/)
+- [Data sources](/dashboards/data-sources/)
+- [Reference](/dashboards/reference/)

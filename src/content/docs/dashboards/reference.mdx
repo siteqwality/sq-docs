@@ -1,126 +1,369 @@
 ---
-title: Widget reference
-description: Every widget type with its query/visualization config shape.
-last_verified: 2026-10-08
+title: Dashboards reference
+description: Time range syntax, URL parameters, keyboard shortcuts, limits, roles, API endpoints and the JSON export format.
+last_verified: 2026-10-11
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+This page holds the facts you look up. For the concepts, start with the [overview](/dashboards/overview/).
 
-## Object: `Dashboard`
-
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `name` | string | required | Display name. |
-| `description` | string \| null | null | Subtitle. |
-| `global_time_range` | object | `{type: "relative", value: "1h"}` | Default time window for all widgets. |
-| `auto_refresh_seconds` | int \| null | null | Polling cadence. Set to skip. |
-| `widgets` | DashboardWidget[] | embedded on detail | Widgets in this dashboard. |
-| `created_by` | uuid | required | User who created. |
-
-## Time range shapes
-
-```json
-{ "type": "relative", "value": "1h" }
-{ "type": "relative", "value": "24h" }
-{ "type": "relative", "value": "7d" }
-{ "type": "absolute", "from": "2026-05-03T14:00:00Z", "to": "2026-05-03T15:00:00Z" }
-```
-
-## Object: `DashboardWidget`
-
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `title` | string | required | Display title at the top of the widget. |
-| `widget_type` | enum | required | See widget types table. |
-| `data_source` | enum | `none` | See data sources table. |
-| `query_config` | object | `{}` | Source-specific query (see below). |
-| `visualization_config` | object | `{}` | Stored with the widget; the dashboard does not read it. |
-| `layout` | object | `{x: 0, y: 0, w: 6, h: 4}` | Position on the 12-col grid. |
-| `time_range_override` | object \| null | null | Stored with the widget; the dashboard does not apply it, and every widget uses the dashboard's range. |
-
-## Widget types
-
-| `widget_type` | Description |
+| Looking for | Go to |
 |---|---|
-| `timeseries` | Line chart over time (`metrics` or `uptime`). |
-| `stat` | Single big number (`metrics` or `uptime`). |
-| `table` | Rows of recent log lines, recent traces, or a metric's points (`logs`, `traces` or `metrics`). |
-| `log_stream` | The newest log lines in the time range (`logs`). |
-| `monitor_status` | Current status of one HTTP monitor (`uptime`). |
-| `text` | Plain text. No `data_source` needed. |
+| Every widget type and its options | [Widgets](/dashboards/widgets/) |
+| Measures, fields and aggregations per source | [Data sources](/dashboards/data-sources/) |
+| Query rules, formula grammar, variables | [Queries, formulas and variables](/dashboards/queries/) |
+| The built-in dashboards | [Templates](/dashboards/templates/) |
+| Public links and TV mode | [Sharing and TV mode](/dashboards/sharing/) |
+| Everything else | This page |
 
-## Data sources
+## Time range syntax
 
-| `data_source` | Use |
+The time picker takes a preset, a calendar range or typed text.
+
+### Presets
+
+`15m`, `1h`, `4h`, `1d`, `2d`, `7d`, `30d` and `90d`. Each is a sliding window that ends now.
+
+### Typed input
+
+| You type | Meaning |
 |---|---|
-| `metrics` | One metric, by name. |
-| `logs` | The newest log lines in the time range, account-wide. |
-| `traces` | The most recent traces in the time range, account-wide. |
-| `uptime` | One HTTP monitor's response time and success rate. |
-| `none` | For `text` widgets. |
+| `3h`, `90m`, `2d` | A number and a unit. The last 3 hours, 90 minutes or 2 days. |
+| `today`, `yesterday` | That calendar day. |
+| `this week`, `last week` | That calendar week. |
+| `since Oct 1` | From that date until now. The range grows as time passes. |
+| `Oct 1 - Oct 3` | A fixed range between two dates. |
+| Two ISO 8601 timestamps | A fixed range between them. |
 
-The API also accepts `rum`, but the dashboard has no RUM widget and shows nothing for it.
+The maximum window is 400 days. Typed phrases are turned into exact times before they are sent to the API.
 
-## Query config by widget type
+### Moving through time
 
-The dashboard reads only the keys shown here. Anything else you put in `query_config` is stored and ignored, so filters, aggregations, group-by and limits have no effect on a widget.
+- **Live and paused.** A live range slides with the clock. A paused range stays fixed.
+- **Step.** Move back or forward by one window with `[` and `]`.
+- **Zoom out.** Press `z` to widen the range.
+- **Zoom in.** Drag across any time chart. **Back** returns to the previous range.
+- **Default range.** The dashboard stores a default. Viewers never overwrite it. In edit mode, choose **Save as default** to set it from the current range.
 
-### `timeseries`, `stat` or `table` + `metrics`
+### Timezone
 
-```json
-{ "metric_name": "http.request.duration_ms" }
-```
+Times show in your browser's timezone, in UTC, or in the dashboard's own IANA zone, such as `America/New_York`. The dashboard setting `timezone` is `null` to follow the browser, `"UTC"`, or a zone name. Day-sized buckets align to midnight in the zone being shown.
 
-Charts the metric's average per time bucket across every series of that name, with the bucket width chosen from the time range. A `stat` shows the latest bucket's value; a `table` lists the points.
+### API range grammar
 
-### `timeseries`, `stat` or `monitor_status` + `uptime`
+The API takes a range as `{ "from": ..., "to": ... }`, where each bound is one of:
 
-```json
-{ "job_id": "<http-monitor-id>" }
-```
+| Form | Example |
+|---|---|
+| `now` | `now` |
+| `now-<n><unit>`, with unit `s`, `m`, `h`, `d` or `w` | `now-24h` |
+| An RFC 3339 timestamp | `2026-10-01T00:00:00Z` |
+| Epoch milliseconds | `1760112000000` |
 
-A `timeseries` charts the monitor's response time and success rate; a `stat` shows its latest response time; `monitor_status` shows Operational (99% success or more), Degraded (90% or more) or Down, with the uptime percentage.
+## Refresh
 
-### `log_stream` or `table` + `logs`
+The `refresh` setting is `auto`, `off`, `30s`, `1m`, `5m` or `15m`. With `auto`, the cadence follows the range:
 
-```json
-{}
-```
+| Range | Refreshes every |
+|---|---|
+| 15m | 10 seconds |
+| 1h | 30 seconds |
+| 4h | 1 minute |
+| 1d | 2 minutes |
+| 2d | 5 minutes |
+| 7d | 15 minutes |
+| Longer than 7d | 1 hour |
 
-Shows the newest 100 log lines in the time range, across your whole account.
+Refresh pauses while the tab is hidden, and only widgets that are on screen query. Query results are cached for 30 seconds, so a short refresh rarely recomputes everything.
 
-### `table` + `traces`
+## URL parameters
 
-```json
-{}
-```
+The dashboard URL carries its view state. A link you copy reproduces the view.
 
-Lists the most recent traces in the time range, across your whole account.
+`/dashboards/<id>?from=now-24h&to=now&tz=UTC&live=1&refresh=auto&var-region=us-east-1,eu-west-1`
 
-### `text`
-
-```json
-{ "content": "Service health\nRunbook: https://..." }
-```
-
-The text is shown as plain text, with line breaks kept. Markdown is not rendered.
-
-## Endpoints
-
-| Method | Path | Purpose |
+| Parameter | Example | Meaning |
 |---|---|---|
-| `GET` | `/dashboard` | List all. |
-| `POST` | `/dashboard` | Create. |
-| `GET` | `/dashboard/{id}` | Detail with widgets. |
-| `PUT` | `/dashboard/{id}` | Update meta (name, description, global range). |
-| `DELETE` | `/dashboard/{id}` | Delete. |
-| `PUT` | `/dashboard/{id}/layout` | Batch update widget positions. |
-| `POST` | `/dashboard/{id}/widget` | Add widget. |
-| `PUT` | `/dashboard/{id}/widget/{widget_id}` | Update widget. |
-| `DELETE` | `/dashboard/{id}/widget/{widget_id}` | Delete widget. |
+| `from`, `to` | `now-24h`, `now` | The time range, in the [range grammar](#api-range-grammar). |
+| `tz` | `UTC` | Timezone: `UTC` or an IANA zone. |
+| `live` | `1` | Whether the range is live (`1`) or paused. |
+| `refresh` | `auto` | One of `auto`, `off`, `30s`, `1m`, `5m`, `15m`. |
+| `var-<name>` | `var-region=us-east-1,eu-west-1` | A variable's selection. Several values are comma-separated. |
+| `edit` | `1` | Open in edit mode. |
+| `tv` | `1` | Open in [TV mode](/dashboards/sharing/#tv-mode). |
+| `w` | `w=<widget id>` | Open that widget full screen. |
 
-## See also
+Any parameter you leave out falls back to the dashboard's own settings.
 
-- [Dashboards overview](/dashboards/overview/) for the concept.
-- [Metrics](/observability/metrics/overview/), [Logs](/observability/logs/overview/), and [Traces](/observability/traces/overview/) for the data sources.
+## Keyboard shortcuts
+
+On Windows and Linux, use `Ctrl` where the table says `Cmd`.
+
+| Keys | Action |
+|---|---|
+| `e` | Edit the dashboard. |
+| `Esc` | Leave edit mode, or close the open drawer. |
+| `Cmd+S` | Save. |
+| `Cmd+Z` | Undo. |
+| `Shift+Cmd+Z` | Redo. |
+| `Cmd+C`, `Cmd+V` | Copy and paste the focused widget. |
+| `[`, `]` | Step the time range back and forward by one window. |
+| `z` | Zoom the time range out. |
+| `/` | Focus the search box on the dashboards list. |
+
+## Limits
+
+### Dashboard
+
+| Limit | Value |
+|---|---|
+| Widgets per dashboard (section children included) | 100 |
+| Variables per dashboard | 20 |
+| Definition JSON size | 512 KiB |
+| Name | 200 characters |
+| Versions kept per dashboard | The newest 200 |
+| Recently deleted | Restorable for 30 days, then purged |
+| Grid | 12 columns, widget height 1 to 48 rows |
+
+### Widget
+
+| Limit | Value |
+|---|---|
+| Widget `id` | 1 to 32 characters of `A-Z`, `a-z`, `0-9`, `_`, `-` |
+| Title | 200 characters |
+| Description | 2,000 characters |
+| Queries | 10 (`a` to `j`) |
+| Formulas | 5 (`f1` to `f5`), 256 characters each |
+| Group by fields per query | 2 |
+| Values per filter | 1 to 50, up to 512 characters each |
+| Time series `series_limit` | Default 10, max 50 |
+| Top list `limit` | Default 10, max 100 |
+| Table `limit` | Max 500 |
+| Pie `limit` | Max 12, the rest as "Other" |
+| Uptime bars `days` | 30, 60 or 90 |
+| Uptime bars `limit` | Default 10, max 50 |
+| Incidents `limit` | Max 100 |
+| Log stream `limit` | Max 200 |
+| Trace list `limit` | Max 100 |
+| Note `markdown` | 10,000 characters |
+
+### Variable
+
+| Limit | Value |
+|---|---|
+| `name` | `^[a-z][a-z0-9_]{0,31}$` |
+
+### Queries
+
+| Limit | Value |
+|---|---|
+| Longest time window | 400 days |
+| Points per series (`max_points`) | 240 by default, 30 to 600 |
+| Widgets per query request | 1 to 50 |
+| Time for one widget | 15 seconds, then it shows a timeout |
+| Values in a variable dropdown | 100 |
+
+## Roles and permissions
+
+Everyone in an account can view its dashboards. What else you can do depends on your role and your plan.
+
+| Action | Viewer, Auditor | Member | Admin, Super Admin | Needs a paid plan |
+|---|---|---|---|---|
+| List, open and export | Yes | Yes | Yes | No |
+| Load widget data | Yes | Yes | Yes | Yes |
+| Create, clone, import, create from a template | No | Yes | Yes | Yes |
+| Edit, restore a version | No | Yes | Yes | Yes |
+| Delete, restore a deleted dashboard | No | Yes | Yes | No |
+| Create and manage share links | No | Yes | Yes | No |
+
+Viewers and Auditors are read-only everywhere. This is the same rule that applies to the rest of the product.
+
+A **locked** dashboard can be edited only by its creator and account admins.
+
+On the free plan the paid-plan actions return `403`. Listing, opening, exporting and deleting still work, so an account that leaves a paid plan keeps its dashboards.
+
+API keys act with the account's permissions. [M2M clients](/enterprise/api-clients/) use the scopes `read:dashboards` and `write:dashboards`. `POST /dashboards/query` only reads, so `read:dashboards` is enough for it.
+
+## API endpoints
+
+Endpoints are served from `https://api.siteqwality.com`. Authenticate with `Authorization: Bearer <API key>`. Request and response schemas are in the **Dashboards** group of the [API Reference](/api-reference/).
+
+| Method | Path | What it does |
+|---|---|---|
+| `GET` | `/dashboards` | List. Filter with `search`, `tag`, `favorites`, `mine`, `deleted`. Sort with `sort` (`viewed`, `updated`, `name`). Page with `limit` (max 200) and `offset`. |
+| `POST` | `/dashboards` | Create. `name` is required. A blank dashboard is made when `definition` is absent. |
+| `GET` | `/dashboards/{id}` | Get one, with its definition. |
+| `PUT` | `/dashboards/{id}` | Update. Send the `version` you loaded. A stale version returns `409` with the `current` dashboard. A locked dashboard returns `403` to anyone except its creator and admins. |
+| `DELETE` | `/dashboards/{id}` | Soft delete. Returns `204`. |
+| `POST` | `/dashboards/{id}/restore` | Restore a deleted dashboard. |
+| `POST` | `/dashboards/{id}/clone` | Copy a dashboard. `name` is optional. |
+| `GET` | `/dashboards/{id}/export` | Export as [JSON](#json-export-format). |
+| `POST` | `/dashboards/import` | Create a dashboard from an export. The definition is validated. |
+| `GET` | `/dashboards/{id}/versions` | List versions with author, time and summary. |
+| `GET` | `/dashboards/{id}/versions/{version}` | Get one version in full. |
+| `POST` | `/dashboards/{id}/versions/{version}/restore` | Restore a version as a new version. Send the current `version`. |
+| `PUT`, `DELETE` | `/dashboards/{id}/favorite` | Star or unstar. For signed-in users only. |
+| `GET` | `/dashboards/templates` | List the built-in templates, each with `has_data`. |
+| `POST` | `/dashboards/templates/{key}` | Create a dashboard from a template. `name` is optional. |
+| `GET` | `/dashboards/catalog` | The sources, measures and fields. |
+| `GET` | `/dashboards/values` | Field values for dropdowns. Takes `source`, `field`, `q`, `metric`, `limit`. |
+| `POST` | `/dashboards/query` | Run widget queries. |
+| `GET`, `POST` | `/dashboards/{id}/shares` | List or create share links. |
+| `PATCH`, `DELETE` | `/dashboards/{id}/shares/{share_id}` | Pause, set expiry or settings. Or revoke. |
+| `GET` | `/public/dashboards/{token}` | A shared dashboard. No authentication. |
+| `POST` | `/public/dashboards/{token}/query` | Queries for a shared dashboard. No authentication. |
+
+Template keys are `uptime-overview`, `monitor-deep-dive`, `incident-reliability`, `rum-web-vitals`, `logs-overview`, `service-health` and `executive-summary`.
+
+### Assistants and MCP
+
+Every endpoint above is documented, so an assistant connected through [MCP](/integrations/mcp/) can build dashboards with `call_api`. The share endpoints and the public ones are withheld from MCP, so an assistant cannot publish data.
+
+### Running queries
+
+`POST /dashboards/query` evaluates widgets without saving anything. Send a time range, an optional timezone, the variable selections and 1 to 50 widgets:
+
+```json
+{
+  "time": { "from": "now-24h", "to": "now" },
+  "timezone": "America/New_York",
+  "variables": { "region": ["us-east-1"] },
+  "widgets": [
+    {
+      "widget": {
+        "id": "p95",
+        "type": "timeseries",
+        "layout": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "config": {
+          "queries": [
+            {
+              "id": "a",
+              "source": "monitors",
+              "measure": "response_time",
+              "aggregation": "p95",
+              "filters": [{ "field": "region", "op": "in", "values": ["$region"] }]
+            }
+          ]
+        }
+      },
+      "max_points": 240
+    }
+  ]
+}
+```
+
+The whole request is validated first. A bad request returns `400` and names the path, such as `widgets[2].config.queries[0].filters[1]`. After that, widgets run independently. Each result has a `status`:
+
+| `status` | Meaning |
+|---|---|
+| `ok` | `data` holds the result. |
+| `error` | The query failed. `error` holds a message that is safe to show. |
+| `timeout` | The widget used its 15 seconds. |
+| `denied` | The caller cannot use the widget, because of the plan or a missing RUM application. |
+
+Results also carry the resolved `window` (`from`, `to`, `interval_seconds`), an `approximate` flag and `warnings`. When `status` is `ok`, `data.kind` says which shape follows:
+
+| `data.kind` | Used by |
+|---|---|
+| `timeseries` | Time series |
+| `scalar` | Query value |
+| `grouped` | Top list, Table, Pie |
+| `monitors` | Monitor grid |
+| `monitor_summary` | Monitor status |
+| `uptime_bars` | Uptime bars |
+| `incidents` | Incidents |
+| `expiry` | Certificate and domain expiry |
+| `logs` | Log stream |
+| `traces` | Trace list |
+| `rum_vitals` | Web Vitals |
+
+## JSON export format
+
+**Export JSON** in the actions menu, and `GET /dashboards/{id}/export`, produce a document you can store, review in a pull request or import into another account. **New dashboard → Import JSON** and `POST /dashboards/import` read it back and create a new dashboard. The definition is validated against every limit on this page.
+
+```json
+{
+  "schema": "siteqwality.dashboard/v1",
+  "name": "API health",
+  "description": "Latency and failures for the public API",
+  "tags": ["platform"],
+  "definition": {
+    "schema_version": 1,
+    "settings": {
+      "default_time": { "from": "now-24h", "to": "now" },
+      "refresh": "auto",
+      "timezone": null,
+      "crosshair": "shared"
+    },
+    "variables": [
+      {
+        "name": "region",
+        "label": "Region",
+        "source": "monitors",
+        "field": "region",
+        "multi": true,
+        "include_all": true,
+        "default": ["*"]
+      }
+    ],
+    "widgets": [
+      {
+        "id": "p95",
+        "type": "timeseries",
+        "title": "p95 response time by region",
+        "layout": { "x": 0, "y": 0, "w": 8, "h": 4 },
+        "config": {
+          "queries": [
+            {
+              "id": "a",
+              "source": "monitors",
+              "measure": "response_time",
+              "aggregation": "p95",
+              "filters": [{ "field": "region", "op": "in", "values": ["$region"] }],
+              "group_by": ["region"]
+            }
+          ],
+          "overlays": ["incidents"]
+        }
+      },
+      {
+        "id": "fail",
+        "type": "query_value",
+        "title": "Failure rate",
+        "layout": { "x": 8, "y": 0, "w": 4, "h": 4 },
+        "config": {
+          "queries": [
+            { "id": "a", "source": "monitors", "measure": "checks", "hidden": true },
+            { "id": "b", "source": "monitors", "measure": "failed_checks", "hidden": true }
+          ],
+          "formulas": [{ "id": "f1", "expr": "b / a * 100", "unit": "percent" }],
+          "compare": "previous_period",
+          "higher_is": "worse"
+        }
+      }
+    ]
+  }
+}
+```
+
+### Top level
+
+| Field | Description |
+|---|---|
+| `schema` | Always `siteqwality.dashboard/v1`. |
+| `name`, `description`, `tags` | The dashboard's metadata. |
+| `definition` | The dashboard document, below. |
+
+### The definition
+
+| Field | Description |
+|---|---|
+| `schema_version` | `1`. |
+| `settings.default_time` | The default range, as `{from, to}` in the [range grammar](#api-range-grammar). |
+| `settings.refresh` | `auto`, `off`, `30s`, `1m`, `5m` or `15m`. |
+| `settings.timezone` | `null` to follow the viewer's browser, `"UTC"`, or an IANA zone. |
+| `settings.crosshair` | `shared` or `off`. |
+| `variables` | Up to 20. See [variables](/dashboards/queries/#variables). |
+| `widgets` | Up to 100, in reading order (by `y`, then `x`). Each has `id`, `type`, optional `title`, `description` and `time`, a `layout` and a `config`. See [widgets](/dashboards/widgets/). |
+
+A collapsed section keeps its widgets in `config.children`, so they are not at the top level.

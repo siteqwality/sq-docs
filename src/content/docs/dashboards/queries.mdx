@@ -1,0 +1,162 @@
+---
+title: Queries, formulas and variables
+description: How chart widgets query data, the formula grammar and functions, and how dashboard variables work.
+last_verified: 2026-10-11
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The five chart widgets (Time series, Query value, Top list, Table and Pie) are built from **queries**, optionally combined by **formulas** and narrowed by **variables**. The widget editor builds all of this for you. This page explains the rules behind it.
+
+## Queries
+
+A widget has up to 10 queries, lettered `a` to `j`. Every query in a widget runs over the same window and bucket size.
+
+| Field | Description |
+|---|---|
+| `id` | A single letter, `a` to `j`. Unique in the widget. |
+| `source` | `monitors`, `incidents`, `rum`, `logs`, `metrics` or `traces`. |
+| `measure` | A measure of the source. See [data sources](/dashboards/data-sources/). |
+| `aggregation` | Optional. Must be one the measure allows. Without it, the measure's default is used. |
+| `filters` | Zero or more filters, below. |
+| `group_by` | Zero to two fields that support grouping. |
+| `metric` | The metric name. Metrics source only. May be a variable such as `$metric`. |
+| `hidden` | Compute the query but do not draw it. Use it for queries that only feed a formula. |
+| `alias` | A label for the legend or column. |
+
+### Filters
+
+A filter is a field, an operator and values.
+
+```json
+{ "field": "region", "op": "in", "values": ["us-east-1", "$region"] }
+```
+
+| Operator | Meaning |
+|---|---|
+| `in`, `not_in` | The field equals, or does not equal, any of the values. |
+| `contains`, `not_contains` | The field contains, or does not contain, the text. |
+| `gt`, `gte`, `lt`, `lte` | Numeric comparisons. These take one value. |
+
+Each field accepts only some operators. The catalog lists them. A filter has 1 to 50 values of up to 512 characters each.
+
+### Group by
+
+Grouping splits a query into one series (or row) per value. Time series draw the top `series_limit` groups. Top list, Table and Pie show up to their `limit` rows.
+
+You can group by one or two fields. A two-field group makes one series per combination.
+
+## Formulas
+
+A formula combines queries into a new series or value. Reference a query by its letter.
+
+```json
+{ "id": "f1", "expr": "b / a * 100", "alias": "Failure rate", "unit": "percent" }
+```
+
+A widget has up to 5 formulas, `f1` to `f5`, of up to 256 characters each. A formula can set `alias`, `unit` and `hidden`.
+
+### Grammar
+
+| Part | Syntax |
+|---|---|
+| Arithmetic | `+`, `-`, `*`, `/` |
+| Grouping | Parentheses |
+| Numbers | `42`, `0.5` |
+| Queries | `a` to `j` |
+
+### Functions
+
+| Function | Works on | Description |
+|---|---|---|
+| `abs(x)` | Any | Absolute value. |
+| `log10(x)` | Any | Base-10 logarithm. |
+| `clamp_min(x, n)` | Any | Raises values below `n` up to `n`. |
+| `clamp_max(x, n)` | Any | Lowers values above `n` down to `n`. |
+| `moving_avg(x, points)` | Time series only | Moving average over `points` buckets. |
+| `timeshift(x, 1d)` | Time series only | The series from the given duration earlier, placed on the current window. |
+
+### Examples
+
+| Goal | Expression |
+|---|---|
+| Error percentage from two counts | `a / b * 100` |
+| Successful checks | `a - b` |
+| Never show a negative | `clamp_min(a - b, 0)` |
+| Smooth a noisy series | `moving_avg(a, 5)` |
+| Change against yesterday | `a - timeshift(a, 1d)` |
+
+### How formulas evaluate
+
+- **Groups.** Grouped queries join on identical group keys. A query without groups applies to every group.
+- **Nulls.** Division by zero gives a gap, and so does any null operand.
+- **Window.** Every query behind a formula uses the same window and bucket size.
+- **Hidden queries.** A hidden query is computed and available to formulas, but not drawn.
+
+<Aside type="tip">
+For a simple before-and-after view you do not need `timeshift`. Set `compare` on a Time series or Query value to draw the previous period.
+</Aside>
+
+## Variables
+
+A variable is a named dropdown for the whole dashboard. Define variables in **Settings** while editing. They appear in the variables bar.
+
+```json
+{
+  "name": "region",
+  "label": "Region",
+  "source": "monitors",
+  "field": "region",
+  "multi": true,
+  "include_all": true,
+  "default": ["*"]
+}
+```
+
+| Field | Description |
+|---|---|
+| `name` | Lowercase letters, digits and `_`, starting with a letter, up to 32 characters. Used as `$name`. |
+| `label` | Optional display name. |
+| `source` | The source whose field supplies the values. |
+| `field` | A field of that source that supports variables. See the Variable column in [data sources](/dashboards/data-sources/). |
+| `metric` | For metric tag variables only. Scopes the values to one metric. |
+| `multi` | Allow several selections. |
+| `include_all` | Offer **All**. |
+| `default` | The starting selection. `["*"]` is All. |
+| `values` | Optional fixed list, used instead of values from your data. |
+
+A dashboard has up to 20 variables.
+
+### Using a variable
+
+Use `$name` as a filter value, or as the `metric` of a metrics query.
+
+```json
+{ "field": "region", "op": "in", "values": ["$region"] }
+```
+
+- A value is either a literal or exactly `$name`. You cannot mix them in one value, so `prod-$env` is not allowed. A filter can still hold several values, such as `["us-east-1", "$region"]`.
+- With several values selected, the variable expands to all of them.
+- With **All** selected, the variable's value is dropped. A filter left with no values is removed, so the widget is not filtered by that field.
+- Entity widgets such as Monitor grid and Incidents take the same filters, so variables work there too.
+
+### Choosing variable values
+
+The dropdown loads its values from your data and searches as you type. A variable with a fixed `values` list uses that list instead.
+
+### Selection and the URL
+
+The current selection is stored in the URL as `var-<name>=a,b`, for example `var-region=us-east-1,eu-west-1`. Open the link and the same selection applies. Hover a variable to highlight the widgets that use it.
+
+A selection in the URL does not edit the dashboard. To change the starting selection, edit the variable's `default` in **Settings**.
+
+### Variables in templates
+
+Template variables default to **All**, except `$monitor` and `$app`. Those default to your first monitor or first RUM application when you create the dashboard from the template.
+
+## See also
+
+- [Widgets](/dashboards/widgets/)
+- [Data sources](/dashboards/data-sources/)
+- [Reference](/dashboards/reference/)

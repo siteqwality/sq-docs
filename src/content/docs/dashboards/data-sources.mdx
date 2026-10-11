@@ -1,0 +1,164 @@
+---
+title: Data sources
+description: The six dashboard data sources with every measure, field and aggregation, plus how time is bucketed.
+last_verified: 2026-10-11
+owner: jj
+---
+
+Every query reads one **source**. A source has **measures** (what you compute) and **fields** (what you filter, group and build variables on).
+
+The editor and the API read the same list. `GET /dashboards/catalog` returns it, so the tables below always match what the query builder offers.
+
+## How to read the tables
+
+- **Aggregations** are the ways a measure can be combined across a bucket and across a window. The first one listed is the default. A measure with no list has one fixed meaning.
+- **Group by** means you can split a query by the field, up to two fields per query.
+- **Variable** means a [variable](/dashboards/queries/#variables) can be bound to the field.
+- **Kind** is `id` (values have labels, such as monitor names), `enum`, `text` or `number`.
+- A field is **filter only** when it supports neither.
+- Aggregations: `avg`, `sum`, `min` and `max`; the percentiles `p50`, `p75`, `p90`, `p95` and `p99`; and `rate` for the metrics source.
+- Every query is scoped to your account.
+
+## Monitors
+
+`monitors` reads HTTP and browser checks. Uptime and response time are measured per check, so they match the monitor page.
+
+| Measure | Unit | Aggregations | Meaning |
+|---|---|---|---|
+| `uptime` | percent | fixed | Share of checks that passed. |
+| `response_time` | ms | `avg`, `p50`, `p75`, `p90`, `p95`, `p99`, `min`, `max` | Response time of a check. |
+| `checks` | count | fixed | Checks run. |
+| `failed_checks` | count | fixed | Checks that failed. |
+| `dns_time`, `connect_time`, `tls_time`, `ttfb`, `download_time` | ms | `avg`, `p50`, `p95`, `p99` | The phases of an HTTP check. HTTP monitors only. |
+| `downtime` | seconds | `sum` | Time spent failing, derived from state transitions. Includes cron monitors. |
+
+| Field | Kind | Group by | Variable |
+|---|---|---|---|
+| `monitor` | id (shown by name) | Yes | Yes |
+| `monitor_type` | enum: `http`, `browser`, `cron` | Yes | Yes |
+| `tag` | enum | Yes | Yes |
+| `region` | enum | Yes | Yes |
+| `status_page` | id (shown by name) | No | Yes |
+| `service` | id (shown by name) | Yes | Yes |
+
+Buckets of 60 seconds and up.
+
+## Incidents
+
+`incidents` reads incidents, including those opened automatically by monitors.
+
+| Measure | Unit | Aggregations | Meaning |
+|---|---|---|---|
+| `incidents` | count | fixed | Incidents created in the bucket. |
+| `open_incidents` | count | fixed | Incidents open now. A single value only, never a series. |
+| `mttr` | seconds | `avg`, `p50`, `p90`, `max` | Time to resolve, for incidents resolved in the window. |
+| `mtta` | seconds | `avg`, `p50`, `p90`, `max` | Time to acknowledge, for incidents acknowledged in the window. |
+
+| Field | Kind | Group by | Variable |
+|---|---|---|---|
+| `severity` | enum | Yes | Yes |
+| `status` | enum | Yes | Yes |
+| `service` | id | Yes | Yes |
+| `status_page` | id | Yes | Yes |
+| `auto_created` | enum | Yes | No |
+
+Buckets of 300 seconds and up.
+
+## RUM
+
+`rum` reads real user monitoring data. It only sees the RUM applications in your account.
+
+| Measure | Unit | Aggregations | Meaning |
+|---|---|---|---|
+| `sessions` | count | fixed | Sessions. |
+| `views` | count | fixed | Page views. |
+| `errors` | count | fixed | Errors. |
+| `error_session_rate` | percent | fixed | Share of sessions with an error. |
+| `lcp`, `inp`, `fcp`, `ttfb`, `load_time` | ms | `p75`, `p50`, `p90`, `p95`, `p99`, `avg` | Web Vitals and load time. |
+| `cls` | score | `p75`, `p50`, `p90`, `p95`, `p99`, `avg` | Cumulative layout shift. |
+| `rage_clicks` | count | fixed | Rage clicks. |
+
+| Field | Kind | Group by | Variable |
+|---|---|---|---|
+| `app` | id (shown by name) | Yes | Yes |
+| `route` | text | Yes | Yes |
+| `url` | text | No | No |
+| `country`, `browser`, `os`, `device_type`, `env`, `release`, `service` | enum | Yes | Yes |
+
+Buckets of 300, 3600, 21600 and 86400 seconds.
+
+## Logs
+
+`logs` counts log events.
+
+| Measure | Unit | Aggregations | Meaning |
+|---|---|---|---|
+| `logs` | count | fixed | Log events. |
+
+| Field | Kind | Group by | Variable |
+|---|---|---|---|
+| `level`, `source`, `env`, `host`, `version` | enum | Yes | Yes |
+| `message` | text | No | No |
+| `tag:<key>` | tag value | Yes | Yes |
+
+`message` supports `contains` only. A tag field is written `tag:` plus the tag key, and the key can use `A-Z`, `a-z`, `0-9`, `.`, `_`, `-` and `/`, up to 128 characters.
+
+Buckets of 60 seconds and up.
+
+## Metrics
+
+`metrics` reads any metric you send. Every query sets `metric`, the metric name. The name can also be a variable, such as `$metric`.
+
+| Measure | Unit | Aggregations | Meaning |
+|---|---|---|---|
+| `value` | the metric's own unit | `avg`, `sum`, `min`, `max`, `p50`, `p75`, `p90`, `p95`, `p99`, `rate` | The metric's value per bucket. |
+
+| Field | Group by | Variable |
+|---|---|---|
+| `host`, `env`, `source` | Yes | Yes |
+| `tag:<key>` | Yes | Yes |
+
+For what each aggregation means on gauges and counters, see the [metrics overview](/observability/metrics/overview/#aggregations).
+
+Buckets of 60, 300, 3600 and 21600 seconds. One-day buckets are built from the 21600-second ones.
+
+## Traces
+
+`traces` reads spans. Requests are counted as entry spans.
+
+| Measure | Unit | Aggregations | Meaning |
+|---|---|---|---|
+| `requests` | count | fixed | Entry spans. |
+| `errors` | count | fixed | Errors. |
+| `error_rate` | percent | fixed | Error percentage. |
+| `latency` | ms | `avg`, `p50`, `p75`, `p90`, `p95`, `p99`, `max` | Latency. |
+
+| Field | Group by | Variable |
+|---|---|---|
+| `service`, `operation` | Yes | Yes |
+| `status`, `span_kind` | Yes | No |
+
+`status` and `span_kind` are enums.
+
+Buckets of 60 seconds and up.
+
+## Choosing values
+
+Dropdowns for filters and variables load their options from `GET /dashboards/values`. It returns at most 100 values, matched by prefix or substring as you type. Options for RUM, logs, metrics and traces come from the last 7 days. Fields with `id` kind show names, such as monitor and RUM application names.
+
+## Buckets
+
+A time chart groups points into buckets. SiteQwality picks the bucket size for you.
+
+- **Ladder.** Bucket sizes are 60 seconds, 5 minutes, 15 minutes, 1 hour, 6 hours and 1 day.
+- **Choice.** The widget asks for about its pixel width divided by 4 points, and the API clamps that to between 30 and 600 (240 by default). The bucket is the smallest ladder step that gives no more points than that and that the source supports.
+- **Alignment.** One-day buckets start at midnight in the timezone the dashboard is showing. Smaller buckets align in UTC.
+- **Partial bucket.** A bucket that ends after now is still filling. Charts shade it.
+- **Scalars.** Query value, Top list, Table and Pie reduce over the whole window with the measure's aggregation. They never take the last bucket.
+- **Longest window.** 400 days.
+
+## See also
+
+- [Queries, formulas and variables](/dashboards/queries/)
+- [Widgets](/dashboards/widgets/)
+- [Metrics](/observability/metrics/overview/), [Logs](/observability/logs/overview/), [Traces](/observability/traces/overview/) and [RUM](/observability/rum/overview/)

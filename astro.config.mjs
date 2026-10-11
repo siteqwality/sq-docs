@@ -354,7 +354,12 @@ export default defineConfig({
 					items: [
 						{ label: 'Overview', slug: 'dashboards/overview' },
 						{ label: 'Quickstart', slug: 'dashboards/quickstart' },
-						{ label: 'Widget reference', slug: 'dashboards/reference' },
+						{ label: 'Templates', slug: 'dashboards/templates' },
+						{ label: 'Widgets', slug: 'dashboards/widgets' },
+						{ label: 'Data sources', slug: 'dashboards/data-sources' },
+						{ label: 'Queries, formulas & variables', slug: 'dashboards/queries' },
+						{ label: 'Sharing & TV mode', slug: 'dashboards/sharing' },
+						{ label: 'Reference', slug: 'dashboards/reference' },
 					],
 				},
 				{

@@ -1,80 +1,130 @@
 ---
 title: Dashboards
-description: Compose metrics, logs, traces, and uptime data into shared views with widgets and a global time range.
-last_verified: 2026-10-08
+description: Put monitors, incidents, RUM, logs, metrics and traces on one board, with variables, a shared time range and public links.
+last_verified: 2026-10-11
 owner: jj
 ---
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-A **dashboard** is a named collection of widgets pinned to a layout, with a shared global time range. Build them for war-rooms during incidents, for the wall TV at standup, or for the CTO's daily dashboard refresh.
+A **dashboard** answers one question for one team, service or customer: is everything OK, and if not, where?
 
-## When to use dashboards
+Uptime, incidents, RUM and backend telemetry live in the same account, so one board can hold a monitor grid, p95 latency by region with incident overlays, LCP p75 and a stream of error logs. There is no integration step between them.
 
-- One canonical "is everything OK?" view per service.
-- Incident war-rooms, with every relevant signal pinned in one place.
-- Executive summaries built from top-line business KPIs in your metric pipeline.
+<Aside type="note" title="Dashboards are paid-plan only">
+Creating, editing and querying dashboards needs the `custom_dashboards` feature, which every paid plan includes. See [plan availability](#plan-availability).
+</Aside>
 
-## When NOT to use them
+## What a dashboard is
 
-- For ad-hoc exploration. Use the per-pillar Explorers (Logs, Metrics, Traces) instead.
-- For alerting. Alerts live in the [incident management](/incident-management/overview/) layer, not on a chart.
+A dashboard is a 12-column grid of **widgets**, plus a default time range, a refresh setting and a set of **variables**. All of it is stored as one JSON document that you can [export and import](/dashboards/reference/#json-export-format).
 
-## Anatomy
-
-| Field | Description |
-|---|---|
-| `name` | Required, displayed at the top. |
-| `description` | Optional context. |
-| `global_time_range` | Object: `{type: "relative", value: "1h"}` or `{type: "absolute", from: ..., to: ...}`. Every widget uses it. |
-| `auto_refresh_seconds` | Optional polling interval. Common values: `30`, `60`, `300`. |
-| `widgets[]` | Array of `DashboardWidget`s. |
-
-## Widget types
-
-| Type | Renders |
-|---|---|
-| `timeseries` | Line chart over time: a metric's average, or an HTTP monitor's response time and success rate. |
-| `stat` | Single big number: the latest average of a metric, or an HTTP monitor's latest response time. |
-| `table` | Rows of recent log lines, recent traces, or a metric's points. |
-| `log_stream` | The newest log lines in the time range, across your whole account. Refreshes with the dashboard. |
-| `monitor_status` | One HTTP monitor's status (operational, degraded or down) and uptime. |
-| `text` | Plain text for notes and headers. |
+Every member of the account can view every dashboard. Dashboards are per account, not per person. Use names, tags and the description to show who owns a board.
 
 ## Data sources
 
-| Source | Use |
+Each query reads from one of six sources.
+
+| Source | Reads | Example measures |
+|---|---|---|
+| `monitors` | HTTP and browser checks, and downtime including cron | Uptime, response time, check phases, failed checks, downtime |
+| `incidents` | Incidents | Incidents opened, open incidents, MTTR, MTTA |
+| `rum` | Real user monitoring | Sessions, page views, errors, Web Vitals, rage clicks |
+| `logs` | Log events | Log count by level, source, host or environment |
+| `metrics` | Any metric you send | The metric's value, by tag |
+| `traces` | Distributed traces | Requests, errors, error rate, latency |
+
+Every source lists its measures, fields and aggregations on the [data sources](/dashboards/data-sources/) page.
+
+## Widgets
+
+There are fifteen widget types in four groups. The add-widget tray lets you search them and click or drag one onto the grid.
+
+| Group | Widgets |
 |---|---|
-| `metrics` | One metric, by name. |
-| `logs` | The newest log lines in the time range. |
-| `traces` | The most recent traces in the time range. |
-| `uptime` | One HTTP monitor's response time and success rate. |
-| `none` | For `text` widgets that don't query anything. |
+| Charts | Time series, Query value, Top list, Table, Pie |
+| Monitoring | Monitor grid, Monitor status, Uptime bars, Incidents, Certificate and domain expiry |
+| Logs, traces and RUM | Log stream, Trace list, Web Vitals |
+| Text and layout | Note, Section |
 
-Widgets do not take filters, aggregations or a group-by: a metric widget always shows the average across every series of that metric, and log and trace widgets show the whole account. Use the Logs, Metrics and Traces pages when you need to narrow things down. There is no RUM widget.
+The five chart widgets take up to ten lettered queries and up to five formulas such as `a / b * 100`. The rest are built for one job each and take filters. See [widgets](/dashboards/widgets/) and [queries, formulas and variables](/dashboards/queries/).
 
-## Widget layout
+## Templates
 
-Each widget has a `layout: {x, y, w, h}` on a 12-column grid. Default is `{x: 0, y: 0, w: 6, h: 4}`, which is half-width and 4 rows tall. Drag to reorder in the dashboard editor.
+Seven built-in dashboards give you a working board in one click:
 
-## Time range
+- Uptime overview
+- Monitor deep dive
+- Incidents and reliability
+- Web vitals
+- Logs overview
+- Service health
+- Executive summary
 
-1. The dashboard has one time range, its `global_time_range`.
-2. Anyone can change it at the top of the page; the new range is saved to the dashboard for everyone.
-3. Every widget uses that range. The API accepts a `time_range_override` on a widget, but the dashboard does not apply it.
+The gallery marks each one **Has data** or **No data yet** for your account. Creating one makes an ordinary dashboard that you can edit freely. See [templates](/dashboards/templates/).
 
-## Auto-refresh
+## Variables
 
-Set `auto_refresh_seconds` to poll every N seconds. Useful for war-room dashboards on a wall TV. Don't set it on dashboards that drive expensive aggregations. Refreshing every 30 seconds across 20 metric widgets is real load on ClickHouse.
+A variable such as `$region` or `$service` is a dropdown in the variables bar. It is bound to a field of a source, and widgets use it in their filters. Pick `us-east-1` and every widget that filters on `$region` follows.
 
-<Aside type="tip">
-Dashboards are per-account, not per-user. There's no privacy boundary, so every team member sees every dashboard. Use `description` and naming conventions to make it clear when a dashboard is owned by a specific team.
-</Aside>
+Variables can be single or multi select, can include **All**, and take their values from your data. They are stored in the URL, so a link carries the selection. Hover a variable to highlight the widgets that use it.
+
+## Time controls
+
+The time picker offers presets (15m, 1h, 4h, 1d, 2d, 7d, 30d, 90d) and a calendar. You can also type a range: `3h`, `90m`, `yesterday`, `this week`, `since Oct 1` or `Oct 1 - Oct 3`.
+
+- **Live or paused.** A live range slides forward with the clock. A paused range stays put.
+- **Step and zoom.** Step back or forward one window, zoom out, or drag across any time chart to zoom in. **Back** returns to the previous range.
+- **Timezone.** Show times in your browser's zone, in UTC, or in the dashboard's own zone.
+- **Per-widget range.** A widget can override the dashboard range. It then shows a time badge.
+
+Changing the range is a view, not an edit. Your change lives in the URL and never overwrites the dashboard's saved default. To change the default, enter edit mode and choose **Save as default**.
+
+Dashboards also refresh themselves. The `auto` setting picks a cadence from the range, from every 10 seconds at 15m up to hourly above 7d. Refresh pauses while the tab is hidden, and only widgets on screen query. Full syntax and the refresh table are in the [reference](/dashboards/reference/#time-range-syntax).
+
+## Editing and history
+
+Dashboards open read-only. Choose **Edit** (or press `e`) to change one, then **Save** or **Discard**.
+
+In edit mode you can drag, resize, duplicate and delete widgets, group them under sections, copy and paste them between dashboards, and undo and redo. The widget editor opens in a drawer with a live preview. If someone else saved first, a conflict dialog tells you instead of overwriting their work.
+
+Every save is a version with a summary of what changed. **Version history** lists them, previews any one, and restores it as a new version.
+
+A dashboard can be locked. Only its creator and account admins can edit a locked dashboard.
+
+## Sharing
+
+**Share** creates a public, read-only link. You choose the allowed time ranges, which variables viewers may change, the theme and an expiry. You can pause or revoke the link at any time. **TV mode** (`?tv=1`) removes the page chrome and enlarges the type for a wall screen. See [sharing](/dashboards/sharing/).
+
+## Who can do what
+
+| Role | Access |
+|---|---|
+| Viewer, Auditor | View only. Every action that changes a dashboard is refused. |
+| Member | View, create, edit and share. A locked dashboard is editable only by its creator. |
+| Admin, Super Admin | Everything a Member can do, and edit locked dashboards. |
+
+## Plan availability
+
+Dashboards are on every paid plan. The feature key is `custom_dashboards`. On the free plan, creating, editing, importing, cloning and querying return `403`.
+
+If an account moves from a paid plan to free, its dashboards stay. You can still list, open, export and delete them, behind an upgrade notice.
+
+## Dashboards or explorers
+
+Use a dashboard for the board you check every day, and an explorer for open-ended digging. A widget's **Open in explorer** action carries its filters and time range across.
+
+Dashboards do not alert. Alerts live in [incident management](/incident-management/overview/).
+
+## Not available yet
+
+These are not part of dashboards today: tabs, split graphs and repeat-by-variable, show and hide rules, anomaly and forecast functions, scheduled email reports, PNG and PDF export, invite-only sharing and embeds, SLO widgets, alert-rule widgets and deploy markers.
 
 ## See also
 
 <CardGrid>
-  <LinkCard title="Quickstart" description="Build your first dashboard with metrics and logs widgets." href="/dashboards/quickstart/" />
-  <LinkCard title="Widget reference" description="Every widget type and its config shape." href="/dashboards/reference/" />
-  <LinkCard title="Metrics" description="The most common dashboard data source." href="/observability/metrics/overview/" />
+  <LinkCard title="Quickstart" description="Create a board from a template, add a widget and a variable, and share it." href="/dashboards/quickstart/" />
+  <LinkCard title="Widgets" description="Every widget type and its options." href="/dashboards/widgets/" />
+  <LinkCard title="Data sources" description="Measures, fields and aggregations for all six sources." href="/dashboards/data-sources/" />
+  <LinkCard title="Reference" description="Time syntax, URL parameters, shortcuts, limits, API and export format." href="/dashboards/reference/" />
 </CardGrid>

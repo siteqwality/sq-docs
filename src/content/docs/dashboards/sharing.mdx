@@ -1,0 +1,77 @@
+---
+title: Sharing and TV mode
+description: Share a dashboard with a public read-only link, control what viewers can change, and show it on a wall screen.
+last_verified: 2026-10-11
+owner: jj
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+A **public link** lets anyone without an account view a dashboard. It is read-only. You decide which time ranges and variable values viewers can use, and you can pause, expire or revoke the link whenever you want.
+
+<Aside type="caution">
+Anyone with the link can see what the widgets show: monitor names, incident titles, error counts and more. Treat a share link like a public status page URL. Review the dashboard before you share it.
+</Aside>
+
+## Create a link
+
+<Steps>
+
+1. Open the dashboard and choose **Share**.
+
+2. Create a public link.
+
+3. Set the options below.
+
+4. Copy the link. It has the form `https://app.siteqwality.com/share/d/<token>`.
+
+</Steps>
+
+A dashboard can have several links, each with its own settings. This lets you give one audience a day view and another a month view, and revoke them separately. Members can open the share dialog at any time to copy a link again.
+
+## Share options
+
+| Option | What it does |
+|---|---|
+| Allowed time ranges | The ranges viewers can choose, for example 1h, 4h, 1d, 7d and 30d. Viewers cannot request anything else. |
+| Default range | The range the page opens with. |
+| Variables | For each variable, lock it so viewers cannot change it, or leave it selectable and limit which values they can pick. |
+| Theme | Light, dark or auto. |
+| Expiry | An optional date after which the link stops working. |
+| Pause | Turns the link off without deleting it. Resume it later. |
+| Revoke | Deletes the link for good. |
+
+## What viewers see
+
+Viewers see the dashboard's name, description and widgets. They can change the time range within the ranges you allowed and the variables you left selectable. They cannot edit.
+
+The page is sent the dashboard's name, description, widget definitions and the link's settings. That includes each widget's queries and filter values. It does not include tags, authors, version history, other dashboards or other share links.
+
+### What the shared page hides
+
+- **Log stream and Trace list widgets.** They show "Not available on shared dashboards". Every other widget type works.
+- **Anything you did not allow.** The page only runs queries for the dashboard's own widgets, only in the ranges you allowed, and only with the variable values you allowed.
+
+## Link states
+
+A link shows "not found" when it is paused, expired or revoked, or when its dashboard is deleted.
+
+Shared pages are never cached by the browser, and data can be up to 30 seconds old. Each link records when it was last opened and how often, shown in the API as `last_accessed_at` and `access_count`.
+
+## Who can share
+
+Anyone who can edit dashboards can create and manage share links: Members, Admins and Super Admins. Viewers and Auditors cannot. AI assistants connected through [MCP](/integrations/mcp/) cannot either: share endpoints are withheld from MCP so that an assistant can build a dashboard but cannot publish one.
+
+## TV mode
+
+TV mode turns a dashboard into a wall display.
+
+- Open it from the actions menu with **TV mode**, or add `?tv=1` to the dashboard URL.
+- The page chrome disappears.
+- The grid fits the viewport, with larger type.
+- A live clock shows the time.
+- Data refreshes automatically.
+
+## Not available yet
+
+Invite-only sharing (sharing with named people) and secure embeds are not available. Public links are the only sharing mode.
