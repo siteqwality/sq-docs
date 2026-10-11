@@ -180,7 +180,7 @@ Viewers and Auditors are read-only everywhere. This is the same rule that applie
 
 A **locked** dashboard can be edited only by its creator, Admins and Super Admins.
 
-On the free plan the paid-plan actions return `403`. Listing, opening, exporting and deleting still work, so an account that leaves a paid plan keeps its dashboards.
+On the free plan the paid-plan actions return `402`. Listing, opening, exporting and deleting still work, so an account that leaves a paid plan keeps its dashboards.
 
 API keys act with the account's permissions. [M2M clients](/enterprise/api-clients/) use the scopes `read:dashboards` and `write:dashboards`. `POST /dashboards/query` only reads, so `read:dashboards` is enough for it.
 
