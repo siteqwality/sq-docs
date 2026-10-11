@@ -3465,7 +3465,7 @@
         "tags": [
           "Contact"
         ],
-        "summary": "Send a message from the website contact form to the SiteQwality inbox.",
+        "summary": "Send a message from the website contact form to the Site Qwality inbox.",
         "description": "Public and unauthenticated. Any refusal (bot checks, validation, rate limit,\nTurnstile) returns the same 400 with the same message, so the cause is not\nrevealed.",
         "operationId": "submit_contact_form",
         "requestBody": {

@@ -1,4 +1,4 @@
-# Contributing to SiteQwality Docs
+# Contributing to Site Qwality Docs
 
 ## Adding a new page
 
@@ -82,7 +82,7 @@ import { Steps, Tabs, TabItem, Code } from '@astrojs/starlight/components';
 
 ## Prerequisites
 
-- A SiteQwality account ([sign up free](https://app.siteqwality.com)).
+- A Site Qwality account ([sign up free](https://app.siteqwality.com)).
 - An API key — see [Authentication](/api-reference/overview/#authentication).
 - <Anything else.>
 
@@ -202,7 +202,7 @@ touch these:
 | `ec.config.mjs` | Expressive Code (code-block) theming — the always-dark Atlas ink panel. |
 | `public/fonts/` | Self-hosted Manrope + JetBrains Mono woff2. |
 | `src/assets/atlas-logo-{light,dark}.svg` | The Pulse logo mark (per theme) — canonical `mark.svg` / `mark-light.svg` from the brand kit. |
-| `public/favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `android-icon-{192,512}.png`, `og-feat.png` | Canonical assets from the SiteQwality brand kit — drop in replacements verbatim, don't regenerate. |
+| `public/favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `android-icon-{192,512}.png`, `og-feat.png` | Canonical assets from the Site Qwality brand kit — drop in replacements verbatim, don't regenerate. |
 | `public/site.webmanifest` | PWA manifest pointing at the android icons. |
 
 > **Gotcha — code-block theming lives in `ec.config.mjs`, not `astro.config.mjs`.**

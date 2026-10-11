@@ -1,6 +1,6 @@
-# SiteQwality Docs
+# Site Qwality Docs
 
-Public documentation for SiteQwality, hosted at [docs.siteqwality.com](https://docs.siteqwality.com). Built with [Starlight](https://starlight.astro.build/) on [Astro](https://astro.build/).
+Public documentation for Site Qwality, hosted at [docs.siteqwality.com](https://docs.siteqwality.com). Built with [Starlight](https://starlight.astro.build/) on [Astro](https://astro.build/).
 
 ## Local development
 
