@@ -7,7 +7,7 @@ owner: jj
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-The Microsoft Teams integration uses an incoming webhook URL from a Teams channel connector. SiteQwality posts Adaptive Cards rendered with status color, monitor details, and a link to the incident.
+The Microsoft Teams integration uses an incoming webhook URL from a Teams channel connector. Site Qwality posts Adaptive Cards rendered with status color, monitor details, and a link to the incident.
 
 ## Set up
 
@@ -17,11 +17,11 @@ The Microsoft Teams integration uses an incoming webhook URL from a Teams channe
 
 2. Click the channel's **More options (...) → Connectors**.
 
-3. Find **Incoming Webhook**, click **Configure**, give it a name (`SiteQwality Alerts`), upload an icon (optional), and **Create**.
+3. Find **Incoming Webhook**, click **Configure**, give it a name (`Site Qwality Alerts`), upload an icon (optional), and **Create**.
 
 4. Copy the generated webhook URL.
 
-5. In SiteQwality: **Settings → Integrations → Microsoft Teams → Add**. Paste the URL. Save.
+5. In Site Qwality: **Settings → Integrations → Microsoft Teams → Add**. Paste the URL. Save.
 
 </Steps>
 
@@ -59,7 +59,7 @@ The destination is implicit in the integration's webhook URL, so you don't speci
 For multiple Teams destinations, create one integration per destination (each with its own webhook URL). Then create one notification per integration.
 
 <Aside type="caution">
-Teams incoming webhooks are being deprecated by Microsoft in favor of the Workflows app, and the URL format may change. Watch their announcements; SiteQwality will follow the migration.
+Teams incoming webhooks are being deprecated by Microsoft in favor of the Workflows app, and the URL format may change. Watch their announcements; Site Qwality will follow the migration.
 </Aside>
 
 ## See also

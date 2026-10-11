@@ -9,7 +9,7 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 An **incident** is the durable record of "something is broken." Every page, every escalation, every status-page update hangs off an incident. They're created two ways:
 
-1. **Auto**: when a monitor flips from healthy to failing, SiteQwality opens an incident with `auto_created: true`.
+1. **Auto**: when a monitor flips from healthy to failing, Site Qwality opens an incident with `auto_created: true`.
 2. **Manual**: when you create one in the dashboard or via `POST /incident`. Use this for non-monitor events ("partial Stripe outage breaking webhooks," "a cron job took down the queue").
 
 Either way the lifecycle is the same.
@@ -57,7 +57,7 @@ The severity field is informational; *it doesn't change escalation behavior*. To
 5. `responder_status` flips to `acknowledged`. Escalation stops.
 6. They post an incident update at 03:18: `status: identified`, message `"Database failover stuck. Manually promoting standby."`
 7. The fix lands at 03:24. The check goes green on the next tick.
-8. SiteQwality auto-resolves the incident: `status: resolved`, `responder_status: resolved`, `resolved_at` set.
+8. Site Qwality auto-resolves the incident: `status: resolved`, `responder_status: resolved`, `resolved_at` set.
 
 You can override any of these transitions manually if needed: the auto-resolution will be skipped if you've already moved the incident to `resolved` yourself.
 

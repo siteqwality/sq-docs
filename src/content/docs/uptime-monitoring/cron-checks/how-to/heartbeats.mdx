@@ -40,7 +40,7 @@ curl -fsS --max-time 10 --retry 3 "$PING_URL" || true
 try:
     requests.post(PING_URL, timeout=10)
 except requests.RequestException:
-    logging.warning("Failed to ping SiteQwality")
+    logging.warning("Failed to ping Site Qwality")
 ```
 
 ## 3. Use timeouts and limited retries

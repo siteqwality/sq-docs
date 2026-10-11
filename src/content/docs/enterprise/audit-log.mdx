@@ -19,7 +19,7 @@ Find it under **Account → Audit Log**. Only **super admins, admins, and audito
 
 - **Reads.** `GET` requests are not logged, so the log tells you who changed something, not who *looked* at it. The one exception is session replay: every view is recorded as `rum.replay.viewed` (see [who watched](/observability/replay/reference/#who-watched)). A handful of read endpoints that use `POST` purely to carry a request body (the dashboard's batch monitor lookup, the log-parser test preview, the consent page loading what an AI assistant is asking for) are treated as reads and excluded too.
 - **Unauthenticated requests**, including ones whose credentials were rejected.
-- **SiteQwality staff actions**, which live in a separate internal audit log. Staff acting *as* one of your users through impersonation do appear here, marked as such.
+- **Site Qwality staff actions**, which live in a separate internal audit log. Staff acting *as* one of your users through impersonation do appear here, marked as such.
 
 A request that identifies its caller and is then denied **is** recorded, with the resulting status. That covers validation failures and permission denials alike: a viewer-role user attempting a delete, an API key used outside its scopes, or a write attempted while the account is suspended all appear with their `403`. A rejected attempt is worth seeing.
 
@@ -30,7 +30,7 @@ A request that identifies its caller and is then denied **is** recorded, with th
 | `session` | A logged-in team member. `actor_user_id` identifies them. |
 | `m2m` | An [M2M API client](/enterprise/api-clients/). `actor_m2m_client_id` identifies it. |
 | `api_key` | A static API key. `actor_api_key_id` identifies which one, and `actor_api_key_name` carries its display name. Entries from before 2026-08-06 predate the column and have neither. |
-| `impersonated_staff` | A SiteQwality staff member acting as one of your users. `impersonated_by` records which staff member. |
+| `impersonated_staff` | A Site Qwality staff member acting as one of your users. `impersonated_by` records which staff member. |
 | `connected_app` | An [AI assistant](/integrations/mcp/) (or other OAuth app) acting as the member who approved it. `actor_user_id` and `actor_user_email` identify the member; `connected_app` names the app. |
 | `partner` | A user of your [partner account](/partners/context-switching/) acting on this account. |
 | `system` | Reserved. Nothing produces it today. |

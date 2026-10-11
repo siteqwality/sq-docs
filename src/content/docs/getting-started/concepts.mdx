@@ -1,6 +1,6 @@
 ---
 title: Concepts and glossary
-description: The vocabulary used across the SiteQwality docs and product, defined precisely.
+description: The vocabulary used across the Site Qwality docs and product, defined precisely.
 last_verified: 2026-10-07
 owner: jj
 ---
@@ -13,7 +13,7 @@ The product uses a small set of nouns consistently. When the docs say "attach a 
 
 ### Monitor
 
-The umbrella term for any scheduled health check. SiteQwality has five monitor families: HTTP, SSL/TLS, DNS, cron heartbeat, and browser. The dashboard's **Monitors** view lists all of them together.
+The umbrella term for any scheduled health check. Site Qwality has five monitor families: HTTP, SSL/TLS, DNS, cron heartbeat, and browser. The dashboard's **Monitors** view lists all of them together.
 
 ### Check
 
@@ -25,7 +25,7 @@ How often a monitor's checks fire. Free plan minimum is 5 minutes (300 seconds);
 
 ### Check location
 
-A place SiteQwality runs checks from, on AWS, Google Cloud or Microsoft Azure. Each has a stable id of the form `<provider>-<region>`, such as `aws-us-east-1`, and the API field that holds them is `check_regions`. The default is `aws-us-east-1` (Virginia, AWS). The free plan allows one location per monitor; paid plans allow any number. HTTP checks can use any live location; browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1`. The live list is on the [locations page](https://siteqwality.com/locations/). See [check locations](/uptime-monitoring/overview/#check-locations).
+A place Site Qwality runs checks from, on AWS, Google Cloud or Microsoft Azure. Each has a stable id of the form `<provider>-<region>`, such as `aws-us-east-1`, and the API field that holds them is `check_regions`. The default is `aws-us-east-1` (Virginia, AWS). The free plan allows one location per monitor; paid plans allow any number. HTTP checks can use any live location; browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1`. The live list is on the [locations page](https://siteqwality.com/locations/). See [check locations](/uptime-monitoring/overview/#check-locations).
 
 ### Min healthy regions
 
@@ -150,11 +150,11 @@ A numeric time-series: `gauge` (current value), `counter` (monotonically increas
 
 ### Log
 
-A discrete event with a timestamp, level, message, and arbitrary structured metadata. Stored in ClickHouse, queried with the SiteQwality query syntax.
+A discrete event with a timestamp, level, message, and arbitrary structured metadata. Stored in ClickHouse, queried with the Site Qwality query syntax.
 
 ### Trace
 
-A distributed-tracing object: one trace = one logical request, made up of many **spans**. Each span has a service name, operation name, duration, and structured attributes. SiteQwality follows OpenTelemetry conventions.
+A distributed-tracing object: one trace = one logical request, made up of many **spans**. Each span has a service name, operation name, duration, and structured attributes. Site Qwality follows OpenTelemetry conventions.
 
 ### RUM (Real User Monitoring)
 

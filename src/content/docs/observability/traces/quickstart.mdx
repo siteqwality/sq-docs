@@ -7,7 +7,7 @@ owner: jj
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have an instrumented Node service emitting OTLP traces to SiteQwality and a working trace visible on the **Traces** page.
+By the end of this guide you'll have an instrumented Node service emitting OTLP traces to Site Qwality and a working trace visible on the **Traces** page.
 
 <Aside type="note" title="Which API key">
 Use a **full-access** API key for this guide: step 4 calls `api.siteqwality.com`, which rejects ingest keys with a `403`. In production, give your services an **ingest** key, which can only send telemetry.
@@ -65,7 +65,7 @@ SITEQWALITY_API_KEY=<your API key> node index.js
 curl http://localhost:3000/api/anything
 ```
 
-The two `OTEL_*_EXPORTER=none` variables switch off the SDK's default metrics and logs exporters. SiteQwality accepts only traces over OTLP, and without them the SDK keeps trying to export metrics and logs to `localhost:4318` and logs connection errors.
+The two `OTEL_*_EXPORTER=none` variables switch off the SDK's default metrics and logs exporters. Site Qwality accepts only traces over OTLP, and without them the SDK keeps trying to export metrics and logs to `localhost:4318` and logs connection errors.
 
 The `auto-instrumentations-node` package automatically traces Express, HTTP, fs, common DB drivers, and more, so you don't have to write spans by hand.
 

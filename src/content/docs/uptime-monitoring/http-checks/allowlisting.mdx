@@ -1,6 +1,6 @@
 ---
 title: Allowlisting our checks
-description: Let SiteQwality checks through a firewall, WAF or bot protection with a secret header or the User-Agent, and what the bot_protection failure reason means.
+description: Let Site Qwality checks through a firewall, WAF or bot protection with a secret header or the User-Agent, and what the bot_protection failure reason means.
 last_verified: 2026-10-07
 owner: jj
 ---
@@ -31,7 +31,7 @@ Add a header with a long random value to the monitor, then tell your firewall or
 
 </Steps>
 
-Treat the value like a password. SiteQwality masks the `X-Uptime-Check` value when it returns a monitor or check result in the dashboard and API. Standard metadata headers, including `User-Agent`, are not all masked. If it leaks, generate a new one and update both the monitor and the rule.
+Treat the value like a password. Site Qwality masks the `X-Uptime-Check` value when it returns a monitor or check result in the dashboard and API. Standard metadata headers, including `User-Agent`, are not all masked. If it leaks, generate a new one and update both the monitor and the rule.
 
 ## Option 2: the User-Agent
 

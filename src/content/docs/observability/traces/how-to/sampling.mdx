@@ -33,7 +33,7 @@ Use head sampling for sustained-high-volume services where you can afford to los
 
 Decision made after the trace completes. Expensive (you have to buffer everything until you decide) but smart, because it keeps all errors, all slow traces, plus a sample of normal ones.
 
-OpenTelemetry has a [tail sampling processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor), part of the Collector contrib distribution, that runs as a sidecar / daemon between your apps and SiteQwality. Point your apps' OTLP exporters at the Collector, and the Collector at SiteQwality:
+OpenTelemetry has a [tail sampling processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor), part of the Collector contrib distribution, that runs as a sidecar / daemon between your apps and Site Qwality. Point your apps' OTLP exporters at the Collector, and the Collector at Site Qwality:
 
 ```yaml
 # otel-collector-config.yaml
@@ -91,7 +91,7 @@ For most teams:
 - **High volume (over 500 spans/sec):** Tail sample via a collector. Keep 100% errors + 5% successful.
 
 <Aside type="caution" title="Sampled data is not re-weighted">
-SiteQwality does not record the sampling rate, so the trace counts, error rates and latency percentiles on the Traces timeline and the service map describe the spans you sent, not your full traffic. With the tail policy above (every error, 5% of the rest), a service whose real error rate is 1% shows about 17%, and its percentiles lean towards the errors and slow traces the policy keeps. With 10% head sampling, every count is ten times lower than reality. Read sampled numbers as relative, not absolute.
+Site Qwality does not record the sampling rate, so the trace counts, error rates and latency percentiles on the Traces timeline and the service map describe the spans you sent, not your full traffic. With the tail policy above (every error, 5% of the rest), a service whose real error rate is 1% shows about 17%, and its percentiles lean towards the errors and slow traces the policy keeps. With 10% head sampling, every count is ten times lower than reality. Read sampled numbers as relative, not absolute.
 </Aside>
 
 ## Per-request override

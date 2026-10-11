@@ -89,7 +89,7 @@ Page-speed holds are tracked separately from the HTTP monitor's own held alerts,
 
 - Checks run on a fixed **6 hour** schedule. This is not configurable, and it means a regression can be up to 6 hours old before you hear about it.
 - The check calls Google's PageSpeed Insights API. Rate limits and transient 5xx responses from Google are retried on the next scheduled run rather than surfacing as a failure.
-- SiteQwality does not send a `strategy` parameter, so the analysis runs with Google's own default. There is no mobile or desktop toggle.
+- Site Qwality does not send a `strategy` parameter, so the analysis runs with Google's own default. There is no mobile or desktop toggle.
 
 ## See also
 

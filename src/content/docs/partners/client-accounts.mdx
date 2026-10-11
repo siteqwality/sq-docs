@@ -33,7 +33,7 @@ Every endpoint below requires the **Admin** or **Super Admin** role and a sessio
    | Field | Required | Notes |
    |---|---|---|
    | `display_name` | yes | Your label for the client, up to 128 characters. Not shown to the client and not client-editable. |
-   | `contact_email` | yes | The client's real contact address. Must be unused across all of SiteQwality, and distinct from your other clients' contacts. |
+   | `contact_email` | yes | The client's real contact address. Must be unused across all of Site Qwality, and distinct from your other clients' contacts. |
    | `contact_name` | no | Free text, up to 300 characters. |
 
    The response is the client summary, and `account_id` is the value you will use everywhere else:
@@ -66,7 +66,7 @@ Every endpoint below requires the **Admin** or **Super Admin** role and a sessio
 | Creates an identity-provider organization so a later invite has somewhere to land | Invite anybody or create a session |
 | Records you as the account's partner | Create a payment method or a billing customer |
 
-The contact never asked us for an account, so we never write to them out of nowhere. Whether and when your client hears from SiteQwality is your call: invite them from inside the account when you want them to have a login, and they get an ordinary invitation at that point.
+The contact never asked us for an account, so we never write to them out of nowhere. Whether and when your client hears from Site Qwality is your call: invite them from inside the account when you want them to have a login, and they get an ordinary invitation at that point.
 
 <Aside type="note" title="The contact address is the alert destination">
 The default notification group alerts `contact_email`. That is the intended shape: an outage on your client's site reaches your client, not only you. If you would rather be the first to hear, change the notification group inside the client account before you build monitors, or add yourself alongside them.
@@ -74,7 +74,7 @@ The default notification group alerts `contact_email`. That is the intended shap
 
 ### Why every client needs its own contact address
 
-A repeat contact address is refused with `409`, whether it already belongs to one of your clients or to any other SiteQwality account. Addresses are compared case-insensitively, so `Ada@Acme.example` collides with `ada@acme.example`.
+A repeat contact address is refused with `409`, whether it already belongs to one of your clients or to any other Site Qwality account. Addresses are compared case-insensitively, so `Ada@Acme.example` collides with `ada@acme.example`.
 
 This is a pricing rule, not data hygiene. The partner rate is below what the same entitlements cost retail, so client accounts have to be actual distinct clients rather than five slots pointed at the same organization.
 
@@ -85,7 +85,7 @@ This is a pricing rule, not data hygiene. The partner rate is below what the sam
 | `400` | Missing or malformed field. The message names it. |
 | `402` | No client slot left on your plan. Remove a client or add slots. |
 | `403` | You are not an Admin, or your account is not in the partner program. |
-| `409` | That contact address is already in use, by one of your clients or by another SiteQwality account. |
+| `409` | That contact address is already in use, by one of your clients or by another Site Qwality account. |
 
 ## List your clients
 

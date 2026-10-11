@@ -1,6 +1,6 @@
 ---
 title: Slack integration
-description: Install the SiteQwality Slack app via OAuth, then post rich-block alerts (with Acknowledge buttons) to any channel.
+description: Install the Site Qwality Slack app via OAuth, then post rich-block alerts (with Acknowledge buttons) to any channel.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -17,7 +17,7 @@ The Slack integration installs an OAuth app into your workspace once. Each notif
 
 2. You're redirected to Slack's OAuth consent screen. Approve.
 
-3. Slack redirects back to SiteQwality with a code. The dashboard exchanges it for a workspace token and stores it as an integration.
+3. Slack redirects back to Site Qwality with a code. The dashboard exchanges it for a workspace token and stores it as an integration.
 
 4. The Slack integration now appears in your list with a generated `friendly_name` like `Acme Slack`. You can rename it.
 
@@ -76,7 +76,7 @@ Alerts post as Slack blocks with:
 - Recent results (last 3 ticks).
 - An **Acknowledge** interactive button that, when clicked, sets the incident to `responder_status: acknowledged` and stops escalation.
 
-The interactive button uses Slack's interactivity feature. Set up the **Request URL** in your Slack app settings to point at SiteQwality's interactivity endpoint if needed (only relevant for self-hosted custom Slack apps; the standard install handles this).
+The interactive button uses Slack's interactivity feature. Set up the **Request URL** in your Slack app settings to point at Site Qwality's interactivity endpoint if needed (only relevant for self-hosted custom Slack apps; the standard install handles this).
 
 ## Removing
 

@@ -7,7 +7,7 @@ owner: jj
 
 import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
 
-By default an HTTP check pages you the moment one check fails. That is the right setting for a monitor you trust. For a noisy target (a flaky third-party dependency, an endpoint behind an aggressive bot-management edge) you may want SiteQwality to see the failure more than once before it wakes anyone up.
+By default an HTTP check pages you the moment one check fails. That is the right setting for a monitor you trust. For a noisy target (a flaky third-party dependency, an endpoint behind an aggressive bot-management edge) you may want Site Qwality to see the failure more than once before it wakes anyone up.
 
 `confirmation_threshold` is that knob. Set it to `N` and the monitor only transitions to `failed` after **N consecutive failed checks**.
 

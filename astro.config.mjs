@@ -15,13 +15,13 @@ export default defineConfig({
 	markdown: { rehypePlugins: [rehypeTableWrap] },
 	integrations: [
 		starlight({
-			title: 'SiteQwality Docs',
+			title: 'Site Qwality Docs',
 			description:
-				'Documentation for SiteQwality: uptime monitoring, observability, incidents, and status pages.',
+				'Documentation for Site Qwality: uptime monitoring, observability, incidents, and status pages.',
 			logo: {
 				light: './src/assets/atlas-logo-light.svg',
 				dark: './src/assets/atlas-logo-dark.svg',
-				alt: 'SiteQwality',
+				alt: 'Site Qwality',
 				replacesTitle: false,
 			},
 			favicon: '/favicon.svg',
@@ -81,11 +81,11 @@ export default defineConfig({
 				// Serves /llms.txt, /llms-full.txt and /llms-small.txt from the docs
 				// content. Pinned to 0.10.x: 0.11 and later need Astro 7.
 				starlightLlmsTxt({
-					projectName: 'SiteQwality',
+					projectName: 'Site Qwality',
 					description:
-						'SiteQwality is an uptime monitoring, status page, incident management and observability (logs, metrics, traces, RUM, session replay) service.',
+						'Site Qwality is an uptime monitoring, status page, incident management and observability (logs, metrics, traces, RUM, session replay) service.',
 					details: [
-						'AI assistants can use SiteQwality directly through its MCP server at `https://mcp.siteqwality.com/mcp`. Setup for Claude, Claude Code, ChatGPT, Cursor, VS Code and Codex CLI: [Connect AI assistants (MCP)](https://docs.siteqwality.com/integrations/mcp/).',
+						'AI assistants can use Site Qwality directly through its MCP server at `https://mcp.siteqwality.com/mcp`. Setup for Claude, Claude Code, ChatGPT, Cursor, VS Code and Codex CLI: [Connect AI assistants (MCP)](https://docs.siteqwality.com/integrations/mcp/).',
 						'',
 						'Key pages:',
 						'',
@@ -128,7 +128,7 @@ export default defineConfig({
 					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'uptime-monitoring/overview' },
-						{ label: 'Our bot: SiteQwality Monitor', slug: 'bot' },
+						{ label: 'Our bot: Site Qwality Monitor', slug: 'bot' },
 						{
 							label: 'HTTP checks',
 							collapsed: true,
