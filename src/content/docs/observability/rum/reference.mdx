@@ -1,13 +1,13 @@
 ---
 title: RUM reference
 description: RUM application fields, recording rules, source-map releases, analytics query parameters, and every endpoint.
-last_verified: 2026-10-04
+last_verified: 2026-10-10
 owner: jj
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-The full request/response schema is in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for the `/rum` endpoint family. For the browser SDK itself, see the [SDK reference](/sdk/reference/).
+The full request/response schema is in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for the `/rum` endpoint family. For the browser SDK itself, see the [SDK reference](/sdk/v2/).
 
 ## RUM application
 
@@ -20,18 +20,18 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `settings.privacy.level` | `strict`, `balanced`, `relaxed` or null | `balanced` for new applications | See [privacy levels](/observability/rum/how-to/remote-config/#privacy-levels). Null (Custom) applies the flags below as stored. |
 | `settings.privacy.mask_inputs` | bool | `true` | Mask input values in replay recordings. Under a level, written from the level. Read the stored value rather than trusting this default; see [privacy settings](/observability/replay/reference/#privacy-settings). |
 | `settings.privacy.mask_text` | bool | `false` | Mask all user-visible text in replay recordings. Off by default, so page text is recorded verbatim unless you turn it on or choose Strict. |
-| `settings.privacy.hide_action_text` | bool | `false` | Drop element text from click names, so `button.send[Send message]` is stored as `button.send`. See [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names). |
+| `settings.privacy.hide_action_text` | bool | `false` | Store clicks with their selector only, without a name. See [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names). |
 | `settings.privacy.pii_patterns` | string[] | all three for new applications | `email`, `card`, `digits9`: what is scrubbed from text. Written from the level. |
-| `settings.privacy.mask_selectors`, `unmask_selectors`, `block_selectors`, `ignore_input_selectors` | string[] | `[]` | CSS selectors for SDK 2.0, up to 50 each. `unmask_selectors` applies under Strict only. |
-| `settings.privacy.never_record_urls` | string[] | `[]` | URL patterns where SDK 2.0 pauses replay and drops detail. |
-| `settings.privacy.require_consent`, `honor_gpc`, `cookieless`, `capture_user_email` | bool | `false`, `true` for new applications, `false`, `true` | Consent and identity handling, applied by SDK 2.0; `capture_user_email` is also applied at ingest. |
+| `settings.privacy.mask_selectors`, `unmask_selectors`, `block_selectors`, `ignore_input_selectors` | string[] | `[]` | Replay masking, blocking and input-ignoring CSS selectors, up to 50 each. `unmask_selectors` applies under Strict only. |
+| `settings.privacy.never_record_urls` | string[] | `[]` | URL patterns where the SDK pauses replay and drops Analyze detail. |
+| `settings.privacy.require_consent`, `honor_gpc`, `cookieless`, `capture_user_email` | bool | `false`, `true` for new applications, `false`, `true` | Consent and identity handling, applied by the SDK; `capture_user_email` is also applied at ingest. |
 | `settings.retention.observe_days` | int or null | `null` | Keep this application's page views and Web Vitals (`rum_measures`) at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
 | `settings.retention.analyze_days` | int or null | `null` | Keep this application's detail events (`rum_events`) at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
 | `settings.retention.session_replay_days` | 7, 14, 30 or null | `null` | Shorter replay retention with asynchronous object cleanup. Configure it in Settings → Data settings or through the API; saving the setting queues cleanup rather than confirming completion. See [privacy requests and retention](/observability/rum/how-to/privacy-requests/). |
 | `settings.resource_exclusions` | string[] | `[]` | Resource URLs never recorded as resource events. Up to 50 rules; see [excluded resources](/observability/rum/how-to/remote-config/#excluded-resources). |
-| `settings.frustration_ignore_selectors` | string[] | `[]` | CSS selectors whose clicks never count as rage or dead clicks. Up to 50 valid CSS selectors, each 1 to 256 printable characters; anything else returns `400`. See [frustration signals](/sdk/reference/#frustration-signals). |
+| `settings.frustration_ignore_selectors` | string[] | `[]` | CSS selectors whose clicks never count as rage or dead clicks. Up to 50 valid CSS selectors, each 1 to 256 printable characters; anything else returns `400`. See [frustration signals](/sdk/v2/#frustration-signals). |
 | `settings.capture.network` | object | see [network capture](/observability/rum/how-to/remote-config/#network-capture) | `header_allowlist`, `body_urls` and `trace_urls` (URL prefixes), `max_body_bytes`. |
-| `settings.capture.console` | string[] | `["error", "warn"]` | Console levels SDK 2.0 records, within the privacy level's limit. |
+| `settings.capture.console` | string[] | `["error", "warn"]` | Console levels the SDK records, within the privacy level's limit. |
 | `settings.capture.errors` | object | empty | `ignore` and `deny_urls` patterns, and `console_errors_as_issues`. |
 | `settings.routes` | object[] | `[]` | Route rules, `{ "pattern": "/profiles/:id", "name": "Profile" }`, up to 100. |
 | `settings.observe_sample_rate` | number | `1` | Share of sessions that send data at all, greater than 0 and at most 1. |
@@ -52,7 +52,7 @@ Read-only fields on the response:
 
 ## Recording rules
 
-Recording rules decide which sessions record Analyze detail and which record a replay. Managed under `/rum/{app_id}/rules`; see [Configure recording rules](/observability/rum/how-to/session-filters/) for the conditions, Auto sampling and how SDK 1.x reads them.
+Recording rules decide which sessions record Analyze detail and which record a replay. Managed under `/rum/{app_id}/rules`; see [Configure recording rules](/observability/rum/how-to/session-filters/) for the conditions, Auto sampling and gates.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
@@ -66,19 +66,7 @@ Recording rules decide which sessions record Analyze detail and which record a r
 | `require_interaction` | bool | `true` for Replay, `false` for Analyze | |
 | `position` | int | after the last rule | Display order. |
 
-Responses add `id`, `effective_sample_rate`, `effective_rate_at`, `applies_to_sdk_v1`, `created_by_user_id`, `created_at` and `updated_at`. `PUT /rum/{app_id}/rules/{rule_id}` changes only the fields sent. At most 50 rules per application. A malformed body returns `422`, an invalid rule `400`, a 51st rule `409`.
-
-### Session filters (deprecated)
-
-`/rum/{app_id}/filters` is a view over the recording rules in the older shape (`filter_type`, `conditions`, `capture_replay`, `priority`). It lists and changes only the rules SDK 1.x can express. Writes are validated as before:
-
-| `filter_type` | Allowed keys | Other rules |
-|---|---|---|
-| `error` | `has_error`: bool | `{}` allowed. Stored as an `error` rule; read back as `{}`. |
-| `slow_performance` | `lcp_gt_ms`: number in (0, 600000]; `cls_gt`: number in (0, 10] | At least one key. With both, stored as two rules. |
-| `custom` | `has_user`: bool; `min_actions`: integer 1 to 10000 | `{}` allowed. `min_actions` is stored as one required interaction and read back as `1`. |
-
-Any other key, a wrong type or an out-of-range value returns `400`.
+Responses add `id`, `effective_sample_rate`, `effective_rate_at`, `created_by_user_id`, `created_at` and `updated_at`. `PUT /rum/{app_id}/rules/{rule_id}` changes only the fields sent. At most 50 rules per application. A malformed body returns `422`, an invalid rule `400`, a 51st rule `409`.
 
 ## Source-map releases
 
@@ -92,15 +80,7 @@ Managed under `/rum/{app_id}/releases`. See [Source maps](/observability/rum/how
 
 ## SDK config
 
-SDK 1.x fetches its config from the RUM ingest host at `GET {ingestBase}/v1/config`, authenticated by the client token, at init and every 5 minutes after. The dashboard API exposes the same payload at `GET /rum/{app_id}/config`:
-
-| Field | Description |
-|---|---|
-| `application_id` | The application. |
-| `filters` | The enabled recording rules SDK 1.x can express, in the session-filter shape. |
-| `settings` | The application's stored settings. |
-
-SDK 2.0 reads `https://cdn.siteqwality.com/rum/config/v2/{app_id}.json`, published on every change and cached for up to 6 minutes. Its schema is `SdkConfigV2` in the [API reference](/api-reference/); a deleted application's file is `{"v":2,"status":"paused"}`.
+The SDK reads `https://cdn.siteqwality.com/rum/config/v2/{app_id}.json`, published on every change and cached for up to 6 minutes. Its schema is `SdkConfigV2` in the [API reference](/api-reference/); a deleted application's file is `{"v":2,"status":"paused"}`. See [Change SDK behaviour without redeploying](/observability/rum/how-to/remote-config/).
 
 ## Analytics conventions
 
@@ -121,7 +101,7 @@ SDK 2.0 reads `https://cdn.siteqwality.com/rum/config/v2/{app_id}.json`, publish
 | Param | Description |
 |---|---|
 | `from`, `to` | Time range. Default: the 30 days ending now; maximum 90 days. |
-| `f`, `country`, `browser`, `os`, `device_type`, `url` | Repeated shared Analytics filters or legacy filters (see conventions). |
+| `f`, `country`, `browser`, `os`, `device_type`, `url` | Repeated shared Analytics filters, or the per-dimension params (see conventions). |
 | `device_class` | `all`, `desktop` or `mobile`; mobile includes tablets. |
 | `compare` | `previous` adds the preceding equal-length interval under `previous`. |
 
@@ -213,12 +193,12 @@ Each session carries:
 |---|---|
 | `session_id`, `first_seen`, `last_seen`, `duration_ms` | Start, last activity across page views, events and replay, and the time between, at most 4 hours 5 minutes. |
 | `live` | Activity in the last 2 minutes. |
-| `active_ms` | Time the user was active (input, visible tab), from SDK 2.0. `0` for older SDKs. |
+| `active_ms` | Time the user was active (input, visible tab). |
 | `user_id`, `user_email`, `anonymous_id` | Identity, shown and matched only for sessions from the last 30 days. |
 | `entry_url`, `entry_route`, `exit_url` | First and last page view. |
-| `view_count`, `window_count` | Page views and browser tabs (tabs from SDK 2.0). |
+| `view_count`, `window_count` | Page views and browser tabs. |
 | `error_count`, `failed_request_count`, `console_error_count` | Error events (repeats included), requests with status `0` or `400` and above, console errors. |
-| `action_count` | User actions the SDK counted on its page views (as in Wave 1). SDK 1.x versions that do not count them report `0`. |
+| `action_count` | User actions the SDK counted on its page views. |
 | `rage_click_count`, `dead_click_count`, `error_click_count` | Frustration signals among clicks and taps. |
 | `frustration_score` | [Frustration score](#frustration-score), `0` to `100`. |
 | `browser`, `os`, `device_type`, `country`, `region` | Device and location. |
@@ -236,8 +216,8 @@ The session page's summary: the session's fields (as in the list), and:
 | Field | Description |
 |---|---|
 | `views` | Page views, oldest first, at most 1,000 (`views_truncated`): `view_id`, `url`, `route`, `start`, `time_spent_ms`, the latest valid `lcp_ms`, `inp_ms` and `cls`, and `error_count`. |
-| `windows` | Browser tabs (SDK 2.0): `window_id`, `first_seen`, `last_seen`. |
-| `counts` | Rows per kind over the whole session, as [`/events`](#get-rumapp_idsessionssession_idevents) counts them (a retried upload counts once): `action`, `network`, `resource`, `console`, `error`, `long_frame`, `long_task` (SDK 1.x), `custom`. |
+| `windows` | Browser tabs: `window_id`, `first_seen`, `last_seen`. |
+| `counts` | Rows per kind over the whole session, as [`/events`](#get-rumapp_idsessionssession_idevents) counts them (a retried upload counts once): `action`, `network`, `resource`, `console`, `error`, `long_frame`, `custom`. |
 | `referrer_host`, `utm`, `channel`, `viewport` | Acquisition and screen, from the first page views. |
 | `attributes` | The session's latest global attributes, without the reserved `sq.` keys. |
 | `user_name`, `traits` | From `setUser`, for sessions from the last 30 days. |
@@ -252,14 +232,14 @@ One page of the session's events, oldest first, in the shapes of the ingest kind
 
 | Param | Description |
 |---|---|
-| `kinds` | Comma-separated: `view`, `view_end`, `vital` (SDK 1.x), `custom`, `action`, `error`, `network`, `resource`, `console`, `long_frame`, `long_task` (SDK 1.x), `status`. Default: all. |
+| `kinds` | Comma-separated: `view`, `view_end`, `custom`, `action`, `error`, `network`, `resource`, `console`, `long_frame`, `status`. Default: all. |
 | `from_ms`, `to_ms` | Bounds in milliseconds from the session's start, inclusive. |
 | `q` | Case-insensitive substring of a page URL or route, a request URL, an error type, title or message, an action name or selector, a custom event name, or (with body access) a console message or the message of an error captured from the console. |
 | `collapse` | `true` folds repeated successful requests, resources and identical console lines of one page view into their first row. |
 | `cursor` | `next_cursor` of the previous page; the other params must be the same. |
 | `limit` | Page size. Default 500, maximum 1,000. A page also ends at about 2.5 MB of JSON. |
 
-Every event carries `id`, `kind`, `t`, `offset_ms` (from the session's start), `view_id`, `window_id` (`null` for SDK 1.x), `page_load_id`, and the page it happened on, `page_url` and `page_route`, plus its kind's fields: for example `method`, `url`, `status`, timings, `trace_id` and `n` (requests a row aggregates) on `network`; `error_type`, `message`, `stack`, `frames`, `cause`, `breadcrumbs`, `fingerprint` and `attributes` on `error`; `level`, `message` and `repeat` on `console`. A collapsed row that stands for more than one stored row adds `group`: `rows`, `count` (occurrences) and `last_offset_ms`. The schemas are in the [API reference](/api-reference/).
+Every event carries `id`, `kind`, `t`, `offset_ms` (from the session's start), `view_id`, `window_id`, `page_load_id`, and the page it happened on, `page_url` and `page_route`, plus its kind's fields: for example `method`, `url`, `status`, timings, `trace_id` and `n` (requests a row aggregates) on `network`; `error_type`, `message`, `stack`, `frames`, `cause`, `breadcrumbs`, `fingerprint` and `attributes` on `error`; `level`, `message` and `repeat` on `console`. A collapsed row that stands for more than one stored row adds `group`: `rows`, `count` (occurrences) and `last_offset_ms`. The schemas are in the [API reference](/api-reference/).
 
 `counts` gives rows per kind over the whole session for this `q` and `collapse`, on every page. `next_cursor` is absent on the last page.
 
@@ -357,12 +337,9 @@ No params. Returns `last_seen_at` (the newest page view or vital in the last 24 
 | `GET` | `/rum` | List applications. |
 | `GET` / `PUT` / `PATCH` / `DELETE` | `/rum/{app_id}` | Detail / update / partial update / delete. |
 | `POST` | `/rum/{app_id}/rotate-token` | Rotate the client token. |
-| `GET` | `/rum/{app_id}/config` | SDK 1.x config (filters + settings). |
 | `POST` / `GET` | `/rum/{app_id}/rules` | Create / list recording rules. |
 | `PUT` / `DELETE` | `/rum/{app_id}/rules/{rule_id}` | Update / delete a recording rule. |
 | `POST` | `/rum/{app_id}/rules/preview` | Estimate what a rule would record. Read access. |
-| `POST` / `GET` | `/rum/{app_id}/filters` | Deprecated: create / list rules in the session-filter shape. |
-| `PUT` / `DELETE` | `/rum/{app_id}/filters/{filter_id}` | Deprecated: update / delete a rule in the session-filter shape. |
 | `POST` / `GET` | `/rum/{app_id}/releases` | Create / list source-map releases. |
 | `POST` | `/rum/{app_id}/releases/{version}/sourcemaps` | Request an upload URL for a source map. |
 | `GET` | `/rum/{app_id}/releases/{version}/sourcemaps` | List the source maps recorded against a release. |
@@ -376,10 +353,11 @@ No params. Returns `last_seen_at` (the newest page view or vital in the last 24 
 | `GET` | `/rum/{app_id}/errors/{fingerprint}` | Error detail, timeline, affected sessions. |
 | `GET` | `/rum/{app_id}/facets` | Dimension values seen in a range, with session counts. |
 | `GET` | `/rum/{app_id}/ingest-status` | When data last arrived, and recent session counts. |
-| `GET` | `/rum/{app_id}/replay/{session_id}` | Replay segment URLs. See [Replay reference](/observability/replay/reference/). |
+| `GET` | `/rum/{app_id}/sessions/{session_id}/replay` | Replay manifest. See [Replay reference](/observability/replay/reference/#retrieval). |
+| `POST` | `/rum/{app_id}/sessions/{session_id}/replay/chunks` | Short-lived URLs for replay chunks. |
 
 ## See also
 
 - [RUM overview](/observability/rum/overview/) for the concept and capture tiers.
 - [Recording rules](/observability/rum/how-to/session-filters/) for activation patterns.
-- [SDK reference](/sdk/reference/) for init options and the browser API.
+- [SDK reference](/sdk/v2/) for init options and the browser API.

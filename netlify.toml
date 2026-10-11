@@ -4,3 +4,16 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+# Retired page.
+[[redirects]]
+  from = "/sdk/reference"
+  to = "/sdk/v2/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/sdk/reference/*"
+  to = "/sdk/v2/"
+  status = 301
+  force = true

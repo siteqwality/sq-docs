@@ -1,22 +1,22 @@
 ---
-title: SDK 2 installation and reference
-description: Install SDK 2, configure CSP and consent, and understand Observe billing and replay privacy.
+title: SDK reference
+description: Install @siteqwality/rum, every init option and public method, and how the SDK collects, filters, samples and sends data.
 last_verified: 2026-10-10
 owner: jj
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-This guide describes the published SDK 2.2.0. For SDK 1.x, use the [legacy reference](/sdk/reference/).
+Field-by-field reference for **`@siteqwality/rum`**, the browser SDK for RUM, error tracking and [session replay](/observability/replay/overview/). This page describes the published SDK 2.2.0. For a first install, follow the [RUM quickstart](/observability/rum/quickstart/).
 
-<Aside type="note" title="SDK 2.2.0 is available">
-SDK 2.2.0 is published on npm and the CDN. Replay v2 intake, compaction and playback are deployed, and replay v2 is enabled for all applications. Recording still depends on your application's rules, consent, privacy settings and quota.
+<Aside type="caution" title="SDK 1.x is retired">
+SDK 1.x is retired. Its endpoints no longer accept data, and its CDN paths (`/rum/v1/` and the pinned 1.x releases) have been removed. Install SDK 2 as described below.
 </Aside>
 
 ## Install
 
 ```bash
-npm install @siteqwality/rum@2.2.0
+npm install @siteqwality/rum
 ```
 
 Release channels verified October 10, 2026:
@@ -26,8 +26,7 @@ Release channels verified October 10, 2026:
 | npm `@siteqwality/rum`, `latest` | SDK 2.2.0. |
 | CDN `/rum/v2/` | Moving 2.x alias, currently SDK 2.2.0. |
 | CDN `/rum/v2.2.0/` | Immutable SDK 2.2.0 and matching lazy chunks. |
-| CDN `/rum/v1/` | Legacy 1.x compatibility channel. |
-| npm `next` | Still 2.1.0; use `latest` or the explicit 2.2.0 version. |
+| npm `next` | 2.1.0, older than `latest`. Install `latest` or an explicit version. |
 
 Use the application's public `applicationId` and `clientToken`. Do not use an account API key in a browser. The npm package and CDN release provide the same SDK version; npm integrates with your bundler, while the CDN exposes `window.SiteQwalityRUM`.
 
@@ -47,7 +46,7 @@ SiteQwalityRUM.init({
 // SiteQwalityRUM.setTrackingConsent('granted');
 ```
 
-Call `init` before mounting your app. It starts collection synchronously and returns a promise that settles after config loads or fails, with a 3-second config timeout. You do not need to await it. A second `init` is ignored; public methods do not throw.
+Call `init` before mounting your app. Collection starts synchronously: the session, the collectors and the first page view are running before `init` returns. It then fetches the config and returns a promise that settles once the config is applied or has failed, with a 3-second timeout. The promise never rejects, and you do not need to await it. A second `init` is ignored. Without an `applicationId` and a `clientToken`, `init` logs a console warning and does nothing. No public method throws.
 
 ### CDN snippet
 
@@ -73,50 +72,50 @@ This snippet loads the moving 2.x CDN alias, currently SDK 2.2.0. Use `/rum/v2.2
 </script>
 ```
 
-The stub queues all 16 public methods and early errors. It runs `init` first when the bundle arrives. A queued getter has no synchronous return value; call `getStatus`, `getSessionUrl` and `isOptedOut` after the real SDK loads when you need their results.
+The stub queues all 16 public methods and the errors the page throws before the SDK arrives. When the bundle loads it runs `init` first, then the other calls in order, and reports the early errors with their original times. If `init` has not run yet (for example, it waits for consent), the SDK keeps up to 100 page errors until it does. A queued getter has no synchronous return value; call `getStatus`, `getSessionUrl` and `isOptedOut` after the real SDK loads when you need their results.
 
-`/rum/v2/sdk.min.js` is the moving 2.x alias. Immutable releases use `/rum/v<version>/sdk.min.js`. Keep the matching `recorder-<version>.min.js`, `gzip-<version>.min.js` and `canvas-<version>.min.js` beside the core when self-hosting SDK 2.2.0. The canvas chunk loads only when canvas recording is opted in and permitted. The gzip fallback loads only when native compression is unavailable. The `/rum/v1/` alias stays on 1.x.
+The bundle is a classic script whose only global is `window.SiteQwalityRUM`; it also works when loaded with `type="module"`, and a second copy of it does nothing. `/rum/v2/sdk.min.js` is the moving 2.x alias. Immutable releases use `/rum/v<version>/sdk.min.js`. Keep the matching `recorder-<version>.min.js`, `gzip-<version>.min.js` and `canvas-<version>.min.js` beside the core when self-hosting SDK 2.2.0. The canvas chunk loads only when canvas recording is opted in and permitted. The gzip fallback loads only when native compression is unavailable.
 
 ## Endpoints and config
 
-| Purpose | SDK 2 endpoint | Authentication |
+| Purpose | Endpoint | Authentication |
 |---|---|---|
 | Events | `POST https://in.siteqwality.com/v2/batch` | `Authorization: Bearer <clientToken>` |
 | Identity check, when enabled | `GET https://in.siteqwality.com/v2/identity?h=<hash>` | Same header; private/no-store response. The server also accepts POST. |
 | Config | `GET https://cdn.siteqwality.com/rum/config/v2/<applicationId>.json` | No token, cookies or custom headers |
-| Replay, SDK 2.1 and 2.2 | `POST https://in-replay.siteqwality.com/v2/segments` | Bearer header and `x-sq-replay-index` |
-| Replay, SDK 2.0 | `POST https://replay.siteqwality.com/v1/segments` | Bearer header |
+| Replay | `POST https://in-replay.siteqwality.com/v2/segments` | Bearer header and `x-sq-replay-index` |
 
-`ingestBase`, `replayBase` and `configBase` override those host bases for a first-party proxy. Do not include the endpoint path in the base. `apiBase` was removed in 2.0. Preserve authentication as a header; never put a client token in the URL. See the [proxy requirements](/observability/rum/how-to/csp/#first-party-proxies).
+`ingestBase`, `replayBase` and `configBase` override those host bases for a first-party proxy. Do not include the endpoint path in the base. Preserve authentication as a header; never put a client token in the URL. See the [proxy requirements](/observability/rum/how-to/csp/#first-party-proxies).
 
-Config is cached under `_sq_cfg_<applicationId>` in localStorage when consent is granted. A tab becoming visible refreshes a config older than five minutes. Until config arrives, the SDK uses the cached config or safe defaults: Observe sample rate 1, no Analyze or Replay rules, Balanced privacy, masked inputs and GPC honored. A failed refresh keeps the previous config. Set pending consent in `init` when required, because the remote config may arrive after initial collection.
+The SDK fetches its config at `init`, and an open tab fetches it again when it becomes visible with a copy older than five minutes. Config is cached under `_sq_cfg_<applicationId>` in localStorage when consent is granted. Until config arrives, the SDK uses the cached config or safe defaults: Observe sample rate 1, no Analyze or Replay rules, Balanced privacy, masked inputs and GPC honored. A failed refresh keeps the previous config. An application whose config says `"status": "paused"`, as a deleted application's does, sends nothing. Set pending consent in `init` when required, because the remote config may arrive after initial collection. What the config holds and how fast changes land is on [Change SDK behaviour without redeploying](/observability/rum/how-to/remote-config/).
 
 ## Init options
 
 | Option | Default | Effect |
 |---|---|---|
 | `applicationId`, `clientToken` | Required | The application's public credentials. |
-| `service`, `env`, `version` | None | Sent in batch context; `version` identifies your application release. |
-| `trackingConsent` | `granted`, unless cached config requires consent | `pending`, `granted` or `not-granted`. Pass explicitly for consent-gated sites. |
-| `persistence` | `cookie` | Session persistence: `cookie`, `localStorage` or `memory`. |
-| `cookieDomain` | Current host | Share a session across your subdomains. |
-| `hashRouting` | `false` | Treat hash routes as page views. |
+| `service`, `env`, `version` | None | Sent in batch context; `version` identifies your application release and selects [source maps](/observability/rum/how-to/source-maps/). |
+| `trackingConsent` | `granted`, unless the application requires consent | `pending`, `granted` or `not-granted`. Pass explicitly for consent-gated sites. See [consent](#consent-and-browser-signals). |
+| `persistence` | `cookie` | Where the session lives: `cookie` (shared by tabs), `localStorage` or `memory` (this page load only, nothing stored). |
+| `cookieDomain` | Current host | Share the session cookie across your subdomains, such as `example.com`. Any nonempty value disables canvas capture. |
+| `hashRouting` | `false` | Treat `#/route` and `#!/route` fragments as page views. |
 | `routeName(path)` | None | Return a route label such as `/users/:id`. |
-| `allowedQueryParams`, `deniedQueryParams` | None | URL minimization exceptions; built-in sensitive names remain denied. |
-| `ignoreErrors`, `denyUrls` | None | String or RegExp lists for error messages and top-frame URLs. |
+| `allowedQueryParams`, `deniedQueryParams` | None | Query parameters kept on captured URLs, or always removed. A built-in deny list (`token`, `code`, `key`, `secret`, `password`, `email`, `session`, `sig`, `auth`, `apikey` and similar) applies even to allowed names. |
+| `ignoreErrors`, `denyUrls` | None | String or RegExp lists for error messages and top-frame URLs. See [error filtering](#error-filtering). |
 | `beforeSend(event, kind)` | None | Synchronous hook for error, view, action, custom, network and console events. |
 | `ingestBase`, `replayBase`, `configBase` | Hosts above | First-party proxy bases. |
-| `recorderUrl` | Next to the CDN core | Override the CDN recorder URL; keep its gzip fallback beside it. |
-| `debug` | `false` | Log config, recording decisions and transport outcomes. |
+| `recorderUrl` | Next to the CDN core | CDN bundle only: where to load the replay recorder from. Keep its gzip fallback and canvas chunk beside it. The npm package bundles the recorder through your bundler and ignores this option. |
+| `debug` | `false` | Log config, recording decisions and transport outcomes to the console. Adding `?sq_debug=1` to a page URL turns it on in that browser until you remove the `sq_debug` key from localStorage. |
 
 ## Public methods
 
 | Method | Behavior |
 |---|---|
-| `setUser({id, email, name, traits})`, `clearUser()` | Set or clear identity for subsequent batches. Traits accept up to 20 string labels; email capture follows application privacy settings. |
-| `setGlobalAttribute(key, value)`, `removeGlobalAttribute(key)` | Attach string labels to batch context, including measures. Up to 50 keys and 4 KB total. |
-| `addError(error, context)` | Capture any value through the error filters. `context['sq.fingerprint']` sets a custom fingerprint. |
-| `addAction(name, context)` | Record an Observe custom event, even without an Analyze rule match. |
+| `init(options)` | Start the SDK. See [install](#install). |
+| `setUser({id, email, name, traits})`, `clearUser()` | Set or clear identity for later batches. `id`, `email` and `name` take strings or numbers, cut to 1,024 characters; `traits` takes up to 20 string values. Each call replaces the previous user. The email is sent only when the application captures user emails, and no identity is sent under honored GPC. |
+| `setGlobalAttribute(key, value)`, `removeGlobalAttribute(key)` | Attach string labels to batch context, including page views. Up to 50 keys of up to 128 characters, values cut to 1,024 characters, 4 KB in all; anything else is ignored. |
+| `addError(error, context)` | Capture any value through the [error filters](#error-filtering). `context` takes up to 50 string values; `context['sq.fingerprint']` sets a custom fingerprint. |
+| `addAction(name, context)` | Record a custom event (Observe), even without an Analyze rule match. The name is cut to 256 characters. |
 | `setView(name)` | Name the current view's route. |
 | `setTrackingConsent(consent)` | Change consent for this page. |
 | `optOut()`, `optIn()`, `isOptedOut()` | Persist or read browser opt-out. These work before `init`. |
@@ -124,13 +123,50 @@ Config is cached under `_sq_cfg_<applicationId>` in localStorage when consent is
 | `getSessionUrl({atCurrentTime})` | Get an internal session link, optionally with `?at=<epoch ms>`. Viewers still need account access. |
 | `getStatus()` | Inspect SDK version, session/window IDs, consent, sampling, recording state, config revision and drop counters. |
 
-With npm, other calls before `init` are ignored. Treat context, traits and global attributes as stored data; use non-personal labels such as `{ feature: 'checkout' }`.
+With npm, other calls before `init` are ignored. The CDN snippet queues them instead.
 
-`beforeSend` may return `false` or `null` to drop an event, an object to replace it, or nothing to retain in-place edits. Views cannot be dropped. The SDK limits edits to existing fields of the same type, preserves event identity and timing, and sanitizes modified values again. A thrown hook keeps the original event. SDK 2 error fields include `message`, `stack` and `error_type`; replace SDK 1 hooks that expect `error_message` or `error_stack`.
+<Aside type="danger" title="Do not put personal data in context, traits or attributes">
+The `context` of `addError` and `addAction`, user `traits` and global attributes are stored with the events they ride on, and global attributes can be used in [session filters](/observability/rum/reference/#filter-grammar). Pass low-cardinality, non-personal labels only, such as `{ feature: 'checkout', step: '3' }`.
+</Aside>
+
+`beforeSend` may return `false` or `null` to drop an event, an object to replace it, or nothing to retain in-place edits. Views cannot be dropped. The SDK limits edits to existing fields of the same type, never changes `k`, `t`, `view_id`, `id`, `seq` or `final`, and sanitizes modified values again (URLs, stacks, text and nested fields). An error's `error_key` is recomputed from your edits. The hook must return synchronously; if it throws, the original event is sent. Error events carry `message`, `stack` and `error_type`.
+
+## Exported types
+
+```typescript
+import type {
+  InitOptions,   // init argument
+  UserContext,   // setUser argument
+  SdkStatus,     // getStatus result
+  SqEvent,       // the event beforeSend receives
+  SqEventKind,   // its kind: 'error', 'view', 'action', 'custom', 'network' or 'console'
+  Consent,       // 'granted', 'pending' or 'not-granted'
+} from '@siteqwality/rum';
+```
+
+## What is collected when
+
+| Data | Tier |
+|---|---|
+| Page views (`view_start`, `view_end`) with load timing, Web Vitals, time spent, active time, scroll depth and counts | Observe |
+| Errors that pass [filtering](#error-filtering), with stack, causes, breadcrumbs and Debug IDs | Observe |
+| Failed requests (status `0`, `4xx` or `5xx`) | Observe |
+| Clicks and taps with a [frustration signal](#frustration-signals) | Observe |
+| Custom events from `addAction` | Observe |
+| Other clicks and taps, field changes and form submits (names only, never values) | Analyze |
+| Successful fetch and XHR requests | Analyze |
+| Resource timings | Analyze |
+| Console entries at the application's configured levels | Analyze |
+| Long animation frames, or long tasks where the browser lacks them | Analyze |
+| DOM snapshots and mutations | [Replay](#replay-recording) |
+
+Observe data is sent for every session that falls within the application's Observe sample rate. Analyze data is sent once a [recording rule](/observability/rum/how-to/session-filters/) matches the session; until then it waits in a memory buffer of up to 60 seconds or 500 events, sent on a match and discarded otherwise. Under honored GPC, for a do-not-record user and on never-record URLs, nothing Analyze is sent.
+
+Repeats are folded so a busy page stays cheap. After the first of each request (method, URL and status) on a page view, repeats are sent as one row per 30 seconds with a count and percentiles. The first 150 resources of the initial view and the LCP resource are sent one by one, later ones aggregated per page view and origin every 30 seconds. Console entries are limited to 50 per level every 10 seconds, with identical consecutive lines folded, and long animation frames to 200 per page load. The SDK never records its own requests, and skips resource timings that match the application's [excluded resources](/observability/rum/how-to/remote-config/#excluded-resources).
 
 ## Capture and billing
 
-Accepted errors count toward **Observe sessions**, on both `/v2/batch` and the compatibility `/v1/errors` endpoint. An error alone does not make the session Analyze. Filtered browser noise does not claim usage. A recording rule triggered by that error can still activate Analyze or Replay and incur those session counts when data is accepted.
+Accepted errors count toward **Observe sessions**. An error alone does not make the session Analyze. Filtered browser noise does not claim usage. A recording rule triggered by that error can still activate Analyze or Replay and incur those session counts when data is accepted.
 
 | Tier | Capture and usage |
 |---|---|
@@ -140,9 +176,123 @@ Accepted errors count toward **Observe sessions**, on both `/v2/batch` and the c
 
 Free monthly allowances are 1,000 Observe sessions, 100 Analyze sessions and 100 Replay sessions. Paid packs increase those allowances; replay is priced per recorded session, not per stored MB.
 
-## Replay v2 transport
+## Error filtering
 
-The fixed endpoint is `POST /v2/segments`, with no segment-specific query string. Index fields move to the `x-sq-replay-index` header as a URL-encoded query-string value, for example:
+The SDK captures `error` and `unhandledrejection` events and `addError` calls. Every error passes these steps in order, and only an error that survives all of them is sent:
+
+1. **Browser noise.** After trimming the message and removing one leading `Uncaught `, the SDK drops ResizeObserver loop warnings, `Script error.` with no stack frames (a cross-origin error the browser hides), errors whose stack frames all come from browser extensions (`chrome-extension:`, `moz-extension:`, `safari-extension:`, `safari-web-extension:`, `webkit-masked-url:` or `ms-browser-extension:`; with no frames, the file name is checked), and a short list of known third-party noise such as `Java object is gone`.
+2. **Ignore lists.** `ignoreErrors` strings match as case-sensitive substrings, and a RegExp is tested. The application's `capture.errors.ignore` patterns are a case-sensitive substring or a `/regex/` (`/…/i` ignores case). Both are tried against the message and against `Type: message`.
+3. **Deny lists.** `denyUrls` drops errors whose top stack frame URL (or, without frames, the file name) matches. The application's `capture.errors.deny_urls` is applied in the browser only when the top frame is surely your own code (same origin, a relative or bundler path, and not `node_modules`); ingest applies it to the top in-app frame.
+4. **Suppressed issues.** Errors whose `error_key` belongs to an issue you suppressed are dropped.
+5. **Limits.** A page load sends at most 500 errors. Identical errors (same key, message and stack) within 5 seconds are sent once more as one event with a `repeat` count. Each error key may send 10 errors, then one more every 10 seconds.
+6. **`beforeSend(event, 'error')`.** Drop, replace or edit the error, as described under [public methods](#public-methods).
+
+```javascript
+SiteQwalityRUM.init({
+  applicationId: 'YOUR_APPLICATION_ID',
+  clientToken: 'YOUR_CLIENT_TOKEN',
+  ignoreErrors: ['Request aborted', /Loading chunk \d+ failed/],
+  denyUrls: [/\/vendor\/chat-widget\.js/],
+  beforeSend(event, kind) {
+    if (kind === 'error' && String(event.message).includes('third-party-widget')) return false;
+  },
+});
+```
+
+Ingest applies the same browser-noise rules and the application's ignore, deny and suppression lists again. A dropped error is never billed, never marks the session as errored, and never triggers an `error` recording rule or an error click. `getStatus().dropped` counts what each step dropped.
+
+Each sent error carries the page URL, its type, message and stack, up to three `cause` levels, the last 30 breadcrumbs (clicks, navigations, failed requests and console errors), the Debug IDs of bundles injected with the [source-map CLI](/observability/rum/how-to/source-maps/), and an `error_key` that groups the error across deploys and browsers. With **console errors as issues** on, `console.error` calls become errors too.
+
+## Click names
+
+Clicks, taps, field changes and form submits are recorded as `action` events. A click is attributed to the nearest link, button, `role="button"` or `role="link"` element, form control, `label`, `summary` or element with `data-sq-action-name` at or above the click target; otherwise to the target itself. A click on an icon inside a button is therefore named and grouped as the button. Each action has two names:
+
+| Field | Built from |
+|---|---|
+| `name` | `data-sq-action-name` on the element or an ancestor; else its `aria-label`; for a form field, its label, `name` or `id`; else the element's text. Whitespace is collapsed and the result cut to 64 characters. Field values are never recorded. |
+| `selector` | Walking up at most four levels: an `id`, else a `data-testid` or other `data-sq-*` attribute, else the tag and up to two classes, such as `form#checkout > button.primary`. Generated class names (`css-…`, `sc-…`, names with runs of digits) are skipped. |
+
+Both are scrubbed with the application's personal data patterns. The `name` can still contain what your users typed or see, such as names or message previews. Two ways to keep it out:
+
+- Set `data-sq-action-name` on the element to give it a fixed name: `<button data-sq-action-name="Send message">`. The value is trimmed, cut to 64 characters, and its square brackets become parentheses.
+- Turn on [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names). The SDK then sends the `data-sq-action-name` value or the selector as the name, and ingest stores the selector only.
+
+## Frustration signals
+
+A click carries at most one frustration signal, in this order of precedence: `error_click`, then `rage_click`, then `dead_click`. Clicks with a signal are Observe data, recorded for every sampled session; other clicks need Analyze.
+
+| Signal | When |
+|---|---|
+| `error_click` | An error is sent (after [filtering](#error-filtering)) within 1 second after the click. The latest pending click gets it. |
+| `rage_click` | The third click on the same element within 1 second. A burst continues while clicks keep coming within 1 second and gets one rage click in all, with the burst's size in `click_count`. |
+| `dead_click` | A click on a link with `href`, an enabled button, a `role="button"` or `role="link"` element, an `input` of type `button`, `submit` or `reset`, a `summary`, or an element with `onclick`, after which nothing reacts for 1 second: no DOM change, no history change, no request, no focus moved elsewhere, no form submit and no navigation away. Clicks with a modifier key, on `a[download]`, or on a link with a `target` other than `_self` never count. |
+
+A reaction to the press (a menu that opens on `pointerdown`) counts for its click. A verdict that arrives late because the page was blocked, by an `alert` or heavy work, counts as a reaction.
+
+To exempt an element from rage and dead clicks, add the `data-sq-no-frustration` attribute to it or an ancestor, or list a matching CSS selector in the application's [frustration ignore selectors](/observability/rum/how-to/remote-config/#ignoring-elements-for-frustration-signals). Error clicks still apply.
+
+A click event is sent when its 1 second window closes, or at once, with no dead click, when the tab is hidden or the page closes.
+
+## Page views and Web Vitals
+
+- A `view_start` is recorded at `init`, when the URL changes through `pushState`, `replaceState`, `popstate` or `hashchange`, on a back-forward cache restore, and when a new session starts on an open page. A change to an anchor on the same page is not a new view.
+- URLs are minimised before they are sent: fragments and query strings are removed (see `allowedQueryParams`), and so are credentials. With `hashRouting: true`, a `#/path` or `#!/path` fragment is kept like a path, unless it carries `=` or `&` (such as `#/access_token=...`).
+- Each view carries `loading_type`: `initial_load`, `route_change` or `bfcache_restore`, and a `navigation_type`. Its `route` comes from `routeName` or `setView`.
+- The first view of a session carries its referrer (`""` for a direct visit), UTM parameters and the type of ad click ID (`gclid`, `fbclid`, `msclkid` or `ttclid`).
+- A `view_end` is sent when the tab is hidden and every 5 minutes while it is visible, and a final one on the next view and when the page closes. It carries time spent, active time (each input counts the 5 seconds after it, while the tab is visible), scroll depth, the view's error, action and frustration counts, and its timings.
+- The initial view's load timing comes from Navigation Timing: `loading_time_ms` and `load_event_ms` (`loadEventEnd`) and `dom_content_loaded_ms`. A route change's `loading_time_ms` runs until 100 ms pass with no new request or DOM change, at most 10 seconds.
+- Web Vitals belong to the document's initial view: `lcp_ms`, `fcp_ms`, `cls`, `inp_ms` and `ttfb_ms`, with attribution: the LCP element, its resource and its load delay, load time and render delay; the element that shifted most; and the INP target, event type, input delay, processing, presentation and longest script. LCP is final at the first key press or click, or when the tab is hidden; CLS and INP are reported when the tab is hidden. A vital that arrives after the initial view ended goes out in one more final `view_end`.
+
+## Sessions
+
+| Behavior | Value |
+|---|---|
+| Storage | First-party cookie `_sq_s` (path `/`, `SameSite=Lax`, `Secure` on HTTPS), shared by every tab. Falls back to localStorage, then memory, when cookies fail. `persistence` changes this. |
+| Session ID | A UUIDv7. |
+| Window | `_sq_w` in sessionStorage identifies a tab. A duplicated tab gets a new window ID. |
+| Activity | User input (pointer down, key down, touch start or scroll; written at most every 5 seconds), the tab becoming visible and a new page view. Events the SDK sends on its own never count. |
+| Expiry | After 15 minutes without activity, or 4 hours in all, a new session starts. |
+| Rotation | Checked on the next activity or event. The new session starts with a fresh page view for the current URL (`route_change`); Analyze and replay start over and rules are evaluated again. |
+| Consent pending | The session lives in memory and nothing is stored. |
+| Cookieless or honored GPC | The session lives in sessionStorage, one per tab, with no anonymous ID. |
+| Anonymous visitor ID | `_sq_aid` in localStorage, kept 13 months, set only with consent granted and without GPC, cookieless mode or memory persistence. |
+
+Withdrawing consent removes every key the SDK stores except the opt-out (`_sq_optout`).
+
+## Rule evaluation
+
+[Recording rules](/observability/rum/how-to/session-filters/) arrive with the config and are evaluated in the browser, when the config is applied and synchronously on every input: a page view's URL, an `addAction` event, a sent error, a failed request, a frustration signal, a Web Vital, `setUser` with an `id`, and a global attribute or user trait. There is no polling. Inputs are kept for the session (up to 200), so a rule that arrives later still sees what already happened.
+
+- **Sampling** is per session and per rule, and deterministic: a hash of the session ID and rule ID, so every tab and page load of a session gets the same answer. The Observe sample rate works the same way.
+- **Conditions** latch: a rule matches once each of its conditions has held at some point in the session. The `device` (mobile or desktop, from the user agent), `release` (`version`) and `env` conditions are known at `init`.
+- **Gates** delay the decision, not the match. `min_duration_ms` counts from the session's start; `require_interaction` waits for a pointer down, touch or key press (scrolling does not count). A rule with an `error` condition skips both gates.
+- **The decision latches** for the session. Once Analyze or replay turns on, it stays on in every tab and across page loads, shared through the session record (`_sq_s`). `getStatus().sampled` shows it, with the `rule_id` that started replay, or else Analyze.
+
+## Batching and delivery
+
+The SDK sends one event stream, `POST {ingestBase}/v2/batch`. A batch holds the events of one session and page load, up to 500 events or about 900,000 characters, as `{v, sent_at, sdk, ctx, events}`.
+
+- A batch flushes every 10 seconds, at 200 queued events, and within 1 second of an error. When the tab is hidden, everything queued goes at once; at page close, what is left goes as a keepalive tail, uncompressed, within a 60 KB keepalive budget. Anything over that budget is dropped and counted.
+- Bodies of 1 KB or more are gzipped with `CompressionStream` and sent as `application/octet-stream`; smaller ones, and browsers without compression, send `application/json`. Every batch carries the `Authorization` header and omits cookies.
+- One request is in flight at a time. While the tab is hidden, sends are at least 5 seconds apart.
+- A batch that fails with a network error, `408`, `429` or `5xx` is kept and retried with jittered exponential backoff from 2 seconds to 5 minutes. A `Retry-After` header (honored up to a day) holds every send, at tab hide and page close too. A `401` or `403` stops sending for the rest of the page, replay included, and any other `4xx` drops the batch.
+- The queue holds up to 1,000 events, and 200 while consent is pending, dropping the oldest past that.
+- A hard request budget caps the SDK whatever the cause: 5,000 requests and 100 MB per session (10,000 and 200 MB per page load) for events, config and identity checks, and separately 2,500 requests and 250 MB per session (5,000 and 500 MB per page load) for replay. Past a ceiling the SDK stops sending (only replay, when it is replay's), says so once in the console and in `getStatus()` (reason `request_budget` or `replay_budget`), and resumes in a new session. A page-load ceiling holds until the next page load.
+
+## Replay recording
+
+The replay recorder ([rrweb](https://www.rrweb.io) 2.1.4) is a separate chunk. The npm package leaves it to your bundler to split out; the CDN bundle loads `recorder-<version>.min.js` from beside `sdk.min.js`, or from [`recorderUrl`](#init-options). It is downloaded only when a Replay rule has matched, could still match the session (it is sampled in, and its device, release and environment conditions hold) or `startReplay()` was called, and recording is permitted: consent granted, no honored GPC, no opt-out and no do-not-record user.
+
+- Before a match, the recorder buffers in memory, as described under [replay buffer and privacy](#replay-buffer-and-privacy). A match sends the buffer, then segments stream as they close.
+- Every tab records its own window, and each page load is its own stream, numbered from 0.
+- Recording pauses while the tab is hidden, after five minutes without input, and on never-record URLs, and resumes with a full snapshot. Recording never outlasts its session.
+- While streaming, a fresh full snapshot is taken about every 3 minutes, so seeking stays fast.
+- Privacy comes from the application's config, not from `init`. A config refresh that changes privacy or capture settings restarts recording from a fresh snapshot.
+- `getStatus().recording` is `off`, `buffering`, `recording`, `paused` or `stopped`, with a `reason` such as `not_sampled`, `consent`, `privacy_url`, `too_large` or `stopped_by_api`.
+
+### Replay transport
+
+The fixed endpoint is `POST /v2/segments`, with no segment-specific query string. Index fields go in the `x-sq-replay-index` header as a URL-encoded query-string value, for example:
 
 ```text
 Authorization: Bearer <clientToken>
@@ -151,50 +301,47 @@ x-sq-replay-index: s=<session-uuid>&w=<window-uuid>&p=<page-load-uuid>&q=0&ft=<f
 
 `s`, `w`, `p`, `q`, `ft`, `lt` and `n` identify the stream, sequence and event range. Optional `fs=1` marks a full snapshot, `fin=1` a best-effort final segment, and `r` the URL-encoded rule ID. Sequence numbers start at zero per session/page-load stream and continue across recorder restarts within that stream. Every tab records its own window.
 
-Send exactly one index header, at most 2,048 bytes. Do not combine it with URL query parameters. Intake retains the query-only form for older clients, but rejects ambiguous input.
+Send exactly one index header, at most 2,048 bytes. Do not combine it with URL query parameters. Intake also accepts the index as URL query parameters instead of the header, but rejects a request that sends both.
 
 The body is a JSON array of rrweb events. Gzip uses `Content-Type: application/octet-stream`; uncompressed fallback uses `application/json`. The intake detects gzip from the body. No client `If-None-Match` header is needed; deduplication uses a conditional write in storage.
 
 Segments normally close at 20 seconds or about 2.5 MB of serialized JSON, and on tab hide. The first full snapshot is sent promptly. A snapshot larger than 4 MB after stylesheet references stops recording for that page load (`too_large`). These are SDK segmentation thresholds, not intake limits: intake allows at most 2 MB on the wire and 16 MB inflated.
 
-Requests are sent in order, one at a time. Network errors, 408, ordinary 429 responses and 5xx retry with backoff; `Retry-After` holds sends, including unload. SDK 2.2.0 distinguishes two explicit response reasons: a 403 with `reason: "not_enabled"` stops replay for the page load while Observe and Analyze continue, without retrying through legacy replay, and a 429 with `reason: "session_cap"` stops replay for that session. Other 401 or 403 responses and an exhausted request budget stop delivery. Other 4xx responses drop a segment. A missing snapshot also drops dependent segments and requests a fresh snapshot. Identical retry bodies are deduplicated by intake.
+Requests are sent in order, one at a time. Network errors, 408, ordinary 429 responses and 5xx retry with backoff; `Retry-After` holds sends, including unload. SDK 2.2.0 distinguishes two explicit response reasons: a 403 with `reason: "not_enabled"` stops replay for the page load while Observe and Analyze continue, and a 429 with `reason: "session_cap"` stops replay for that session. Other 401 or 403 responses and an exhausted request budget stop delivery. Other 4xx responses drop a segment. A missing snapshot also drops dependent segments and requests a fresh snapshot. Identical retry bodies are deduplicated by intake.
 
 At page close, the SDK attempts a keepalive tail using already-compressed bytes or JSON within the shared 60 KB keepalive budget. Delivery and the final marker are best-effort. Inspect `getStatus().dropped`, including `replay_tail_dropped` and `replay_segments_dropped`, rather than assuming every closing event arrived.
 
-## Replay buffer and privacy
+### Replay buffer and privacy
 
 SDK 2.2.0 can download the recorder before a rule matches, but only when a sampled-in Replay rule could still match the session's device, release and environment, and recording is permitted. It keeps the current and previous full-snapshot intervals in memory, with snapshots about 60 seconds apart and a 5 MB buffer target. A match sends retained segments oldest first, then streams new recording.
 
-This can include roughly 60 to 120 seconds before a later error. It does **not** guarantee a minute of history: a fresh page, delayed config or consent, a pause, memory pressure or a large snapshot may leave less. Nothing from an unmatched replay buffer is uploaded or persisted. It is discarded on page close, stop, consent withdrawal, opt-out, GPC restrictions or a do-not-record decision. SDK 1.x and 2.0 do not have this pre-trigger replay buffer.
+This can include roughly 60 to 120 seconds before a later error. It does **not** guarantee a minute of history: a fresh page, delayed config or consent, a pause, memory pressure or a large snapshot may leave less. Nothing from an unmatched replay buffer is uploaded or persisted. It is discarded on page close, stop, consent withdrawal, opt-out, GPC restrictions or a do-not-record decision.
 
 | Privacy mode | Behavior in SDK 2.2.0 |
 |---|---|
 | Strict | Masks page text except configured unmask selectors, masks inputs and blocks media. Block selectors always win. |
 | Balanced | Masks inputs; page text is visible with configured PII patterns scrubbed. Default patterns cover emails, card-like numbers and long digit runs. |
 | Relaxed | Masks inputs; ordinary page text is visible and default text PII patterns are empty. |
-| Legacy Custom | Uses stored masking flags. Review them explicitly; legacy applications can have input masking disabled. |
+| Custom | Uses the stored `mask_inputs` and `mask_text` flags. Review them explicitly; an application created before privacy levels can have input masking disabled. |
 
-Password, email and telephone inputs remain masked; hidden inputs are excluded. Credit-card autocomplete fields cannot be exposed through legacy input-unmasking. URLs in page metadata, DOM attributes and CSS are minimized. Canvas recording is off by default. SDK 2.2.0 supports opt-in canvas capture outside Strict privacy, at up to 2 fps and a 20 MB serialized-frame budget per session; DOM replay continues after that budget is reached. A nonempty explicit `cookieDomain` disables canvas because its capture budget cannot be coordinated across subdomains. Iframe document content is not captured by this recorder. Stylesheet references can avoid resending acknowledged CSS; images and fonts still depend on their asset URLs.
+Password, email and telephone inputs remain masked; hidden inputs are excluded. When input masking is off, credit-card autocomplete fields are blocked. URLs in page metadata, DOM attributes and CSS are minimized. Canvas recording is off by default. SDK 2.2.0 supports opt-in canvas capture outside Strict privacy, at up to 2 fps and a 20 MB serialized-frame budget per session; DOM replay continues after that budget is reached. A nonempty explicit `cookieDomain` disables canvas because its capture budget cannot be coordinated across subdomains. Iframe document content is not captured by this recorder. Stylesheet references can avoid resending acknowledged CSS; images and fonts still depend on their asset URLs.
 
 Recording pauses while hidden, after five minutes without input, or on never-record URLs, and resumes with a full snapshot when permitted. Pointer, scroll and media sampling plus mutation throttling mean replay does not preserve every intermediate DOM state. Heavy mutation bursts can leave marked gaps and require a fresh snapshot.
 
-### Consent and browser signals
+## Consent and browser signals
 
 - `pending`: telemetry waits in a bounded memory queue of up to 200 events; no telemetry uploads or persistent session state. Replay recording does not start. The public config may still be fetched.
 - `granted`: the held telemetry can be flushed, session persistence follows the configured mode, and eligible replay recording can start.
 - `not-granted`: discard queued data, stop replay and clear session/config state. Previously uploaded data is not deleted by this method.
-- `optOut()`: stop sending and remember the preference in `_sq_optout`; `optIn()` permits collection again subject to consent and config.
+- `optOut()`: stop sending and remember the preference in `_sq_optout`; `optIn()` permits collection again subject to consent and config. An opt-out in one tab applies to the others at once.
 - Honored GPC: no Analyze, replay, anonymous visitor ID or supplied user identity; Observe can continue using a cookieless session in sessionStorage (or memory when storage is unavailable). This is not a promise of zero requests or zero technical identifiers.
 
-For dashboard deletion, do-not-record and retention controls, see [privacy requests](/observability/rum/how-to/privacy-requests/). Changing consent controls future collection; it does not erase data already uploaded.
+Consent set by `init` or `setTrackingConsent` is never overridden by the application's config. For dashboard deletion, do-not-record and retention controls, see [privacy requests](/observability/rum/how-to/privacy-requests/). Changing consent controls future collection; it does not erase data already uploaded.
 
-## Migration checklist
+## Verify an installation
 
-1. Install SDK 2.2.0 and confirm that your application is active in its public config.
-2. Update [CSP](/observability/rum/how-to/csp/) before switching bundles. Retain legacy hosts while old SDKs still run.
-3. Replace `apiBase` and SDK 1-only `beforeSend` fields. Update the CDN stub's method list.
-4. Choose consent explicitly and review the stored privacy config before testing a replay.
-5. Verify the config GET, event POST and replay preflight in browser Network tools. A successful config GET alone does not prove ingestion or playback.
-6. Check `getStatus()` and a real session in the dashboard, including an accepted replay and its playback, before expanding traffic.
-
-SDK 2 shares sessions across tabs by default through `_sq_s`; `_sq_w` identifies a window. Sessions expire after 15 minutes of inactivity or four hours total. The SDK adopts an existing SDK 1.1 session and rule decision on first load where available.
+1. Confirm that your application is active in its public config: `https://cdn.siteqwality.com/rum/config/v2/<applicationId>.json` returns `"status": "active"`.
+2. Update [CSP](/observability/rum/how-to/csp/) to allow the SDK's hosts.
+3. Choose consent explicitly and review the stored privacy config before testing a replay.
+4. Verify the config GET, event POST and replay preflight in browser Network tools. A successful config GET alone does not prove ingestion or playback.
+5. Check `getStatus()` and a real session in the dashboard, including an accepted replay and its playback, before expanding traffic.

@@ -13,6 +13,10 @@ import rehypeTableWrap from './src/plugins/rehype-table-wrap.mjs';
 export default defineConfig({
 	site: 'https://docs.siteqwality.com',
 	markdown: { rehypePlugins: [rehypeTableWrap] },
+	// Retired page; netlify.toml serves the same redirect as a 301.
+	redirects: {
+		'/sdk/reference': '/sdk/v2/',
+	},
 	integrations: [
 		starlight({
 			title: 'Site Qwality Docs',
@@ -399,8 +403,7 @@ export default defineConfig({
 					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'sdk/overview' },
-						{ label: 'SDK 2 installation and reference', slug: 'sdk/v2' },
-						{ label: 'SDK 1 reference', slug: 'sdk/reference' },
+						{ label: 'SDK reference', slug: 'sdk/v2' },
 					],
 				},
 				...openAPISidebarGroups,

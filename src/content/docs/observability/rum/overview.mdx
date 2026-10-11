@@ -1,7 +1,7 @@
 ---
 title: RUM (Real User Monitoring)
 description: Web vitals, errors, user actions, resource timing, collected from real browsers via the JS SDK, optionally with session replay.
-last_verified: 2026-10-04
+last_verified: 2026-10-10
 owner: jj
 ---
 
@@ -26,16 +26,16 @@ import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
 You install the `@siteqwality/rum` SDK in your front-end. It:
 
-1. Generates a session ID per user/visit.
-2. Subscribes to PerformanceObserver for web vitals.
-3. Listens for errors (`window.onerror`, `unhandledrejection`).
-4. Tracks click and view events.
-5. Periodically posts batched events to `https://rum.siteqwality.com`.
+1. Starts a session shared by the visitor's tabs.
+2. Records page views and Web Vitals with `PerformanceObserver`.
+3. Listens for errors (`error`, `unhandledrejection`).
+4. Tracks clicks, requests and other activity.
+5. Sends batched events to `https://in.siteqwality.com`.
 
-The SDK is **two layers**:
+The SDK has **two layers**:
 
-- **Always-on collection** of page views, Web Vitals and errors (with their stacks), sent on every session.
-- **Detail collection** (resource timings, click events with frustration signals, long tasks), activated only when a [recording rule](/observability/rum/how-to/session-filters/) matches the session. Keeps cost down by not capturing every detail for every user.
+- **Observe**, sent for every sampled session: page views, Web Vitals, errors (with their stacks), failed requests, frustration signals and custom events.
+- **Analyze**, activated only when a [recording rule](/observability/rum/how-to/session-filters/) matches the session: every click and form action, successful requests, resource timings, console entries and long animation frames. Keeps cost down by not capturing every detail for every user.
 
 [Session replay](/observability/replay/overview/) is the third tier: pixel playback, activated only by Replay recording rules. A new application starts with a rule that replays every errored session and an Auto sample within your replay quota. See its own page.
 
@@ -45,7 +45,7 @@ Each install of the SDK targets a **RUM application**, typically one per domain 
 
 - A unique `application_id` and a public `client_token`.
 - A `domain` for the dashboard's "Open in app" links.
-- Privacy settings (`mask_inputs`, `mask_text`).
+- Privacy settings: a [privacy level](/observability/rum/how-to/remote-config/#privacy-levels) and selectors.
 - Recording rules that activate detail and replay capture.
 - [Excluded resources](/observability/rum/how-to/remote-config/#excluded-resources): resource URLs it never records.
 
@@ -75,29 +75,9 @@ Calls made before `init()` are ignored with the npm package, so call it first.
 
 ### CDN
 
-For static sites, paste this into the page's `<head>`:
+For static sites, paste the [CDN snippet](/sdk/v2/#cdn-snippet) into the page's `<head>`. It loads `https://cdn.siteqwality.com/rum/v2/sdk.min.js` asynchronously, queues calls and captures errors until it arrives, then replays them. It is a classic script and defines a single global, `SiteQwalityRUM`. The replay recorder is a separate file, downloaded only for sessions a Replay recording rule has matched or could still match.
 
-```html
-<script>
-  (function(w,d,s,u){var r=w.SiteQwalityRUM=w.SiteQwalityRUM||{_q:[]};if(r._q&&!r._h){
-  ['init','setUser','setGlobalAttribute','removeGlobalAttribute','addError','addAction'].forEach(function(m){
-    r[m]=function(){r._q.push([m,arguments])}});
-  r._h=function(e){r._q.push(['_e',[e]])};w.addEventListener('error',r._h);
-  w.addEventListener('unhandledrejection',r._h);
-  var e=d.createElement(s);e.async=1;e.src=u;(d.head||d.documentElement).appendChild(e)}
-  })(window,document,'script','https://cdn.siteqwality.com/rum/v1/sdk.min.js');
-
-  SiteQwalityRUM.init({
-    applicationId: 'abc123',
-    clientToken: 'pub_def456',
-    // version: '1.4.2', // your release; enables source-mapped stack traces
-  });
-</script>
-```
-
-The snippet loads the SDK asynchronously, queues calls and captures errors until it arrives, then replays them. It is a classic script and defines a single global, `SiteQwalityRUM`. The replay recorder is a separate file loaded only when a Replay recording rule matches, so sessions that are not replayed never download it.
-
-`init()` is fire-and-forget: collection starts synchronously, and the Promise it returns (settled once remote config is applied or fails) never needs an `await`.
+`init()` is fire-and-forget: collection starts synchronously, and the Promise it returns (settled once remote config is applied or fails) never needs an `await`. If your site sets a Content Security Policy, see [CSP and intake endpoints](/observability/rum/how-to/csp/).
 
 ## Tracking custom data
 
@@ -105,35 +85,37 @@ The snippet loads the SDK asynchronously, queues calls and captures errors until
 // Identify a user (call after login); the session then shows it
 SiteQwalityRUM.setUser({ id: 'usr_abc', email: 'alice@example.com', name: 'Alice' });
 
-// Label every later error and detail event
+// Label every later batch
 SiteQwalityRUM.setGlobalAttribute('plan', 'pro');
 
 // Custom error
 SiteQwalityRUM.addError(new Error('Payment dialog refused'), { feature: 'checkout' });
 
-// Custom action
+// Custom event
 SiteQwalityRUM.addAction('checkout_step_2', { variant: 'A' });
 ```
 
 ## What gets captured
 
-| Always-on | Detail (filter-activated) | Replay (replay-enabled filter) |
+| Observe (every sampled session) | Analyze (rule-activated) | Replay (Replay rule) |
 |---|---|---|
-| Page views, page load timing | Resource timings (every fetch/XHR) | Full DOM snapshots + mutations |
-| Web vitals (LCP, FCP, CLS, TTFB, INP) | Click events with target and frustration signal | Mouse/keyboard input events |
-| Errors with message and stack (known browser noise filtered) | Long tasks (>50ms blocking) | Network requests captured visually |
-| Aggregate action count | | (privacy: optional input/text masking) |
-| Session start/end | | |
+| Page views, load timing, time spent and scroll depth | Clicks, taps, field changes and form submits | Full DOM snapshots and mutations |
+| Web Vitals (LCP, FCP, CLS, TTFB, INP) with attribution | Successful fetch and XHR requests | Mouse, scroll and input events |
+| Errors with message and stack (known browser noise filtered) | Resource timings | Privacy: masking and blocking from the application's privacy level |
+| Failed requests and frustration signals | Console entries | |
+| Custom events from `addAction` | Long animation frames | |
+
+See [what is collected when](/sdk/v2/#what-is-collected-when) for the details.
 
 ## Privacy
 
-The SDK respects three privacy toggles set on the RUM application:
+The SDK follows the application's privacy settings, delivered with its config:
 
-- `mask_inputs`: replace input values with `***` before sending.
-- `mask_text`: replace user-visible text with `***` (for replay only).
+- A [privacy level](/observability/rum/how-to/remote-config/#privacy-levels), `strict`, `balanced` or `relaxed`, sets how replays mask inputs, text and media, and which personal data patterns are scrubbed.
 - `hide_action_text`: drop element text from click names. See [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names).
+- Consent, Global Privacy Control, cookieless sessions and user email capture. See [consent and browser signals](/sdk/v2/#consent-and-browser-signals).
 
-Set these conservatively if you handle PII or financial data, and check what is stored on each application rather than assuming a default: an application created earlier may store `mask_inputs: false`. See [replay privacy](/observability/replay/overview/#privacy) and the [privacy settings reference](/observability/replay/reference/#privacy-settings).
+Set these conservatively if you handle PII or financial data, and check what is stored on each application rather than assuming a default: an application created before privacy levels may store `mask_inputs: false`. See [replay privacy](/observability/replay/overview/#privacy) and the [privacy settings reference](/observability/replay/reference/#privacy-settings).
 
 ## Session dimensions
 

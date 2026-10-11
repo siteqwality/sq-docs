@@ -1,20 +1,20 @@
 ---
 title: Configure recording rules
 description: Choose which sessions record full detail and which record a replay, with conditions, sample rates and an Auto rate that follows your replay quota.
-last_verified: 2026-10-04
+last_verified: 2026-10-10
 owner: jj
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-Every session records the basics: page views, Web Vitals and errors. Recording rules decide which sessions record more:
+Every sampled session records the basics: page views, Web Vitals, errors, failed requests and frustration signals. Recording rules decide which sessions record more:
 
-- **Analyze**: full activity, meaning clicks with frustration signals, resource timings and long tasks.
+- **Analyze**: full activity, meaning every click and form action, successful requests, resource timings, console entries and long animation frames.
 - **Replay**: a [session replay](/observability/replay/overview/). A Replay rule also turns on Analyze.
 
 This is the main cost control: capture every user lightly, and only the interesting sessions in full.
 
-Manage rules through the API under `/rum/{app_id}/rules`. The dashboard's **RUM → Recording rules** page shows and edits the rules [SDK 1.x can express](#sdk-versions); sampled and Auto rules, and the newer conditions, are API-only for now.
+Manage rules in the dashboard under **RUM → Recording rules**, or through the API under `/rum/{app_id}/rules`. The SDK evaluates them in the browser; see [rule evaluation](/sdk/v2/#rule-evaluation).
 
 ## The rules a new application starts with
 
@@ -26,14 +26,12 @@ Manage rules through the API under `/rum/{app_id}/rules`. The dashboard's **RUM 
 
 So replay works from the first day: every errored session is replayed, plus an [Auto](#auto-sampling) sample that stays within your replay quota. Edit or delete these like any other rule.
 
-Applications created before recording rules v2 kept their session filters, copied into rules as described in [rules copied from session filters](#rules-copied-from-session-filters).
-
 ## How rules decide
 
 - A rule **matches** when all its conditions hold. A rule with no conditions matches every session.
 - Rules combine with **any**: one matching Replay rule records a replay, one matching rule of either kind records Analyze.
 - **Sampling** is per session and per rule, and deterministic: every tab and page load of a session gets the same answer. A rule at 10% matches in about one session in ten.
-- **Gates** delay upload, not the match. A sampled-in session uploads its replay only once it is `min_duration_ms` old and, with `require_interaction`, after the user clicked, typed or scrolled. Bounces and bots then cost nothing. A rule with an `error` condition ignores both gates.
+- **Gates** delay upload, not the match. A sampled-in session uploads its replay only once it is `min_duration_ms` old and, with `require_interaction`, after the user clicked, tapped or pressed a key. Scrolling does not count. Bounces and bots then cost nothing. A rule with an `error` condition ignores both gates.
 
 ## Rule fields
 
@@ -46,10 +44,10 @@ Applications created before recording rules v2 kept their session filters, copie
 | `auto_sample` | bool | `false` | Replay rules only: the rate follows your replay quota. See [Auto sampling](#auto-sampling). |
 | `conditions` | array | `[]` | All must hold. See [conditions](#conditions). |
 | `min_duration_ms` | int | `3000` for Replay, `0` for Analyze | 0 to 600,000. |
-| `require_interaction` | bool | `true` for Replay, `false` for Analyze | Wait for a click, keypress or scroll. |
+| `require_interaction` | bool | `true` for Replay, `false` for Analyze | Wait for a click, tap or key press. |
 | `position` | int | after the last rule | Display order. Every enabled rule is evaluated whatever its position. |
 
-Responses add `id`, `application_id`, `effective_sample_rate` (the rate in force when Auto or quota protection set one), `effective_rate_at`, `applies_to_sdk_v1` (see [SDK versions](#sdk-versions)), `created_by_user_id`, `created_at` and `updated_at`.
+Responses add `id`, `application_id`, `effective_sample_rate` (the rate in force when Auto or quota protection set one), `effective_rate_at`, `created_by_user_id`, `created_at` and `updated_at`.
 
 An application holds at most 50 rules, and a rule at most 20 conditions.
 
@@ -84,20 +82,6 @@ An Auto rule's rate is recomputed every hour from your replay quota:
 When errored sessions alone would use more than the budget, the error rules are slowed too, so errored sessions are spread over the period instead of using up the quota in the first days. Errored sessions always win over sampled ones. A new Auto rule records at 0.01% until its first hourly run.
 
 The rate in force is the rule's `effective_sample_rate`. A change of less than 10% is not published.
-
-## SDK versions
-
-Sample rates, Auto, the gates and most condition kinds are applied in the browser by SDK 2.0. SDK 1.x receives only the rules it can express, so each rule's `applies_to_sdk_v1` says whether SDK 1.x sessions follow it:
-
-| Rule | What SDK 1.x does |
-|---|---|
-| Full rate, no conditions | Records every session, after one action when `require_interaction` is on |
-| Full rate, a single `error` condition without filters | Records sessions with an error |
-| Full rate, a single `identified` condition | Records sessions with a user, after one action when `require_interaction` is on |
-| Full rate, a single `vital` on LCP or CLS | Records sessions over the threshold |
-| Anything else: sampled, Auto, other or several conditions | Not applied |
-
-SDK 1.x ignores `min_duration_ms`.
 
 ## Estimate a rule before saving
 
@@ -177,27 +161,9 @@ Changing a rule's capture, Auto or conditions clears its effective rate until th
 
 ## When changes apply
 
-Every change publishes the application's SDK configuration before the request returns. If it cannot be published, the request returns `503` and nothing is changed. SDK 2.0 picks a change up on new page loads within 6 minutes. SDK 1.x picks it up on its 5 minute refresh; budget about ten minutes, see [how long changes take](/observability/rum/how-to/remote-config/#how-long-changes-take-to-land).
+Every change publishes the application's SDK configuration before the request returns. If it cannot be published, the request returns `503` and nothing is changed. The SDK picks a change up on new page loads within 6 minutes, and in open tabs when they become visible with a copy older than 5 minutes; see [how long changes take](/observability/rum/how-to/remote-config/#how-long-changes-take-to-land).
 
 Rule changes are recorded in the [audit log](/enterprise/audit-log/) with the rule id and the new configuration revision.
-
-## Rules copied from session filters
-
-Before recording rules v2, rules were session filters with a `filter_type`. Each application's filters were copied on its first change after the upgrade, or by the one-time migration:
-
-| Session filter | Becomes |
-|---|---|
-| `error` | One rule with an `error` condition |
-| `slow_performance` | One `vital` rule per threshold, so a filter with both LCP and CLS becomes two rules, the second named with " (CLS)" |
-| `custom` with `has_user: true` | An `identified` condition |
-| `custom` with `min_actions` | `require_interaction`: one action instead of the old count |
-| `capture_replay: true` | `capture: replay` |
-
-A filter that never matched, such as a `custom` filter with a key SDK 1.1 does not evaluate, was copied disabled.
-
-<Aside type="caution" title="The /filters routes are deprecated">
-`/rum/{app_id}/filters` still works, as a view over the rules in the old session-filter shape. It shows only the rules [SDK 1.x can express](#sdk-versions); other rules are hidden from it and cannot be changed through it. A `slow_performance` filter with both thresholds is stored as two rules, and `min_actions` is stored as one required interaction and read back as `min_actions: 1`. Move to `/rules`.
-</Aside>
 
 ## See also
 

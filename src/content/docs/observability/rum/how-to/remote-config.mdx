@@ -1,61 +1,42 @@
 ---
 title: Change SDK behaviour without redeploying
 description: How the browser SDK fetches its configuration, what you can change remotely, and how long changes take to reach live sessions.
-last_verified: 2026-10-04
+last_verified: 2026-10-10
 owner: jj
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-The RUM SDK does not carry its capture rules in your bundle. It fetches them from Site Qwality at startup and refreshes them periodically, so you can change what gets captured without shipping a new build.
+The RUM SDK does not carry its capture rules in your bundle. It fetches them from Site Qwality's CDN on every page load, and again when a tab comes back after 5 minutes, so you can change what gets captured without shipping a new build.
 
 ## What is served
 
-SDK 1.x fetches its configuration from the ingest host:
-
-```
-GET https://rum.siteqwality.com/v1/config
-Authorization: Bearer <client_token>
-```
-
-The same public client token the SDK already holds authenticates the request, and the application is identified from that token rather than from a parameter.
-
-```json
-{
-  "data": {
-    "application_id": "<uuid>",
-    "filters": [
-      {
-        "id": "<uuid>",
-        "name": "Errored sessions",
-        "filter_type": "error",
-        "conditions": {},
-        "capture_replay": true,
-        "enabled": true,
-        "priority": 0,
-        "created_at": "2026-08-01T10:00:00Z"
-      }
-    ],
-    "settings": {
-      "privacy": { "level": "balanced", "mask_inputs": true, "mask_text": false, "hide_action_text": false,
-                   "pii_patterns": ["email", "card", "digits9"], "honor_gpc": true },
-      "retention": { "observe_days": null, "analyze_days": null },
-      "resource_exclusions": ["/api/heartbeat", "https://analytics.example.com"],
-      "frustration_ignore_selectors": [".carousel-next"]
-    }
-  }
-}
-```
-
-`filters` holds the enabled [recording rules](/observability/rum/how-to/session-filters/) that SDK 1.x can express, in its older session-filter shape. Rules it cannot express, such as sampled or Auto rules, are left out; see [SDK versions](/observability/rum/how-to/session-filters/#sdk-versions). `settings` is the application's stored settings.
-
-SDK 2.0 reads a static file from the CDN instead, with no client token and no preflight:
+The SDK reads a static file from the CDN, with no client token, no cookies and no preflight:
 
 ```
 GET https://cdn.siteqwality.com/rum/config/v2/<application_id>.json
 ```
 
-It carries a `revision` that increases on every change, the enabled rules with the rate in force, and the privacy and capture settings with the [privacy level](#privacy-levels) already applied. A deleted application's file becomes `{"v":2,"status":"paused"}`, and SDK 2.0 then sends nothing. The schema is `SdkConfigV2` in the [API reference](/api-reference/).
+```json
+{
+  "v": 2,
+  "application_id": "<uuid>",
+  "revision": 42,
+  "status": "active",
+  "observe": { "sample_rate": 1 },
+  "rules": [
+    { "id": "<uuid>", "capture": "replay", "sample_rate": 1, "conditions": [{ "kind": "error" }],
+      "min_duration_ms": 0, "require_interaction": false }
+  ],
+  "privacy": { "level": "balanced", "mask_inputs": true, "mask_text": false, "hide_action_text": false,
+               "pii_patterns": ["email", "card", "digits9"], "honor_gpc": true },
+  "capture": { "resource_exclusions": ["/api/heartbeat", "https://analytics.example.com"],
+               "frustration_ignore_selectors": [".carousel-next"] },
+  "limits": { "idle_pause_ms": 300000, "session_max_ms": 14400000, "dnr": false }
+}
+```
+
+The example leaves out some keys. The file carries a `revision` that increases on every change, the Observe sample rate, the enabled [recording rules](/observability/rum/how-to/session-filters/) with the rate in force, and the privacy and capture settings with the [privacy level](#privacy-levels) already applied. A deleted application's file becomes `{"v":2,"status":"paused"}`, and the SDK then sends nothing. The schema is `SdkConfigV2` in the [API reference](/api-reference/).
 
 ## What you can change remotely
 
@@ -66,13 +47,13 @@ It carries a `revision` that increases on every change, the enabled rules with t
 | Edit [excluded resources](#excluded-resources) | Which resource timings are not recorded |
 | Edit [frustration ignore selectors](#ignoring-elements-for-frustration-signals) | Which elements never get rage or dead clicks |
 | Edit [allowed origins](#allowed-origins) | Which pages may send data |
-| Edit [network capture](#network-capture) | Which request headers and bodies SDK 2.0 records, and which requests carry `traceparent` |
+| Edit [network capture](#network-capture) | Which request headers and bodies the SDK records, and which requests carry `traceparent` |
 
 Flush intervals, batch sizes and session timeouts are fixed in the SDK. Endpoint hosts can only be set locally in `init()`. To stop detail and replay for an application, disable its rules; to stop everything, remove the `init()` call.
 
 ## Where you set it
 
-In the dashboard, **RUM → Settings** holds the masking toggles, click names, excluded resources and frustration selectors, and **RUM → Recording rules** the rules SDK 1.x can express. Everything else is set through the API:
+In the dashboard, **RUM → Settings** holds the masking toggles, click names, excluded resources and frustration selectors, and **RUM → Recording rules** the recording rules. Everything else is set through the API:
 
 - `PATCH /rum/{app_id}` with `settings` holding only the keys you change. Nested objects merge key by key, arrays and single values replace, and `null` clears a nullable key such as `privacy.level`. An unknown key returns `400`, so a typo cannot pass as a save. The same request takes `allowed_origins` and `replay_monthly_target`.
 - `PUT /rum/{app_id}` with `settings` merges the same way: keys you leave out keep their stored value. Unlike PATCH, it ignores unknown keys.
@@ -87,22 +68,22 @@ A new application starts on the Balanced [privacy level](#privacy-levels), honou
 <Aside type="danger" title="An existing application may not carry those defaults">
 Applications created before the privacy levels have no level (shown as Custom) and keep the masking flags stored at creation, and nothing rewrites them. One created earlier can have `mask_inputs` stored as `false`, in which case its recordings capture input values.
 
-The configuration is the authority: `GET {ingestBase}/v1/config` returns exactly what SDK 1.x will obey for your application, and **RUM → Settings → Privacy** shows the same stored values. Check them per application.
+The configuration is the authority: the published file above holds exactly what the SDK will obey for your application, and `GET /rum/{app_id}` and **RUM → Settings → Privacy** show the stored values behind it. Check them per application.
 </Aside>
 
 ## How long changes take to land
 
-<Aside type="note" title="Budget about ten minutes, and understand the latches">
-For SDK 1.x, two delays stack. The SDK refreshes its configuration on a **5 minute** cycle, and the authorisation decision for the config request is cached at the edge for up to a further **5 minutes**. SDK 2.0 caches its file for up to 5 minutes in the browser, behind a CDN copy at most 1 minute old, so a change reaches new page loads within **6 minutes**.
+<Aside type="note" title="Budget about six minutes, and understand the latches">
+The file is served with `Cache-Control: public, max-age=300, s-maxage=60`: the CDN keeps a copy at most 1 minute and the browser at most 5, so a change reaches new page loads within **6 minutes**. An open tab fetches the config again when it becomes visible with a copy older than 5 minutes; a tab that stays visible keeps the config it has until its next page load.
 
-More importantly, **activation is one-way within a session**. Once detail capture or replay has turned on for a session, it stays on for the rest of that session, across page loads in the same tab; a later config refresh cannot turn it back off. The one exception is replay on a new page load: it resumes only if an enabled rule still has `capture_replay: true`. Replay masking is applied when recording starts, so changing it does not re-apply to a recorder that is already running.
+More importantly, **activation is one-way within a session**. Once Analyze or replay has turned on for a session, it stays on for the rest of that session, in every tab and across page loads; a later config cannot turn it back off. Privacy and capture changes do reach a running recorder: when a tab picks up the new config, recording restarts from a fresh snapshot under the new settings, and [compaction](/observability/replay/reference/#compaction) applies the current privacy settings again on the server.
 
-So a tightening change ("stop capturing this") applies to *new* sessions, not to sessions already in flight. Plan privacy changes accordingly. A loosening change (a new rule) is evaluated on the next refresh and can activate a session in progress.
+So a tightening rule change ("stop capturing this") applies to *new* sessions, not to sessions already in flight. A loosening change (a new rule) is evaluated when a tab picks up the new config and can activate a session in progress.
 </Aside>
 
 ## Rule conditions
 
-Conditions, sample rates and how SDK 1.x reads rules are on [Configure recording rules](/observability/rum/how-to/session-filters/#conditions).
+Conditions, sample rates and gates are on [Configure recording rules](/observability/rum/how-to/session-filters/#conditions).
 
 ## Privacy levels
 
@@ -115,11 +96,11 @@ Conditions, sample rates and how SDK 1.x reads rules are on [Configure recording
 | Click names | Selector only | Text | Text | `hide_action_text` |
 | Emails, card numbers, runs of 9+ digits | Scrubbed | Scrubbed | Kept | Kept |
 | Images and video | Blocked | Recorded | Recorded | Recorded |
-| Console levels (SDK 2.0) | error | error, warn | as configured | error, warn |
+| Console levels | error | error, warn | as configured | error, warn |
 
-A level overrides the flags it governs, and saving a level writes them, so SDK 1.x, which reads only the masking flags, follows the level too. A flag can still add privacy on top of a level: `hide_action_text` on a Balanced application hides click text. `pii_patterns` is written from the level. Ingest scrubs those patterns from free text and hides click text for every SDK version.
+A level overrides the flags it governs, and saving a level writes them. A flag can still add privacy on top of a level: `hide_action_text` on a Balanced application hides click text. `pii_patterns` is written from the level. Ingest scrubs those patterns from free text and applies `hide_action_text` as well.
 
-SDK 2.0 also reads `mask_selectors`, `unmask_selectors` (Strict only), `block_selectors`, `ignore_input_selectors`, `never_record_urls`, `require_consent`, `honor_gpc`, `cookieless` and `capture_user_email`. Selector lists hold up to 50 CSS selectors each, which must be valid CSS: pseudo-elements, namespaces and unknown pseudo-classes return `400`, as does `*` alone in a mask or block list and a selector ending in `*` in the unmask list.
+The SDK also reads `mask_selectors`, `unmask_selectors` (Strict only), `block_selectors`, `ignore_input_selectors`, `never_record_urls`, `require_consent`, `honor_gpc`, `cookieless` and `capture_user_email`. Selector lists hold up to 50 CSS selectors each, which must be valid CSS: pseudo-elements, namespaces and unknown pseudo-classes return `400`, as does `*` alone in a mask or block list and a selector ending in `*` in the unmask list.
 
 ## Excluded resources
 
@@ -142,11 +123,11 @@ Each application takes up to **50** rules of up to 512 characters each. A rule m
 
 Wildcards are not supported, so list each host separately.
 
-Ingest drops matching resource events within a minute of saving, from every SDK version, before they are stored. From SDK **1.0.5** the browser also skips them, so they are never sent, and it picks up changes on its 5 minute config refresh without a page reload.
+The SDK skips matching resource timings in the browser, so they are never sent, and picks up changes with its config. Fetch and XHR requests are network events: ingest drops a successful request to a matching URL, and matching resource events, within a minute of saving, before they are stored. A failed request to a matching URL is still kept.
 
 ## Network capture
 
-`settings.capture.network` controls what SDK 2.0 records for each request. Method, status, timing and sizes are always recorded.
+`settings.capture.network` controls what the SDK records for each request. Method, status, timing and sizes are always recorded.
 
 | Key | Default | Description |
 |---|---|---|
@@ -176,25 +157,24 @@ When the list is not empty, ingest refuses requests from other origins with `403
 
 ## Hiding element text in click names
 
-Auto-captured clicks are named from the clicked element, including up to 30 characters of its text, or else its full `aria-label`, such as `button.btn.primary[Send message]`. On pages that render what users wrote, that text can be personal data.
+Auto-captured clicks are recorded with a `name`, taken from the clicked element's `data-sq-action-name`, `aria-label` or text (up to 64 characters), and a `selector` such as `button.btn.primary`. On pages that render what users wrote, the name can be personal data.
 
-Turn on **Hide element text in click names** under **RUM → Settings → Click Names** (or set `settings.privacy.hide_action_text` to `true`) and clicks are stored without the bracketed text:
+Turn on **Hide element text in click names** under **RUM → Settings → Click Names** (or set `settings.privacy.hide_action_text` to `true`) and clicks are stored with their selector only:
 
 | Sent | Stored |
 |---|---|
-| `button.btn.primary[Send message]` | `button.btn.primary` |
-| `a.nav[Home]` | `a.nav` |
-| `#save` | `#save` |
+| name `Send message`, selector `button.btn.primary` | selector `button.btn.primary` |
+| name `Home`, selector `nav > a.nav` | selector `nav > a.nav` |
 
-Ingest strips the text within a minute of saving, from every SDK version, before it is stored. From SDK **1.0.6** the browser also leaves it out, picking up the change on its 5 minute config refresh. Clicks already stored keep their names.
+Ingest stops storing names within a minute of saving, whatever the browser sends. Once a tab picks up the new config, the SDK also stops sending element text, and sends the `data-sq-action-name` value or the selector as the name instead. Clicks already stored keep their names. Strict turns this on.
 
-To give an element a stable, readable name instead, add `data-sq-action-name`. It applies to clicks on the element and anything inside it, whether or not the setting is on:
+To give an element a stable, readable name, add `data-sq-action-name`. It applies to clicks on the element and anything inside it:
 
 ```html
 <button class="btn primary" data-sq-action-name="Send message">Send</button>
 ```
 
-`data-sq-action-name` needs SDK 1.0.6. The value is trimmed, cut to 100 characters, and its square brackets become parentheses, so the setting never strips it. Keep personal data out of it.
+The value is trimmed, cut to 64 characters, and its square brackets become parentheses. Keep personal data out of it. With hiding on, no name is stored, so the selector identifies the click: it uses the element's `id`, or else a `data-testid` or `data-sq-*` attribute, when the element has one.
 
 Names passed to `addAction()` are never changed by this setting.
 
@@ -206,12 +186,12 @@ Some controls draw rapid clicks by design (a carousel arrow, a stepper) or legit
 "frustration_ignore_selectors": [".carousel-next", "[data-role=stepper] button"]
 ```
 
-A click on an element matching any selector, or inside one, gets no rage or dead click. A click followed by an error is still an error click. Up to **50** selectors of 1 to 256 printable characters each, which must be valid CSS: pseudo-elements, namespaces and unknown pseudo-classes return a `400`. A list saved earlier is not re-checked until you change it. The SDK picks up changes on its 5 minute config refresh.
+A click on an element matching any selector, or inside one, gets no rage or dead click. A click followed by an error is still an error click. Up to **50** selectors of 1 to 256 printable characters each, which must be valid CSS: pseudo-elements, namespaces and unknown pseudo-classes return a `400`. A list saved earlier is not re-checked until you change it. The SDK picks up changes with its config; see [how long changes take](#how-long-changes-take-to-land).
 
-To exclude an element in your markup instead, add the `data-sq-no-frustration` attribute to it or an ancestor. See [frustration signals](/sdk/reference/#frustration-signals) for how each signal is defined.
+To exclude an element in your markup instead, add the `data-sq-no-frustration` attribute to it or an ancestor. See [frustration signals](/sdk/v2/#frustration-signals) for how each signal is defined.
 
 ## See also
 
 <LinkCard title="Recording rules" description="Designing the rules this config delivers." href="/observability/rum/how-to/session-filters/" />
-<LinkCard title="SDK reference" description="Init options and public methods." href="/sdk/reference/" />
-<LinkCard title="Session replay" description="What capture_replay turns on." href="/observability/replay/overview/" />
+<LinkCard title="SDK reference" description="Init options and public methods." href="/sdk/v2/" />
+<LinkCard title="Session replay" description="What a Replay rule turns on." href="/observability/replay/overview/" />

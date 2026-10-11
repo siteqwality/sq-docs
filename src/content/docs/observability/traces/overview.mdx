@@ -82,7 +82,7 @@ The dashboard renders this as an interactive graph.
 
 - A log entry can carry a `trace_id` (top level or in `metadata`) and a `span_id` (in `metadata`). The trace view then lists that log, and a log whose `metadata` holds the `trace_id` shows a **View trace** link. See [correlate traces with logs](/observability/traces/how-to/correlate-logs/).
 - `GET /traces/{trace_id}/logs` returns all logs tagged with the trace ID.
-- RUM SDK 2 adds a `traceparent` header to fetch/XHR requests whose URLs match the application's [`trace_urls`](/observability/rum/how-to/remote-config/) setting, allowing browser → backend trace stitching.
+- The RUM SDK adds a `traceparent` header to fetch/XHR requests whose URLs match the application's [`trace_urls`](/observability/rum/how-to/remote-config/) setting, allowing browser → backend trace stitching.
 
 <Aside type="tip">
 For the most useful traces, instrument **at service boundaries** (incoming and outgoing HTTP, database calls, message queue ops). Don't instrument every internal function. The noise drowns the signal.

@@ -40,7 +40,7 @@ Counts describe stored rows matched for erasure and acknowledged object removals
 
 ## What is removed and retained
 
-Erasure resolves sessions from retained RUM data and the ingest identity registry. It removes those sessions' measures, events, replay indexes, compaction queue rows and session summaries. It removes raw recordings, compacted blocks and legacy replay objects. Session comments, usage deduplication records and stored identity links are removed too.
+Erasure resolves sessions from retained RUM data and the ingest identity registry. It removes those sessions' measures, events, replay indexes, compaction queue rows and session summaries. It removes raw recordings and compacted blocks. Session comments, usage deduplication records and stored identity links are removed too.
 
 Affected error and network aggregate buckets are rebuilt from surviving events. Error descriptions derived from erased events are cleared while issue workflow state remains. Application and account boundaries apply to every query and object key.
 
@@ -52,7 +52,7 @@ Permanent session tombstones prevent another upload or compaction of an erased s
 
 The SDK config sets `limits.dnr` after the DNR update is published. Intake also checks stored DNR state before writing, including replay requests whose session was previously linked to an identity. If that check is unavailable, intake returns a retryable failure instead of accepting recording data.
 
-For an identity check, SDK clients send the application-scoped SHA-256 hash. The intake supports `POST /v2/identity` with `{"h":"<64 hex characters>"}` and the compatibility `GET /v2/identity?h=<hash>`. Published SDK 2.1 uses GET, so proxies must retain it. Keep the bearer client token in `Authorization`; POST also requires `Content-Type: application/json`. The response is `{"record":true}` or `{"record":false}` with `Cache-Control: private, no-store`. Keep GET query strings out of proxy access logs; a hash is still an identifier. An identity check controls future recording; it does not report deletion progress.
+For an identity check, SDK clients send the application-scoped SHA-256 hash. The intake supports `POST /v2/identity` with `{"h":"<64 hex characters>"}` and the compatibility `GET /v2/identity?h=<hash>`. Published SDK 2.1 and 2.2 use GET, so proxies must retain it. Keep the bearer client token in `Authorization`; POST also requires `Content-Type: application/json`. The response is `{"record":true}` or `{"record":false}` with `Cache-Control: private, no-store`. Keep GET query strings out of proxy access logs; a hash is still an identifier. An identity check controls future recording; it does not report deletion progress.
 
 Use the existing [CSP and proxy guide](/observability/rum/how-to/csp/) for SDK host allowlists, config fetches and replay preflights. A first-party proxy must preserve authorization, origin, request bodies, refusals and retry headers. A proxy does not replace consent, masking or allowed-origin checks.
 
@@ -76,4 +76,4 @@ The same settings are available through this admin-only API patch:
 
 Send it to `PATCH /rum/{application_id}`. Observe and Analyze ceilings are positive day counts. Replay accepts 7, 14 or 30 days. Each value is capped by the account entitlement; it cannot purchase a longer window. `null` removes a customer ceiling and cannot restore data already erased.
 
-New writes use the current ceiling. Existing data is processed asynchronously by a durable retention job. Replay objects are removed or retagged before their indexes are shortened, and legacy objects receive an explicit cleanup pass. Shared assets keep their shared lifecycle. Shorter retention does not change subscription prices or recorded-session billing.
+New writes use the current ceiling. Existing data is processed asynchronously by a durable retention job. Replay objects are removed or retagged before their indexes are shortened. Shared assets keep their shared lifecycle. Shorter retention does not change subscription prices or recorded-session billing.
