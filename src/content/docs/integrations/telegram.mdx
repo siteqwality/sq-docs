@@ -1,13 +1,13 @@
 ---
 title: Telegram integration
-description: Connect a Telegram chat (DM or group) via the SiteQwality bot using a setup-code flow.
+description: Connect a Telegram chat (DM or group) via the Site Qwality bot using a setup-code flow.
 last_verified: 2026-05-03
 owner: jj
 ---
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-The Telegram integration uses the SiteQwality bot. Setup is a two-step flow because Telegram doesn't expose a webhook URL; instead, you message the bot a one-time code, and SiteQwality records the chat ID.
+The Telegram integration uses the Site Qwality bot. Setup is a two-step flow because Telegram doesn't expose a webhook URL; instead, you message the bot a one-time code, and Site Qwality records the chat ID.
 
 ## Set up
 
@@ -17,7 +17,7 @@ The Telegram integration uses the SiteQwality bot. Setup is a two-step flow beca
 
 2. The dashboard generates a **setup code** (a long alphanumeric string).
 
-3. Open Telegram, find the SiteQwality bot, send the message:
+3. Open Telegram, find the Site Qwality bot, send the message:
 
    ```
    /start <setup-code>
@@ -25,7 +25,7 @@ The Telegram integration uses the SiteQwality bot. Setup is a two-step flow beca
 
 4. The bot replies confirming the chat is registered.
 
-5. Back in SiteQwality, click **Finish**. The integration is created with the chat's ID.
+5. Back in Site Qwality, click **Finish**. The integration is created with the chat's ID.
 
 </Steps>
 
@@ -73,7 +73,7 @@ curl -X POST https://api.siteqwality.com/notification \
 
 ## Format
 
-Messages are HTML-formatted plain text with the monitor name, status, and a link to the incident in SiteQwality.
+Messages are HTML-formatted plain text with the monitor name, status, and a link to the incident in Site Qwality.
 
 ## Notes
 

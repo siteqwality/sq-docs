@@ -17,7 +17,7 @@ A **TLS check** verifies that a domain's TLS certificate is valid and tells you 
 
 ## How it works
 
-TLS checks are **paired with an HTTP check** today. Set `monitor_tls: true` when creating an HTTP check; SiteQwality auto-provisions a paired TLS check that targets the same domain on a slower schedule (no need to handshake every minute).
+TLS checks are **paired with an HTTP check** today. Set `monitor_tls: true` when creating an HTTP check; Site Qwality auto-provisions a paired TLS check that targets the same domain on a slower schedule (no need to handshake every minute).
 
 The TLS check's `current_status` reflects the most recent handshake outcome:
 

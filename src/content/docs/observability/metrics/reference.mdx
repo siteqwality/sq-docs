@@ -35,7 +35,7 @@ Body:
 }
 ```
 
-- Max **1,000 metrics per request**; more is a `400`. The request has no byte limit of its own: points are packed into as many internal messages as they need. One metric may encode to at most about 1,000 KiB (1,023,948 bytes, less a few bytes of framing); a larger one gets `413` and nothing from the request is stored. Separately, request bodies over about 6 MB are refused before they reach SiteQwality's code.
+- Max **1,000 metrics per request**; more is a `400`. The request has no byte limit of its own: points are packed into as many internal messages as they need. One metric may encode to at most about 1,000 KiB (1,023,948 bytes, less a few bytes of framing); a larger one gets `413` and nothing from the request is stored. Separately, request bodies over about 6 MB are refused before they reach Site Qwality's code.
 - `timestamp` must be an RFC 3339 string. A numeric (epoch) timestamp makes the request fail with `400`.
 - Returns `202 Accepted` on enqueue. Points are usually queryable within about 30 seconds.
 - Returns `400` for malformed payloads, `401` when the `Authorization` header is missing, and `403` for an unknown, revoked or expired key.

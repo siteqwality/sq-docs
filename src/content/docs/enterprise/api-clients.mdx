@@ -52,7 +52,7 @@ The response carries the client and, **exactly once**, the secret:
 ```
 
 <Aside type="danger" title="The secret is shown once and is never stored">
-SiteQwality does not keep a copy of the secret in any form. If you lose it, the only path forward is to rotate, which invalidates the old one.
+Site Qwality does not keep a copy of the secret in any form. If you lose it, the only path forward is to rotate, which invalidates the old one.
 
 Put it into your secrets manager before you close the response.
 </Aside>
@@ -80,7 +80,7 @@ Authentication is a standard OAuth2 client-credentials exchange against the `tok
 
    You get back an `access_token`. Scopes are space-separated.
 
-2. **Call the SiteQwality API with it**, exactly like any other bearer token.
+2. **Call the Site Qwality API with it**, exactly like any other bearer token.
 
    ```bash
    curl https://api.siteqwality.com/http/jobs \
@@ -92,7 +92,7 @@ Authentication is a standard OAuth2 client-credentials exchange against the `tok
 </Steps>
 
 <Aside type="note">
-The token endpoint is operated by our identity provider, not by SiteQwality, so the exact response fields follow the OAuth2 client-credentials standard rather than anything SiteQwality defines. The `token_endpoint` value in the API response is always the authoritative URL for your environment.
+The token endpoint is operated by our identity provider, not by Site Qwality, so the exact response fields follow the OAuth2 client-credentials standard rather than anything Site Qwality defines. The `token_endpoint` value in the API response is always the authoritative URL for your environment.
 </Aside>
 
 ## Scopes
@@ -150,9 +150,9 @@ curl -X DELETE https://api.siteqwality.com/account/m2m_client/$CLIENT_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-Revocation takes effect against the SiteQwality API **immediately**. Every M2M request is checked against the local client record, so an already-issued token stops being accepted on its very next request.
+Revocation takes effect against the Site Qwality API **immediately**. Every M2M request is checked against the local client record, so an already-issued token stops being accepted on its very next request.
 
-The token itself remains technically valid at the identity provider until it expires naturally, so treat revocation as "this client can no longer reach SiteQwality" rather than "this token has been destroyed everywhere".
+The token itself remains technically valid at the identity provider until it expires naturally, so treat revocation as "this client can no longer reach Site Qwality" rather than "this token has been destroyed everywhere".
 
 Revoking twice is harmless. Owner role required.
 

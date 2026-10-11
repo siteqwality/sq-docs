@@ -84,7 +84,7 @@ POST body is JSON with the incident, the triggering monitor, and account context
 
 Your endpoint should:
 
-- Return any 2xx within 5 seconds. SiteQwality treats anything else as a failure.
+- Return any 2xx within 5 seconds. Site Qwality treats anything else as a failure.
 - Be idempotent, since the same event can be retried on receiver failure.
 - Accept large bodies (incidents with many updates can be 10–50KB).
 - Be reachable at a public address. A URL whose host is a private, loopback or link-local address (`10.x`, `192.168.x`, `127.0.0.1`, `localhost`, `169.254.169.254`, and their IPv6 equivalents) is refused with a `400` when you save it. A hostname that resolves only to such addresses when we deliver fails with the error kind `blocked_destination` and is not retried. The same applies to Discord, Microsoft Teams, Google Chat and Mattermost webhook URLs.
@@ -99,7 +99,7 @@ For stronger guarantees, embed a shared secret in the URL:
 https://incidents.example.com/sq-webhook?token=<long-random>
 ```
 
-…and verify the token server-side. SiteQwality doesn't currently sign requests with HMAC; if you need that, request it via support.
+…and verify the token server-side. Site Qwality doesn't currently sign requests with HMAC; if you need that, request it via support.
 
 ## Multiple integrations
 

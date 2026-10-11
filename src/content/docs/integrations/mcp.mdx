@@ -7,7 +7,7 @@ owner: jj
 
 import { Steps, Tabs, TabItem, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-SiteQwality runs a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server, so Claude, ChatGPT, Cursor, VS Code and other AI assistants can work with your account. Ask which monitors are down, what happened in last night's incident, or what the logs said around a failed check, and let the assistant take everyday actions: pause a monitor, acknowledge an incident, post a status page update.
+Site Qwality runs a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server, so Claude, ChatGPT, Cursor, VS Code and other AI assistants can work with your account. Ask which monitors are down, what happened in last night's incident, or what the logs said around a failed check, and let the assistant take everyday actions: pause a monitor, acknowledge an incident, post a status page update.
 
 The server URL is:
 
@@ -23,7 +23,7 @@ It is available on every plan, including Free. Plan limits and usage quotas appl
 
 1. Add the server URL to your assistant (steps for each one are below).
 
-2. The assistant opens a SiteQwality consent page in your browser. Sign in if you are not already.
+2. The assistant opens a Site Qwality consent page in your browser. Sign in if you are not already.
 
 3. Choose **read-only** or **read and write**, then approve.
 
@@ -33,7 +33,7 @@ The assistant then acts as you, limited to what you approved. Your role still ap
 
 To cut an assistant off, revoke it on the **AI Assistants** tab in **Settings**. It can no longer sign in, and the access it already has stops working within a minute.
 
-## Add SiteQwality to your assistant
+## Add Site Qwality to your assistant
 
 <Tabs syncKey="mcp-client">
 <TabItem label="Claude">
@@ -44,9 +44,9 @@ Works in Claude on the web and in Claude Desktop, on every Claude plan.
 
 1. Open **[Customize → Connectors](https://claude.ai/customize/connectors)**, click **+**, then **Add custom connector**.
 
-2. Name it `SiteQwality`, paste `https://mcp.siteqwality.com/mcp` as the URL, and click **Add**. Leave **Advanced settings** empty.
+2. Name it `Site Qwality`, paste `https://mcp.siteqwality.com/mcp` as the URL, and click **Add**. Leave **Advanced settings** empty.
 
-3. Click **Connect** and approve access on the SiteQwality consent page.
+3. Click **Connect** and approve access on the Site Qwality consent page.
 
 4. In a chat, turn the connector on from the **+** menu under **Connectors**.
 
@@ -61,7 +61,7 @@ On Team and Enterprise plans an Owner adds the connector once under **Organizati
 claude mcp add --transport http siteqwality https://mcp.siteqwality.com/mcp
 ```
 
-Then run `/mcp` inside Claude Code, pick `siteqwality` and sign in. Add `--scope user` to the command to make SiteQwality available in every project, not only the current one.
+Then run `/mcp` inside Claude Code, pick `siteqwality` and sign in. Add `--scope user` to the command to make Site Qwality available in every project, not only the current one.
 
 </TabItem>
 <TabItem label="Cursor">
@@ -107,11 +107,11 @@ Available on the web for ChatGPT Plus, Pro, Business, Enterprise and Edu.
 
 1. Open **Settings → Security and login** and turn on **Developer mode**.
 
-2. Go to [ChatGPT Plugins](https://chatgpt.com/plugins), click **+** and create an app named `SiteQwality` with `https://mcp.siteqwality.com/mcp` as the server URL and **OAuth** as the authentication.
+2. Go to [ChatGPT Plugins](https://chatgpt.com/plugins), click **+** and create an app named `Site Qwality` with `https://mcp.siteqwality.com/mcp` as the server URL and **OAuth** as the authentication.
 
-3. Approve access on the SiteQwality consent page.
+3. Approve access on the Site Qwality consent page.
 
-4. In a chat, pick **Developer mode** from the **+** menu and select SiteQwality.
+4. In a chat, pick **Developer mode** from the **+** menu and select Site Qwality.
 
 </Steps>
 
@@ -180,7 +180,7 @@ claude mcp add --transport http siteqwality https://mcp.siteqwality.com/mcp \
     {
       "type": "promptString",
       "id": "siteqwality-key",
-      "description": "SiteQwality API key",
+      "description": "Site Qwality API key",
       "password": true
     }
   ],
@@ -251,7 +251,7 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 | `list_metric_names`, `query_metrics` | Lists your metrics, or queries one. | Read |
 | `search_traces`, `get_trace` | Searches your traces, or shows one trace's spans. | Read |
 
-Two more tools reach everything else the [SiteQwality API](/api-reference/) can do:
+Two more tools reach everything else the [Site Qwality API](/api-reference/) can do:
 
 | Tool | What it does | Access |
 |---|---|---|

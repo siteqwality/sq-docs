@@ -7,7 +7,7 @@ owner: jj
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-Every uptime monitor in SiteQwality follows the same lifecycle: configure → run on schedule → emit results → trigger notifications on state change. What differs is *what* the monitor checks.
+Every uptime monitor in Site Qwality follows the same lifecycle: configure → run on schedule → emit results → trigger notifications on state change. What differs is *what* the monitor checks.
 
 | Check type | What it checks | Use for |
 |---|---|---|
@@ -22,8 +22,8 @@ Every uptime monitor in SiteQwality follows the same lifecycle: configure → ru
 - **You have a URL that should be `200 OK`.** Use [HTTP checks](/uptime-monitoring/http-checks/overview/). You can also opt-in to a paired TLS check (cert expiry) and domain expiry check (domain registration) on the same monitor.
 - **You only care about cert expiry, not whether the site is up.** Use [SSL/TLS checks](/uptime-monitoring/ssl-tls-checks/overview/). Otherwise, just enable the TLS sub-check on your HTTP monitor.
 - **You want to hear before a domain registration lapses.** Enable the [domain expiry check](/uptime-monitoring/dns-checks/overview/) on an HTTP monitor for that domain. It reads the registration from the registry, so it also catches a registry hold, a registrar change, and a nameserver change.
-- **You have a cron job that should run every N minutes.** Use a [cron heartbeat](/uptime-monitoring/cron-checks/overview/). Your job pings SiteQwality at the end of each successful run, and SiteQwality alerts when it doesn't.
-- **You need to validate a multi-step user flow.** Use [browser checks](/uptime-monitoring/browser-checks/overview/). You write a Playwright script and SiteQwality runs it on schedule, capturing a HAR + video on failure.
+- **You have a cron job that should run every N minutes.** Use a [cron heartbeat](/uptime-monitoring/cron-checks/overview/). Your job pings Site Qwality at the end of each successful run, and Site Qwality alerts when it doesn't.
+- **You need to validate a multi-step user flow.** Use [browser checks](/uptime-monitoring/browser-checks/overview/). You write a Playwright script and Site Qwality runs it on schedule, capturing a HAR + video on failure.
 
 ## Cross-cutting concerns
 

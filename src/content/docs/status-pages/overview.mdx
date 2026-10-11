@@ -7,7 +7,7 @@ owner: jj
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-A SiteQwality **status page** is the public face of your reliability story. It lives at `<page-id>.siteqwality.com` (or your custom domain) and shows visitors the current and historical state of the parts of your service you choose to publish, all driven by the same monitors you already have set up internally.
+A Site Qwality **status page** is the public face of your reliability story. It lives at `<page-id>.siteqwality.com` (or your custom domain) and shows visitors the current and historical state of the parts of your service you choose to publish, all driven by the same monitors you already have set up internally.
 
 ## When to use a status page
 
@@ -41,7 +41,7 @@ The status page back-end is a separate Lambda (`status-page-api`) reading the sa
 |---|---|
 | **Identity** | `friendly_name`, `page_title`, default theme (`light` / `dark` / `system`) |
 | **Branding** | logo, favicon, OG image, primary/accent color (`#hex`), header & footer text, custom CSS (50KB max), white-label toggle |
-| **Custom domain** | bring your own subdomain (e.g. `status.example.com`). SiteQwality provisions an ACM cert and gives you the CNAME to add |
+| **Custom domain** | bring your own subdomain (e.g. `status.example.com`). Site Qwality provisions an ACM cert and gives you the CNAME to add |
 | **Components** | attach any HTTP check or browser check, override its public name, set an SLA target |
 | **Incidents** | manually open / update / resolve, or let monitor-driven ones flow through |
 | **Maintenance** | publish scheduled windows ahead of planned work |
@@ -53,7 +53,7 @@ Visitors subscribe with email and confirm the address. We send email on incident
 
 ## Pricing notes
 
-Status pages are included in every plan; the **white-label** toggle (removes the "powered by SiteQwality" footer) and **custom domain** require a paid plan.
+Status pages are included in every plan; the **white-label** toggle (removes the "powered by Site Qwality" footer) and **custom domain** require a paid plan.
 
 ## Next steps
 

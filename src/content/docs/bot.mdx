@@ -1,11 +1,11 @@
 ---
-title: SiteQwality Monitor, our bot
-description: What SiteQwality Monitor requests and how often, how to verify a request came from us, and how to allow or block it.
+title: Site Qwality Monitor, our bot
+description: What Site Qwality Monitor requests and how often, how to verify a request came from us, and how to allow or block it.
 last_verified: 2026-10-10
 owner: jj
 ---
 
-SiteQwality Monitor is the bot that runs SiteQwality's uptime checks. If it shows up in your logs, a SiteQwality customer has set up a monitor for a URL on your site, usually because the site is theirs.
+Site Qwality Monitor is the bot that runs Site Qwality's uptime checks. If it shows up in your logs, a Site Qwality customer has set up a monitor for a URL on your site, usually because the site is theirs.
 
 ## What it does
 
@@ -34,17 +34,17 @@ Checks run from [check locations](/uptime-monitoring/overview/#check-locations) 
 
 ## Verifying a request
 
-Anyone can copy a User-Agent. A signature cannot be copied. SiteQwality signs check requests with Web Bot Auth, which uses HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)) and Ed25519 keys. Our public keys are published at:
+Anyone can copy a User-Agent. A signature cannot be copied. Site Qwality signs check requests with Web Bot Auth, which uses HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)) and Ed25519 keys. Our public keys are published at:
 
 ```
 https://bot.siteqwality.com/.well-known/http-message-signatures-directory
 ```
 
-A request came from SiteQwality when its `Signature` verifies against one of those keys, its `Signature-Input` has `tag="web-bot-auth"` and covers `@authority` and `signature-agent`, and its `expires` time has not passed. Bot-protection services that support Web Bot Auth can run this check for you.
+A request came from Site Qwality when its `Signature` verifies against one of those keys, its `Signature-Input` has `tag="web-bot-auth"` and covers `@authority` and `signature-agent`, and its `expires` time has not passed. Bot-protection services that support Web Bot Auth can run this check for you.
 
 ## robots.txt
 
-SiteQwality Monitor does not read robots.txt, because it never crawls: every request goes to a URL a customer chose to monitor. If we add a feature that crawls, it will follow robots.txt, and this page will say so before it ships.
+Site Qwality Monitor does not read robots.txt, because it never crawls: every request goes to a URL a customer chose to monitor. If we add a feature that crawls, it will follow robots.txt, and this page will say so before it ships.
 
 ## Allowing or blocking it
 

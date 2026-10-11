@@ -208,7 +208,7 @@ The chain advances only on "no endpoint for this TLD" and "no record for this na
 `rdap` and `whois` are both the registry's own answer and are equally authoritative. `whoxy` is a third party's copy, so a `whoxy` date is worth a second look before you act on it as fact.
 
 <Aside type="note" title="Why the date can differ by a day from your registrar">
-On the RDAP leg, SiteQwality deliberately does not follow the `related` link to the registrar's RDAP server, which publishes a second, different expiry (often a day earlier) and which some registrars omit entirely. Following it would trade one deterministic date for an ambiguous one, so a one-day difference against your registrar's control panel is expected and is not a bug.
+On the RDAP leg, Site Qwality deliberately does not follow the `related` link to the registrar's RDAP server, which publishes a second, different expiry (often a day earlier) and which some registrars omit entirely. Following it would trade one deterministic date for an ambiguous one, so a one-day difference against your registrar's control panel is expected and is not a bug.
 </Aside>
 
 ## Manual renewal dates
@@ -243,7 +243,7 @@ Renew the domain and the date sits there unchanged, so the ladder counts down th
 
 Domain alerts fan out through the **parent HTTP check's** notification groups. Email, SMS, Slack, webhook, Discord, Microsoft Teams, Google Chat, Mattermost, PagerDuty, OpsGenie, Pushover and Pushbullet all receive them.
 
-Telegram channels do not. Telegram is configurable and has a working transport, but no monitor type in SiteQwality produces a Telegram notification today, so a Telegram channel on the group is skipped for domain alerts.
+Telegram channels do not. Telegram is configurable and has a working transport, but no monitor type in Site Qwality produces a Telegram notification today, so a Telegram channel on the group is skipped for domain alerts.
 
 Maintenance windows do not suppress domain alerts, deliberately. A renewal deadline does not pause for scheduled work.
 

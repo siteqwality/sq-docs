@@ -1,6 +1,6 @@
 ---
 title: Use a custom domain
-description: Point status.yourcompany.com at your SiteQwality status page with an automatically-provisioned TLS certificate.
+description: Point status.yourcompany.com at your Site Qwality status page with an automatically-provisioned TLS certificate.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -9,7 +9,7 @@ import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
 By default a status page lives at `<page-id>.siteqwality.com`. Adding a custom domain (typically `status.yourcompany.com`) takes a few minutes plus DNS propagation time.
 
-SiteQwality provisions the TLS certificate via AWS Certificate Manager (ACM) and serves the page from the same edge as the default URL. There's no extra runtime cost or proxy hop.
+Site Qwality provisions the TLS certificate via AWS Certificate Manager (ACM) and serves the page from the same edge as the default URL. There's no extra runtime cost or proxy hop.
 
 <Aside type="caution">
 Custom domains require a paid plan. The API returns `403 Forbidden` if you try to add one on the free tier.
@@ -19,12 +19,12 @@ Custom domains require a paid plan. The API returns `403 Forbidden` if you try t
 
 You'll create **two CNAME records**:
 
-1. A **traffic CNAME**: your subdomain points at SiteQwality's edge.
+1. A **traffic CNAME**: your subdomain points at Site Qwality's edge.
 2. An **ACM validation CNAME**: proves to AWS you control the domain so it can issue the cert.
 
 Both values come from the API response in step 1 below.
 
-## 1. Register the custom domain in SiteQwality
+## 1. Register the custom domain in Site Qwality
 
 <Steps>
 
@@ -107,7 +107,7 @@ curl -X DELETE https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/custom_do
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-Or use the **Remove** button in the dashboard. Removing the custom domain immediately stops serving it; you should also delete the two CNAME records from your DNS to avoid a dangling pointer at SiteQwality's edge.
+Or use the **Remove** button in the dashboard. Removing the custom domain immediately stops serving it; you should also delete the two CNAME records from your DNS to avoid a dangling pointer at Site Qwality's edge.
 
 ## Notes
 

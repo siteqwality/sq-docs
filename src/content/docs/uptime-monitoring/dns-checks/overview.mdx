@@ -24,7 +24,7 @@ Nothing in this check queries a nameserver. It does not confirm that your domain
 
 ## How it works
 
-A domain check is **paired with an HTTP check**. Set `monitor_dns: true` and SiteQwality provisions one against the registrable domain of the HTTP check's URL, so `https://www.example.com/orders` is monitored as `example.com`.
+A domain check is **paired with an HTTP check**. Set `monitor_dns: true` and Site Qwality provisions one against the registrable domain of the HTTP check's URL, so `https://www.example.com/orders` is monitored as `example.com`.
 
 Each run:
 
@@ -138,7 +138,7 @@ Three behaviours are worth knowing, because none of them is what the table alone
 
 This is the part of the check that the expiry date alone cannot give you, and it is the reason the check reads more than the date.
 
-Every registry publishes a set of EPP status codes on a registration. Most are routine (`client transfer prohibited` is a lock you want). A few mean the registration is already in trouble, and SiteQwality alerts the first time a domain enters one of them:
+Every registry publishes a set of EPP status codes on a registration. Most are routine (`client transfer prohibited` is a lock you want). A few mean the registration is already in trouble, and Site Qwality alerts the first time a domain enters one of them:
 
 | Registry state | What it means | What you should do |
 |---|---|---|

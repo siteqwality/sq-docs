@@ -9,7 +9,7 @@ import { Steps, Tabs, TabItem, Aside, LinkCard, CardGrid } from '@astrojs/starli
 
 By the end of this guide you will have:
 
-1. A SiteQwality account.
+1. A Site Qwality account.
 2. An HTTP check running every 10 minutes against `https://mock.codes/200`.
 3. Confirmed an incident open and resolve cleanly, with an email landing in your inbox.
 
@@ -28,7 +28,7 @@ Total time: about five minutes.
 </Steps>
 
 <Aside type="tip" title="Notifications are already wired up">
-On signup, SiteQwality automatically creates a default notification group with your admin email as the destination. New monitors are attached to it by default, so you can skip notification setup for now and your first incident will email you. To customize (add Slack, change the email, route different monitors to different groups), see [Notifications](/incident-management/notifications/overview/).
+On signup, Site Qwality automatically creates a default notification group with your admin email as the destination. New monitors are attached to it by default, so you can skip notification setup for now and your first incident will email you. To customize (add Slack, change the email, route different monitors to different groups), see [Notifications](/incident-management/notifications/overview/).
 </Aside>
 
 ## 2. Create the HTTP check
@@ -98,7 +98,7 @@ Omitting `group_notification_ids` attaches the monitor to your account's auto-cr
 </Steps>
 
 <Aside type="tip">
-If the email never arrives, check your spam folder and confirm the channel email matches your inbox. SiteQwality only retries failed sends a few times. The [Notification channels reference](/incident-management/notifications/channels/) covers the gotchas.
+If the email never arrives, check your spam folder and confirm the channel email matches your inbox. Site Qwality only retries failed sends a few times. The [Notification channels reference](/incident-management/notifications/channels/) covers the gotchas.
 </Aside>
 
 ## What just happened

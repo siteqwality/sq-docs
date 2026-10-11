@@ -7,7 +7,7 @@ owner: jj
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-A **cron check** (also called a heartbeat or deadman's switch) is the inverse of an HTTP check. Instead of SiteQwality calling your service, your service calls SiteQwality at the end of each successful run. SiteQwality alerts when the expected ping doesn't arrive on time.
+A **cron check** (also called a heartbeat or deadman's switch) is the inverse of an HTTP check. Instead of Site Qwality calling your service, your service calls Site Qwality at the end of each successful run. Site Qwality alerts when the expected ping doesn't arrive on time.
 
 The pattern is simple:
 
@@ -31,9 +31,9 @@ If the expected ping stops arriving, the check flips to failure and notification
 
 ## How it works
 
-1. You create a cron check in SiteQwality with a `check_interval_seconds`, say `86400` for a daily job. SiteQwality returns a `cron_job_id`.
+1. You create a cron check in Site Qwality with a `check_interval_seconds`, say `86400` for a daily job. Site Qwality returns a `cron_job_id`.
 2. Your job pings `https://ping.siteqwality.com/<account-id>/<cron-job-id>` at the end of every successful run.
-3. SiteQwality records each ping with a timestamp, source IP, and headers.
+3. Site Qwality records each ping with a timestamp, source IP, and headers.
 4. Each cron check gets its own evaluation schedule (an AWS Scheduler entry) that fires at the same cadence as `check_interval_seconds`. At each evaluation, the check fails when the newest ping is older than `check_interval_seconds` (or when no ping has ever arrived).
 5. The next successful ping flips status back to healthy at the following evaluation.
 

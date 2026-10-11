@@ -111,7 +111,7 @@ Five things to check on that first result:
 - **`current_status` is `good`, `expired` or `unknown`.** `unknown` is not an error state on its own. See the [status table](/uptime-monitoring/dns-checks/reference/#status).
 - **`grace_states` is empty, and that is the field to watch.** A non-empty list means the registration is in trouble no matter how far away the date reads. See the [registry states](/uptime-monitoring/dns-checks/reference/#registry-states-that-alert).
 - **`expiry_source` says who gave you the date.** `rdap` and `whois` are the registry's own answer. `whoxy` is a commercial database, used when the registry gave us nothing, and is worth a second look before you act on it. `manual` is a date somebody at your company typed in. See [where the date comes from](/uptime-monitoring/dns-checks/reference/#where-the-expiry-date-comes-from).
-- **`expiry_date` may differ by a day from your registrar's control panel.** SiteQwality reads the registry's date, not the registrar's. That is expected.
+- **`expiry_date` may differ by a day from your registrar's control panel.** Site Qwality reads the registry's date, not the registrar's. That is expected.
 
 If `last_failure_reason` is ever set, the registry fields around it are the last known values rather than current ones, because a run that could not reach the registry deliberately leaves them alone. The [reference](/uptime-monitoring/dns-checks/reference/#the-check-and-a-run-of-the-check-are-different-objects) covers the distinction between the check and one run of it.
 
@@ -140,7 +140,7 @@ Eleven TLDs publish no expiry date to anybody, under any protocol, because their
 
 A domain on one of them reports `registry_publishes_expiry: false`, `expiry_date: null`, `current_status: unknown` and `last_failure_reason: "registry_publishes_no_expiry"`. **The check is not broken.** No source has the date, so there is nothing to wait for and nothing to retry. Registrar and nameserver change alerts still work normally.
 
-The fix is to tell SiteQwality the date yourself.
+The fix is to tell Site Qwality the date yourself.
 
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">

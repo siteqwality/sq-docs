@@ -1,10 +1,10 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "SiteQwality API",
-    "description": "Public REST API for SiteQwality: uptime monitoring, observability, incidents, and status pages.",
+    "title": "Site Qwality API",
+    "description": "Public REST API for Site Qwality: uptime monitoring, observability, incidents, and status pages.",
     "contact": {
-      "name": "SiteQwality Support",
+      "name": "Site Qwality Support",
       "url": "https://siteqwality.com",
       "email": "support@siteqwality.com"
     },
@@ -1828,7 +1828,7 @@
         "tags": [
           "Authentication"
         ],
-        "summary": "Complete a magic link authentication. If the email belongs to an existing\naccount, signs the user in. Otherwise provisions a new SiteQwality account,\nStytch organization, Stripe customer, default notification group, and\nwelcome email. This is the same shape as `/signup` minus the password.",
+        "summary": "Complete a magic link authentication. If the email belongs to an existing\naccount, signs the user in. Otherwise provisions a new Site Qwality account,\nStytch organization, Stripe customer, default notification group, and\nwelcome email. This is the same shape as `/signup` minus the password.",
         "operationId": "authenticate",
         "requestBody": {
           "content": {
@@ -10473,7 +10473,7 @@
           "Partner"
         ],
         "summary": "Create a managed client account under the calling partner.",
-        "description": "The client is a perfectly ordinary account with a parent pointer: it has\nits own monitors, its own status pages, its own quotas and its own\nnotification routing, and the partner works in it through the\n`X-SQ-Account` header. Three things make it not-ordinary, all decided here\nrather than inside the shared provisioning seam:\n\n* **No Stripe customer.** The partner is billed on one subscription; a\n  client is never billed directly, so it never gets a customer object to\n  leak or reconcile.\n* **No welcome email.** The contact never asked us for an account. A\n  \"welcome to SiteQwality\" email out of nowhere is the partner's\n  relationship to manage, not ours.\n* **A Stytch organization with no member and no session.** Nobody is\n  signing in yet. The organization exists up front so the partner's later\n  invite has somewhere to land, and the local user row (which the account\n  needs, for `primary_user_id`) carries a NULL `stytch_member_id` until\n  then.",
+        "description": "The client is a perfectly ordinary account with a parent pointer: it has\nits own monitors, its own status pages, its own quotas and its own\nnotification routing, and the partner works in it through the\n`X-SQ-Account` header. Three things make it not-ordinary, all decided here\nrather than inside the shared provisioning seam:\n\n* **No Stripe customer.** The partner is billed on one subscription; a\n  client is never billed directly, so it never gets a customer object to\n  leak or reconcile.\n* **No welcome email.** The contact never asked us for an account. A\n  \"welcome to Site Qwality\" email out of nowhere is the partner's\n  relationship to manage, not ours.\n* **A Stytch organization with no member and no session.** Nobody is\n  signing in yet. The organization exists up front so the partner's later\n  invite has somewhere to land, and the local user row (which the account\n  needs, for `primary_user_id`) carries a NULL `stytch_member_id` until\n  then.",
         "operationId": "create_partner_client",
         "requestBody": {
           "content": {
@@ -10509,7 +10509,7 @@
             "description": "Caller is not an admin, or the account is not in the partner program"
           },
           "409": {
-            "description": "That contact address already belongs to one of your clients, or to another SiteQwality account"
+            "description": "That contact address already belongs to one of your clients, or to another Site Qwality account"
           },
           "500": {
             "description": "Internal server error"

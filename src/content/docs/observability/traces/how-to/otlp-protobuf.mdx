@@ -1,6 +1,6 @@
 ---
 title: Send OTLP over HTTP/protobuf
-description: Point an OpenTelemetry SDK at SiteQwality using the protobuf encoding most exporters default to.
+description: Point an OpenTelemetry SDK at Site Qwality using the protobuf encoding most exporters default to.
 last_verified: 2026-10-08
 owner: jj
 ---
@@ -74,7 +74,7 @@ Getting these wrong produces confusing failures, so they are worth stating plain
 
 ## Batch sizing
 
-The default OpenTelemetry batch of 512 spans works, and there is nothing to tune. SiteQwality re-encodes each export as JSON and splits a service's spans across as many internal messages as it needs.
+The default OpenTelemetry batch of 512 spans works, and there is nothing to tune. Site Qwality re-encodes each export as JSON and splits a service's spans across as many internal messages as it needs.
 
 The one limit is per span: a span, together with its resource attributes, must encode to under **1,023,948 bytes** of JSON (about 1,000 KiB). A larger span gets `413`, the response names the span and its size, and nothing from that request is stored. Only a span carrying a very large attribute, such as a whole request body, comes near it.
 
