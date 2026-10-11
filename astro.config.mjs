@@ -128,6 +128,7 @@ export default defineConfig({
 					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'uptime-monitoring/overview' },
+						{ label: 'Our bot: SiteQwality Monitor', slug: 'bot' },
 						{
 							label: 'HTTP checks',
 							collapsed: true,

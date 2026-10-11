@@ -1,0 +1,55 @@
+---
+title: SiteQwality Monitor, our bot
+description: What SiteQwality Monitor requests and how often, how to verify a request came from us, and how to allow or block it.
+last_verified: 2026-10-10
+owner: jj
+---
+
+SiteQwality Monitor is the bot that runs SiteQwality's uptime checks. If it shows up in your logs, a SiteQwality customer has set up a monitor for a URL on your site, usually because the site is theirs.
+
+## What it does
+
+- It sends the HTTP checks our customers set up to confirm their sites are up and fast. Each check is one request to the exact URL the customer entered, with the method, headers and body they chose.
+- It does not crawl. It never follows links, discovers pages or indexes content. It follows redirects only when the monitor is set to.
+- It reads the response only to evaluate the check: the status code, timings, and any keyword or JSON value the customer asked for. When a check fails, the response is saved with the result so the customer can see what went wrong. Content is never used to train models or to build an index.
+
+## How often
+
+- Each monitor runs on the interval its owner picks, at most every 30 seconds.
+- A monitor can check from several locations. Each location sends its own request on every run.
+- A failed request may be retried up to twice within the same check.
+
+## Where requests come from
+
+Checks run from [check locations](/uptime-monitoring/overview/#check-locations) around the globe on AWS, Google Cloud and Microsoft Azure. The current list is on the [locations page](https://siteqwality.com/locations/). Requests leave from each provider's shared addresses, so there is no IP list. To confirm a request came from us, [verify its signature](#verifying-a-request).
+
+## How to recognize it
+
+| Header | Value |
+|---|---|
+| `User-Agent` | `site-qwality-check/1.0`, unless the monitor sets its own |
+| `X-Site-Qwality-Check` | `1` |
+| `Signature-Agent` | `"https://bot.siteqwality.com"` |
+| `Signature-Input`, `Signature` | A [Web Bot Auth](#verifying-a-request) signature |
+
+## Verifying a request
+
+Anyone can copy a User-Agent. A signature cannot be copied. SiteQwality signs check requests with Web Bot Auth, which uses HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)) and Ed25519 keys. Our public keys are published at:
+
+```
+https://bot.siteqwality.com/.well-known/http-message-signatures-directory
+```
+
+A request came from SiteQwality when its `Signature` verifies against one of those keys, its `Signature-Input` has `tag="web-bot-auth"` and covers `@authority` and `signature-agent`, and its `expires` time has not passed. Bot-protection services that support Web Bot Auth can run this check for you.
+
+## robots.txt
+
+SiteQwality Monitor does not read robots.txt, because it never crawls: every request goes to a URL a customer chose to monitor. If we add a feature that crawls, it will follow robots.txt, and this page will say so before it ships.
+
+## Allowing or blocking it
+
+- **To let checks through** a firewall or bot protection, see [allowlisting our checks](/uptime-monitoring/http-checks/allowlisting/).
+- **To block it**, match the `X-Site-Qwality-Check` header or the User-Agent in your firewall.
+- **To have checks stopped**, or to report a monitor that misbehaves, email [hello@siteqwality.com](mailto:hello@siteqwality.com) with the affected domain.
+
+This page covers HTTP checks. Browser checks, which run a full Chrome browser, are not signed yet.

@@ -41,7 +41,7 @@ Every check sends this User-Agent:
 site-qwality-check/1.0
 ```
 
-You can match on it to skip a bot challenge or a rate limit. Anyone can send the same string, though, so it identifies our checks without proving a request came from us. Use it where a false match costs little, or together with the secret header.
+You can match on it to skip a bot challenge or a rate limit. Anyone can send the same string, though, so it identifies our checks without proving a request came from us. Use it where a false match costs little, or together with the secret header. To prove a request came from us, [verify its signature](/bot/#verifying-a-request).
 
 ## Why IP allowlisting is not offered by default
 
