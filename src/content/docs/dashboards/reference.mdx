@@ -167,7 +167,7 @@ On Windows and Linux, use `Ctrl` where the table says `Cmd`.
 
 Everyone in an account can view its dashboards. What else you can do depends on your role and your plan.
 
-| Action | Viewer, Auditor | Member | Admin, Super Admin | Needs a paid plan |
+| Action | Viewer, Auditor | Member, Billing Admin | Admin, Super Admin | Needs a paid plan |
 |---|---|---|---|---|
 | List, open and export | Yes | Yes | Yes | No |
 | Load widget data | Yes | Yes | Yes | Yes |
@@ -178,7 +178,7 @@ Everyone in an account can view its dashboards. What else you can do depends on 
 
 Viewers and Auditors are read-only everywhere. This is the same rule that applies to the rest of the product.
 
-A **locked** dashboard can be edited only by its creator and account admins.
+A **locked** dashboard can be edited only by its creator, Admins and Super Admins.
 
 On the free plan the paid-plan actions return `403`. Listing, opening, exporting and deleting still work, so an account that leaves a paid plan keeps its dashboards.
 
@@ -217,7 +217,7 @@ Template keys are `uptime-overview`, `monitor-deep-dive`, `incident-reliability`
 
 ### Assistants and MCP
 
-Every endpoint above is documented, so an assistant connected through [MCP](/integrations/mcp/) can build dashboards with `call_api`. The share endpoints and the public ones are withheld from MCP, so an assistant cannot publish data.
+Every endpoint is documented, so an assistant connected through [MCP](/integrations/mcp/) can build dashboards with `call_api`. The share endpoints are withheld from MCP, so an assistant cannot publish data.
 
 ### Running queries
 
@@ -258,7 +258,7 @@ The whole request is validated first. A bad request returns `400` and names the 
 |---|---|
 | `ok` | `data` holds the result. |
 | `error` | The query failed. `error` holds a message that is safe to show. |
-| `timeout` | The widget used its 15 seconds. |
+| `timeout` | The widget ran past its 15 second budget. |
 | `denied` | The caller cannot use the widget, because of the plan or a missing RUM application. |
 
 Results also carry the resolved `window` (`from`, `to`, `interval_seconds`), an `approximate` flag and `warnings`. When `status` is `ok`, `data.kind` says which shape follows:

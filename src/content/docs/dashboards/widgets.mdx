@@ -29,7 +29,7 @@ Each widget draws its own state, so one failure never blanks the board.
 
 - **Loading.** A skeleton shows until data arrives.
 - **Error.** The widget shows a message and a **Retry** button. A query that takes longer than 15 seconds shows as a timeout.
-- **No data.** An empty result is labelled **No data**. It is never drawn as zero.
+- **No data.** An empty result is labeled **No data**. It is never drawn as zero.
 - **Denied.** A widget you cannot use, because of your plan or a missing RUM application, says so.
 - **Partial data.** The last bucket, which is still filling, is shaded.
 - **Approximate.** A marker shows when a result is approximate.
@@ -82,7 +82,7 @@ A line, area or bar chart on a real time axis. Gaps in the data stay gaps. The a
 | `thresholds` | `[{value, tone, style, label}]` | Horizontal markers. `tone` is `ok`, `warn` or `danger`. `style` is `line` or `band`. `label` is optional. |
 | `compare` | `previous_period`, `1d`, `1w` or unset | Draws the same series from earlier as dashed lines, shifted onto the current window. |
 | `overlays` | any of `incidents`, `downtime` | Marks incidents or downtime on the chart. See below. |
-| `palette` | `categorical`, `cool`, `warm`, `status` | Series colours. |
+| `palette` | `categorical`, `cool`, `warm`, `status` | Series colors. |
 
 The crosshair is shared across the dashboard, so hovering one chart marks the same moment on all of them. Turn it off with the crosshair setting in **Settings**. Drag across a chart to zoom the dashboard's time range in.
 
@@ -96,9 +96,9 @@ One large number per visible query or formula.
 |---|---|---|
 | `unit`, `decimals` | | As above. |
 | `compare` | `previous_period` or unset | Adds a change chip against the previous window. |
-| `higher_is` | `better`, `worse`, `neutral` | Decides whether an increase is coloured as good or bad. |
+| `higher_is` | `better`, `worse`, `neutral` | Decides whether an increase is colored as good or bad. |
 | `sparkline` | bool | Draws a small trend under the number. |
-| `thresholds` | `[{op, value, tone}]` | `op` is `gt`, `gte`, `lt` or `lte`. The first match colours the value. |
+| `thresholds` | `[{op, value, tone}]` | `op` is `gt`, `gte`, `lt` or `lte`. The first match colors the value. |
 
 ### Top list (`toplist`)
 
@@ -165,7 +165,7 @@ Counts of monitors by status, with a total.
 
 ### Uptime bars (`uptime_bars`)
 
-One row per monitor, one thin bar per day. A tooltip gives the day's uptime and downtime. Days with no data are left empty. Bars are coloured by uptime band.
+One row per monitor, one thin bar per day. A tooltip gives the day's uptime and downtime. Days with no data are left empty. Bars are colored by uptime band.
 
 | Option | Values | Description |
 |---|---|---|
@@ -200,7 +200,7 @@ Each row's status is `ok`, `warn`, `critical`, `expired` or `unknown`.
 
 ## Logs, traces and RUM
 
-These widgets read your telemetry. Log stream and Trace list do not appear on [shared dashboards](/dashboards/sharing/#what-viewers-see). Web Vitals does.
+These widgets read your telemetry. On [shared dashboards](/dashboards/sharing/#what-viewers-see), Log stream and Trace list show "Not available on shared dashboards" instead of data. Web Vitals works there.
 
 ### Log stream (`log_stream`)
 
@@ -268,9 +268,9 @@ When you collapse a section, its widgets leave the top level of the document and
 - **Grid.** 12 columns at 1200 px and wider. Below 768 px widgets stack full width in reading order, and dragging is off.
 - **Add.** The add-widget tray has search and categories. Click a widget or drag it in.
 - **Move and resize.** Drag a widget to move it, and drag its corner to resize it.
-- **Copy and paste.** `Cmd+C` and `Cmd+V` on a focused widget move it between dashboards.
+- **Copy and paste.** `Cmd+C` and `Cmd+V` on a focused widget copy it between dashboards.
 - **Undo and redo.** `Cmd+Z` and `Shift+Cmd+Z`.
-- **Editor.** The widget editor is a full-height drawer with a live preview on top. It has a visualisation picker, a query builder, formulas and display options per type.
+- **Editor.** The widget editor is a full-height drawer with a live preview on top. It has a visualization picker, a query builder, formulas and display options per type.
 
 ## See also
 

@@ -21,6 +21,12 @@ A dashboard is a 12-column grid of **widgets**, plus a default time range, a ref
 
 Every member of the account can view every dashboard. Dashboards are per account, not per person. Use names, tags and the description to show who owns a board.
 
+The actions menu holds Edit, Clone, Export JSON, Version history, Share, TV mode, Copy link, Settings and Delete.
+
+## Finding dashboards
+
+The dashboards list searches by name and tags. Star a board to add it to your favorites, or pick **Mine** to show only the dashboards you created. Sort by recently viewed, last updated or name. A deleted dashboard waits in **Recently deleted** for 30 days, and you can restore it from there.
+
 ## Data sources
 
 Each query reads from one of six sources.
@@ -101,7 +107,7 @@ A dashboard can be locked. Only its creator and account admins can edit a locked
 | Role | Access |
 |---|---|
 | Viewer, Auditor | View only. Every action that changes a dashboard is refused. |
-| Member | View, create, edit and share. A locked dashboard is editable only by its creator. |
+| Member, Billing Admin | View, create, edit and share. A locked dashboard is editable only by its creator. |
 | Admin, Super Admin | Everything a Member can do, and edit locked dashboards. |
 
 ## Plan availability
@@ -114,11 +120,7 @@ If an account moves from a paid plan to free, its dashboards stay. You can still
 
 Use a dashboard for the board you check every day, and an explorer for open-ended digging. A widget's **Open in explorer** action carries its filters and time range across.
 
-Dashboards do not alert. Alerts live in [incident management](/incident-management/overview/).
-
-## Not available yet
-
-These are not part of dashboards today: tabs, split graphs and repeat-by-variable, show and hide rules, anomaly and forecast functions, scheduled email reports, PNG and PDF export, invite-only sharing and embeds, SLO widgets, alert-rule widgets and deploy markers.
+Dashboards do not send alerts. Threshold alerts are set up in the [observability](/observability/overview/) pillars, and incident notifications come from [incident management](/incident-management/overview/).
 
 ## See also
 
