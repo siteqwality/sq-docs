@@ -27,7 +27,7 @@ If the expected ping stops arriving, the check flips to failure and notification
 ## When NOT to use them
 
 - Don't use cron checks for "is my service running?" That's an [HTTP check](/uptime-monitoring/http-checks/overview/) job.
-- Don't use them for "is the queue draining?" That's a metric: emit one and alert on it via a [metrics-backed dashboard](/observability/metrics/overview/).
+- Don't use them for "is the queue draining?" That's a metric: emit one, chart it on a dashboard and alert on it with a [metric threshold](/observability/metrics/overview/).
 
 ## How it works
 

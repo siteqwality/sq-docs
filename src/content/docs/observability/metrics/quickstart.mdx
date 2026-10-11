@@ -120,6 +120,8 @@ curl -X POST https://api.siteqwality.com/dashboards \
     "name": "Demo",
     "definition": {
       "schema_version": 1,
+      "settings": { "default_time": { "from": "now-24h", "to": "now" }, "refresh": "auto", "timezone": null, "crosshair": "shared" },
+      "variables": [],
       "widgets": [{
         "id": "queue",
         "type": "timeseries",
