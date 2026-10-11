@@ -1,7 +1,7 @@
 ---
 title: M2M API clients
 description: OAuth2 client-credentials access with scoped permissions, one-time secrets, rotation, and immediate revocation.
-last_verified: 2026-10-04
+last_verified: 2026-10-11
 owner: jj
 ---
 
@@ -46,7 +46,7 @@ The response carries the client and, **exactly once**, the secret:
       "last_rotated_at": null
     },
     "client_secret": "<shown once, never again>",
-    "token_endpoint": "https://api.stytch.com/v1/public/<project>/oauth2/token"
+    "token_endpoint": "https://api.siteqwality.com/oauth2/token"
   }
 }
 ```
@@ -92,7 +92,7 @@ Authentication is a standard OAuth2 client-credentials exchange against the `tok
 </Steps>
 
 <Aside type="note">
-The token endpoint is operated by our identity provider, not by Site Qwality, so the exact response fields follow the OAuth2 client-credentials standard rather than anything Site Qwality defines. The `token_endpoint` value in the API response is always the authoritative URL for your environment.
+Site Qwality's token endpoint returns a standard OAuth2 token response without a `data` envelope. The `token_endpoint` value returned when you create, list or rotate a client is the authoritative URL for your environment. Existing clients using the older endpoint continue to work.
 </Aside>
 
 ## Scopes
