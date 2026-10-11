@@ -18,7 +18,7 @@ Every product area follows the same four-page shape:
 | How-to | `<area>/how-to/<task>.mdx` | One specific task per page |
 | Reference | `<area>/reference.mdx` | Settings table, field-by-field |
 
-API endpoint pages are auto-generated from `openapi.json` — don't write them by hand.
+API endpoint pages are auto-generated from `openapi.json`, so don't write them by hand.
 
 ### Frontmatter
 
@@ -61,8 +61,8 @@ import { Aside } from '@astrojs/starlight/components';
 
 ## Next steps
 
-- [Quickstart](./quickstart/) — set this up in 5 minutes.
-- [Settings reference](./reference/) — every field, explained.
+- [Quickstart](./quickstart/): set this up in 5 minutes.
+- [Settings reference](./reference/): every field, explained.
 - API: see [`POST /<endpoint>`](/api-reference/...).
 ```
 
@@ -83,7 +83,7 @@ import { Steps, Tabs, TabItem, Code } from '@astrojs/starlight/components';
 ## Prerequisites
 
 - A Site Qwality account ([sign up free](https://app.siteqwality.com)).
-- An API key — see [Authentication](/api-reference/overview/#authentication).
+- An API key. See [Authentication](/api-reference/overview/#authentication).
 - <Anything else.>
 
 <Steps>
@@ -173,7 +173,7 @@ Sidebar groups live in `astro.config.mjs`. Within each product area:
 },
 ```
 
-`autogenerate` is fine for `how-to/` directories — Starlight orders them alphabetically. Put a numeric prefix (`01-...`, `02-...`) on filenames if you need a specific order.
+`autogenerate` is fine for `how-to/` directories. Starlight orders them alphabetically. Put a numeric prefix (`01-...`, `02-...`) on filenames if you need a specific order.
 
 ## Components quick reference
 
@@ -193,19 +193,19 @@ import { Aside, Steps, Tabs, TabItem, Code, Card, CardGrid, LinkCard } from '@as
 ## Theming
 
 The site uses the **Atlas** design system (shared with the marketing site and
-app). Branding lives in a few places — content/structure changes never need to
+app). Branding lives in a few places. Content and structure changes never need to
 touch these:
 
 | File | Role |
 |---|---|
-| `src/styles/atlas.css` | The whole theme — maps Starlight's `--sl-color-*` vars onto Atlas tokens (light + dark), restyles every component. Wired via `customCss` in `astro.config.mjs`. |
-| `ec.config.mjs` | Expressive Code (code-block) theming — the always-dark Atlas ink panel. |
+| `src/styles/atlas.css` | The whole theme. It maps Starlight's `--sl-color-*` vars onto Atlas tokens (light and dark) and restyles every component. Wired via `customCss` in `astro.config.mjs`. |
+| `ec.config.mjs` | Expressive Code (code-block) theming: the always-dark Atlas ink panel. |
 | `public/fonts/` | Self-hosted Manrope + JetBrains Mono woff2. |
-| `src/assets/atlas-logo-{light,dark}.svg` | The Pulse logo mark (per theme) — canonical `mark.svg` / `mark-light.svg` from the brand kit. |
-| `public/favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `android-icon-{192,512}.png`, `og-feat.png` | Canonical assets from the Site Qwality brand kit — drop in replacements verbatim, don't regenerate. |
+| `src/assets/atlas-logo-{light,dark}.svg` | The Pulse logo mark (per theme). Canonical `mark.svg` and `mark-light.svg` from the brand kit. |
+| `public/favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `android-icon-{192,512}.png`, `og-feat.png` | Canonical assets from the Site Qwality brand kit. Drop in replacements verbatim and don't regenerate them. |
 | `public/site.webmanifest` | PWA manifest pointing at the android icons. |
 
-> **Gotcha — code-block theming lives in `ec.config.mjs`, not `astro.config.mjs`.**
+> **Gotcha: code-block theming lives in `ec.config.mjs`, not `astro.config.mjs`.**
 > The `starlight-openapi` plugin overwrites Starlight's `expressiveCode` config
 > option, so themes/styleOverrides set there are silently discarded.
 > `astro-expressive-code` merges `ec.config.mjs` in separately, so that survives.

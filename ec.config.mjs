@@ -1,5 +1,5 @@
 /**
- * Expressive Code config — Atlas code blocks.
+ * Expressive Code config for Atlas code blocks.
  *
  * This lives in ec.config.mjs rather than astro.config.mjs's Starlight
  * `expressiveCode` option on purpose: starlight-openapi's plugin overwrites
@@ -9,7 +9,7 @@
  *
  * Atlas code blocks are an always-dark ink panel (matching the landing page),
  * regardless of the site's light/dark theme. That is achieved by shipping two
- * visually identical dark themes — one typed `dark`, one typed `light` — so
+ * visually identical dark themes: one typed `dark` and one typed `light`. So
  * whichever the site is in, the rendered panel is dark.
  */
 

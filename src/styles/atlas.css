@@ -1,5 +1,5 @@
 /* ============================================================
-   SiteQwality Docs — "Atlas" theme for Starlight
+   SiteQwality Docs: "Atlas" theme for Starlight
    warm · precise · alive
 
    Maps Starlight's --sl-color-* / --sl-font system onto the Atlas
@@ -53,8 +53,8 @@
    1. TOKENS  ·  Atlas palette + Starlight mapping
    ============================================================ */
 
-/* :root carries the Atlas palette (theme-independent) AND the
-   dark-theme Starlight mapping — Starlight uses bare :root for dark. */
+/* :root carries the Atlas palette (theme-independent) and the
+   dark-theme Starlight mapping. Starlight uses bare :root for dark. */
 :root {
   /* ---- Atlas palette (constant across themes) ---- */
   --at-ink:    #1A1816;
@@ -69,7 +69,7 @@
   --at-clay:      #D14A2D;
   --at-clay-deep: #A8341B;
   --at-clay-soft: #F4DCD2;
-  --at-clay-lift: #E78A66;   /* lightened clay — links on dark */
+  --at-clay-lift: #E78A66;   /* lightened clay for links on dark */
 
   --at-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --at-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
@@ -122,14 +122,14 @@
   --sl-color-hairline:    #2F2A25;
   --sl-color-backdrop-overlay: rgba(12, 11, 10, 0.7);
 
-  /* aside / badge hues — dark variants */
+  /* aside / badge hues, dark variants */
   --sl-color-blue-low:   #18283A;  --sl-color-blue:   #4A9FE0;  --sl-color-blue-high:   #A9CFEC;
   --sl-color-green-low:  #1E2A19;  --sl-color-green:  #7BA268;  --sl-color-green-high:  #B4CBA6;
   --sl-color-purple-low: #1E2A19;  --sl-color-purple: #7BA268;  --sl-color-purple-high: #B4CBA6;
   --sl-color-orange-low: #322811; --sl-color-orange: #D9A21A;  --sl-color-orange-high: #ECCD75;
   --sl-color-red-low:    #331C1C;  --sl-color-red:    #D86A6A;  --sl-color-red-high:    #ECB0B0;
 
-  /* shadows — warm */
+  /* shadows, warm */
   --sl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --sl-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.4), 0 12px 28px -14px rgba(0, 0, 0, 0.5);
   --sl-shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.4), 0 28px 60px -28px rgba(0, 0, 0, 0.6);
@@ -163,7 +163,7 @@
   --sl-color-hairline:    #CFC7B5;
   --sl-color-backdrop-overlay: rgba(26, 24, 22, 0.4);
 
-  /* aside / badge hues — light variants */
+  /* aside / badge hues, light variants */
   --sl-color-blue-low:   #DCEAF7;  --sl-color-blue:   #4A9FE0;  --sl-color-blue-high:   #2F6FA5;
   --sl-color-green-low:  #D8E2CF;  --sl-color-green:  #6B8E5A;  --sl-color-green-high:  #3F5A35;
   --sl-color-purple-low: #D8E2CF;  --sl-color-purple: #6B8E5A;  --sl-color-purple-high: #3F5A35;
@@ -285,7 +285,7 @@ p { text-wrap: pretty; }
 }
 
 /* ============================================================
-   5. HEADER  ·  translucent, blurred — like the Atlas site nav
+   5. HEADER  ·  translucent and blurred, like the Atlas site nav
    ============================================================ */
 
 /* element-qualified so it can't leak into Expressive Code's
@@ -936,7 +936,7 @@ starlight-tabs .tab > [role='tab'][aria-selected='true'] {
   --sl-openapi-method-bg-trace:   #4A443B;  --sl-openapi-method-border-trace:   #6B665D;
 }
 
-/* method badge shape — doubled class to beat the component's scoped rule */
+/* method badge shape. Doubled class to beat the component's scoped rule. */
 .sl-openapi-operation-method-badge.sl-openapi-operation-method-badge {
   font-family: var(--at-mono);
   font-size: 0.68rem;
