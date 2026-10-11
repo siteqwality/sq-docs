@@ -54,13 +54,15 @@ The page is sent the dashboard's name, description, widget definitions and the l
 
 ## Link states
 
-A link shows "not found" when it is paused, expired or revoked, or when its dashboard is deleted.
+A link shows "not found" when it is paused, expired or revoked, when its dashboard is deleted, or when its account no longer has a paid plan.
 
 Shared pages are never cached by the browser, and data can be up to 30 seconds old. Each link records when it was last opened and how often, shown in the API as `last_accessed_at` and `access_count`.
 
 ## Who can share
 
 Anyone who can edit dashboards can create and manage share links: Members, Billing Admins, Admins and Super Admins. Viewers and Auditors cannot. AI assistants connected through [MCP](/integrations/mcp/) cannot either: share endpoints are withheld from MCP so that an assistant can build a dashboard but cannot publish one.
+
+Creating a link needs a paid plan. Existing links can still be paused or revoked after a downgrade. For a locked dashboard, only its creator and account admins can create, change or revoke links. Scoped API clients also need read access to every data source used by the dashboard, as described in [API permissions](/dashboards/reference/#roles-and-permissions).
 
 ## TV mode
 

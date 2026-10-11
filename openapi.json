@@ -3911,38 +3911,101 @@
         ]
       }
     },
-    "/dashboard/": {
+    "/dashboards": {
       "get": {
         "tags": [
           "Dashboards"
         ],
-        "summary": "List dashboards for the account.",
+        "summary": "List dashboards.",
+        "description": "Live dashboards by default, or the ones deleted in the last 30 days with `deleted=true`.\nDashboards deleted longer ago are purged here.",
         "operationId": "list_dashboards",
         "parameters": [
           {
+            "name": "search",
+            "in": "query",
+            "description": "Matches the name, description or a tag (case-insensitive substring).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Only dashboards with this exact tag.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "favorites",
+            "in": "query",
+            "description": "Only the caller's favourites.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "mine",
+            "in": "query",
+            "description": "Only dashboards the caller created.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "deleted",
+            "in": "query",
+            "description": "The recently deleted list (restorable for 30 days) instead of live boards.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/DashboardSort"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
-            "description": "Page size",
+            "description": "1 to 200, default 50.",
             "required": false,
             "schema": {
               "type": "integer",
-              "format": "int32"
+              "format": "int64"
             }
           },
           {
             "name": "offset",
             "in": "query",
-            "description": "Page offset",
             "required": false,
             "schema": {
               "type": "integer",
-              "format": "int32"
+              "format": "int64"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Page of dashboards"
+            "description": "One page of dashboards and the filtered total",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filters"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -3962,6 +4025,7 @@
           "Dashboards"
         ],
         "summary": "Create a dashboard.",
+        "description": "A blank board when `definition` is absent.",
         "operationId": "create_dashboard",
         "requestBody": {
           "content": {
@@ -3975,7 +4039,7 @@
         },
         "responses": {
           "200": {
-            "description": "Dashboard created",
+            "description": "The new dashboard",
             "content": {
               "application/json": {
                 "schema": {
@@ -3985,12 +4049,144 @@
             }
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid name, tags or definition, or 500 dashboards already"
           },
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "402": {
+            "description": "Custom dashboards require a paid plan"
+          },
           "403": {
+            "description": "The role is view-only"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/catalog": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "The query catalog.",
+        "description": "Every source with its measures, aggregations, fields and intervals, for the widget editor.",
+        "operationId": "catalog",
+        "responses": {
+          "200": {
+            "description": "The catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/import": {
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Import a dashboard from an export.",
+        "operationId": "import_dashboard",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardExport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The imported dashboard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a dashboard export, an invalid definition, or 500 dashboards already"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "Custom dashboards require a paid plan"
+          },
+          "403": {
+            "description": "The role is view-only"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/query": {
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Run up to 50 widgets. Scoped callers need each source's read scope, such as `read:logs`;\nwidgets lacking a scope return `denied`. Invalid requests fail the entire call.",
+        "operationId": "query",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "One result per widget",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request; `data.path` points at the problem"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "402": {
             "description": "Custom dashboards require a paid plan"
           },
           "500": {
@@ -4004,18 +4200,211 @@
         ]
       }
     },
-    "/dashboard/{dashboard_id}": {
+    "/dashboards/templates": {
       "get": {
         "tags": [
           "Dashboards"
         ],
-        "summary": "Get a dashboard by ID with widgets.",
+        "summary": "List the templates.",
+        "description": "`has_data` says whether the account already has data for each template's main source.",
+        "operationId": "list_templates",
+        "responses": {
+          "200": {
+            "description": "The templates, in gallery order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/templates/{key}": {
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Create a dashboard from a template.",
+        "description": "`$monitor` and `$app` start on the account's first monitor and RUM application.",
+        "operationId": "create_from_template",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "description": "Template key, for example `uptime-overview`",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Optional; the name defaults to the template's",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFromTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The new dashboard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid name, or 500 dashboards already"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "Custom dashboards require a paid plan"
+          },
+          "403": {
+            "description": "The role is view-only"
+          },
+          "404": {
+            "description": "No such template"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/values": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Values of a field, for variables and filter pickers.",
+        "operationId": "values",
+        "parameters": [
+          {
+            "name": "source",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Source"
+            }
+          },
+          {
+            "name": "field",
+            "in": "query",
+            "description": "A field key of the source's catalog.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Prefix or substring to search for.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metric",
+            "in": "query",
+            "description": "Metrics source only: scope tag values to this metric.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "At most 100.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Distinct values with labels",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown field for the source"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "Custom dashboards require a paid plan"
+          },
+          "403": {
+            "description": "The source is not available, or the caller lacks its read scope"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "504": {
+            "description": "The lookup took too long"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/{id}": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Open a dashboard.",
+        "description": "Counts a view for the signed-in member.",
         "operationId": "get_dashboard",
         "parameters": [
           {
-            "name": "dashboard_id",
+            "name": "id",
             "in": "path",
-            "description": "Dashboard identifier",
+            "description": "Dashboard id",
             "required": true,
             "schema": {
               "type": "string",
@@ -4025,7 +4414,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Dashboard with widgets",
+            "description": "The dashboard",
             "content": {
               "application/json": {
                 "schema": {
@@ -4038,7 +4427,7 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Dashboard not found"
+            "description": "No such dashboard"
           },
           "500": {
             "description": "Internal server error"
@@ -4054,13 +4443,14 @@
         "tags": [
           "Dashboards"
         ],
-        "summary": "Update a dashboard's metadata.",
+        "summary": "Save a dashboard.",
+        "description": "A whole-document save against the version the edit started from. A stale `version` gets a\n409 whose `data.current` is the dashboard as it is now.",
         "operationId": "update_dashboard",
         "parameters": [
           {
-            "name": "dashboard_id",
+            "name": "id",
             "in": "path",
-            "description": "Dashboard identifier",
+            "description": "Dashboard id",
             "required": true,
             "schema": {
               "type": "string",
@@ -4080,7 +4470,7 @@
         },
         "responses": {
           "200": {
-            "description": "Dashboard updated",
+            "description": "The saved dashboard",
             "content": {
               "application/json": {
                 "schema": {
@@ -4089,11 +4479,30 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid name, tags or definition"
+          },
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "402": {
+            "description": "Custom dashboards require a paid plan"
+          },
+          "403": {
+            "description": "Locked, or the role is view-only"
+          },
           "404": {
-            "description": "Dashboard not found"
+            "description": "No such dashboard"
+          },
+          "409": {
+            "description": "Someone saved first; `data.current` holds their version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardConflict"
+                }
+              }
+            }
           },
           "500": {
             "description": "Internal server error"
@@ -4110,12 +4519,13 @@
           "Dashboards"
         ],
         "summary": "Delete a dashboard.",
+        "description": "Restorable for 30 days.",
         "operationId": "delete_dashboard",
         "parameters": [
           {
-            "name": "dashboard_id",
+            "name": "id",
             "in": "path",
-            "description": "Dashboard identifier",
+            "description": "Dashboard id",
             "required": true,
             "schema": {
               "type": "string",
@@ -4124,130 +4534,17 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Dashboard deleted"
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "404": {
-            "description": "Dashboard not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
-    "/dashboard/{dashboard_id}/layout": {
-      "put": {
-        "tags": [
-          "Dashboards"
-        ],
-        "summary": "Batch-update widget layout positions on a dashboard.",
-        "operationId": "batch_update_layout",
-        "parameters": [
-          {
-            "name": "dashboard_id",
-            "in": "path",
-            "description": "Dashboard identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/WidgetLayoutItem"
-                }
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Layouts updated"
-          },
-          "400": {
-            "description": "Too many widgets in request"
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
-    "/dashboard/{dashboard_id}/widget/": {
-      "post": {
-        "tags": [
-          "Dashboards"
-        ],
-        "summary": "Add a widget to a dashboard.",
-        "operationId": "create_widget",
-        "parameters": [
-          {
-            "name": "dashboard_id",
-            "in": "path",
-            "description": "Dashboard identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateWidgetRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Widget created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DashboardWidget"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request body or widget limit reached"
+          "204": {
+            "description": "Deleted"
           },
           "401": {
             "description": "Missing or invalid authentication"
           },
           "403": {
-            "description": "Custom dashboards require a paid plan"
+            "description": "Locked, or the role is view-only"
           },
           "404": {
-            "description": "Dashboard not found"
+            "description": "No such dashboard"
           },
           "500": {
             "description": "Internal server error"
@@ -4260,28 +4557,19 @@
         ]
       }
     },
-    "/dashboard/{dashboard_id}/widget/{widget_id}": {
-      "put": {
+    "/dashboards/{id}/clone": {
+      "post": {
         "tags": [
           "Dashboards"
         ],
-        "summary": "Update a widget on a dashboard.",
-        "operationId": "update_widget",
+        "summary": "Clone a dashboard.",
+        "description": "The copy is unlocked and starts its own history.",
+        "operationId": "clone_dashboard",
         "parameters": [
           {
-            "name": "dashboard_id",
+            "name": "id",
             "in": "path",
-            "description": "Dashboard identifier",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "widget_id",
-            "in": "path",
-            "description": "Widget identifier",
+            "description": "Dashboard id",
             "required": true,
             "schema": {
               "type": "string",
@@ -4290,10 +4578,11 @@
           }
         ],
         "requestBody": {
+          "description": "Optional; the name defaults to `<name> (copy)`",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateWidgetRequest"
+                "$ref": "#/components/schemas/CloneDashboardRequest"
               }
             }
           },
@@ -4301,11 +4590,67 @@
         },
         "responses": {
           "200": {
-            "description": "Widget updated",
+            "description": "The copy",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DashboardWidget"
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid name, or 500 dashboards already"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "Custom dashboards require a paid plan"
+          },
+          "403": {
+            "description": "The role is view-only"
+          },
+          "404": {
+            "description": "No such dashboard"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/{id}/export": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Export a dashboard as portable JSON.",
+        "operationId": "export_dashboard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Dashboard id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The portable document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardExport"
                 }
               }
             }
@@ -4314,7 +4659,51 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Widget not found"
+            "description": "No such dashboard"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/{id}/favorite": {
+      "put": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Star a dashboard.",
+        "description": "For members only; view-only roles may star too.",
+        "operationId": "add_favorite",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Dashboard id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Starred"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not a member session"
+          },
+          "404": {
+            "description": "No such dashboard"
           },
           "500": {
             "description": "Internal server error"
@@ -4330,23 +4719,56 @@
         "tags": [
           "Dashboards"
         ],
-        "summary": "Delete a widget from a dashboard.",
-        "operationId": "delete_widget",
+        "summary": "Unstar a dashboard.",
+        "operationId": "remove_favorite",
         "parameters": [
           {
-            "name": "dashboard_id",
+            "name": "id",
             "in": "path",
-            "description": "Dashboard identifier",
+            "description": "Dashboard id",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
             }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Unstarred"
           },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not a member session"
+          },
+          "404": {
+            "description": "No such dashboard"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
           {
-            "name": "widget_id",
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/{id}/restore": {
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Restore a deleted dashboard.",
+        "operationId": "restore_dashboard",
+        "parameters": [
+          {
+            "name": "id",
             "in": "path",
-            "description": "Widget identifier",
+            "description": "Dashboard id",
             "required": true,
             "schema": {
               "type": "string",
@@ -4356,13 +4778,480 @@
         ],
         "responses": {
           "200": {
-            "description": "Widget deleted"
+            "description": "The restored dashboard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The account already has 500 dashboards"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Locked, or the role is view-only"
+          },
+          "404": {
+            "description": "Not deleted, or deleted more than 30 days ago"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/{id}/shares": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "List a dashboard's public links.",
+        "operationId": "list_shares",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Dashboard id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every link, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Share"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "The caller cannot edit dashboards, or is a connected app"
+          },
+          "404": {
+            "description": "No such dashboard"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Create a public link.",
+        "description": "The link shows the dashboard read-only at `https://app.siteqwality.com/share/d/<url_token>`.",
+        "operationId": "create_share",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Dashboard id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateShareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The new link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Share"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid settings, or 20 links already"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "Custom dashboards require a paid plan"
+          },
+          "403": {
+            "description": "Locked, the caller cannot edit dashboards, or is a connected app"
+          },
+          "404": {
+            "description": "No such dashboard"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/{id}/shares/{share_id}": {
+      "delete": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Delete a public link.",
+        "operationId": "delete_share",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Dashboard id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "share_id",
+            "in": "path",
+            "description": "Link id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted; the link stops working at once"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Locked, the caller cannot edit dashboards, or is a connected app"
+          },
+          "404": {
+            "description": "No such dashboard or link"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Pause, resume, re-time or reconfigure a public link.",
+        "description": "Absent fields are kept; `expires_at: null` removes the expiry.",
+        "operationId": "update_share",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Dashboard id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "share_id",
+            "in": "path",
+            "description": "Link id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateShareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Share"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid settings"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Locked, the caller cannot edit dashboards, or is a connected app"
+          },
+          "404": {
+            "description": "No such dashboard or link"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/{id}/versions": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "List a dashboard's versions, newest first.",
+        "description": "Every save is a version, the current one included; the newest 200 are kept.",
+        "operationId": "list_versions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Dashboard id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 200, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of versions and the total kept",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionList"
+                }
+              }
+            }
           },
           "401": {
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Widget not found"
+            "description": "No such dashboard"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/{id}/versions/{version}": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Open one version of a dashboard.",
+        "operationId": "get_version",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Dashboard id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "description": "Version number",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardVersion"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "No such dashboard or version"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/dashboards/{id}/versions/{version}/restore": {
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Restore a version.",
+        "description": "Saves the version's content as a new version. `version` in the body is the dashboard's\ncurrent version, checked like a save.",
+        "operationId": "restore_version",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Dashboard id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "description": "The version to restore",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The dashboard after the restore",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The version no longer passes validation"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "Custom dashboards require a paid plan"
+          },
+          "403": {
+            "description": "Locked, or the role is view-only"
+          },
+          "404": {
+            "description": "No such dashboard or version"
+          },
+          "409": {
+            "description": "Someone saved first; `data.current` holds their version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardConflict"
+                }
+              }
+            }
           },
           "500": {
             "description": "Internal server error"
@@ -11199,6 +12088,102 @@
             "bearer_auth": []
           }
         ]
+      }
+    },
+    "/public/dashboards/{token}": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Open a shared dashboard.",
+        "description": "Unauthenticated. 404 when the link is unknown, paused, expired or its dashboard deleted.",
+        "operationId": "get_public_dashboard",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "The link token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The dashboard and what a viewer may change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicDashboard"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The link is not available"
+          },
+          "429": {
+            "description": "Too many requests"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/public/dashboards/{token}/query": {
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Run stored widgets within the link's allowed times and variables; logs and traces are denied.\nThe saved zone and default resolution apply. Monitor URLs are removed from results.",
+        "operationId": "query_public_dashboard",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "The link token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicQueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "One result per widget, in the order asked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A widget, time range or variable value the link does not offer"
+          },
+          "404": {
+            "description": "The link is not available"
+          },
+          "429": {
+            "description": "Too many requests"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
       }
     },
     "/rum/": {
@@ -18928,6 +19913,22 @@
           }
         }
       },
+      "Aggregation": {
+        "type": "string",
+        "enum": [
+          "avg",
+          "sum",
+          "min",
+          "max",
+          "count",
+          "p50",
+          "p75",
+          "p90",
+          "p95",
+          "p99",
+          "rate"
+        ]
+      },
       "AlertDeliveryEvent": {
         "type": "object",
         "description": "SES's report about one recipient of an alert email.",
@@ -19900,6 +20901,13 @@
           }
         }
       },
+      "AxisScale": {
+        "type": "string",
+        "enum": [
+          "linear",
+          "log"
+        ]
+      },
       "BillingConfigResponse": {
         "type": "object",
         "required": [
@@ -20056,6 +21064,20 @@
           }
         }
       },
+      "Catalog": {
+        "type": "object",
+        "required": [
+          "sources"
+        ],
+        "properties": {
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceCatalog"
+            }
+          }
+        }
+      },
       "ChangePasswordRequest": {
         "type": "object",
         "required": [
@@ -20179,6 +21201,83 @@
               "$ref": "#/components/schemas/ChannelDelivery"
             },
             "description": "Newest first, at most [`CHANNEL_HEALTH_RECENT`]."
+          }
+        }
+      },
+      "ChartEvent": {
+        "type": "object",
+        "required": [
+          "kind",
+          "id",
+          "title",
+          "start"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ChartEventKind"
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "severity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "monitor_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "ChartEventKind": {
+        "type": "string",
+        "enum": [
+          "incident",
+          "downtime"
+        ]
+      },
+      "ChartThreshold": {
+        "type": "object",
+        "description": "A horizontal marker on a time series.",
+        "required": [
+          "value",
+          "tone"
+        ],
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "tone": {
+            "$ref": "#/components/schemas/Tone"
+          },
+          "style": {
+            "$ref": "#/components/schemas/ThresholdStyle"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -20336,6 +21435,43 @@
             "minimum": 0
           }
         }
+      },
+      "CloneDashboardRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Defaults to `<name> (copy)`."
+          }
+        }
+      },
+      "ColumnDisplay": {
+        "type": "string",
+        "enum": [
+          "number",
+          "bar",
+          "sparkline"
+        ]
+      },
+      "Compare": {
+        "type": "string",
+        "enum": [
+          "previous_period",
+          "1d",
+          "1w"
+        ]
+      },
+      "Comparison": {
+        "type": "string",
+        "enum": [
+          "gt",
+          "gte",
+          "lt",
+          "lte"
+        ]
       },
       "ComplimentarySummary": {
         "type": "object",
@@ -20918,13 +22054,25 @@
               "null"
             ]
           },
-          "global_time_range": {},
-          "auto_refresh_seconds": {
+          "tags": {
             "type": [
-              "integer",
+              "array",
               "null"
             ],
-            "format": "int32"
+            "items": {
+              "type": "string"
+            }
+          },
+          "definition": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DashboardDefinition",
+                "description": "A blank board when absent."
+              }
+            ]
           }
         }
       },
@@ -21035,6 +22183,18 @@
               "null"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "CreateFromTemplateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Defaults to the template's name."
           }
         }
       },
@@ -21892,6 +23052,26 @@
           }
         }
       },
+      "CreateShareRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ShareConfig"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "expires_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            }
+          }
+        ],
+        "description": "`ShareConfig` plus an optional expiry."
+      },
       "CreateStatusPage": {
         "type": "object",
         "required": [
@@ -21993,28 +23173,6 @@
           }
         }
       },
-      "CreateWidgetRequest": {
-        "type": "object",
-        "required": [
-          "title",
-          "widget_type"
-        ],
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "widget_type": {
-            "$ref": "#/components/schemas/DashboardWidgetType"
-          },
-          "data_source": {
-            "$ref": "#/components/schemas/DashboardDataSource"
-          },
-          "query_config": {},
-          "visualization_config": {},
-          "layout": {},
-          "time_range_override": {}
-        }
-      },
       "CronJobState": {
         "type": "string",
         "enum": [
@@ -22059,6 +23217,13 @@
             "format": "date-time"
           }
         }
+      },
+      "CrosshairMode": {
+        "type": "string",
+        "enum": [
+          "shared",
+          "off"
+        ]
       },
       "CustomEvent": {
         "type": "object",
@@ -22349,19 +23514,19 @@
         "type": "object",
         "required": [
           "id",
-          "account_id",
           "name",
-          "global_time_range",
-          "created_by",
+          "tags",
+          "definition",
+          "version",
+          "locked",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "favorite",
+          "can_edit",
+          "share_count"
         ],
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "account_id": {
             "type": "string",
             "format": "uuid"
           },
@@ -22374,17 +23539,47 @@
               "null"
             ]
           },
-          "global_time_range": {},
-          "auto_refresh_seconds": {
-            "type": [
-              "integer",
-              "null"
-            ],
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "definition": {
+            "$ref": "#/components/schemas/DashboardDefinition"
+          },
+          "version": {
+            "type": "integer",
             "format": "int32"
           },
+          "locked": {
+            "type": "boolean"
+          },
+          "template_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "created_by": {
-            "type": "string",
-            "format": "uuid"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserRef"
+              }
+            ]
+          },
+          "updated_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserRef"
+              }
+            ]
           },
           "created_at": {
             "type": "string",
@@ -22394,64 +23589,217 @@
             "type": "string",
             "format": "date-time"
           },
-          "widgets": {
+          "deleted_at": {
             "type": [
-              "array",
+              "string",
               "null"
             ],
+            "format": "date-time"
+          },
+          "favorite": {
+            "type": "boolean"
+          },
+          "can_edit": {
+            "type": "boolean",
+            "description": "Whether the caller may save changes (role, plan, scopes and the lock)."
+          },
+          "share_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Live public links: not paused and not expired."
+          }
+        }
+      },
+      "DashboardConflict": {
+        "type": "object",
+        "description": "The body of a 409 on a stale save: the dashboard as it is now.",
+        "required": [
+          "current"
+        ],
+        "properties": {
+          "current": {
+            "$ref": "#/components/schemas/Dashboard"
+          }
+        }
+      },
+      "DashboardDefinition": {
+        "type": "object",
+        "required": [
+          "schema_version"
+        ],
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "settings": {
+            "$ref": "#/components/schemas/DashboardSettings"
+          },
+          "variables": {
+            "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DashboardWidget"
+              "$ref": "#/components/schemas/Variable"
+            }
+          },
+          "widgets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Widget"
             }
           }
         }
       },
-      "DashboardDataSource": {
+      "DashboardExport": {
+        "type": "object",
+        "description": "The portable form: `GET /dashboards/{id}/export` and `POST /dashboards/import`.",
+        "required": [
+          "schema",
+          "name",
+          "definition"
+        ],
+        "properties": {
+          "schema": {
+            "type": "string",
+            "description": "Always `siteqwality.dashboard/v1`."
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "definition": {
+            "$ref": "#/components/schemas/DashboardDefinition"
+          }
+        }
+      },
+      "DashboardList": {
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSummary"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DashboardSettings": {
+        "type": "object",
+        "properties": {
+          "default_time": {
+            "$ref": "#/components/schemas/RangeSpec"
+          },
+          "refresh": {
+            "$ref": "#/components/schemas/RefreshSetting"
+          },
+          "timezone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`None` follows the viewer's browser; otherwise `UTC` or an IANA zone."
+          },
+          "crosshair": {
+            "$ref": "#/components/schemas/CrosshairMode"
+          }
+        }
+      },
+      "DashboardSort": {
         "type": "string",
         "enum": [
-          "metrics",
-          "logs",
-          "traces",
-          "uptime",
-          "rum",
-          "none"
+          "viewed",
+          "updated",
+          "name"
         ]
       },
-      "DashboardWidget": {
+      "DashboardSummary": {
         "type": "object",
         "required": [
           "id",
-          "dashboard_id",
-          "title",
-          "widget_type",
-          "data_source",
-          "query_config",
-          "visualization_config",
-          "layout",
+          "name",
+          "tags",
+          "version",
+          "locked",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "favorite",
+          "can_edit",
+          "share_count",
+          "widget_count",
+          "view_count"
         ],
         "properties": {
           "id": {
             "type": "string",
             "format": "uuid"
           },
-          "dashboard_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
+          "name": {
             "type": "string"
           },
-          "widget_type": {
-            "$ref": "#/components/schemas/DashboardWidgetType"
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
-          "data_source": {
-            "$ref": "#/components/schemas/DashboardDataSource"
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
-          "query_config": {},
-          "visualization_config": {},
-          "layout": {},
-          "time_range_override": {},
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "template_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserRef"
+              }
+            ]
+          },
+          "updated_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserRef"
+              }
+            ]
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -22459,19 +23807,94 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "deleted_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "favorite": {
+            "type": "boolean"
+          },
+          "can_edit": {
+            "type": "boolean"
+          },
+          "share_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "widget_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Widgets including the members of collapsed sections, sections excluded."
+          },
+          "last_viewed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The caller's last visit; `null` for API keys and unvisited boards."
+          },
+          "view_count": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
-      "DashboardWidgetType": {
-        "type": "string",
-        "enum": [
-          "timeseries",
-          "stat",
-          "table",
-          "log_stream",
-          "monitor_status",
-          "text"
-        ]
+      "DashboardVersion": {
+        "type": "object",
+        "required": [
+          "version",
+          "created_at",
+          "summary",
+          "name",
+          "tags",
+          "definition"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserRef"
+              }
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "definition": {
+            "$ref": "#/components/schemas/DashboardDefinition"
+          }
+        }
       },
       "DbRumIssue": {
         "type": "object",
@@ -23454,6 +24877,111 @@
           "exhausted"
         ]
       },
+      "ExpiryData": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpiryItem"
+            }
+          }
+        }
+      },
+      "ExpiryItem": {
+        "type": "object",
+        "required": [
+          "kind",
+          "monitor_id",
+          "monitor_name",
+          "domain",
+          "status"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ExpiryKind"
+          },
+          "monitor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "monitor_name": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "days_left": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ExpiryStatus"
+          }
+        }
+      },
+      "ExpiryKind": {
+        "type": "string",
+        "enum": [
+          "tls",
+          "domain"
+        ]
+      },
+      "ExpiryListConfig": {
+        "type": "object",
+        "properties": {
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Filter"
+            }
+          },
+          "kinds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpiryKind"
+            }
+          },
+          "warn_days": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "critical_days": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "ExpiryStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "warn",
+          "critical",
+          "expired",
+          "unknown"
+        ]
+      },
       "FacetValue": {
         "type": "object",
         "required": [
@@ -23605,6 +25133,50 @@
           }
         }
       },
+      "FieldDef": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "kind",
+          "ops",
+          "group_by",
+          "variable"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "A field key, or `tag:*` for dynamic `tag:<key>` fields."
+          },
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FieldKind"
+          },
+          "ops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOp"
+            }
+          },
+          "group_by": {
+            "type": "boolean"
+          },
+          "variable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FieldKind": {
+        "type": "string",
+        "enum": [
+          "id",
+          "enum",
+          "text",
+          "number"
+        ]
+      },
       "FieldMetadata": {
         "type": "object",
         "required": [
@@ -23642,6 +25214,75 @@
           }
         }
       },
+      "Filter": {
+        "type": "object",
+        "required": [
+          "field",
+          "op",
+          "values"
+        ],
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "op": {
+            "$ref": "#/components/schemas/FilterOp"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "FilterOp": {
+        "type": "string",
+        "enum": [
+          "in",
+          "not_in",
+          "contains",
+          "not_contains",
+          "gt",
+          "gte",
+          "lt",
+          "lte"
+        ]
+      },
+      "Formula": {
+        "type": "object",
+        "required": [
+          "id",
+          "expr"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "expr": {
+            "type": "string"
+          },
+          "alias": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Unit"
+              }
+            ]
+          },
+          "hidden": {
+            "type": "boolean"
+          }
+        }
+      },
       "FrustrationType": {
         "type": "string",
         "enum": [
@@ -23662,6 +25303,111 @@
           }
         },
         "additionalProperties": false
+      },
+      "GroupedColumn": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "unit"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/Unit"
+          }
+        }
+      },
+      "GroupedData": {
+        "type": "object",
+        "required": [
+          "group_by",
+          "columns",
+          "rows",
+          "total_groups"
+        ],
+        "properties": {
+          "group_by": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupedColumn"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupedRow"
+            }
+          },
+          "total_groups": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "GroupedRow": {
+        "type": "object",
+        "required": [
+          "group",
+          "labels",
+          "values"
+        ],
+        "properties": {
+          "group": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "sparklines": {
+            "type": "object"
+          }
+        }
+      },
+      "HigherIs": {
+        "type": "string",
+        "enum": [
+          "better",
+          "worse",
+          "neutral"
+        ]
       },
       "HistoryProductUsage": {
         "type": "object",
@@ -23970,6 +25716,84 @@
           }
         }
       },
+      "IncidentItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "severity",
+          "status",
+          "created_at",
+          "monitor_count"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "acknowledged_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "resolved_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "service": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamedRef"
+              }
+            ]
+          },
+          "monitor_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "IncidentListConfig": {
+        "type": "object",
+        "properties": {
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Filter"
+            }
+          },
+          "state": {
+            "$ref": "#/components/schemas/IncidentState"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
       "IncidentListStatus": {
         "type": "string",
         "description": "Which incidents `GET /incident/` returns.\n\nKeyed on the responder lifecycle (`responder_status`), which is what the\ndashboard's Active and Resolved tabs mean: an incident is active until a\nresponder resolves it, whatever its public status-page `status` says.",
@@ -24083,6 +25907,13 @@
           "critical"
         ]
       },
+      "IncidentState": {
+        "type": "string",
+        "enum": [
+          "open",
+          "all"
+        ]
+      },
       "IncidentStatus": {
         "type": "string",
         "enum": [
@@ -24114,6 +25945,20 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "IncidentsData": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentItem"
+            }
           }
         }
       },
@@ -24764,6 +26609,37 @@
           }
         }
       },
+      "Layout": {
+        "type": "object",
+        "required": [
+          "x",
+          "y",
+          "w",
+          "h"
+        ],
+        "properties": {
+          "x": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "y": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "w": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "h": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
       "LcpAttribution": {
         "type": "object",
         "properties": {
@@ -24801,6 +26677,25 @@
             "format": "double"
           }
         }
+      },
+      "LegendColumn": {
+        "type": "string",
+        "enum": [
+          "value",
+          "avg",
+          "min",
+          "max",
+          "sum"
+        ]
+      },
+      "LegendMode": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "table",
+          "compact",
+          "none"
+        ]
       },
       "LevelCount": {
         "type": "object",
@@ -24872,6 +26767,17 @@
           }
         }
       },
+      "LogColumn": {
+        "type": "string",
+        "enum": [
+          "level",
+          "source",
+          "host",
+          "env",
+          "version",
+          "trace_id"
+        ]
+      },
       "LogEntry": {
         "type": "object",
         "required": [
@@ -24913,6 +26819,56 @@
           },
           "tags": {},
           "metadata": {}
+        }
+      },
+      "LogItem": {
+        "type": "object",
+        "required": [
+          "timestamp",
+          "level",
+          "message"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "RFC 3339 with nanoseconds as stored."
+          },
+          "level": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "host": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "env": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "trace_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         }
       },
       "LogPattern": {
@@ -25150,6 +27106,48 @@
           }
         }
       },
+      "LogStreamConfig": {
+        "type": "object",
+        "properties": {
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Filter"
+            }
+          },
+          "search": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogColumn"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "LogsData": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogItem"
+            }
+          }
+        }
+      },
       "LongFrameEvent": {
         "type": "object",
         "properties": {
@@ -25307,7 +27305,7 @@
               "string",
               "null"
             ],
-            "description": "Cloudflare Turnstile token from the sign-in or sign-up widget. Verified\nwhen sent, and not yet required."
+            "description": "Cloudflare Turnstile token from the sign-in or sign-up widget. Required\nwherever Turnstile is configured."
           }
         }
       },
@@ -25400,6 +27398,52 @@
           }
         },
         "additionalProperties": false
+      },
+      "MeasureDef": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "unit",
+          "aggregations",
+          "description",
+          "scalar_only"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/Unit"
+          },
+          "aggregations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Aggregation"
+            },
+            "description": "Allowed aggregations; empty means the measure is already reduced (uptime, counts)."
+          },
+          "default_aggregation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Aggregation"
+              }
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "scalar_only": {
+            "type": "boolean",
+            "description": "Only meaningful as a single value (for example open incidents now)."
+          }
+        }
       },
       "MemberInfo": {
         "type": "object",
@@ -25937,6 +27981,222 @@
           }
         }
       },
+      "MonitorCounts": {
+        "type": "object",
+        "required": [
+          "up",
+          "down",
+          "degraded",
+          "paused",
+          "pending",
+          "total"
+        ],
+        "properties": {
+          "up": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "down": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "degraded": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "paused": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "pending": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "MonitorGridConfig": {
+        "type": "object",
+        "properties": {
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Filter"
+            }
+          },
+          "group_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MonitorGroupBy"
+              }
+            ]
+          },
+          "sort": {
+            "$ref": "#/components/schemas/MonitorSort"
+          },
+          "metric": {
+            "$ref": "#/components/schemas/MonitorTileMetric"
+          },
+          "size": {
+            "$ref": "#/components/schemas/TileSize"
+          },
+          "hide_paused": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MonitorGroupBy": {
+        "type": "string",
+        "enum": [
+          "monitor_type",
+          "tag",
+          "status"
+        ]
+      },
+      "MonitorItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "status",
+          "tags",
+          "regions_down"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MonitorKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MonitorState"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "uptime": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "response_time_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "last_checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "regions_down": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "MonitorKind": {
+        "type": "string",
+        "enum": [
+          "http",
+          "browser",
+          "cron"
+        ]
+      },
+      "MonitorSort": {
+        "type": "string",
+        "enum": [
+          "status",
+          "name",
+          "uptime",
+          "response_time"
+        ]
+      },
+      "MonitorState": {
+        "type": "string",
+        "enum": [
+          "up",
+          "down",
+          "degraded",
+          "paused",
+          "pending"
+        ]
+      },
+      "MonitorSummaryConfig": {
+        "type": "object",
+        "properties": {
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Filter"
+            }
+          },
+          "show_list": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MonitorSummaryData": {
+        "type": "object",
+        "required": [
+          "counts",
+          "items"
+        ],
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/MonitorCounts"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonitorItem"
+            }
+          }
+        }
+      },
+      "MonitorTileMetric": {
+        "type": "string",
+        "enum": [
+          "uptime",
+          "response_time",
+          "none"
+        ]
+      },
       "MonitorTotalsByType": {
         "type": "object",
         "description": "Account-wide monitor counts split by monitor type.\n\nAll three keys are ALWAYS present, including for a type the account has\nnone of, which is why this is a struct and not a map. A dashboard tile\nthat reads a missing key renders nothing at all, and \"nothing\" reads as a\nstuck loading state rather than as zero.",
@@ -25997,6 +28257,20 @@
           }
         }
       },
+      "MonitorsData": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonitorItem"
+            }
+          }
+        }
+      },
       "MonitorsPage": {
         "type": "object",
         "description": "One server-filtered, server-sorted page of the unified monitor list.",
@@ -26015,6 +28289,22 @@
             "type": "integer",
             "format": "int64",
             "description": "Number of monitors matching the filters, across every page. This is\nwhat \"X-Y of N\" is built from; it is not the length of `items`."
+          }
+        }
+      },
+      "NamedRef": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
           }
         }
       },
@@ -26242,6 +28532,41 @@
             "minimum": 0
           }
         }
+      },
+      "NoteAlign": {
+        "type": "string",
+        "enum": [
+          "left",
+          "center"
+        ]
+      },
+      "NoteConfig": {
+        "type": "object",
+        "required": [
+          "markdown"
+        ],
+        "properties": {
+          "markdown": {
+            "type": "string"
+          },
+          "align": {
+            "$ref": "#/components/schemas/NoteAlign"
+          },
+          "tone": {
+            "$ref": "#/components/schemas/NoteTone"
+          },
+          "padding": {
+            "type": "boolean"
+          }
+        }
+      },
+      "NoteTone": {
+        "type": "string",
+        "enum": [
+          "none",
+          "info",
+          "warn"
+        ]
       },
       "Notification": {
         "type": "object",
@@ -26750,6 +29075,13 @@
         },
         "additionalProperties": false
       },
+      "Overlay": {
+        "type": "string",
+        "enum": [
+          "incidents",
+          "downtime"
+        ]
+      },
       "OverviewCard": {
         "type": "object",
         "required": [
@@ -26848,6 +29180,15 @@
           "error",
           "warning",
           "info"
+        ]
+      },
+      "Palette": {
+        "type": "string",
+        "enum": [
+          "categorical",
+          "cool",
+          "warm",
+          "status"
         ]
       },
       "PartnerBundle": {
@@ -27346,6 +29687,44 @@
           }
         }
       },
+      "PieConfig": {
+        "type": "object",
+        "required": [
+          "queries"
+        ],
+        "properties": {
+          "queries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Query"
+            }
+          },
+          "formulas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Formula"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "donut": {
+            "type": "boolean"
+          },
+          "unit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Unit"
+              }
+            ]
+          }
+        }
+      },
       "PiiPattern": {
         "type": "string",
         "description": "Patterns scrubbed from page text and free-text fields.",
@@ -27601,6 +29980,117 @@
           }
         }
       },
+      "PublicDashboard": {
+        "type": "object",
+        "description": "What `GET /public/dashboards/{token}` serves: no ids, authors or account details.",
+        "required": [
+          "name",
+          "definition",
+          "settings"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "definition": {
+            "$ref": "#/components/schemas/DashboardDefinition",
+            "description": "Widgets not allowed on shares keep their place and title with an empty config."
+          },
+          "settings": {
+            "$ref": "#/components/schemas/PublicDashboardSettings"
+          }
+        }
+      },
+      "PublicDashboardSettings": {
+        "type": "object",
+        "required": [
+          "allowed_times",
+          "default_time",
+          "theme",
+          "variables"
+        ],
+        "properties": {
+          "allowed_times": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default_time": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The dashboard's zone; `null` follows the viewer's browser."
+          },
+          "theme": {
+            "$ref": "#/components/schemas/ShareTheme"
+          },
+          "variables": {
+            "type": "object",
+            "description": "Every dashboard variable, with how the viewer may use it.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PublicVariableSettings"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PublicQueryRequest": {
+        "type": "object",
+        "required": [
+          "time",
+          "widget_ids"
+        ],
+        "properties": {
+          "time": {
+            "$ref": "#/components/schemas/RangeSpec"
+          },
+          "timezone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "widget_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "max_points": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
       "PublicStatusPageBranding": {
         "type": "object",
         "required": [
@@ -27677,6 +30167,26 @@
           }
         }
       },
+      "PublicVariableSettings": {
+        "type": "object",
+        "required": [
+          "locked"
+        ],
+        "properties": {
+          "locked": {
+            "type": "boolean"
+          },
+          "allowed": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "PublishIncidentRequest": {
         "type": "object",
         "required": [
@@ -27715,6 +30225,195 @@
         },
         "additionalProperties": false
       },
+      "Query": {
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "measure"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "measure": {
+            "type": "string"
+          },
+          "aggregation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Aggregation"
+              }
+            ]
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Filter"
+            }
+          },
+          "group_by": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metric": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Metrics source only: the metric name (or `$var`)."
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "alias": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "QueryRequest": {
+        "type": "object",
+        "required": [
+          "time",
+          "widgets"
+        ],
+        "properties": {
+          "time": {
+            "$ref": "#/components/schemas/RangeSpec"
+          },
+          "timezone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "widgets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WidgetQuery"
+            }
+          }
+        }
+      },
+      "QueryResponse": {
+        "type": "object",
+        "required": [
+          "now",
+          "results"
+        ],
+        "properties": {
+          "now": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WidgetResult"
+            }
+          }
+        }
+      },
+      "QueryValueConfig": {
+        "type": "object",
+        "required": [
+          "queries"
+        ],
+        "properties": {
+          "queries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Query"
+            }
+          },
+          "formulas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Formula"
+            }
+          },
+          "unit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Unit"
+              }
+            ]
+          },
+          "decimals": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "compare": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Compare",
+                "description": "Only `previous_period` is meaningful for a single value."
+              }
+            ]
+          },
+          "higher_is": {
+            "$ref": "#/components/schemas/HigherIs"
+          },
+          "sparkline": {
+            "type": "boolean"
+          },
+          "thresholds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueThreshold"
+            }
+          }
+        }
+      },
+      "RangeSpec": {
+        "type": "object",
+        "description": "A window of T2 tokens (`now`, `now-2h`) or instants (ISO 8601, epoch milliseconds), resolved\nwhen the query is compiled, so a stored view stays rolling.",
+        "required": [
+          "from",
+          "to"
+        ],
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        }
+      },
       "RecentChecksBatchRequest": {
         "type": "object",
         "description": "Request body for the batched sparkline endpoint.",
@@ -27731,6 +30430,17 @@
             "description": "Monitor ids to fetch response-time samples for. Ids that are not HTTP\nmonitors, or that belong to another account, are simply absent from\nthe response."
           }
         }
+      },
+      "RefreshSetting": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "off",
+          "30s",
+          "1m",
+          "5m",
+          "15m"
+        ]
       },
       "ReleaseOp": {
         "type": "string",
@@ -28265,6 +30975,45 @@
             "type": "integer",
             "format": "int32",
             "description": "Width of each bucket in minutes."
+          }
+        }
+      },
+      "RestoreVersionRequest": {
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The dashboard's current version, for optimistic concurrency."
+          }
+        }
+      },
+      "ResultWindow": {
+        "type": "object",
+        "required": [
+          "from",
+          "to"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "interval_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Absent for widgets that are not bucketed.",
+            "minimum": 0
           }
         }
       },
@@ -32323,6 +35072,73 @@
           }
         }
       },
+      "RumVitalItem": {
+        "type": "object",
+        "required": [
+          "vital",
+          "good",
+          "needs_improvement",
+          "poor",
+          "samples"
+        ],
+        "properties": {
+          "vital": {
+            "$ref": "#/components/schemas/VitalKey"
+          },
+          "p75": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "good": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "needs_improvement": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "poor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "samples": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "RumVitalsConfig": {
+        "type": "object",
+        "properties": {
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Filter"
+            }
+          }
+        }
+      },
+      "RumVitalsData": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RumVitalItem"
+            }
+          }
+        }
+      },
       "RumVitalsDistribution": {
         "type": "object",
         "description": "Page views per Web Vital, split by Google's good / needs improvement / poor thresholds.",
@@ -32503,6 +35319,66 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ScalarData": {
+        "type": "object",
+        "required": [
+          "values"
+        ],
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScalarValue"
+            }
+          },
+          "sparkline": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "format": "double"
+              }
+            }
+          }
+        }
+      },
+      "ScalarValue": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "unit"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/Unit"
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "previous": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
           }
         }
       },
@@ -32981,6 +35857,21 @@
           }
         }
       },
+      "SectionConfig": {
+        "type": "object",
+        "properties": {
+          "collapsed": {
+            "type": "boolean"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Widget"
+            },
+            "description": "Members while collapsed (Grafana row model); empty when expanded."
+          }
+        }
+      },
       "SecurityMethodsResponse": {
         "type": "object",
         "required": [
@@ -33027,6 +35918,63 @@
             "type": "boolean"
           }
         }
+      },
+      "Series": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "group",
+          "unit",
+          "compare",
+          "hidden",
+          "points"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The query or formula id."
+          },
+          "label": {
+            "type": "string"
+          },
+          "group": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "unit": {
+            "$ref": "#/components/schemas/Unit"
+          },
+          "compare": {
+            "type": "boolean"
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "format": "double"
+              }
+            }
+          }
+        }
+      },
+      "SeriesDisplay": {
+        "type": "string",
+        "enum": [
+          "line",
+          "area",
+          "bars"
+        ]
       },
       "ServiceMapEdge": {
         "type": "object",
@@ -33354,6 +36302,120 @@
           }
         }
       },
+      "Share": {
+        "type": "object",
+        "required": [
+          "id",
+          "url_token",
+          "config",
+          "paused",
+          "created_at",
+          "access_count"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url_token": {
+            "type": "string",
+            "description": "The capability in `https://app.siteqwality.com/share/d/<token>`."
+          },
+          "config": {
+            "$ref": "#/components/schemas/ShareConfig"
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserRef"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_accessed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "access_count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ShareConfig": {
+        "type": "object",
+        "properties": {
+          "allowed_times": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Presets a viewer may pick, from `15m 1h 4h 1d 2d 7d 30d 90d`."
+          },
+          "default_time": {
+            "type": "string",
+            "description": "One of `allowed_times`."
+          },
+          "theme": {
+            "$ref": "#/components/schemas/ShareTheme"
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ShareVariable"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ShareTheme": {
+        "type": "string",
+        "enum": [
+          "light",
+          "dark",
+          "auto"
+        ]
+      },
+      "ShareVariable": {
+        "type": "object",
+        "description": "How a public viewer may use one variable. A variable the share does not list is locked to\nthe dashboard default.",
+        "properties": {
+          "locked": {
+            "type": "boolean"
+          },
+          "allowed": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "The values a viewer may pick; `null` allows every value (and All when the variable\nincludes it)."
+          }
+        }
+      },
       "SlaMonth": {
         "type": "object",
         "description": "Attainment of one calendar month against the monitor's target.",
@@ -33508,6 +36570,71 @@
           }
         },
         "additionalProperties": false
+      },
+      "SortOrder": {
+        "type": "string",
+        "enum": [
+          "desc",
+          "asc"
+        ]
+      },
+      "Source": {
+        "type": "string",
+        "enum": [
+          "monitors",
+          "incidents",
+          "rum",
+          "logs",
+          "metrics",
+          "traces"
+        ]
+      },
+      "SourceCatalog": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "description",
+          "intervals",
+          "measures",
+          "fields",
+          "requires_metric"
+        ],
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "intervals": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            },
+            "description": "Bucket sizes in seconds the source can serve, ascending."
+          },
+          "measures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasureDef"
+            }
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldDef"
+            }
+          },
+          "requires_metric": {
+            "type": "boolean"
+          }
+        }
       },
       "SourceCount": {
         "type": "object",
@@ -34137,6 +37264,92 @@
           "not_in_map"
         ]
       },
+      "TableColumn": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "A query or formula id."
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display": {
+            "$ref": "#/components/schemas/ColumnDisplay"
+          },
+          "unit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Unit"
+              }
+            ]
+          },
+          "decimals": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "thresholds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueThreshold"
+            }
+          }
+        }
+      },
+      "TableConfig": {
+        "type": "object",
+        "required": [
+          "queries"
+        ],
+        "properties": {
+          "queries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Query"
+            }
+          },
+          "formulas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Formula"
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TableColumn"
+            },
+            "description": "Empty means one number column per visible query and formula."
+          },
+          "sort_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "order": {
+            "$ref": "#/components/schemas/SortOrder"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
       "TagFacetValue": {
         "type": "object",
         "required": [
@@ -34293,6 +37506,72 @@
           }
         }
       },
+      "TemplateCategory": {
+        "type": "string",
+        "enum": [
+          "uptime",
+          "incidents",
+          "rum",
+          "logs",
+          "traces",
+          "overview"
+        ]
+      },
+      "TemplateList": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TemplateSummary"
+            }
+          }
+        }
+      },
+      "TemplateSummary": {
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "description",
+          "category",
+          "widget_count",
+          "has_data",
+          "requires"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/TemplateCategory"
+          },
+          "widget_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "has_data": {
+            "type": "boolean",
+            "description": "Whether the account already has data for the template's main source."
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "description": "Every source the template reads, main source first."
+          }
+        }
+      },
       "TestParserRequest": {
         "type": "object",
         "required": [
@@ -34343,6 +37622,21 @@
             ]
           }
         }
+      },
+      "ThresholdStyle": {
+        "type": "string",
+        "enum": [
+          "line",
+          "band"
+        ]
+      },
+      "TileSize": {
+        "type": "string",
+        "enum": [
+          "tile",
+          "compact",
+          "list"
+        ]
       },
       "TimelineBucket": {
         "type": "object",
@@ -34473,6 +37767,127 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "TimeseriesConfig": {
+        "type": "object",
+        "required": [
+          "queries"
+        ],
+        "properties": {
+          "queries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Query"
+            }
+          },
+          "formulas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Formula"
+            }
+          },
+          "display": {
+            "$ref": "#/components/schemas/SeriesDisplay"
+          },
+          "stacked": {
+            "type": "boolean"
+          },
+          "series_limit": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "legend": {
+            "$ref": "#/components/schemas/LegendMode"
+          },
+          "legend_columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LegendColumn"
+            }
+          },
+          "y_axis": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/YAxis"
+              }
+            ]
+          },
+          "unit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Unit"
+              }
+            ]
+          },
+          "decimals": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "thresholds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChartThreshold"
+            }
+          },
+          "compare": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Compare"
+              }
+            ]
+          },
+          "overlays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Overlay"
+            }
+          },
+          "palette": {
+            "$ref": "#/components/schemas/Palette"
+          }
+        }
+      },
+      "TimeseriesData": {
+        "type": "object",
+        "required": [
+          "series",
+          "events"
+        ],
+        "properties": {
+          "partial_from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Series"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChartEvent"
+            }
           }
         }
       },
@@ -34733,6 +38148,14 @@
           }
         }
       },
+      "Tone": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "warn",
+          "danger"
+        ]
+      },
       "TopError": {
         "type": "object",
         "required": [
@@ -34820,6 +38243,65 @@
           }
         }
       },
+      "ToplistConfig": {
+        "type": "object",
+        "required": [
+          "queries"
+        ],
+        "properties": {
+          "queries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Query"
+            }
+          },
+          "formulas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Formula"
+            }
+          },
+          "sort_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A query or formula id; defaults to the first visible one."
+          },
+          "order": {
+            "$ref": "#/components/schemas/SortOrder"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "unit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Unit"
+              }
+            ]
+          },
+          "decimals": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "thresholds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueThreshold"
+            }
+          }
+        }
+      },
       "TotpCompleteRequest": {
         "type": "object",
         "required": [
@@ -34868,6 +38350,66 @@
             "items": {
               "$ref": "#/components/schemas/SpanDetail"
             }
+          }
+        }
+      },
+      "TraceItem": {
+        "type": "object",
+        "required": [
+          "trace_id",
+          "root_service",
+          "root_operation",
+          "start",
+          "duration_ms",
+          "span_count",
+          "error_count"
+        ],
+        "properties": {
+          "trace_id": {
+            "type": "string"
+          },
+          "root_service": {
+            "type": "string"
+          },
+          "root_operation": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "duration_ms": {
+            "type": "number",
+            "format": "double"
+          },
+          "span_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "error_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "TraceListConfig": {
+        "type": "object",
+        "properties": {
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Filter"
+            }
+          },
+          "sort": {
+            "$ref": "#/components/schemas/TraceSort"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           }
         }
       },
@@ -35125,6 +38667,14 @@
           }
         }
       },
+      "TraceSort": {
+        "type": "string",
+        "enum": [
+          "recent",
+          "duration",
+          "errors"
+        ]
+      },
       "TraceSummary": {
         "type": "object",
         "required": [
@@ -35292,6 +38842,20 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "TracesData": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TraceItem"
+            }
           }
         }
       },
@@ -35622,6 +39186,19 @@
           }
         }
       },
+      "Unit": {
+        "type": "string",
+        "enum": [
+          "ms",
+          "seconds",
+          "percent",
+          "count",
+          "bytes",
+          "score",
+          "per_second",
+          "none"
+        ]
+      },
       "UpdateAlertRule": {
         "type": "object",
         "properties": {
@@ -35834,12 +39411,15 @@
       },
       "UpdateDashboardRequest": {
         "type": "object",
+        "description": "A whole-document save. `version` is the version the edit started from.",
+        "required": [
+          "name",
+          "definition",
+          "version"
+        ],
         "properties": {
           "name": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string"
           },
           "description": {
             "type": [
@@ -35847,14 +39427,25 @@
               "null"
             ]
           },
-          "global_time_range": {},
-          "auto_refresh_seconds": {
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "definition": {
+            "$ref": "#/components/schemas/DashboardDefinition"
+          },
+          "locked": {
             "type": [
-              "integer",
+              "boolean",
               "null"
             ],
-            "format": "int32",
-            "description": "`null` turns auto-refresh off; leaving the field out keeps it. A plain\n`#[serde(default)]` read `null` as \"leave it\", so \"Off\" never saved."
+            "description": "Only the creator and admins may change it; absent keeps it."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -36655,6 +40246,35 @@
           }
         }
       },
+      "UpdateShareRequest": {
+        "type": "object",
+        "description": "Absent fields are kept; `expires_at: null` removes the expiry.",
+        "properties": {
+          "paused": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "config": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShareConfig"
+              }
+            ]
+          }
+        }
+      },
       "UpdateStatusPage": {
         "type": "object",
         "required": [
@@ -36876,43 +40496,6 @@
           }
         }
       },
-      "UpdateWidgetRequest": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "widget_type": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/DashboardWidgetType"
-              }
-            ]
-          },
-          "data_source": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/DashboardDataSource"
-              }
-            ]
-          },
-          "query_config": {},
-          "visualization_config": {},
-          "layout": {},
-          "time_range_override": {
-            "description": "`null` removes the override (the widget follows the dashboard again)."
-          }
-        }
-      },
       "UploadRequest": {
         "oneOf": [
           {
@@ -36967,6 +40550,115 @@
           "expires_in_seconds": {
             "type": "integer",
             "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "UptimeBarsConfig": {
+        "type": "object",
+        "properties": {
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Filter"
+            }
+          },
+          "days": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "sla_target": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "UptimeBarsData": {
+        "type": "object",
+        "required": [
+          "days",
+          "items"
+        ],
+        "properties": {
+          "days": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UptimeBarsItem"
+            }
+          }
+        }
+      },
+      "UptimeBarsItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "days"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MonitorKind"
+          },
+          "uptime": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UptimeDay"
+            }
+          }
+        }
+      },
+      "UptimeDay": {
+        "type": "object",
+        "required": [
+          "date"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "`YYYY-MM-DD` in the request timezone."
+          },
+          "uptime": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "downtime_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
             "minimum": 0
           }
         }
@@ -37070,6 +40762,186 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "UserRef": {
+        "type": "object",
+        "description": "The member who made a change.",
+        "required": [
+          "id",
+          "email"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "ValueOption": {
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ValueThreshold": {
+        "type": "object",
+        "description": "A conditional colour on a value (query value, toplist, table cells).",
+        "required": [
+          "op",
+          "value",
+          "tone"
+        ],
+        "properties": {
+          "op": {
+            "$ref": "#/components/schemas/Comparison"
+          },
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "tone": {
+            "$ref": "#/components/schemas/Tone"
+          }
+        }
+      },
+      "ValuesResponse": {
+        "type": "object",
+        "required": [
+          "values"
+        ],
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValueOption"
+            }
+          }
+        }
+      },
+      "Variable": {
+        "type": "object",
+        "required": [
+          "name",
+          "source",
+          "field"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "field": {
+            "type": "string"
+          },
+          "metric": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "multi": {
+            "type": "boolean"
+          },
+          "include_all": {
+            "type": "boolean"
+          },
+          "default": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "`[\"*\"]` is All."
+          },
+          "values": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "A fixed list instead of values from the data."
+          }
+        }
+      },
+      "VersionList": {
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VersionSummary"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "VersionSummary": {
+        "type": "object",
+        "required": [
+          "version",
+          "created_at",
+          "summary"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserRef"
+              }
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "description": "Server-computed, for example `Added 2 widgets, edited \"p95 latency\"`."
           }
         }
       },
@@ -37297,6 +41169,16 @@
           }
         }
       },
+      "VitalKey": {
+        "type": "string",
+        "enum": [
+          "lcp",
+          "inp",
+          "cls",
+          "fcp",
+          "ttfb"
+        ]
+      },
       "VitalMetric": {
         "type": "string",
         "enum": [
@@ -37353,35 +41235,663 @@
         },
         "additionalProperties": false
       },
-      "WidgetLayoutItem": {
+      "Widget": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/WidgetKind"
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "layout"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "layout": {
+                "$ref": "#/components/schemas/Layout"
+              },
+              "time": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RangeSpec",
+                    "description": "Overrides the dashboard range for this widget."
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "WidgetData": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TimeseriesData"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "timeseries"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScalarData"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "scalar"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupedData"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "grouped"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MonitorsData"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "monitors"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MonitorSummaryData"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "monitor_summary"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UptimeBarsData"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "uptime_bars"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IncidentsData"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "incidents"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExpiryData"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "expiry"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LogsData"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "logs"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TracesData"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "traces"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RumVitalsData"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "rum_vitals"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "WidgetKind": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/TimeseriesConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "timeseries"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/QueryValueConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "query_value"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/ToplistConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "toplist"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/TableConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "table"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/PieConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "pie"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/MonitorGridConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "monitor_grid"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/MonitorSummaryConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "monitor_summary"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/UptimeBarsConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "uptime_bars"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/IncidentListConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "incident_list"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/ExpiryListConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "expiry_list"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/LogStreamConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "log_stream"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/TraceListConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "trace_list"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/RumVitalsConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "rum_vitals"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/NoteConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "note"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "config",
+              "type"
+            ],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/SectionConfig"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "section"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "`{\"type\": \"...\", \"config\": {...}}` on the widget object."
+      },
+      "WidgetQuery": {
         "type": "object",
         "required": [
-          "widget_id",
-          "x",
-          "y",
-          "w",
-          "h"
+          "widget"
         ],
         "properties": {
-          "widget_id": {
-            "type": "string",
-            "format": "uuid"
+          "widget": {
+            "$ref": "#/components/schemas/Widget"
           },
-          "x": {
-            "type": "integer",
-            "format": "int32"
+          "max_points": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "WidgetResult": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "approximate",
+          "warnings"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
           },
-          "y": {
-            "type": "integer",
-            "format": "int32"
+          "status": {
+            "$ref": "#/components/schemas/WidgetStatus"
           },
-          "w": {
-            "type": "integer",
-            "format": "int32"
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
-          "h": {
-            "type": "integer",
-            "format": "int32"
+          "window": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResultWindow"
+              }
+            ]
+          },
+          "approximate": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WidgetData"
+              }
+            ]
+          }
+        }
+      },
+      "WidgetStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "error",
+          "timeout",
+          "denied"
+        ]
+      },
+      "YAxis": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "max": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "scale": {
+            "$ref": "#/components/schemas/AxisScale"
+          },
+          "include_zero": {
+            "type": "boolean"
           }
         }
       }
@@ -37490,7 +42000,7 @@
     },
     {
       "name": "Dashboards",
-      "description": "Customizable observability dashboards with mixed-source widgets."
+      "description": "Dashboards over monitors, incidents, RUM, logs, metrics and traces: documents, versions, templates, queries and public links."
     },
     {
       "name": "Logs",

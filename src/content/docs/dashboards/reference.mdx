@@ -183,7 +183,9 @@ A **locked** dashboard can be edited only by its creator, Admins and Super Admin
 
 On the free plan the paid-plan actions return `402`. Listing, opening, exporting and deleting still work, so an account that leaves a paid plan keeps its dashboards.
 
-API keys act with the account's permissions. [M2M clients](/enterprise/api-clients/) use the scopes `read:dashboards` and `write:dashboards`. `POST /dashboards/query` only reads, so `read:dashboards` is enough for it.
+Scoped API keys, [M2M clients](/enterprise/api-clients/) and connected apps need `read:dashboards` to read dashboards and `write:dashboards` to change them. `POST /dashboards/query` is a read operation.
+
+Loading widget data also requires each source's read scope: `read:monitors`, `read:incidents`, `read:rum`, `read:logs`, `read:metrics` or `read:traces`. Overlays count too: incident overlays need `read:incidents`, and downtime overlays need `read:monitors`. A write scope does not imply read access. Widgets missing a required scope return `denied` while other widgets still run. Creating or saving a dashboard and managing its share links requires read access to all sources used by its widgets.
 
 ## API endpoints
 
@@ -260,7 +262,7 @@ The whole request is validated first. A bad request returns `400` and names the 
 | `ok` | `data` holds the result. |
 | `error` | The query failed. `error` holds a message that is safe to show. |
 | `timeout` | The widget ran past its 15 second budget. |
-| `denied` | The caller cannot use the widget, because of the plan or a missing RUM application. |
+| `denied` | The caller cannot use the widget, for example because a source read scope or access to a RUM application is missing. |
 
 Results also carry the resolved `window` (`from`, `to`, `interval_seconds`), an `approximate` flag and `warnings`. When `status` is `ok`, `data.kind` says which shape follows:
 
