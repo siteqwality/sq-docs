@@ -1,7 +1,7 @@
 ---
 title: HTTP check reference
 description: Every field on an HTTP check, with defaults, validation limits, and status meanings.
-last_verified: 2026-10-07
+last_verified: 2026-10-11
 owner: jj
 ---
 
@@ -73,21 +73,23 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 
 ## Check locations
 
-Location ids follow `<provider>-<region>`, for example `aws-us-east-1` or `gcp-europe-west3`. The live list, with each location's city, country and provider, is on the [locations page](https://siteqwality.com/locations/). From the API, call `GET /check-locations` (the location below is an example of the shape):
+Location ids follow `<provider>-<region>`, for example `aws-us-east-1` or `gcp-asia-southeast1`. The live list, with each location's city, country and provider, is on the [locations page](https://siteqwality.com/locations/). From the API, call `GET /check-locations` (the location below is an example of the shape):
 
 ```json
 {
   "default_location_id": "aws-us-east-1",
   "locations": [
     {
-      "id": "gcp-europe-west3", "provider": "gcp", "provider_name": "Google Cloud",
-      "provider_region": "europe-west3", "city": "Frankfurt", "country_code": "DE",
-      "continent": "europe", "label": "Frankfurt · Google Cloud", "status": "live",
+      "id": "gcp-asia-southeast1", "provider": "gcp", "provider_name": "Google Cloud",
+      "provider_region": "asia-southeast1", "city": "Singapore", "country_code": "SG",
+      "continent": "asia", "label": "Singapore · Google Cloud", "status": "live",
       "is_default": false, "capabilities": ["http"]
     }
   ]
 }
 ```
+
+The current fleet offers 24 HTTP locations. Discover ids through this endpoint rather than hardcoding a city list, and select only the locations you want each monitor to use.
 
 Only locations with `status: "live"` and `"http"` in `capabilities` can be selected for an HTTP check. The list also carries `draining` and `retired` locations so older results keep a readable label: a `draining` location keeps serving monitors that already use it but cannot be newly selected, and a `retired` one no longer runs.
 
