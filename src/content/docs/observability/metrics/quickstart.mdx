@@ -101,9 +101,9 @@ The response is wrapped in `data`: `{"data": {"series": [{"group": {}, "points":
 
 <Steps>
 
-1. **Dashboards → New dashboard.** Name it `Demo`.
+1. **Dashboards → New dashboard.** Start from a blank dashboard and name it `Demo`. Dashboards need a paid plan.
 
-2. **Add widget → Timeseries.** Choose the **Metrics** data source and the metric `demo.queue_depth`. The widget charts the metric's average over the dashboard's time range. Layout to taste.
+2. **Add widget → Time series.** Open the widget's editor, choose the **Metrics** source, set the metric to `demo.queue_depth` and the aggregation to `avg`. Add a group by on a tag to split the series. Layout to taste.
 
 3. Save.
 
@@ -112,7 +112,34 @@ The response is wrapped in `data`: `{"data": {"series": [{"group": {}, "points":
 </TabItem>
 <TabItem label="API">
 
-See [Dashboards quickstart](/dashboards/quickstart/) for the wire-level shape.
+```bash
+curl -X POST https://api.siteqwality.com/dashboards \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Demo",
+    "definition": {
+      "schema_version": 1,
+      "widgets": [{
+        "id": "queue",
+        "type": "timeseries",
+        "title": "Queue depth",
+        "layout": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "config": {
+          "queries": [{
+            "id": "a",
+            "source": "metrics",
+            "metric": "demo.queue_depth",
+            "measure": "value",
+            "aggregation": "avg"
+          }]
+        }
+      }]
+    }
+  }'
+```
+
+See the [Dashboards reference](/dashboards/reference/#json-export-format) for the full document format.
 
 </TabItem>
 </Tabs>
