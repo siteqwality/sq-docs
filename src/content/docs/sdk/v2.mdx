@@ -7,7 +7,7 @@ owner: jj
 
 import { Aside } from '@astrojs/starlight/components';
 
-Field-by-field reference for **`@siteqwality/rum`**, the browser SDK for RUM, error tracking and [session replay](/observability/replay/overview/). This page describes the published SDK 2.2.0. For a first install, follow the [RUM quickstart](/observability/rum/quickstart/).
+Field-by-field reference for **`@siteqwality/rum`**, the browser SDK for RUM, error tracking and [session replay](/observability/replay/overview/). This page describes the published SDK 2.2.1. For a first install, follow the [RUM quickstart](/observability/rum/quickstart/).
 
 <Aside type="caution" title="SDK 1.x is retired">
 SDK 1.x is retired. Its endpoints no longer accept data, and its CDN paths (`/rum/v1/` and the pinned 1.x releases) have been removed. Install SDK 2 as described below.
@@ -23,9 +23,9 @@ Release channels verified October 10, 2026:
 
 | Channel | Availability |
 |---|---|
-| npm `@siteqwality/rum`, `latest` | SDK 2.2.0. |
-| CDN `/rum/v2/` | Moving 2.x alias, currently SDK 2.2.0. |
-| CDN `/rum/v2.2.0/` | Immutable SDK 2.2.0 and matching lazy chunks. |
+| npm `@siteqwality/rum`, `latest` | SDK 2.2.1. |
+| CDN `/rum/v2/` | Moving 2.x alias, currently SDK 2.2.1. |
+| CDN `/rum/v2.2.1/` | Immutable SDK 2.2.1 and matching lazy chunks. |
 | npm `next` | 2.1.0, older than `latest`. Install `latest` or an explicit version. |
 
 Use the application's public `applicationId` and `clientToken`. Do not use an account API key in a browser. The npm package and CDN release provide the same SDK version; npm integrates with your bundler, while the CDN exposes `window.SiteQwalityRUM`.
@@ -50,7 +50,7 @@ Call `init` before mounting your app. Collection starts synchronously: the sessi
 
 ### CDN snippet
 
-This snippet loads the moving 2.x CDN alias, currently SDK 2.2.0. Use `/rum/v2.2.0/sdk.min.js` to pin that release. Authorize the inline bootstrap using your site's CSP nonce or hash; see [CSP and endpoint configuration](/observability/rum/how-to/csp/).
+This snippet loads the moving 2.x CDN alias, currently SDK 2.2.1. Use `/rum/v2.2.1/sdk.min.js` to pin that release. Authorize the inline bootstrap using your site's CSP nonce or hash; see [CSP and endpoint configuration](/observability/rum/how-to/csp/).
 
 ```html
 <script>
@@ -74,7 +74,7 @@ This snippet loads the moving 2.x CDN alias, currently SDK 2.2.0. Use `/rum/v2.2
 
 The stub queues all 16 public methods and the errors the page throws before the SDK arrives. When the bundle loads it runs `init` first, then the other calls in order, and reports the early errors with their original times. If `init` has not run yet (for example, it waits for consent), the SDK keeps up to 100 page errors until it does. A queued getter has no synchronous return value; call `getStatus`, `getSessionUrl` and `isOptedOut` after the real SDK loads when you need their results.
 
-The bundle is a classic script whose only global is `window.SiteQwalityRUM`; it also works when loaded with `type="module"`, and a second copy of it does nothing. `/rum/v2/sdk.min.js` is the moving 2.x alias. Immutable releases use `/rum/v<version>/sdk.min.js`. Keep the matching `recorder-<version>.min.js`, `gzip-<version>.min.js` and `canvas-<version>.min.js` beside the core when self-hosting SDK 2.2.0. The canvas chunk loads only when canvas recording is opted in and permitted. The gzip fallback loads only when native compression is unavailable.
+The bundle is a classic script whose only global is `window.SiteQwalityRUM`; it also works when loaded with `type="module"`, and a second copy of it does nothing. `/rum/v2/sdk.min.js` is the moving 2.x alias. Immutable releases use `/rum/v<version>/sdk.min.js`. Keep the matching `recorder-<version>.min.js`, `gzip-<version>.min.js` and `canvas-<version>.min.js` beside the core when self-hosting SDK 2.2.1. The canvas chunk loads only when canvas recording is opted in and permitted. The gzip fallback loads only when native compression is unavailable.
 
 ## Endpoints and config
 
@@ -307,24 +307,24 @@ The body is a JSON array of rrweb events. Gzip uses `Content-Type: application/o
 
 Segments normally close at 20 seconds or about 2.5 MB of serialized JSON, and on tab hide. The first full snapshot is sent promptly. A snapshot larger than 4 MB after stylesheet references stops recording for that page load (`too_large`). These are SDK segmentation thresholds, not intake limits: intake allows at most 2 MB on the wire and 16 MB inflated.
 
-Requests are sent in order, one at a time. Network errors, 408, ordinary 429 responses and 5xx retry with backoff; `Retry-After` holds sends, including unload. SDK 2.2.0 distinguishes two explicit response reasons: a 403 with `reason: "not_enabled"` stops replay for the page load while Observe and Analyze continue, and a 429 with `reason: "session_cap"` stops replay for that session. Other 401 or 403 responses and an exhausted request budget stop delivery. Other 4xx responses drop a segment. A missing snapshot also drops dependent segments and requests a fresh snapshot. Identical retry bodies are deduplicated by intake.
+Requests are sent in order, one at a time. Network errors, 408, ordinary 429 responses and 5xx retry with backoff; `Retry-After` holds sends, including unload. SDK 2.2.1 distinguishes two explicit response reasons: a 403 with `reason: "not_enabled"` stops replay for the page load while Observe and Analyze continue, and a 429 with `reason: "session_cap"` stops replay for that session. Other 401 or 403 responses and an exhausted request budget stop delivery. Other 4xx responses drop a segment. A missing snapshot also drops dependent segments and requests a fresh snapshot. Identical retry bodies are deduplicated by intake.
 
 At page close, the SDK attempts a keepalive tail using already-compressed bytes or JSON within the shared 60 KB keepalive budget. Delivery and the final marker are best-effort. Inspect `getStatus().dropped`, including `replay_tail_dropped` and `replay_segments_dropped`, rather than assuming every closing event arrived.
 
 ### Replay buffer and privacy
 
-SDK 2.2.0 can download the recorder before a rule matches, but only when a sampled-in Replay rule could still match the session's device, release and environment, and recording is permitted. It keeps the current and previous full-snapshot intervals in memory, with snapshots about 60 seconds apart and a 5 MB buffer target. A match sends retained segments oldest first, then streams new recording.
+SDK 2.2.1 can download the recorder before a rule matches, but only when a sampled-in Replay rule could still match the session's device, release and environment, and recording is permitted. It keeps the current and previous full-snapshot intervals in memory, with snapshots about 60 seconds apart and a 5 MB buffer target. A match sends retained segments oldest first, then streams new recording.
 
 This can include roughly 60 to 120 seconds before a later error. It does **not** guarantee a minute of history: a fresh page, delayed config or consent, a pause, memory pressure or a large snapshot may leave less. Nothing from an unmatched replay buffer is uploaded or persisted. It is discarded on page close, stop, consent withdrawal, opt-out, GPC restrictions or a do-not-record decision.
 
-| Privacy mode | Behavior in SDK 2.2.0 |
+| Privacy mode | Behavior in SDK 2.2.1 |
 |---|---|
 | Strict | Masks page text except configured unmask selectors, masks inputs and blocks media. Block selectors always win. |
 | Balanced | Masks inputs; page text is visible with configured PII patterns scrubbed. Default patterns cover emails, card-like numbers and long digit runs. |
 | Relaxed | Masks inputs; ordinary page text is visible and default text PII patterns are empty. |
 | Custom | Uses the stored `mask_inputs` and `mask_text` flags. Review them explicitly; an application created before privacy levels can have input masking disabled. |
 
-Password, email and telephone inputs remain masked; hidden inputs are excluded. When input masking is off, credit-card autocomplete fields are blocked. URLs in page metadata, DOM attributes and CSS are minimized. Canvas recording is off by default. SDK 2.2.0 supports opt-in canvas capture outside Strict privacy, at up to 2 fps and a 20 MB serialized-frame budget per session; DOM replay continues after that budget is reached. A nonempty explicit `cookieDomain` disables canvas because its capture budget cannot be coordinated across subdomains. Iframe document content is not captured by this recorder. Stylesheet references can avoid resending acknowledged CSS; images and fonts still depend on their asset URLs.
+Password, email and telephone inputs remain masked; hidden inputs are excluded. When input masking is off, credit-card autocomplete fields are blocked. URLs in page metadata, DOM attributes and CSS are minimized. Canvas recording is off by default. SDK 2.2.0 and later support opt-in canvas capture outside Strict privacy, at up to 2 fps and a 20 MB serialized-frame budget per session; DOM replay continues after that budget is reached. A nonempty explicit `cookieDomain` disables canvas because its capture budget cannot be coordinated across subdomains. Iframe document content is not captured by this recorder. Stylesheet references can avoid resending acknowledged CSS; images and fonts still depend on their asset URLs.
 
 Recording pauses while hidden, after five minutes without input, or on never-record URLs, and resumes with a full snapshot when permitted. Pointer, scroll and media sampling plus mutation throttling mean replay does not preserve every intermediate DOM state. Heavy mutation bursts can leave marked gaps and require a fresh snapshot.
 
