@@ -1,7 +1,7 @@
 ---
 title: RUM (Real User Monitoring)
 description: Web vitals, errors, user actions, resource timing, collected from real browsers via the JS SDK, optionally with session replay.
-last_verified: 2026-10-10
+last_verified: 2026-10-11
 owner: jj
 ---
 
@@ -127,7 +127,7 @@ There was **no backfill**: sessions recorded before each dimension shipped keep 
 
 ## In the dashboard
 
-**Overview** leads with LCP, INP and CLS at the 75th percentile (p75), each coloured by Google's thresholds, with a bar showing the share of page views rated good, needs improvement and poor. FCP and TTFB sit in a second row. Each page view counts once per vital, using its latest valid value ordered by sequence and timestamp. The top row shows sessions, page views, errors and the share of sessions with an error. **Sessions** counts only sessions with at least one page view, and the error numbers come from the error events themselves.
+**Overview** opens with six key figures, each compared with the previous period: sessions, page views, visitors, sessions with errors, bounce rate and median active time. Core Web Vitals follows, with all five vitals at the 75th percentile (p75), each coloured by Google's thresholds, and a bar showing the share of page views rated good, needs improvement and poor. Each page view counts once per vital, using its latest valid value ordered by sequence and timestamp. **Sessions** counts only sessions with at least one page view, and the error numbers come from the error events themselves.
 
 | Vital | Good | Poor |
 |---|---|---|
@@ -139,7 +139,7 @@ There was **no backfill**: sessions recorded before each dimension shipped keep 
 
 Anything between the two is "needs improvement".
 
-**Top pages** lists each URL's page views with p75 LCP, INP, CLS and load time. Load time counts initial page loads only, never route changes. Click a row to see the sessions that visited it.
+**Breakdowns** rank routes by default and switch to entry pages, exit pages, referrers, channels, UTM campaigns, countries, devices, browsers, operating systems, releases and frustrating elements. Top errors and browser, country and device shares sit alongside. The **Pages** tab lists each route or path with views, sessions, p75 LCP, INP and CLS, and the share of sessions with an error. Click a row to inspect it and open the sessions that visited it.
 
 **Vitals charts** plot p50, p75 and p95 in your local time zone, with dates on ranges over 24 hours. Buckets are 5 minutes for the last 1 or 6 hours, 1 hour for 24 hours, 6 hours for 7 days and 1 day (aligned to your time zone) for 30 days. Empty buckets show as gaps, buckets with fewer than 10 samples are drawn faded, and lines mark the good and poor thresholds.
 
@@ -148,7 +148,7 @@ Anything between the two is "needs improvement".
 **Errors** groups errors and shows events, sessions and identified users per group for the selected range. Search runs on the server across every group in the range. An error's page lists the affected sessions, and **View all sessions** opens Sessions filtered to that error. **Watch replay** appears only when the session has a replay, and opens it at the error.
 
 
-Overview also reports visitors, bounce rate and median active time, with comparison to the previous period. Pages separates initial loads from route changes and connects poor Web Vitals to recorded element, script and resource details. Save an investigation privately or share it with your account, and discuss sessions or issues in comments. The same features are available through the API.
+Pages separates initial loads from route changes and connects poor Web Vitals to recorded element, script and resource details. Save an investigation privately or share it with your account, and discuss sessions or issues in comments. The same features are available through the API.
 
 ## See also
 
