@@ -84,7 +84,8 @@ Acknowledging or resolving the incident cancels the escalation: its state moves 
 Every route into acknowledgement does this, so it does not matter how the responder answers:
 
 - `POST /incident/{id}/acknowledge` and `POST /incident/{id}/resolve`
-- the [one-click links](/incident-management/incidents/how-to/one-click-actions/) in email and SMS
+- the [acknowledge and resolve links](/incident-management/incidents/how-to/one-click-actions/) in a paged responder's email and SMS
+- the dashboard's incident page
 - automatic recovery, when the monitor that opened the incident comes back
 
 <Aside type="caution" title="An exhausted policy can still page once more">

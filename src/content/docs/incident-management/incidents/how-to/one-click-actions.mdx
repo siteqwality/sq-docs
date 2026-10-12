@@ -1,71 +1,74 @@
 ---
 title: Acknowledge from the alert itself
-description: Signed one-click links in email and SMS, and interactive Acknowledge and Resolve buttons in Slack.
-last_verified: 2026-09-26
+description: Single-use acknowledge and resolve links in email and SMS, made for the person being paged. Shared channels get a link to the incident.
+last_verified: 2026-10-12
 owner: jj
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-The fastest acknowledgement is the one that does not require finding a laptop. Incident pages carry action controls in the alert itself, so a responder can stop the escalation from their phone.
+The fastest acknowledgement is the one that does not require finding a laptop. When an escalation policy pages you by email or SMS, the message carries a link that acknowledges the incident from your phone.
 
-## What each channel carries
+## What each destination carries
 
-| Channel | Acknowledge | Resolve |
-|---|---|---|
-| Email | signed link | signed link |
-| SMS | signed link | not included |
-| Slack | interactive button | interactive button |
-| Webhook | `ack_url` and `resolve_url` in the payload | included |
+| Destination | What the message carries |
+|---|---|
+| Email to a paged responder | Acknowledge and resolve links, made for that person |
+| SMS to a paged responder | An acknowledge link, made for that person |
+| Email to a service target address | A link to the incident in Site Qwality |
+| Slack channel | A link to the incident in Site Qwality |
+| Webhook (chat or generic) | `incident_url`, a link to the incident in Site Qwality |
 
-Acting through any of these does exactly what the API endpoints do, including cancelling the escalation and deleting any pending delayed pages.
+An action link acts without a login, so it only ever goes to one person: the responder the escalation policy paged. Anything that reaches a shared place, such as a Slack channel, a chat or generic webhook, or a team address, gets a link to the incident page instead, and that page needs you to sign in.
 
-## Signed links in email and SMS
+Acting through a link does exactly what the API endpoints do, including cancelling the escalation and deleting any pending delayed pages.
 
-Each link is a signed, single-purpose URL of the form `https://api.siteqwality.com/incident/action/<token>`. The token carries the incident, the account, the acting user, and an expiry, all covered by an HMAC signature.
+## Links in email and SMS
 
-Opening one shows a confirmation page with a single button, **Acknowledge incident** or **Resolve incident**. Nothing changes until you press it. There is no login step: the signature is the credential.
+Each link has the form `https://api.siteqwality.com/incident/action/<token>`. The token is random. Site Qwality stores only a hash of it, together with the person, the incident and the action it was made for.
 
-The extra tap is deliberate. Email security scanners (Outlook Safe Links, Mimecast, Proofpoint and others) open every link in a message before a person sees it. When opening the link acted on its own, a scanner could acknowledge the incident and stop the escalation with nobody awake. A scanner opens the page; only a person presses the button.
+- **Made for you.** The incident records you as the person who acknowledged it.
+- **Works once.** After you press the button, the link is used up.
+- **Expires 24 hours after the message is sent.**
+- **Stops working when the incident changes.** Once anyone acknowledges or resolves the incident, by any route, every outstanding link for it stops working. That includes the resolve link in the same email, so to resolve an incident you acknowledged, use the incident page.
 
-**Links expire 24 hours after the message is sent.** The clock starts at send time, not at incident creation, so a resend gives a fresh 24 hours.
+Opening a link shows a confirmation page with a single button, **Acknowledge incident** or **Resolve incident**. Nothing changes until you press it.
+
+The extra tap is deliberate. Email security scanners (Outlook Safe Links, Mimecast, Proofpoint and others) open every link in a message before a person sees it. If opening the link acted on its own, a scanner could acknowledge the incident and stop the escalation with nobody awake. A scanner opens the page; only a person presses the button.
 
 | What you see | Meaning |
 |---|---|
 | Acknowledge incident / Resolve incident button | The link is valid. Press the button to act. |
 | Incident acknowledged | Done. Escalation paging has stopped. |
-| Incident resolved | Done. |
-| Already acknowledged / Already resolved | Someone beat you to it. No harm done. |
-| Link expired | Past 24 hours. Use the dashboard. |
-| Invalid link | The token was truncated or altered. Mail clients that rewrite URLs are the usual cause. |
+| Incident resolved | Done. Escalation paging has stopped. |
+| Link already used | The button on this link was already pressed. Nothing was changed. |
+| Link expired | The link is more than 24 hours old. Nothing was changed. |
+| Link no longer active | The incident was acknowledged or resolved after the link was sent. The page names its current state. Nothing was changed. |
+| Link not recognized | The link is incomplete or altered. Mail clients that rewrite URLs are the usual cause. Nothing was changed. |
+| Link retired | The link came from an alert sent before 12 October 2026, in a format that no longer works. Nothing was changed. |
+
+Every page links to the incident in Site Qwality, so you can act there instead.
 
 <Aside type="tip">
-Because the link works without a session, treat it like a password. Anyone who can read the alert can acknowledge the incident, which is the point: forwarding the page to a colleague genuinely hands off the ability to act. It only ever affects the one incident it was minted for.
+Treat the link like a password. It acts in your name, once, without a login, so forwarding it lets someone else acknowledge as you. To hand an incident to a colleague, share the incident page instead.
 </Aside>
 
 Two practical notes:
 
-- **SMS carries the acknowledge link only.** The signed URL is long, so an SMS page can span multiple segments and bill accordingly. If that matters more than one-tap acknowledgement, route pages through email or a push channel instead.
-- **Suspended accounts can still acknowledge and resolve.** Both the signed links and the acknowledge and resolve endpoints are deliberately exempt from suspension blocking, so an account can always silence its own pager.
+- **SMS carries the acknowledge link only.** The URL is long, so an SMS page can span multiple segments and bill accordingly. If that matters more than one-tap acknowledgement, route pages through email or a push channel instead.
+- **Suspended accounts can still acknowledge and resolve.** Both the links and the acknowledge and resolve endpoints are deliberately exempt from suspension blocking, so an account can always silence its own pager.
 
-## Interactive buttons in Slack
+If a link cannot be created when the message is sent, the message carries the link to the incident page instead.
 
-Slack incident messages render as blocks with the service, severity, status, and affected monitors, plus two buttons:
+## Slack
 
-- **Acknowledge**
-- **Resolve**
+Slack channel messages show the service, severity, status and affected monitors, with a link to open the incident in Site Qwality. They carry no Acknowledge or Resolve buttons: everyone in the channel sees the message, so acknowledge and resolve from the incident page.
 
-Clicking one performs the action and then **replaces the original message** with a version showing what happened and who did it, so the channel has a single, current record instead of a thread of stale buttons. The buttons are removed at that point.
+Older messages may still show Acknowledge and Resolve buttons. Do not rely on them: acknowledge and resolve from the incident page.
 
-For the button to attribute the action to the right person, the clicking user needs a Slack DM contact method carrying their Slack user ID. Without that mapping, the click is rejected and the incident is not changed.
+## Webhooks
 
-<Aside type="note">
-Slack messages use buttons rather than signed links, so nothing in a Slack channel expires after 24 hours. Slack's own interaction window applies instead: the message replacement stops working roughly 30 minutes after the click, though the acknowledgement itself still lands.
-</Aside>
-
-## If the links are missing
-
-When the signing secret is not configured, alerts fall back to a plain dashboard link to the incident and no signed links are minted. Visiting the action endpoint in that state returns a "Links not available" page telling you to use the dashboard. This is deliberate: a link that cannot be verified is never issued.
+Incident webhook payloads carry `incident_url`, a link to the incident page. They no longer carry `ack_url` or `resolve_url`: a webhook delivers to a shared system, and those links acted without a login.
 
 ## See also
 

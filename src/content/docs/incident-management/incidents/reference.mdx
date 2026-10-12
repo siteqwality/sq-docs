@@ -110,7 +110,7 @@ Standalone incidents:
 | `POST` | `/incident/{incident_id}/resolve` | Resolve. |
 | `POST` | `/incident/{incident_id}/update` | Post an incident update. |
 | `POST` | `/incident/{incident_id}/publish` | Publish to a status page. |
-| `GET` / `POST` | `/incident/action/{token}` | Signed [one-click acknowledge or resolve](/incident-management/incidents/how-to/one-click-actions/). `GET` shows a confirmation page and changes nothing; `POST` (its button) acts. Token-authenticated, no session needed, 24 hour expiry. |
+| `GET` / `POST` | `/incident/action/{token}` | [Acknowledge or resolve from an email or SMS](/incident-management/incidents/how-to/one-click-actions/). `GET` shows a confirmation page and changes nothing; `POST` (its button) acts. Token-authenticated, no session needed. Each link is made for one paged user, works once, expires after 24 hours, and stops working when the incident changes state. |
 
 Status-page-scoped incidents (same shapes, scoped to one page):
 
