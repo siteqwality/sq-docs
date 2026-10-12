@@ -23,6 +23,8 @@ The editor and the API read the same list. `GET /dashboards/catalog` returns it,
 
 `monitors` reads HTTP and browser checks. Uptime and response time are measured per check, so they match the monitor page.
 
+Over two days or more, widgets read hourly summaries of the checks, so long ranges stay fast. Counts, uptime, averages, `min` and `max` are exact; percentiles are within 1%.
+
 | Measure | Unit | Aggregations | Meaning |
 |---|---|---|---|
 | `uptime` | percent | fixed | Share of checks that passed. |
