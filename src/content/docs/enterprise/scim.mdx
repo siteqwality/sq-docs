@@ -15,13 +15,13 @@ This page is the contract. If a string is not in the table below, it is not a Si
 
 <Steps>
 
-1. In Site Qwality open **Account → Security → SCIM** (a Super Admin). Create a connection. Copy the **SCIM base URL** and the **bearer token**. The token is shown once.
+1. In Site Qwality open **Settings → SCIM provisioning** (a Super Admin). Create a connection. Copy the **SCIM base URL** and the **bearer token**. The token is shown once.
 
 2. In your identity provider (Okta, Entra ID, OneLogin, JumpCloud, and so on) create a SCIM 2.0 application. Paste the base URL and token.
 
 3. Map groups or roles in the IdP to the Site Qwality role IDs in the table below. Stytch is the SCIM endpoint we expose, so the value the IdP sends must be the Stytch `role_id`, not a display label.
 
-4. Push one test user, then check **Account → Users**. They should appear with the mapped role. If the role looks wrong, the IdP is sending a string that is not in the table.
+4. Push one test user, then check **Settings → Users**. They should appear with the mapped role. If the role looks wrong, the IdP is sending a string that is not in the table.
 
 </Steps>
 
@@ -54,7 +54,7 @@ These do **not** map and fall through to Member:
 - Okta/Entra group names (`Engineering`, `On-Call`)
 - Empty role lists
 
-The user is still created. They land as Member. A Super Admin can raise the role later in **Account → Users**, or you can fix the IdP mapping and push the user again.
+The user is still created. They land as Member. A Super Admin can raise the role later in **Settings → Users**, or you can fix the IdP mapping and push the user again.
 
 <Aside type="caution">
 Do not invent role IDs. `SuperAdmin`, `super-admin`, and `admins` are all unknown names and become Member.
@@ -73,7 +73,7 @@ Always keep at least two Super Admins if you manage roles from the directory. Ma
 
 ## Invites still work
 
-SCIM does not replace [invites](/getting-started/account-and-team/). You can still invite one person or paste up to 25 emails at once from **Account → Users**. A pending invite counts toward the seat limit immediately. An expired invite (14 days) stops counting and can be resent or replaced.
+SCIM does not replace [invites](/getting-started/account-and-team/). You can still invite one person or paste up to 25 emails at once from **Settings → Users**. A pending invite counts toward the seat limit immediately. An expired invite (14 days) stops counting and can be resent or replaced.
 
 If SCIM later pushes the same email, Site Qwality attaches the directory member to the existing user rather than creating a duplicate.
 

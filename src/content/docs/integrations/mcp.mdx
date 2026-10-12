@@ -31,7 +31,7 @@ It is available on every plan, including Free. Plan limits and usage quotas appl
 
 The assistant then acts as you, limited to what you approved. Your role still applies: a Viewer cannot make changes even after granting write access.
 
-To cut an assistant off, revoke it on the **AI Assistants** tab in **Settings**. It can no longer sign in, and the access it already has stops working within a minute.
+To cut an assistant off, revoke it under **AI assistants** in your personal settings (open the menu under your name, bottom left). It can no longer sign in, and the access it already has stops working within a minute.
 
 ## Add Site Qwality to your assistant
 
@@ -145,7 +145,7 @@ Agents that run without a person at a browser (CI jobs, scheduled scripts, backg
 Authorization: Bearer <your API key>
 ```
 
-Create it under **Settings → API Keys → + New key**, choose **Full access** (ingest keys cannot call the API), and tick only the scopes the agent needs. A key with no scopes ticked can do everything your account can.
+Create it under **Settings → API keys → New key**, choose **Full access** (ingest keys cannot call the API), and tick only the scopes the agent needs. A key with no scopes ticked can do everything your account can.
 
 <Tabs syncKey="mcp-client">
 <TabItem label="Claude Code">
@@ -280,7 +280,7 @@ It works when you signed in through the consent page. API keys cannot switch acc
 | Problem | Fix |
 |---|---|
 | The assistant stopped working after you revoked it, or says it is not authorized (`401`) | Connect again: **Connect** in Claude, `/mcp` in Claude Code, `codex mcp login siteqwality` in Codex, or remove and re-add the server elsewhere. |
-| `403` on an action | The access you approved does not cover it. Revoke it on the **AI Assistants** tab in **Settings** and reconnect with read and write, or add the scope to your API key. A `403` can also mean your role does not allow the action, or a plan limit was reached; the message says which. |
+| `403` on an action | The access you approved does not cover it. Revoke it under **AI assistants** in your personal settings and reconnect with read and write, or add the scope to your API key. A `403` can also mean your role does not allow the action, or a plan limit was reached; the message says which. |
 | `404` with `X-SQ-Account` set | The client id is wrong, or you are using an API key. See [Working in a client account](/partners/context-switching/). |
 | The assistant cannot find a tool for what you asked | Ask it to use `find_api_operations`. |
 

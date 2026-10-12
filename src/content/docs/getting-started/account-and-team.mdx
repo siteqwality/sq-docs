@@ -15,7 +15,7 @@ The **Get started** checklist in the dashboard sidebar tracks your setup progres
 
 <Steps>
 
-1. Open **Account → Users**.
+1. Open **Settings → Users**.
 
 2. Click **Invite User**, enter their email, and pick the role they'll join with (defaults to **Member**). Inviting someone as Admin, Billing Admin, or Super Admin requires you to be a Super Admin yourself. To invite a group, choose **Invite several people** and paste up to 25 addresses (one per line, or separated by commas).
 
@@ -40,7 +40,7 @@ Directory-managed teams should map IdP groups to the exact role IDs in [SCIM rol
 
 A *contact method* is **how you personally** can be reached, whether that's your email, your phone for SMS, your phone for calls, or your Slack DM. Distinct from a notification *channel*, which is account-level.
 
-Each user manages their own contact methods under **Account → Contact Methods**. Available types:
+Each user manages their own contact methods in their personal settings, under **Notifications → Contact methods**. Available types:
 
 | Type | What it is |
 |---|---|
@@ -60,11 +60,11 @@ See the [Notification rules how-to](/incident-management/notifications/how-to/no
 
 ## Generate API keys
 
-Anything you can do in the dashboard, you can do via the API. Generate a key under **Account → API Keys**.
+Anything you can do in the dashboard, you can do via the API. Generate a key under **Settings → API keys**.
 
 <Steps>
 
-1. **Account → API Keys → Create key.**
+1. **Settings → API keys → New key.**
 
 2. Name it after where it'll be used (`local-dev`, `terraform-prod`, `ci`). One key per use case so you can rotate them independently.
 
@@ -91,7 +91,7 @@ Whichever you use, every change either one makes is recorded in the [audit log](
 
 <Steps>
 
-1. **Settings → Billing → Plans** to see what you're on and what's available.
+1. **Settings → Billing** to see what you're on and what's available.
 
 2. **Change plan** flips you between tiers. Upgrades are immediate; downgrades take effect at the end of the current billing cycle.
 
@@ -99,7 +99,7 @@ Whichever you use, every change either one makes is recorded in the [audit log](
 
 </Steps>
 
-Usage-relevant counters (monitor count, ingested logs/metrics/traces volume, RUM session count) live under **Settings → Billing → Usage**. Hard limits are enforced at the API layer, so you'll get a `403 Forbidden` if a request would push you over. Telemetry is the exception: past the allowance and its 10% grace buffer, the ingest endpoints still answer with a success status, but logs, metrics and traces are not stored.
+Usage-relevant counters (monitor count, ingested logs/metrics/traces volume, RUM session count) live under **Settings → Usage**. Hard limits are enforced at the API layer, so you'll get a `403 Forbidden` if a request would push you over. Telemetry is the exception: past the allowance and its 10% grace buffer, the ingest endpoints still answer with a success status, but logs, metrics and traces are not stored.
 
 ## Set up integrations early
 
