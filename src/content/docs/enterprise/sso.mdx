@@ -1,0 +1,86 @@
+---
+title: SAML single sign-on
+description: Connect a SAML 2.0 identity provider, prove you own your email domain with a DNS TXT record, and send your team's sign-ins to it.
+last_verified: 2026-10-12
+owner: jj
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Single sign-on lets your team sign in with their work account through your identity provider (Okta, Microsoft Entra ID, Google Workspace or any SAML 2.0 provider). When someone types an address at your email domain on the sign-in screen, Site Qwality sends them straight to your identity provider.
+
+SSO is on a paid plan, and only a **Super Admin** can set it up. A `403` on the SSO endpoints means one of the two is missing.
+
+## Set it up
+
+Open **Settings → Single sign-on** and follow the three steps there.
+
+<Steps>
+
+1. **Add Site Qwality to your identity provider.** Create a SAML 2.0 app and give it the two values the page shows: the **single sign-on URL** (also called the ACS or reply URL) and the **audience URI** (the SP entity ID).
+
+2. **Connect your identity provider.** Paste the app's metadata URL, or enter its entity ID, sign-in URL and signing certificate by hand. The connection turns **active** once those details check out.
+
+3. **Verify and claim your email domain.** Prove you own the domain with a DNS TXT record (below). Once it is verified, Site Qwality claims it for the connection and the sign-in screen starts routing it.
+
+</Steps>
+
+Sign-ins switch over only when all three are true: the connection is active, the domain is verified, and the connection claims it. Until then everyone keeps signing in the way they do today.
+
+## Verify your domain
+
+Anyone could type a domain into a form, so Site Qwality asks for proof first. Only someone who controls the domain's DNS can publish the record, which stops another account from claiming your domain and pointing your team at its identity provider.
+
+<Steps>
+
+1. Under step 3, enter the domain your team's addresses use, for example `corp.example.com`, and choose **Add domain**.
+
+2. Add the TXT record the page shows at your DNS provider:
+
+   | Field | Value |
+   |---|---|
+   | Type | `TXT` |
+   | Name | `_siteqwality-verification.corp.example.com` |
+   | Value | `siteqwality-verification=` followed by your token |
+
+   Many DNS providers add the domain to the name for you; then enter only `_siteqwality-verification`. A TXT record with the same value at the domain itself (`corp.example.com`) also counts.
+
+3. Choose **Verify**. Site Qwality looks the record up straight away. If it is not there yet, wait a few minutes for DNS to update and try again.
+
+</Steps>
+
+Once the record is found the domain is **verified**, and if the connection has no domain yet it is claimed automatically. If you verify a second domain, choose **Use for sign-in** to switch the claim to it. A connection claims one domain at a time.
+
+### Status, expiry and re-verifying
+
+| Status | Meaning |
+|---|---|
+| Waiting for record | Added, not checked yet. The token is good for **7 days**. |
+| Record not found | The last check found no matching record. Fix the record and verify again within the 7 days. |
+| Verified | The record was found. The verification lasts **365 days**. |
+| Expired | The 7 days ran out before the domain was verified, or a verification reached its 365 days. |
+
+- **Keep the record in place.** Choose **Re-verify** before the date shown to renew the verification for another 365 days. A re-check that does not find the record reports the failure but does not cut sign-ins off early; the verification still runs to its date.
+- **A lapsed verification stops routing.** When a verification expires, the sign-in screen stops sending that domain to your identity provider until you re-verify. The connection keeps its claim, so re-verifying turns routing back on.
+- **A token that expired unused** cannot be verified. Choose **Get a new token** (or add the domain again) for a fresh one, and update the TXT record.
+- **Removing a domain** deletes its verification. If the connection claimed it, the claim goes too and sign-ins for that domain stop going to your identity provider at once.
+
+An account can hold up to 20 domains.
+
+<Aside type="note" title="If another account claimed your domain first">
+A domain can belong to one connection. If another Site Qwality account claimed your domain without verifying it, verifying it yourself and claiming it moves the claim to your connection. If the other account verified it too, the claim stays with them; contact support.
+</Aside>
+
+## Over the API
+
+The same flow is available to a Super Admin session. Each response follows the usual `{"data": ...}` envelope; the full shapes are in the [API reference](/api-reference/).
+
+| Request | What it does |
+|---|---|
+| `GET /account/sso/domains` | Lists the account's domains with their status, record name and value, and expiry. |
+| `POST /account/sso/domains` with `{"domain": "corp.example.com"}` | Adds a domain and returns the TXT record to publish (`201`), or the existing entry (`200`). |
+| `POST /account/sso/domains/{verification_id}/verify` | Looks the record up now. `200` when found, `422` when not found, `400` when the token expired, `503` when DNS could not be queried. |
+| `DELETE /account/sso/domains/{verification_id}` | Removes the domain and any claim on it. |
+| `PUT /account/sso/saml/connection` with `{"email_domain": "corp.example.com"}` | Claims a verified domain for the connection. An unverified domain returns `400`. |
+
+`GET /account/sso/saml/connection` reports `email_domain_verified`, which is `true` only while the claimed domain has a current verification.

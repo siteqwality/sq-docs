@@ -397,6 +397,7 @@ export default defineConfig({
 					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'enterprise/overview' },
+						{ label: 'SAML single sign-on', slug: 'enterprise/sso' },
 						{ label: 'SCIM role mapping', slug: 'enterprise/scim' },
 						{ label: 'M2M API clients', slug: 'enterprise/api-clients' },
 						{ label: 'Customer audit log', slug: 'enterprise/audit-log' },

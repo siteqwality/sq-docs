@@ -222,6 +222,10 @@ Access is granted per area, as `read:<area>` and `write:<area>`. On the consent 
 | Traces | `read:traces`, `write:traces` | Trace search and detail |
 | RUM | `read:rum`, `write:rum` | RUM applications and analytics |
 | Dashboards | `read:dashboards`, `write:dashboards` | Dashboards, templates, version history and widget queries. Public share links are never available to assistants. |
+| Services | `read:services`, `write:services` | Services and the escalation policy each one routes to |
+| User notification settings | `read:users`, `write:users` | Each user's contact methods and notification rules |
+
+Services and user notification settings are available to assistants that connect with an API key. The consent page does not offer them yet, so an assistant that signs in with OAuth cannot reach them.
 
 Session replay content is never available to an assistant, whatever it is granted: it stays with the people allowed to [watch replays](/observability/replay/reference/#who-can-watch-a-replay).
 

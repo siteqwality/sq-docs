@@ -16,7 +16,7 @@ Reach for a client when a deploy pipeline, a Terraform run, or an internal servi
 In the dashboard, **Settings → API clients → New client**. Name it after what uses it, then tick the scopes it needs.
 
 ```bash
-curl -X POST https://api.siteqwality.com/account/m2m_client/ \
+curl -X POST https://api.siteqwality.com/account/m2m_client \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -97,7 +97,7 @@ Site Qwality's token endpoint returns a standard OAuth2 token response without a
 
 ## Scopes
 
-Scopes are `read:<family>` or `write:<family>`. Nine families exist:
+Scopes are `read:<family>` or `write:<family>`. Eleven families exist:
 
 | Family | Covers |
 |---|---|
@@ -106,21 +106,23 @@ Scopes are `read:<family>` or `write:<family>`. Nine families exist:
 | `notifications` | Notification channels, groups, integrations |
 | `status_pages` | Status pages and their components |
 | `logs` | Log query, parsers, saved views |
-| `metrics` | Metric query endpoints |
+| `metrics` | Metric query endpoints and saved views |
 | `traces` | Trace search and detail |
 | `rum` | RUM applications and analytics |
 | `dashboards` | Dashboards, templates, version history, share links and widget queries |
+| `services` | Services and the escalation policy each one routes to |
+| `users` | Each user's contact methods and notification rules, for provisioning on-call |
 
 `write` covers `POST`, `PUT`, `PATCH` and `DELETE`. Everything else is `read`. **Granting `write` does not imply `read`**; if a client needs both, grant both.
 
 One scope sits outside the families: `read:rum_replay` lets a client watch [session replays](/observability/replay/reference/#who-can-watch-a-replay). It is never implied, not by `read:rum` and not by a key with no scope list, so a client that downloads replays needs both `read:rum` and `read:rum_replay`.
 
-<Aside type="caution" title="Anything outside those nine families is refused">
-Scope checking is fail-closed. Account management, billing, authentication, staff endpoints, webhooks, per-user settings and services are **not** covered by any family, so an M2M client gets a `403` on them no matter what scopes it holds.
+<Aside type="caution" title="Anything outside those eleven families is refused">
+Scope checking is fail-closed. Account management, billing, authentication, staff endpoints and webhooks are **not** covered by any family, so an M2M client gets a `403` on them no matter what scopes it holds.
 
 That includes managing API clients themselves, which is deliberate: a client can never mint another client. Use a session or an API key for those operations.
 
-One consequence worth knowing: metric saved views are also unreachable, because no family maps to them today. Log saved views are reachable under `logs`.
+The `users` family reaches contact methods and notification rules only. It does not invite, remove or change the role of anyone on the team.
 
 The [partner](/partners/overview/) client-management endpoints are a separate case: they are refused because every one of them requires the Admin role, and a client carries no role at all. A client **can** act inside a partner's client account with the `X-SQ-Account` header, subject to the scopes it holds.
 </Aside>
