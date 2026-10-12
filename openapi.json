@@ -41,7 +41,7 @@
         }
       }
     },
-    "/account/api_key/": {
+    "/account/api_key": {
       "get": {
         "tags": [
           "API Keys"
@@ -440,7 +440,7 @@
         ]
       }
     },
-    "/account/m2m_client/": {
+    "/account/m2m_client": {
       "get": {
         "tags": [
           "M2M API Clients"
@@ -821,7 +821,7 @@
             "description": "Internal server error"
           },
           "502": {
-            "description": "Stytch API call failed"
+            "description": "Sign-in service unavailable"
           }
         },
         "security": [
@@ -836,8 +836,7 @@
         "tags": [
           "Security"
         ],
-        "summary": "Finish attaching Google after the Stytch redirect, bound to the current session.",
-        "description": "Requires `X-Stytch-Session-Token` so Stytch attaches the OAuth factor to\nthis member rather than creating a parallel login. Google's email must\nmatch the session email (case-insensitive) or the request is rejected.",
+        "summary": "Attach Google after confirming the same member, organization and email.",
         "operationId": "complete_google_oauth_connect",
         "requestBody": {
           "content": {
@@ -873,7 +872,7 @@
             "description": "Internal server error"
           },
           "502": {
-            "description": "Stytch API call failed"
+            "description": "Sign-in service unavailable"
           }
         },
         "security": [
@@ -962,7 +961,7 @@
             "description": "Internal server error"
           },
           "502": {
-            "description": "Stytch API call failed"
+            "description": "Sign-in service unavailable"
           }
         },
         "security": [
@@ -977,7 +976,6 @@
         "tags": [
           "Security"
         ],
-        "summary": "Complete a passkey registration.",
         "operationId": "passkey_register_complete",
         "requestBody": {
           "content": {
@@ -1000,17 +998,8 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "403": {
-            "description": "Endpoint requires a user session"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "502": {
-            "description": "Stytch API call failed"
+          "400": {
+            "description": "Invalid passkey ceremony"
           }
         },
         "security": [
@@ -1025,7 +1014,6 @@
         "tags": [
           "Security"
         ],
-        "summary": "Begin a passkey registration. Returns the WebAuthn creation-options blob.",
         "operationId": "passkey_register_start",
         "requestBody": {
           "content": {
@@ -1039,7 +1027,7 @@
         },
         "responses": {
           "200": {
-            "description": "WebAuthn creation options",
+            "description": "Passkey creation options",
             "content": {
               "application/json": {
                 "schema": {
@@ -1048,17 +1036,11 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid authentication"
+          "400": {
+            "description": "Invalid label or passkey limit"
           },
           "403": {
-            "description": "Endpoint requires a user session"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "502": {
-            "description": "Stytch API call failed"
+            "description": "Security confirmation required"
           }
         },
         "security": [
@@ -1073,16 +1055,16 @@
         "tags": [
           "Security"
         ],
-        "summary": "Delete a passkey by id.",
         "operationId": "passkey_delete",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "WebAuthn registration id",
+            "description": "Passkey id",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1097,17 +1079,8 @@
               }
             }
           },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "403": {
-            "description": "Endpoint requires a user session"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "502": {
-            "description": "Stytch API call failed"
+          "404": {
+            "description": "Passkey not found"
           }
         },
         "security": [
@@ -1145,7 +1118,7 @@
             "description": "Internal server error"
           },
           "502": {
-            "description": "Stytch API call failed"
+            "description": "Sign-in service unavailable"
           }
         },
         "security": [
@@ -1196,7 +1169,7 @@
             "description": "Internal server error"
           },
           "502": {
-            "description": "Stytch API call failed"
+            "description": "Sign-in service unavailable"
           }
         },
         "security": [
@@ -1247,7 +1220,7 @@
             "description": "Internal server error"
           },
           "502": {
-            "description": "Stytch API call failed"
+            "description": "Sign-in service unavailable"
           }
         },
         "security": [
@@ -1262,11 +1235,20 @@
         "tags": [
           "Security"
         ],
-        "summary": "Disable TOTP for the authenticated member.",
         "operationId": "totp_delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpDisableRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
-            "description": "TOTP disabled",
+            "description": "Authenticator disabled",
             "content": {
               "application/json": {
                 "schema": {
@@ -1274,18 +1256,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "403": {
-            "description": "Endpoint requires a user session"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "502": {
-            "description": "Stytch API call failed"
           }
         },
         "security": [
@@ -1300,7 +1270,6 @@
         "tags": [
           "Security"
         ],
-        "summary": "Verify a TOTP code and complete enrollment.",
         "operationId": "totp_complete",
         "requestBody": {
           "content": {
@@ -1314,7 +1283,7 @@
         },
         "responses": {
           "200": {
-            "description": "TOTP enrollment complete",
+            "description": "Authenticator enabled",
             "content": {
               "application/json": {
                 "schema": {
@@ -1322,21 +1291,31 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "Invalid TOTP code"
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "403": {
-            "description": "Endpoint requires a user session"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "502": {
-            "description": "Stytch API call failed"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/totp/recovery-codes": {
+      "post": {
+        "tags": [
+          "Security"
+        ],
+        "operationId": "recovery_codes",
+        "responses": {
+          "200": {
+            "description": "New recovery codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCodesResponse"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1351,15 +1330,43 @@
         "tags": [
           "Security"
         ],
-        "summary": "Begin TOTP enrollment. Returns the QR image, secret, and recovery codes.",
         "operationId": "totp_start",
         "responses": {
           "200": {
-            "description": "TOTP enrollment payload",
+            "description": "Authenticator setup",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TotpStartResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/sso/domains": {
+      "get": {
+        "tags": [
+          "SSO"
+        ],
+        "summary": "List the account's SSO domains and their verification status.",
+        "operationId": "list_sso_domains",
+        "responses": {
+          "200": {
+            "description": "The account's domains",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DomainVerificationResponse"
+                  }
                 }
               }
             }
@@ -1368,13 +1375,168 @@
             "description": "Missing or invalid authentication"
           },
           "403": {
-            "description": "Endpoint requires a user session"
+            "description": "Caller is not a super admin, or the plan does not include SSO"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "SSO"
+        ],
+        "summary": "Start verifying a domain: returns the TXT record to publish. Adding a\ndomain already on the account returns it unchanged, with a fresh token if\nthe old one lapsed before it was verified.",
+        "operationId": "add_sso_domain",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDomainVerificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Domain was already on the account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainVerificationResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Domain added; publish the TXT record, then verify",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainVerificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a bare domain, or the account has too many domains"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin, or the plan does not include SSO"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/sso/domains/{verification_id}": {
+      "delete": {
+        "tags": [
+          "SSO"
+        ],
+        "summary": "Remove a domain. If the SSO connection claims it, the claim is cleared\ntoo, so sign-in stops routing it at once.",
+        "operationId": "delete_sso_domain",
+        "parameters": [
+          {
+            "name": "verification_id",
+            "in": "path",
+            "description": "Domain verification identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domain removed"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin, or the plan does not include SSO"
+          },
+          "404": {
+            "description": "Domain not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/sso/domains/{verification_id}/verify": {
+      "post": {
+        "tags": [
+          "SSO"
+        ],
+        "summary": "Look up the TXT record now. Verifies a pending domain, or renews a\nverified one for another 365 days.",
+        "operationId": "verify_sso_domain",
+        "parameters": [
+          {
+            "name": "verification_id",
+            "in": "path",
+            "description": "Domain verification identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Record found; the domain is verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainVerificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The token lapsed; add the domain again for a new one"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller is not a super admin, or the plan does not include SSO"
+          },
+          "404": {
+            "description": "Domain not found"
+          },
+          "422": {
+            "description": "The TXT record was not found"
           },
           "500": {
             "description": "Internal server error"
           },
-          "502": {
-            "description": "Stytch API call failed"
+          "503": {
+            "description": "DNS could not be queried; try again"
           }
         },
         "security": [
@@ -1450,7 +1612,7 @@
             }
           },
           "400": {
-            "description": "Invalid field values"
+            "description": "Invalid field values, or an email domain the account has not verified"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -1502,7 +1664,7 @@
             }
           },
           "400": {
-            "description": "Invalid display name or email domain"
+            "description": "Invalid display name, or an email domain the account has not verified"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -1511,7 +1673,7 @@
             "description": "Caller is not a super admin, or the plan does not include SSO"
           },
           "409": {
-            "description": "A connection already exists for this account"
+            "description": "A connection already exists for this account, or the domain is claimed"
           },
           "500": {
             "description": "Internal server error"
@@ -1900,6 +2062,39 @@
         ]
       }
     },
+    "/auth/email/confirm": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "confirm",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Email verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailConfirmResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid verification link"
+          }
+        }
+      }
+    },
     "/auth/email/resend-verification": {
       "post": {
         "tags": [
@@ -1925,6 +2120,95 @@
         ]
       }
     },
+    "/auth/email/start": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Send a sign-in link and code, or Stytch's link, to an address. The\nresponse is the same whether or not the address has an account.",
+        "operationId": "start",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Email sent (or claimed sent, so account existence is not leaked)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailStartResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email, or `turnstile_required`"
+          },
+          "429": {
+            "description": "`rate_limited`"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "503": {
+            "description": "`email_send_failed` or `auth_unavailable`"
+          }
+        }
+      }
+    },
+    "/auth/email/verify": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Redeem an emailed link or code. A known address signs in; a new one gets\nan account first. Either way the session broker finishes the login.",
+        "operationId": "verify",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated (with `redirect_path` when one was kept), or MFA required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`challenge_invalid`, `code_invalid` (with `attempts_remaining`) or `code_locked`"
+          },
+          "403": {
+            "description": "`partner_managed`"
+          },
+          "429": {
+            "description": "`rate_limited`"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "503": {
+            "description": "`auth_unavailable`"
+          }
+        }
+      }
+    },
     "/auth/magic-link/authenticate": {
       "post": {
         "tags": [
@@ -1944,11 +2228,11 @@
         },
         "responses": {
           "200": {
-            "description": "Authenticated",
+            "description": "Authenticated, or MFA required",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
+                  "$ref": "#/components/schemas/LoginResponse"
                 }
               }
             }
@@ -1967,7 +2251,7 @@
         "tags": [
           "Authentication"
         ],
-        "summary": "Send a discovery magic link to the given email. Works for both existing\nusers (signs them in) and new users (provisioning happens on click via\n`/auth/magic-link/authenticate`).",
+        "summary": "Legacy alias of `POST /auth/email/start`. Works for both existing users and\nnew ones; `sent` stays true, and the challenge fields are null while\nStytch sends the email.",
         "operationId": "send",
         "requestBody": {
           "content": {
@@ -1981,23 +2265,26 @@
         },
         "responses": {
           "200": {
-            "description": "Magic link sent (or claimed sent, so account existence is not leaked)",
+            "description": "Email sent (or claimed sent, so account existence is not leaked)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MagicLinkSendResponse"
+                  "$ref": "#/components/schemas/EmailStartResponse"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid email, or the verification token was refused"
+            "description": "Invalid email, or `turnstile_required`"
           },
           "429": {
-            "description": "Rate limited"
+            "description": "`rate_limited`"
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "`email_send_failed` or `auth_unavailable`"
           }
         }
       }
@@ -2042,6 +2329,118 @@
         }
       }
     },
+    "/auth/mfa/verify": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Complete a login with a TOTP code or a recovery code.",
+        "operationId": "verify",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MfaVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated (with `redirect_path` when the login kept one)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`mfa_invalid_code` (with `attempts_remaining`) or `mfa_ticket_invalid`"
+          },
+          "429": {
+            "description": "`rate_limited`"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "503": {
+            "description": "`auth_unavailable`"
+          }
+        }
+      }
+    },
+    "/auth/passkey/start": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "start",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Discoverable passkey options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyStartResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts"
+          }
+        }
+      }
+    },
+    "/auth/passkey/verify": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "verify",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Passkey verification failed"
+          },
+          "429": {
+            "description": "Too many attempts"
+          }
+        }
+      }
+    },
     "/auth/sso/start": {
       "post": {
         "tags": [
@@ -2080,6 +2479,87 @@
             "description": "Internal server error"
           }
         }
+      }
+    },
+    "/auth/step-up/start": {
+      "post": {
+        "tags": [
+          "Security"
+        ],
+        "operationId": "start",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUpStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Security confirmation sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepUpStartResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/auth/step-up/verify": {
+      "post": {
+        "tags": [
+          "Security"
+        ],
+        "operationId": "verify",
+        "parameters": [
+          {
+            "name": "X-SQ-Session-Token",
+            "in": "header",
+            "description": "Current opaque session token. The legacy X-Stytch-Session-Token header is also accepted.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUpVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Security change confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepUpVerifyResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
       }
     },
     "/billing/addons": {
@@ -2652,6 +3132,9 @@
           "403": {
             "description": "Caller is not a super admin"
           },
+          "404": {
+            "description": "Card not found on this account"
+          },
           "409": {
             "description": "Account has no Stripe customer"
           },
@@ -2748,6 +3231,9 @@
           },
           "403": {
             "description": "Caller is not a super admin"
+          },
+          "404": {
+            "description": "Card not found on this account"
           },
           "409": {
             "description": "Removing the only card on a paid subscription"
@@ -2935,6 +3421,54 @@
         ]
       }
     },
+    "/billing/usage/daily": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Usage per UTC day for each metered product, from the counters' daily snapshots.",
+        "operationId": "get_usage_daily",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "description": "How many UTC days to return, ending today (default 30, 7 to 90).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage per day by product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyUsageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/billing/usage/history": {
       "get": {
         "tags": [
@@ -2967,7 +3501,7 @@
         ]
       }
     },
-    "/browser_check/": {
+    "/browser_check": {
       "get": {
         "tags": [
           "Browser Monitors"
@@ -5903,7 +6437,7 @@
         ]
       }
     },
-    "/escalation_policy/": {
+    "/escalation_policy": {
       "get": {
         "tags": [
           "Escalation Policies"
@@ -6122,6 +6656,9 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Only an admin may delete this"
+          },
           "404": {
             "description": "Policy not found"
           },
@@ -6136,7 +6673,7 @@
         ]
       }
     },
-    "/escalation_policy/{policy_id}/level/": {
+    "/escalation_policy/{policy_id}/level": {
       "get": {
         "tags": [
           "Escalation Policies"
@@ -6212,13 +6749,16 @@
             }
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid request body, or a target user or schedule is not in this account"
           },
           "401": {
             "description": "Missing or invalid authentication"
           },
           "402": {
             "description": "Incident responder limit reached"
+          },
+          "404": {
+            "description": "Escalation policy not found"
           },
           "500": {
             "description": "Internal server error"
@@ -6269,6 +6809,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Escalation policy not found"
           },
           "500": {
             "description": "Internal server error"
@@ -7292,7 +7835,7 @@
         ]
       }
     },
-    "/incident/": {
+    "/incident": {
       "get": {
         "tags": [
           "Incidents"
@@ -7383,6 +7926,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page, service or affected monitor not found"
           },
           "500": {
             "description": "Internal server error"
@@ -7665,6 +8211,9 @@
               }
             }
           },
+          "400": {
+            "description": "acknowledged_by is missing or not a user in this account"
+          },
           "401": {
             "description": "Missing or invalid authentication"
           },
@@ -7844,7 +8393,7 @@
         ]
       }
     },
-    "/integration/": {
+    "/integration": {
       "get": {
         "tags": [
           "Integrations"
@@ -7891,7 +8440,7 @@
         ]
       }
     },
-    "/integration/discord/": {
+    "/integration/discord": {
       "post": {
         "tags": [
           "Integrations"
@@ -7929,7 +8478,7 @@
         ]
       }
     },
-    "/integration/google_chat/": {
+    "/integration/google_chat": {
       "post": {
         "tags": [
           "Integrations"
@@ -7967,7 +8516,7 @@
         ]
       }
     },
-    "/integration/mattermost/": {
+    "/integration/mattermost": {
       "post": {
         "tags": [
           "Integrations"
@@ -8005,7 +8554,7 @@
         ]
       }
     },
-    "/integration/microsoft_teams/": {
+    "/integration/microsoft_teams": {
       "post": {
         "tags": [
           "Integrations"
@@ -8043,7 +8592,7 @@
         ]
       }
     },
-    "/integration/opsgenie/": {
+    "/integration/opsgenie": {
       "post": {
         "tags": [
           "Integrations"
@@ -8081,7 +8630,7 @@
         ]
       }
     },
-    "/integration/pagerduty/": {
+    "/integration/pagerduty": {
       "post": {
         "tags": [
           "Integrations"
@@ -8119,7 +8668,7 @@
         ]
       }
     },
-    "/integration/pushbullet/": {
+    "/integration/pushbullet": {
       "post": {
         "tags": [
           "Integrations"
@@ -8157,7 +8706,7 @@
         ]
       }
     },
-    "/integration/pushover/": {
+    "/integration/pushover": {
       "post": {
         "tags": [
           "Integrations"
@@ -8195,7 +8744,7 @@
         ]
       }
     },
-    "/integration/slack/": {
+    "/integration/slack": {
       "post": {
         "tags": [
           "Integrations"
@@ -8233,7 +8782,7 @@
         ]
       }
     },
-    "/integration/telegram/": {
+    "/integration/telegram": {
       "post": {
         "tags": [
           "Integrations"
@@ -8352,7 +8901,7 @@
         ]
       }
     },
-    "/integration/webhook/": {
+    "/integration/webhook": {
       "post": {
         "tags": [
           "Integrations"
@@ -8478,7 +9027,7 @@
         ]
       }
     },
-    "/log_parsers/": {
+    "/log_parsers": {
       "get": {
         "tags": [
           "Log Parsers"
@@ -8770,7 +9319,7 @@
         ]
       }
     },
-    "/log_saved_views/": {
+    "/log_saved_views": {
       "get": {
         "tags": [
           "Log Saved Views"
@@ -8977,11 +9526,11 @@
         },
         "responses": {
           "200": {
-            "description": "Authenticated",
+            "description": "Authenticated, or MFA required",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
+                  "$ref": "#/components/schemas/LoginResponse"
                 }
               }
             }
@@ -9605,7 +10154,7 @@
         ]
       }
     },
-    "/maintenance_windows/": {
+    "/maintenance_windows": {
       "get": {
         "tags": [
           "Maintenance Windows"
@@ -9771,7 +10320,7 @@
         ]
       }
     },
-    "/metric_saved_views/": {
+    "/metric_saved_views": {
       "get": {
         "tags": [
           "Metric Saved Views"
@@ -10789,7 +11338,7 @@
         ]
       }
     },
-    "/notification/": {
+    "/notification": {
       "post": {
         "tags": [
           "Notifications"
@@ -10956,7 +11505,7 @@
         ]
       }
     },
-    "/notification_group/": {
+    "/notification_group": {
       "get": {
         "tags": [
           "Notifications"
@@ -11331,7 +11880,7 @@
         }
       }
     },
-    "/on_call_schedule/": {
+    "/on_call_schedule": {
       "get": {
         "tags": [
           "On-Call Schedules"
@@ -11547,6 +12096,9 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Only an admin may delete this"
+          },
           "404": {
             "description": "Schedule not found"
           },
@@ -11561,7 +12113,7 @@
         ]
       }
     },
-    "/on_call_schedule/{schedule_id}/layer/": {
+    "/on_call_schedule/{schedule_id}/layer": {
       "get": {
         "tags": [
           "On-Call Schedules"
@@ -11636,11 +12188,17 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid request body, or a participant is not in this account"
+          },
           "401": {
             "description": "Missing or invalid authentication"
           },
           "402": {
             "description": "Incident responder limit reached"
+          },
+          "404": {
+            "description": "On-call schedule not found"
           },
           "500": {
             "description": "Internal server error"
@@ -11703,7 +12261,7 @@
         ]
       }
     },
-    "/on_call_schedule/{schedule_id}/override/": {
+    "/on_call_schedule/{schedule_id}/override": {
       "get": {
         "tags": [
           "On-Call Schedules"
@@ -11778,8 +12336,14 @@
               }
             }
           },
+          "400": {
+            "description": "The user is not in this account"
+          },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "On-call schedule not found"
           },
           "500": {
             "description": "Internal server error"
@@ -12186,7 +12750,7 @@
         }
       }
     },
-    "/rum/": {
+    "/rum": {
       "get": {
         "tags": [
           "RUM Applications"
@@ -14549,7 +15113,7 @@
         ]
       }
     },
-    "/rum/{app_id}/releases/": {
+    "/rum/{app_id}/releases": {
       "get": {
         "tags": [
           "RUM Source Maps"
@@ -16571,7 +17135,7 @@
         ]
       }
     },
-    "/service/": {
+    "/service": {
       "get": {
         "tags": [
           "Services"
@@ -16649,6 +17213,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Escalation policy or auto-publish status page not found"
           },
           "500": {
             "description": "Internal server error"
@@ -16753,7 +17320,7 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Service not found"
+            "description": "Service, escalation policy or auto-publish status page not found"
           },
           "500": {
             "description": "Internal server error"
@@ -16789,6 +17356,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Only an admin may delete this"
           },
           "404": {
             "description": "Service not found"
@@ -16879,7 +17449,7 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Service not found"
+            "description": "Service or monitor not found"
           },
           "500": {
             "description": "Internal server error"
@@ -16892,7 +17462,7 @@
         ]
       }
     },
-    "/service/{service_id}/notification_target/": {
+    "/service/{service_id}/notification_target": {
       "get": {
         "tags": [
           "Services"
@@ -17040,7 +17610,7 @@
         ]
       }
     },
-    "/status_page/": {
+    "/status_page": {
       "get": {
         "tags": [
           "Status Pages"
@@ -17277,7 +17847,7 @@
         ]
       }
     },
-    "/status_page/{status_page_id}/branding/": {
+    "/status_page/{status_page_id}/branding": {
       "get": {
         "tags": [
           "Status Pages"
@@ -17494,7 +18064,7 @@
         ]
       }
     },
-    "/status_page/{status_page_id}/browser_check/": {
+    "/status_page/{status_page_id}/browser_check": {
       "get": {
         "tags": [
           "Status Pages"
@@ -17806,7 +18376,7 @@
             }
           },
           "400": {
-            "description": "Invalid domain"
+            "description": "Invalid domain: wildcards, bad characters and siteqwality.com names are refused"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -17816,6 +18386,9 @@
           },
           "404": {
             "description": "Status page not found"
+          },
+          "409": {
+            "description": "The domain is taken, or the page already has one"
           },
           "500": {
             "description": "Internal server error"
@@ -17866,7 +18439,7 @@
         ]
       }
     },
-    "/status_page/{status_page_id}/http_job/": {
+    "/status_page/{status_page_id}/http_job": {
       "get": {
         "tags": [
           "Status Pages"
@@ -18098,7 +18671,7 @@
         ]
       }
     },
-    "/status_page/{status_page_id}/incident/": {
+    "/status_page/{status_page_id}/incident": {
       "get": {
         "tags": [
           "Incidents"
@@ -18379,7 +18952,7 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Incident not found"
+            "description": "Status page or incident not found, or the incident is not on that page"
           },
           "500": {
             "description": "Internal server error"
@@ -18392,7 +18965,7 @@
         ]
       }
     },
-    "/status_page/{status_page_id}/maintenance/": {
+    "/status_page/{status_page_id}/maintenance": {
       "get": {
         "tags": [
           "Status Pages"
@@ -18490,6 +19063,9 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "404": {
+            "description": "Status page or affected monitor not found"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -18555,7 +19131,7 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Maintenance window not found"
+            "description": "Maintenance window or affected monitor not found"
           },
           "500": {
             "description": "Internal server error"
@@ -18992,7 +19568,7 @@
         ]
       }
     },
-    "/user/{user_id}/contact_method/": {
+    "/user/{user_id}/contact_method": {
       "get": {
         "tags": [
           "User Contact Methods"
@@ -19017,6 +19593,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "User not found"
           },
           "500": {
             "description": "Internal server error"
@@ -19073,6 +19652,12 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Only the user or an admin may change a user's contact methods"
+          },
+          "404": {
+            "description": "User not found"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -19120,6 +19705,9 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Only the user or an admin may change a user's contact methods"
+          },
           "404": {
             "description": "Contact method not found"
           },
@@ -19134,7 +19722,7 @@
         ]
       }
     },
-    "/user/{user_id}/notification_rule/": {
+    "/user/{user_id}/notification_rule": {
       "get": {
         "tags": [
           "User Notification Rules"
@@ -19159,6 +19747,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "User not found"
           },
           "500": {
             "description": "Internal server error"
@@ -19210,10 +19801,16 @@
             }
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid request body, or the contact method is not this user's"
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Only the user or an admin may change a user's notification rules"
+          },
+          "404": {
+            "description": "User not found"
           },
           "500": {
             "description": "Internal server error"
@@ -19277,10 +19874,13 @@
             }
           },
           "400": {
-            "description": "delay_minutes out of range (0 to 1440)"
+            "description": "delay_minutes out of range (0 to 1440), or the contact method is not this user's"
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Only the user or an admin may change a user's notification rules"
           },
           "404": {
             "description": "Rule not found"
@@ -19329,6 +19929,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Only the user or an admin may change a user's notification rules"
           },
           "404": {
             "description": "Rule not found"
@@ -20811,7 +21414,7 @@
           },
           "has_passkey": {
             "type": "boolean",
-            "description": "`true` if the account has a registered WebAuthn passkey.\nAlways `false` today, wired for the future passkey feature."
+            "description": "`true` if the account has a registered WebAuthn passkey."
           }
         }
       },
@@ -20832,6 +21435,10 @@
           },
           "member": {
             "$ref": "#/components/schemas/MemberInfo"
+          },
+          "is_new_account": {
+            "type": "boolean",
+            "description": "True only when this authentication created a new account."
           }
         }
       },
@@ -22126,6 +22733,19 @@
               "type": "string",
               "format": "uuid"
             }
+          }
+        }
+      },
+      "CreateDomainVerificationRequest": {
+        "type": "object",
+        "description": "Body for `POST /account/sso/domains`.",
+        "required": [
+          "domain"
+        ],
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "The email domain to prove ownership of, e.g. `corp.example.com`."
           }
         }
       },
@@ -23510,6 +24130,75 @@
           }
         }
       },
+      "DailyProductUsage": {
+        "type": "object",
+        "required": [
+          "product",
+          "unit",
+          "days"
+        ],
+        "properties": {
+          "product": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyUsagePoint"
+            },
+            "description": "Every day in range, oldest first, zero where nothing was used."
+          }
+        }
+      },
+      "DailyUsagePoint": {
+        "type": "object",
+        "required": [
+          "day",
+          "usage"
+        ],
+        "properties": {
+          "day": {
+            "type": "string",
+            "description": "UTC day, `YYYY-MM-DD`."
+          },
+          "usage": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DailyUsageResponse": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "products"
+        ],
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "tracking_started_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "First day with complete daily data when tracking began inside the range, else null."
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyProductUsage"
+            }
+          }
+        }
+      },
       "Dashboard": {
         "type": "object",
         "required": [
@@ -24592,6 +25281,84 @@
           }
         }
       },
+      "DomainVerificationResponse": {
+        "type": "object",
+        "description": "A domain the account is verifying, or has verified, for SSO.",
+        "required": [
+          "id",
+          "domain",
+          "status",
+          "record_type",
+          "record_name",
+          "record_value",
+          "created_at",
+          "expires_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "`pending` (record not checked yet), `failed` (the last check found no\nrecord), `verified`, or `expired` (the token, or the verification, lapsed)."
+          },
+          "record_type": {
+            "type": "string",
+            "description": "Always `TXT`."
+          },
+          "record_name": {
+            "type": "string",
+            "description": "The record's host name."
+          },
+          "record_value": {
+            "type": "string",
+            "description": "The record's exact value."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verified_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "A pending token's deadline, or when a verification lapses unless re-verified."
+          }
+        }
+      },
+      "EmailConfirmRequest": {
+        "type": "object",
+        "description": "`POST /auth/email/confirm`: redeems a `verify_email` link, never a session.",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "EmailConfirmResponse": {
+        "type": "object",
+        "required": [
+          "verified"
+        ],
+        "properties": {
+          "verified": {
+            "type": "boolean"
+          }
+        }
+      },
       "EmailNotificationDetails": {
         "type": "object",
         "required": [
@@ -24604,6 +25371,73 @@
         },
         "additionalProperties": false
       },
+      "EmailStartRequest": {
+        "type": "object",
+        "description": "`POST /auth/email/start`.",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "turnstile_response": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "redirect_path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where to land after sign-in; silently dropped unless allowlisted."
+          },
+          "promotekit_referral": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "EmailStartResponse": {
+        "type": "object",
+        "description": "Same body whoever sent the email, so it never reveals whether an account exists.",
+        "required": [
+          "sent"
+        ],
+        "properties": {
+          "sent": {
+            "type": "boolean"
+          },
+          "challenge_handle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null when Stytch sent its own link (no code box)."
+          },
+          "expires_in": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Seconds until the link and code expire.",
+            "minimum": 0
+          },
+          "code_length": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
       "EmailStatus": {
         "type": "object",
         "required": [
@@ -24615,11 +25449,11 @@
         "properties": {
           "email_verified": {
             "type": "boolean",
-            "description": "Whether the caller's Stytch member email is verified.\nMagic-link and Google OAuth signups land verified; email + password\nsignups land unverified until the link in the welcome email is clicked."
+            "description": "Whether the caller has verified their email address."
           },
           "mfa_enrolled": {
             "type": "boolean",
-            "description": "Whether the Stytch member has at least one MFA factor enrolled."
+            "description": "Whether the caller has enrolled an authenticator app."
           },
           "email": {
             "type": "string",
@@ -24628,6 +25462,30 @@
           "onboarding_dismissed": {
             "type": "boolean",
             "description": "Whether this member has permanently dismissed the onboarding checklist."
+          }
+        }
+      },
+      "EmailVerifyRequest": {
+        "type": "object",
+        "description": "`POST /auth/email/verify`: either `token`, or `challenge_handle` with `code`.",
+        "properties": {
+          "token": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "challenge_handle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -24874,7 +25732,10 @@
         "enum": [
           "active",
           "acknowledged",
-          "exhausted"
+          "exhausted",
+          "pending",
+          "resolved",
+          "cancelled"
         ]
       },
       "ExpiryData": {
@@ -27134,6 +27995,17 @@
           }
         }
       },
+      "LoginResponse": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SessionResponse"
+          },
+          {
+            "$ref": "#/components/schemas/MfaRequiredResponse"
+          }
+        ],
+        "description": "What every login endpoint answers: a session, or the MFA step still owed.\nThe frontend checks `mfa_required` first."
+      },
       "LogsData": {
         "type": "object",
         "required": [
@@ -27298,7 +28170,7 @@
               "string",
               "null"
             ],
-            "description": "SPA URL the Stytch email link should redirect to. The SPA reads the\n`token` query param and POSTs it to `/auth/magic-link/authenticate`.\nDefaults to `${base_frontend_url}/auth/magic-link/callback`."
+            "description": "SPA URL the Stytch email link should redirect to. The SPA reads the\n`token` query param and POSTs it to `/auth/magic-link/authenticate`.\nDefaults to `${base_frontend_url}/auth/magic-link/callback`. When we\nsend the email instead, its path and query become the `redirect_path`,\nand only on the frontend's own origin."
           },
           "turnstile_response": {
             "type": [
@@ -27306,18 +28178,6 @@
               "null"
             ],
             "description": "Cloudflare Turnstile token from the sign-in or sign-up widget. Required\nwherever Turnstile is configured."
-          }
-        }
-      },
-      "MagicLinkSendResponse": {
-        "type": "object",
-        "required": [
-          "sent"
-        ],
-        "properties": {
-          "sent": {
-            "type": "boolean",
-            "description": "Always `true` in the success path. Frontend uses this as a \"check your\nemail\" trigger. It does not leak whether the user exists."
           }
         }
       },
@@ -27940,6 +28800,69 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "MfaMethod": {
+        "type": "string",
+        "description": "A second factor the member can complete MFA with.",
+        "enum": [
+          "totp",
+          "recovery_code"
+        ]
+      },
+      "MfaRequiredResponse": {
+        "type": "object",
+        "description": "Answer of any login endpoint when the member has confirmed TOTP. The\nfrontend checks `mfa_required` before reading an `AuthResponse`.",
+        "required": [
+          "mfa_required",
+          "pending_token",
+          "methods"
+        ],
+        "properties": {
+          "mfa_required": {
+            "type": "boolean",
+            "description": "Always true; the discriminator against `AuthResponse`."
+          },
+          "pending_token": {
+            "type": "string",
+            "description": "`sqm1_...`, valid 10 minutes for 5 attempts."
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MfaMethod"
+            }
+          },
+          "redirect_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "MfaVerifyRequest": {
+        "type": "object",
+        "description": "`POST /auth/mfa/verify`: exactly one of `code` and `recovery_code`.",
+        "required": [
+          "pending_token"
+        ],
+        "properties": {
+          "pending_token": {
+            "type": "string"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recovery_code": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -29386,16 +30309,28 @@
           "added_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "last_used_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           }
         }
       },
       "PasskeyRegisterCompleteRequest": {
         "type": "object",
         "required": [
+          "ceremony_id",
           "public_key_credential",
           "label"
         ],
         "properties": {
+          "ceremony_id": {
+            "type": "string",
+            "format": "uuid"
+          },
           "public_key_credential": {
             "type": "string",
             "description": "Opaque JSON string from `navigator.credentials.create()`."
@@ -29408,10 +30343,15 @@
       "PasskeyRegisterCompleteResponse": {
         "type": "object",
         "required": [
+          "created_at",
           "id",
           "label"
         ],
         "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
           "id": {
             "type": "string"
           },
@@ -29428,19 +30368,67 @@
         "properties": {
           "label": {
             "type": "string",
-            "description": "Human label for the passkey (e.g., \"iPhone 15 Pro\"). Stored on Stytch\nalongside the credential so users can identify their devices."
+            "description": "Human label for the passkey (e.g., \"iPhone 15 Pro\")."
           }
         }
       },
       "PasskeyRegisterStartResponse": {
         "type": "object",
         "required": [
+          "ceremony_id",
           "public_key_credential_creation_options"
         ],
         "properties": {
+          "ceremony_id": {
+            "type": "string",
+            "format": "uuid"
+          },
           "public_key_credential_creation_options": {
             "type": "string",
             "description": "Opaque JSON string. The browser passes this straight to\n`navigator.credentials.create()` after parsing."
+          }
+        }
+      },
+      "PasskeyStartRequest": {
+        "type": "object",
+        "properties": {
+          "redirect_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PasskeyStartResponse": {
+        "type": "object",
+        "required": [
+          "ceremony_id",
+          "public_key_credential_request_options"
+        ],
+        "properties": {
+          "ceremony_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "public_key_credential_request_options": {
+            "type": "string"
+          }
+        }
+      },
+      "PasskeyVerifyRequest": {
+        "type": "object",
+        "required": [
+          "ceremony_id",
+          "public_key_credential"
+        ],
+        "properties": {
+          "ceremony_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "public_key_credential": {
+            "type": "string"
           }
         }
       },
@@ -30428,6 +31416,21 @@
               "format": "uuid"
             },
             "description": "Monitor ids to fetch response-time samples for. Ids that are not HTTP\nmonitors, or that belong to another account, are simply absent from\nthe response."
+          }
+        }
+      },
+      "RecoveryCodesResponse": {
+        "type": "object",
+        "description": "`POST /account/security/totp/recovery-codes`.",
+        "required": [
+          "recovery_codes"
+        ],
+        "properties": {
+          "recovery_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -35267,6 +36270,7 @@
           "display_name",
           "status",
           "has_certificate",
+          "email_domain_verified",
           "created_at"
         ],
         "properties": {
@@ -35315,6 +36319,10 @@
           "has_certificate": {
             "type": "boolean",
             "description": "Whether at least one verification certificate is on file."
+          },
+          "email_domain_verified": {
+            "type": "boolean",
+            "description": "Whether the account has a current DNS verification for `email_domain`.\nThe sign-in screen routes only a verified domain."
           },
           "created_at": {
             "type": "string",
@@ -36207,6 +37215,26 @@
             "format": "int64"
           }
         }
+      },
+      "SessionResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuthResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "redirect_path": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Sanitized at start; absent on the doors that never take one."
+              }
+            }
+          }
+        ],
+        "description": "A session from a login, plus where the frontend should land."
       },
       "SetDefaultPaymentMethodRequest": {
         "type": "object",
@@ -37166,6 +38194,77 @@
           "in_progress",
           "completed"
         ]
+      },
+      "StepUpAction": {
+        "type": "string",
+        "description": "A sensitive action that may need a fresh email step-up.",
+        "enum": [
+          "set_password",
+          "change_password",
+          "disable_totp",
+          "regenerate_recovery_codes",
+          "add_passkey"
+        ]
+      },
+      "StepUpStartRequest": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/StepUpAction"
+          }
+        }
+      },
+      "StepUpStartResponse": {
+        "type": "object",
+        "required": [
+          "challenge_handle",
+          "expires_in",
+          "code_length"
+        ],
+        "properties": {
+          "challenge_handle": {
+            "type": "string"
+          },
+          "expires_in": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "code_length": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "StepUpVerifyRequest": {
+        "type": "object",
+        "required": [
+          "challenge_handle",
+          "code"
+        ],
+        "properties": {
+          "challenge_handle": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "StepUpVerifyResponse": {
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        }
       },
       "SubscriptionResponse": {
         "type": "object",
@@ -38311,6 +39410,24 @@
           "totp_code": {
             "type": "string",
             "description": "6-digit code from the user's authenticator app."
+          }
+        }
+      },
+      "TotpDisableRequest": {
+        "type": "object",
+        "description": "`DELETE /account/security/totp`: a current code, or a `disable_totp` step-up grant.",
+        "properties": {
+          "totp_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recovery_code": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
