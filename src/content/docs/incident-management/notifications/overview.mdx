@@ -14,7 +14,7 @@ Site Qwality's notifications system has four objects and they often get confused
 | **Channel** (a.k.a. notification) | account | One delivery destination | "Send to #ops in our Slack" |
 | **Notification group** | account | Bundle of channels attached to a monitor | "Default alerts" → email + Slack + webhook |
 | **Contact method** | user (personal) | One way to reach me | "My phone for SMS" |
-| **Notification rule** | user (personal) | Per-urgency delivery preferences for me | "High urgency? SMS at 0min, call at 5min" |
+| **Notification rule** | user (personal) | Per-urgency delivery preferences for me | "High urgency? SMS at 0min, email at 5min" |
 
 The first two are account-wide; the last two are personal, and every team member configures their own. The two layers are decoupled on purpose: the team picks "where this monitor's alerts go" once; each engineer picks "how I personally want to be paged."
 
@@ -40,7 +40,7 @@ A *channel* is a single delivery destination. Each channel has a `type` and `det
 
 Every type except `email` and `sms` references an [integration](/integrations/overview/); set those up first under **Integrations**.
 
-See the [channels reference](/incident-management/notifications/channels/) for the per-type `details` shape, the delivery guarantees table, and which monitor types each channel supports.
+See the [channels reference](/incident-management/notifications/channels/) for the per-type `details` shape, the delivery guarantees table, and [which alerts reach which channels](/incident-management/notifications/channels/#which-alerts-reach-which-channels).
 
 Channels live inside a notification group; you don't attach raw channels to monitors.
 
@@ -50,10 +50,12 @@ A *notification group* is the bag of channels you attach to a monitor. Two extra
 
 | Field | Purpose |
 |---|---|
-| `delay_send_after_minutes` | Wait this long before sending the first alert. Suppresses brief flapping. Clamped 0–60. |
-| `resend_every_minutes` | If the incident is still active and unacknowledged, re-send every N minutes. Clamped 0–60. |
+| `delay_send_after_minutes` | Wait this long before sending the first down alert. Clamped 0–60. |
+| `resend_every_minutes` | While the monitor is still down, re-send the down alert every N minutes. Clamped 0–60. |
 
-The delay is the cleanest way to suppress noise: if a check fails for one tick and recovers, no notification fires.
+Both apply to HTTP monitors and browser checks only. Heartbeat (cron), TLS, DNS, page-speed alerts and alert rules ignore them and send at once. New accounts get a Default group with a 3-minute delay.
+
+A monitor alert has no acknowledge, so a repeat stops only when the monitor recovers. When a repeat is set, the first down alert also waits for the first scheduled send.
 
 A monitor can attach to multiple groups (cap of 10 per monitor), which is useful when you want a single check to alert both an internal team and a customer-facing channel.
 
@@ -65,14 +67,13 @@ Each user defines how they personally can be reached, in their personal settings
 |---|---|
 | `email` | An email address (auto-populated with sign-up address). |
 | `sms` | A phone number. |
-| `phone_call` | Same number. **Not delivered today**, see below. |
-| `slack_dm` | DM via the Slack integration. |
+| `slack_dm` | A Slack bot token you paste in, and the channel or user ID to message. It does not use the Slack integration. |
+
+There are no phone calls: a `phone_call` contact method is refused when you save it.
 
 Contact methods are *not* attached to monitors. They power escalation paging: when an escalation level targets `target_user_ids`, that user's notification rules determine which contact methods fire.
 
-<Aside type="caution" title="Two honest limits on contact methods">
-**`phone_call` does not deliver.** The type exists and you can create rules against it, but the escalation engine has no phone-call transport, so a rule pointing at a `phone_call` contact method is skipped at send time. Do not rely on it as your last-resort escalation step; use SMS or a push channel instead.
-
+<Aside type="caution" title="A limit on contact methods">
 **`verified` is not enforced at paging time.** The flag records whether the user confirmed the destination, but escalation paging does not check it before sending. An unverified SMS number will be attempted.
 </Aside>
 
@@ -92,26 +93,32 @@ That's: SMS me immediately, Slack DM me if I haven't acked in 5 minutes, email m
 
 `urgency` is `high` or `low`, and it is derived from the incident's severity rather than chosen: `critical` and `major` page at **high** urgency, `minor` pages at **low**. A user with no rule matching the incident's urgency is simply not paged.
 
-`delay_minutes` defaults to `0` and is not range-validated. A rule with a delay becomes a scheduled one-shot, and when it fires the system re-checks that the incident is still triggered, the escalation has not been acknowledged, and the rule still exists. Anything that changed in the meantime cancels the send, so a delayed rule cannot page you about an incident you already acked.
+`delay_minutes` defaults to `0` and accepts `0` to `1440`. A rule with a delay becomes a scheduled one-shot, and when it fires the system re-checks that the incident is still triggered, the escalation has not been acknowledged, and the rule still exists. Anything that changed in the meantime cancels the send, so a delayed rule cannot page you about an incident you already acked.
 
 `position` orders the rules in the list; it does not stagger them. Every matching rule fires in the same pass, each waiting only its own `delay_minutes`.
 
 ## How a page actually fires
 
-1. Monitor flips, opens an incident.
-2. Incident attaches to the monitor's `group_notification_ids`.
-3. For each notification group:
-   - Wait `delay_send_after_minutes` (if any).
-   - Fan out to every channel in the group.
-4. If an escalation policy is wired in via the routing path, page targeted users:
+There are two separate paths, and they share nothing.
+
+**Monitor alerts** go straight to notification groups, with no incident involved:
+
+1. A monitor goes down or recovers.
+2. For each notification group on the monitor, wait `delay_send_after_minutes` if it applies (HTTP and browser only).
+3. Send to every channel in the group whose type supports that alert.
+4. If `resend_every_minutes` is set, repeat the down alert until the monitor recovers.
+
+**Incidents** page people through escalation policies:
+
+1. An incident opens on a service, either by hand or automatically from a monitor linked to a service.
+2. The service's escalation policy pages the users on its first level:
    - For each user, walk their notification rules for the incident's urgency.
    - Each rule waits its `delay_minutes`, then fires its contact method.
-5. If no ack within the level's `timeout_minutes`, advance to the next escalation level.
-6. Optional `resend_every_minutes` re-fires the channel fanout in step 3.
+3. If no one acknowledges within the level's `timeout_minutes`, advance to the next escalation level.
 
 ## Pricing
 
-Email, Slack, webhook, Discord, Teams, Telegram, PagerDuty, OpsGenie, Google Chat, Mattermost, Pushover, and Pushbullet are included on every plan. SMS delivery costs real money (Twilio pass-through) and is billed per page on paid plans.
+Email, Slack, webhook, Discord, Teams, Telegram, PagerDuty, Jira Service Management (Opsgenie), Google Chat, Mattermost, Pushover, and Pushbullet are included on every plan. SMS uses SMS credits, sold in packs; see [pricing](https://siteqwality.com/pricing/).
 
 ## See also
 

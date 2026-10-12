@@ -66,17 +66,15 @@ Messages post as `Site Qwality` with a Slack-style attachment: a colored bar, a 
 
 ## Delivery behavior
 
-<Aside type="caution" title="Failed sends are not retried beyond three attempts">
-Mattermost rides the shared platform-webhook transport, which retries 3 times and then **records the failure and gives up**. The message is lost and nothing fails loudly; it shows as a `provider_error` on the delivery record.
+<Aside type="caution" title="A failed send is not retried later">
+Mattermost rides the shared platform-webhook transport: a send is tried up to 3 times in quick succession, each with a 15 second timeout, and any non-2xx response counts as a failure. After that the alert is not retried. A send that ends with an error response shows as failed in the channel's alert history; a send that runs out of time can be lost with no record.
 
-If your Mattermost server is behind a VPN or occasionally unreachable, pair this with a second channel for anything you cannot afford to miss.
+If Mattermost is your only alerting path for something that matters, pair it with a second channel.
 </Aside>
-
-Each attempt has a 15 second timeout, and any non-2xx response counts as a failure.
 
 ## Limitations
 
-Mattermost channels fire for **HTTP monitors, browser checks, and DNS/domain expiry**. TLS expiry and cron/heartbeat monitors only support email, SMS, and Slack today; a Mattermost channel on a group used by those monitor types is skipped.
+Mattermost channels fire for **HTTP monitors, browser checks, domain expiry warnings, log, metric and trace alert rules, and RUM issues**. Heartbeat (cron) monitors, TLS expiry warnings, page speed alerts and DNS record changes do not reach Mattermost today: a Mattermost channel on a group used by those sources is skipped. Incidents and escalations do not use Mattermost. See the [coverage table](/incident-management/notifications/channels/#which-alerts-reach-which-channels).
 
 ## See also
 

@@ -7,7 +7,7 @@ owner: jj
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-A *subscriber* is a visitor to your status page who confirmed an email address. They get an email when you publish or update an incident, or schedule maintenance. SMS, RSS, and webhook subscribers are not available.
+A *subscriber* is a visitor to your status page who confirmed an email address. They get an email when you create an incident on the page, post an update to it through the page, or schedule maintenance. SMS, RSS, and webhook subscribers are not available.
 
 <Aside type="caution">
 The public status page has an email subscribe form. The visitor confirms the address from a link we send. Until they confirm, they get no mail.
@@ -15,7 +15,15 @@ The public status page has an email subscribe form. The visitor confirms the add
 
 ## How it works (today)
 
-When a status page incident is created or updated, the back-end fans out a delivery to every confirmed email subscriber on that page. Subscribers can be added or removed via the public-facing subscribe widget on the status page (when present), or via the public status-page API.
+The back-end emails every confirmed subscriber on the page in three cases:
+
+- An incident is created on the status page (`POST /status_page/{status_page_id}/incident`).
+- An update is posted through the page (`POST /status_page/{status_page_id}/incident/{incident_id}/update`).
+- Maintenance is scheduled on the page.
+
+Nothing is sent when you publish an existing incident to a page, post an update through `POST /incident/{incident_id}/update`, resolve an incident, edit maintenance, or when a service publishes an incident automatically. If subscribers should hear about a change, post it as an update through the page.
+
+Visitors subscribe with the form on the public status page, and every email has an unsubscribe link. There is no API for adding or removing subscribers.
 
 A confirmation email is sent on subscribe; the visitor must click the link to activate. This protects against visitors being signed up against their will.
 

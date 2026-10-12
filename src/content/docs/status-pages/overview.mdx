@@ -7,7 +7,7 @@ owner: jj
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-A Site Qwality **status page** is the public face of your reliability story. It lives at `<page-id>.siteqwality.com` (or your custom domain) and shows visitors the current and historical state of the parts of your service you choose to publish, all driven by the same monitors you already have set up internally.
+A Site Qwality **status page** is the public face of your reliability story. It lives at `https://statuspage.siteqwality.com/<account-id>/<page-id>` (or your custom domain) and shows visitors the current and historical state of the parts of your service you choose to publish, all driven by the same monitors you already have set up internally.
 
 ## When to use a status page
 
@@ -27,9 +27,9 @@ A status page is composed of three layers:
 
 1. **Status page object**: the container, with branding (logo, colors, theme), a custom domain (optional), and a default theme.
 2. **Components**: links between the status page and underlying monitors. You attach an HTTP check or a browser check to a status page with a public-facing `friendly_name` and optional `sla_target_percentage`. The component's status is the underlying monitor's live status.
-3. **Incidents and maintenance**: published events. Incidents auto-resolve with their underlying monitor, or you can post manual ones with custom updates. Scheduled maintenance shows future planned downtime.
+3. **Incidents and maintenance**: published events. You post incidents and their updates yourself. A [service](/incident-management/services/overview/) can also publish the incidents it opens automatically, and those resolve when their monitors recover. Scheduled maintenance shows future planned downtime.
 
-When a visitor loads the page, the [public status page API](https://github.com/SiteQwality/sq-docs) reads the latest status of every component, joins in any open incident or active maintenance, and renders the result via the public Next.js front-end.
+When a visitor loads the page, the public status page API reads the latest status of every component, joins in any open incident or active maintenance, and renders the result via the public Next.js front-end.
 
 <Aside type="tip">
 The status page back-end is a separate Lambda (`status-page-api`) reading the same Postgres + ClickHouse data as the dashboard, so there's no separate sync step. What's true in the dashboard is true on the page within seconds.
@@ -43,9 +43,9 @@ The status page back-end is a separate Lambda (`status-page-api`) reading the sa
 | **Branding** | logo, favicon, OG image, primary/accent color (`#hex`), header & footer text, custom CSS (50KB max), white-label toggle |
 | **Custom domain** | bring your own subdomain (e.g. `status.example.com`). Site Qwality provisions an ACM cert and gives you the CNAME to add |
 | **Components** | attach any HTTP check or browser check, override its public name, set an SLA target |
-| **Incidents** | manually open / update / resolve, or let monitor-driven ones flow through |
+| **Incidents** | manually open / update / resolve, or have a service publish the incidents it opens automatically (set through the API) |
 | **Maintenance** | publish scheduled windows ahead of planned work |
-| **Subscribers** | visitors opt in to email or webhook notifications (coming soon) |
+| **Subscribers** | visitors subscribe by email and confirm through a link |
 
 <Aside type="caution">
 Visitors subscribe with email and confirm the address. We send email on incident create/update and on status-page maintenance. SMS, RSS, and webhook subscribers are not available.

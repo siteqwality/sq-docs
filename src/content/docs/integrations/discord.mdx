@@ -7,7 +7,7 @@ owner: jj
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-The Discord integration uses an incoming webhook URL from a Discord channel. Site Qwality posts rich embeds with status color, monitor details, and an incident link.
+The Discord integration uses an incoming webhook URL from a Discord channel. Site Qwality posts embeds with a coloured bar (red when a monitor goes down, green when it recovers) and named fields: **Monitor**, **Status** and **URL** on every alert, **Reason** when the check reported one, and **Started** and **Resolved** on a recovery. The embed has no link back to Site Qwality.
 
 ## Set up
 
@@ -17,7 +17,7 @@ The Discord integration uses an incoming webhook URL from a Discord channel. Sit
 
 2. Name it (`Site Qwality Alerts`), assign an avatar (optional), copy the **Webhook URL**.
 
-3. In Site Qwality: **Settings → Integrations → Discord → Add**. Paste the URL. Save.
+3. In Site Qwality: **Manage → Integrations → Discord**. Give the integration a name, paste the URL and save.
 
 </Steps>
 
@@ -51,7 +51,8 @@ curl -X POST https://api.siteqwality.com/notification \
 ## Notes
 
 - One integration per Discord channel. Create multiple integrations for multiple destinations.
-- Discord webhooks are subject to Discord's rate limits (5 requests/2sec/channel). Heavy alert volume may queue.
+- A send is tried up to three times in quick succession. Nothing is queued and there is no later retry, so a send that Discord rate-limits can be lost.
+- HTTP monitors, browser checks, TLS and domain expiry warnings, page speed alerts, alert rules and RUM issues post to Discord. Heartbeat (cron) monitors and DNS record changes do not post to Discord today. See the [coverage table](/incident-management/notifications/channels/#which-alerts-reach-which-channels).
 - Webhook URLs are secrets, since anyone with the URL can post to the channel. Rotate (delete + recreate) if leaked.
 
 ## See also

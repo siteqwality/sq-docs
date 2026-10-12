@@ -1,0 +1,116 @@
+---
+title: Services
+description: Group monitors into a service, choose who gets paged, and decide whether failures open incidents on their own.
+last_verified: 2026-10-12
+owner: jj
+---
+
+import { CardGrid, LinkCard, Aside, Steps } from '@astrojs/starlight/components';
+
+A **service** is a named part of your product, such as `Checkout API` or `Marketing site`. It ties monitors to incident handling:
+
+- which monitors belong to it;
+- whether a failing monitor opens an incident on its own;
+- which [escalation policy](/incident-management/escalation/overview/) pages people for its incidents;
+- the severity those incidents start with;
+- who else is told when an incident opens (broadcast targets).
+
+Services are the only way a monitor failure becomes an incident, and the only way an incident pages anyone. A monitor with no service still sends its monitor alerts through its [notification groups](/incident-management/notifications/overview/#notification-groups), but it never opens an incident.
+
+## Create a service
+
+<Steps>
+
+1. Open **Manage → Services** and choose **+ Add Service**.
+
+2. Give it a name and, optionally, a description.
+
+3. Pick an **escalation policy**. Without one, the service's incidents page nobody.
+
+4. Pick an **incident creation mode** (see below) and a **default severity**.
+
+5. Set the **merge window** in minutes. The form starts at `0`, which turns merging off; `5` is a sensible start.
+
+6. Choose the **HTTP monitors** and **cron monitors** (heartbeats) that belong to the service, and save.
+
+</Steps>
+
+Or via the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/service \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Checkout API",
+    "escalation_policy_id": "<policy-id>",
+    "incident_creation_mode": "auto",
+    "incident_merge_window_minutes": 5,
+    "default_incident_severity": "major"
+  }'
+```
+
+<Aside type="note" title="Scopes">
+Scoped API keys, M2M API clients and AI assistants need `read:services` to read services and `write:services` to change them.
+</Aside>
+
+## Incident creation modes
+
+| Mode | What a failing linked monitor does |
+|---|---|
+| `manual` (default) | Nothing. You open incidents yourself; one you attach to the service still pages its policy and tells its broadcast targets. |
+| `auto` | Opens an incident, or joins the service's open incident if one opened within the merge window. |
+| `auto_with_confirmation` | Behaves exactly like `auto` today. HTTP monitors already open incidents only after their own confirmation settings pass, and heartbeats and browser checks are always treated as confirmed. |
+
+An automatic incident is titled `<monitor name> is down`, starts at the service's default severity, and pages the service's escalation policy. It is skipped while a [maintenance window](/incident-management/maintenance/overview/) matching the monitor's tags is active.
+
+When a linked monitor recovers and every HTTP monitor and heartbeat on the incident is healthy again, the incident resolves itself and the escalation stops.
+
+## Merge window
+
+While an incident the service opened is still unresolved, another failing monitor joins it instead of opening a second incident, as long as that incident was created less than `incident_merge_window_minutes` ago. The window counts from the incident's creation, not from its latest failure.
+
+`0` turns merging off, so every failing monitor opens its own incident and its own page. The API defaults to `5`; the dashboard form starts at `0`.
+
+## Link monitors
+
+| Monitor type | How to link it |
+|---|---|
+| HTTP monitors | On the service form, or `PUT /service/{id}/monitors`. |
+| Heartbeat (cron) monitors | On the service form, or `PUT /service/{id}/monitors`. |
+| Browser checks | Set `service_id` when you create or update the browser check through the API. They do not appear in the service's monitor list or count. |
+| DNS, TLS, domain, page speed, RUM and alert rules | Cannot be linked. They never open incidents. |
+
+A monitor belongs to at most one service. Linking it to a second service moves it without warning.
+
+<Aside type="caution">
+The **Service** field on the new HTTP monitor form does not save today, and the edit form shows the service read-only. Link HTTP monitors from the service instead.
+</Aside>
+
+## Broadcast targets
+
+A broadcast target tells someone outside the escalation chain about the service's incidents. There are three types:
+
+- **Email:** any address.
+- **Slack channel:** a Slack bot token and channel that you paste in. It does not use the [Slack integration](/integrations/slack/). The token is write-only and is never shown again.
+- **Webhook:** a public URL. Deliveries use the [webhook envelope](/integrations/webhooks/#payload) with `incident.created` and `incident.resolved` events, but they are not signed.
+
+Targets are told when one of the service's incidents opens, and again when an incident the service opened automatically resolves itself. Acknowledgements, updates and manual resolves send nothing.
+
+Add targets on the service's detail page in the dashboard (it opens from a monitor or incident linked to the service), or through the API. See the [reference](/incident-management/services/reference/#broadcast-targets).
+
+## Publish incidents to a status page
+
+`auto_publish_to_status_page_id` puts every incident the service opens automatically on that [status page](/status-pages/overview/). It can only be set through the API, and publishing this way does not email the page's subscribers.
+
+## Deleting a service
+
+Only admins, or an API key with `write:services`, can delete a service. Deleting it removes its broadcast targets and detaches its incidents, but linked monitors keep pointing at the deleted service. Unlink them first by sending empty lists to `PUT /service/{id}/monitors`.
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Services reference" description="Every field and endpoint." href="/incident-management/services/reference/" />
+  <LinkCard title="Escalation policies" description="Who a service's incidents page." href="/incident-management/escalation/overview/" />
+  <LinkCard title="Incidents" description="What an incident is and how it resolves." href="/incident-management/incidents/overview/" />
+</CardGrid>

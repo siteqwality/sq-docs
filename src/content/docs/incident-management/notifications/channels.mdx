@@ -1,6 +1,6 @@
 ---
 title: Channels reference
-description: Every notification channel type, from email and SMS to PagerDuty, OpsGenie, Google Chat, Mattermost, Pushover, and Pushbullet.
+description: Every notification channel type, from email and SMS to PagerDuty, Jira Service Management (Opsgenie), Google Chat, Mattermost, Pushover, and Pushbullet, and which alerts reach each one.
 last_verified: 2026-08-02
 owner: jj
 ---
@@ -21,11 +21,20 @@ Every channel has:
 
 This page documents `details` for each type.
 
-<Aside type="caution" title="Channel support varies by monitor type">
-The six newest types (`pagerduty`, `opsgenie`, `google_chat`, `mattermost`, `pushover`, `pushbullet`) deliver for **HTTP monitors, browser checks, and DNS/domain expiry**.
-
-TLS expiry and cron/heartbeat monitors support only `email`, `sms`, and `slack`. A channel of an unsupported type sitting in a group attached to those monitors is **skipped silently**: nothing errors and no alert arrives. If a cron monitor needs to page someone, put an email, SMS, or Slack channel in its group.
+<Aside type="caution" title="Channel support varies by alert source">
+Not every alert source reaches every channel type. A channel of a type the source does not support is **skipped**: nothing errors and no alert arrives on it. Check [which alerts reach which channels](#which-alerts-reach-which-channels) before you rely on a channel, and keep an email or SMS channel in every group that has to page someone.
 </Aside>
+
+## Which alerts reach which channels
+
+| Alert source | Reaches | Skipped |
+|---|---|---|
+| HTTP monitors, browser checks, domain expiry, log/metric/trace alert rules, RUM issues | All 13 channel types | None |
+| Heartbeat (cron) monitors | Email, SMS, Slack, webhook, Telegram, PagerDuty | Discord, Microsoft Teams, Google Chat, Mattermost, Opsgenie, Pushover, Pushbullet |
+| TLS expiry and page speed | Email, SMS, Slack, webhook, Telegram, Discord, Microsoft Teams | Google Chat, Mattermost, PagerDuty, Opsgenie, Pushover, Pushbullet |
+| DNS record changes | Email, webhook, PagerDuty | Every other type |
+
+Incidents do not use notification channels. Escalation steps reach responders through their [contact methods](/incident-management/notifications/overview/) (email, SMS, or a Slack DM with a bot token you paste in), and a service broadcasts to its own targets (email, a Slack channel with a pasted bot token, or a webhook URL). Maintenance windows send no notifications, and status page updates go only to the page's email subscribers.
 
 ## Email
 
@@ -38,8 +47,8 @@ TLS expiry and cron/heartbeat monitors support only `email`, `sms`, and `slack`.
 
 - Validated against a basic email regex.
 - No verification step, so anything that parses as an email is accepted.
-- Sender is `alerts@siteqwality.com`. Whitelist it to avoid spam folders.
-- Subject line includes monitor name + status; body includes a deep link to the incident.
+- Sender is `Site Qwality <no-reply@notifications.siteqwality.com>`. Allow it to avoid spam folders.
+- The subject names the monitor type, the state and the monitor (for example `[HTTP down] prod-api`); the body links to the monitor in the dashboard.
 
 ## SMS
 
@@ -56,10 +65,10 @@ TLS expiry and cron/heartbeat monitors support only `email`, `sms`, and `slack`.
 - `country_code` is the country dialing prefix as an integer (1 for US, 44 for UK, 49 for DE, etc).
 - `phone_number` is the local number with no formatting characters.
 - Validation requires a parseable phone number.
-- Costs Twilio pass-through rates; billed per page on paid plans.
+- Each message uses your account's SMS credits.
 
 <Aside type="caution">
-SMS delivery is best-effort. International routing can be flaky; for critical pages prefer escalation chains that include both SMS and a phone-call rule.
+SMS delivery is best-effort and is tried once. For critical pages, pair SMS with a second channel such as email or a push app.
 </Aside>
 
 ## Slack
@@ -74,9 +83,9 @@ SMS delivery is best-effort. International routing can be flaky; for critical pa
 }
 ```
 
-- Requires a Slack integration first. See [Integrations → Slack](/integrations/overview/).
-- `channel` accepts `#name` or a Slack channel ID. Bot must be invited to private channels.
-- Messages render as rich blocks with status color, monitor name, recent results, and an "Acknowledge" interactive button.
+- Requires a Slack integration first. See [Integrations → Slack](/integrations/slack/).
+- `channel` accepts `#name` or a Slack channel ID. The app must be added to private channels.
+- Monitor alerts render as a message attachment with a status color, the monitor name and URL. They have no buttons.
 
 ## Webhook
 
@@ -88,20 +97,23 @@ SMS delivery is best-effort. International routing can be flaky; for critical pa
 ```
 
 - The URL lives on the integration object (`/integration/webhook`), not the channel, so multiple channels can share one URL with different downstream meaning.
-- Payload is a JSON POST with the incident object + monitor context.
+- Payload is a signed JSON POST with an event envelope. See [Integrations → Webhooks](/integrations/webhooks/) for events, headers and signature checks.
 
-Sample webhook body (truncated):
+Sample webhook body (`data` truncated):
 
 ```json
 {
-  "event": "incident.opened",
-  "incident": {
-    "id": "<incident-uuid>",
-    "title": "HTTP check failure: prod-api",
-    "severity": "major",
-    "status": "investigating"
-  },
-  "monitor": { "id": "<job-uuid>", "type": "http", "uri": "https://api.example.com" }
+  "id": "<delivery-uuid>",
+  "event": "monitor.down",
+  "severity": "critical",
+  "created_at": "2026-03-14T09:26:53Z",
+  "account_id": "<account-uuid>",
+  "data": {
+    "http_job_id": "<monitor-uuid>",
+    "request_uri": "https://api.example.com",
+    "response_http_code": 503,
+    "status": "failed"
+  }
 }
 ```
 
@@ -114,8 +126,8 @@ Sample webhook body (truncated):
 }
 ```
 
-- Setup is two-step: create a setup state, send your bot a code, then finalize. See [Integrations → Telegram](/integrations/overview/).
-- Messages render as HTML-formatted text with a deep link to the incident.
+- Setup is two-step: start a setup code, send it to the bot, then finalize. See [Integrations → Telegram](/integrations/telegram/).
+- Messages render as HTML-formatted text with the monitor name, URL and state. They have no link back to Site Qwality.
 
 ## Discord
 
@@ -127,7 +139,7 @@ Sample webhook body (truncated):
 ```
 
 - Discord integration uses an incoming webhook URL (created in your Discord server settings).
-- Messages render as embeds with status color and incident link.
+- Messages render as embeds with a status color and the monitor details. They have no link back to Site Qwality.
 
 ## Microsoft Teams
 
@@ -138,8 +150,8 @@ Sample webhook body (truncated):
 }
 ```
 
-- Teams integration uses an incoming webhook URL from a Teams channel connector.
-- Messages render as Adaptive Cards with status color.
+- Teams integration uses a Workflows webhook URL for a Teams channel. Office 365 connector URLs no longer work. See [Integrations → Microsoft Teams](/integrations/microsoft-teams/).
+- Messages render as Adaptive Cards with a status color.
 
 ## PagerDuty
 
@@ -158,7 +170,7 @@ Sample webhook body (truncated):
 - Domain expiry warnings always send at `warning` regardless of this setting, and never auto-resolve.
 - See [Integrations → PagerDuty](/integrations/pagerduty/).
 
-## OpsGenie
+## Jira Service Management (Opsgenie)
 
 ```json
 {
@@ -169,7 +181,7 @@ Sample webhook body (truncated):
 
 - No per-channel priority field. Outages are `P1`, domain expiry warnings are `P3`.
 - Recoveries close the alert by alias. Domain expiry alerts never close on their own.
-- See [Integrations → OpsGenie](/integrations/opsgenie/).
+- The channel type is still `opsgenie`. See [Integrations → Jira Service Management (Opsgenie)](/integrations/opsgenie/).
 
 ## Google Chat
 
@@ -229,19 +241,22 @@ Not all channels behave the same when a send fails. This matters when you are ch
 
 | Channels | On failure |
 |---|---|
-| PagerDuty, OpsGenie | 3 in-process attempts (safe, the calls are idempotent), then the event is failed and retried. |
-| Email, SMS, Slack, Telegram, Pushover, Pushbullet | 1 attempt, then the event is failed and retried. Duplicates are possible; lost alerts are not silent. |
-| Discord, Microsoft Teams, Google Chat, Mattermost | 3 attempts, then the failure is **recorded and the message is dropped**. Nothing retries it. |
-| Customer webhooks | 3 attempts, then the failure is recorded and dropped. |
+| Webhooks | Up to 6 attempts over 30 minutes. Every attempt is in the endpoint's [delivery log](/integrations/webhooks/#delivery-log-and-replay). |
+| PagerDuty, Opsgenie | 3 attempts. A `4xx` other than `408` or `429` is recorded as rejected. Other failures run the send again up to twice; after that the alert is **dropped with no record**. |
+| Pushover, Pushbullet | 1 attempt. A `4xx` is recorded as rejected. Other failures run the send again up to twice; after that the alert is dropped with no record. |
+| Email, SMS, Slack, Telegram | 1 attempt. A failure runs the send again up to twice; after that the alert is dropped with no record. |
+| Discord, Microsoft Teams, Google Chat, Mattermost | 3 attempts in quick succession, then the failure is recorded and the message is dropped. If the attempts run past the send's time limit, the alert is lost with no record. |
+
+For a page that must arrive, use more than one channel type.
 
 ## Common pitfalls
 
 - **Channel created but no notifications arrive.** First check whether the channel is attached to a *group* and the group is attached to the *monitor*. Channels alone don't deliver.
-- **Slack/webhook channels saying integration not found.** The integration must exist on the same account and be referenced by UUID.
+- **Channel never delivers and shows no recent alerts.** Creating a channel does not check that the integration ID exists on your account or matches the channel type, so a typo makes a channel that can never deliver. Copy the ID from `GET /integration`.
 - **SMS not arriving.** Verify the country code is the integer prefix (`1`, not `"+1"`); confirm the number is plain digits.
 
 ## See also
 
 - [Notifications overview](/incident-management/notifications/overview/): the four-object mental model.
-- [Integrations](/integrations/overview/): set up Slack, Teams, Discord, Telegram, webhooks.
+- [Integrations](/integrations/overview/): set up Slack, Teams, Discord, Telegram, webhooks and the rest.
 - [API Reference](/api-reference/): full request/response shapes.

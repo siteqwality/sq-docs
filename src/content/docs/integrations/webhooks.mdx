@@ -1,25 +1,27 @@
 ---
 title: Webhook integrations
-description: Send a JSON POST to your own URL on every notification, for ServiceNow, custom dashboards, internal buses, anything.
+description: Send a signed JSON POST to your own URL for monitor, alert and RUM events, with retries and a delivery log.
 last_verified: 2026-08-02
 owner: jj
 ---
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-A **webhook integration** is the universal escape hatch. If we don't have a native integration for the tool you use, the webhook integration POSTs incident JSON to a URL you control: wire it into ServiceNow, an internal Slack-replacement, your audit log, anything.
+A **webhook integration** POSTs a JSON event to a URL you control. Use it when there is no native integration for your tool: an internal event bus, a ticketing system, a data warehouse ingest URL. Each request is signed with HMAC-SHA256, failed sends are retried for 30 minutes, and every delivery is kept in a log for 30 days.
 
 <Aside type="tip">
-[PagerDuty](/integrations/pagerduty/) and [OpsGenie](/integrations/opsgenie/) are now native integrations, and they close their alerts automatically when a monitor recovers. Prefer those over a hand-rolled webhook bridge.
+[PagerDuty](/integrations/pagerduty/) and [Jira Service Management (Opsgenie)](/integrations/opsgenie/) are native integrations that close their alert when a monitor recovers. Prefer those over a webhook bridge to the same tool.
 </Aside>
 
 ## Set up
 
 <Steps>
 
-1. **Settings → Integrations → Webhooks → Add**.
+1. **Manage → Integrations → Webhook**.
 
-2. **Friendly name:** `Internal incident bus`. **URL:** the endpoint that should receive POSTs. Save.
+2. Give it a name (for example `Internal event bus`) and the URL that should receive POSTs. Save.
+
+3. Copy the signing secret. It is shown once, when the integration is created, and no endpoint returns it again.
 
 </Steps>
 
@@ -30,10 +32,14 @@ curl -X POST https://api.siteqwality.com/integration/webhook \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "friendly_name": "Internal incident bus",
-    "url": "https://incidents.example.com/sq-webhook"
+    "friendly_name": "Internal event bus",
+    "url": "https://events.example.com/sq-webhook"
   }'
 ```
+
+The `201` response carries the secret in `details.signing_secret`. Store it now. It starts with `sqwh_`. Endpoints created before signing existed also have a secret: rotate it to get one you can see.
+
+The URL must be reachable at a public address. A URL whose host is a private, loopback or link-local address (`10.x`, `192.168.x`, `127.0.0.1`, `localhost`, `169.254.169.254`, and their IPv6 equivalents) is refused with a `400` when you save it. A hostname that resolves only to such addresses at delivery time fails with `blocked_destination` and is not retried. The same check applies to Discord, Microsoft Teams, Google Chat and Mattermost URLs.
 
 ## Create a notification channel
 
@@ -50,66 +56,175 @@ curl -X POST https://api.siteqwality.com/notification \
   }'
 ```
 
-## Payload shape
+## Payload
 
-POST body is JSON with the incident, the triggering monitor, and account context. Approximate shape:
+Every delivery has the same envelope:
 
 ```json
 {
-  "event": "incident.opened" | "incident.updated" | "incident.resolved",
-  "incident": {
-    "id": "<uuid>",
-    "title": "...",
-    "severity": "minor | major | critical",
-    "status": "investigating | identified | monitoring | resolved",
-    "responder_status": "triggered | acknowledged | resolved",
-    "created_at": "...",
-    "acknowledged_at": "...",
-    "resolved_at": "...",
-    "updates": [{ "status": "...", "message": "...", "created_at": "..." }]
-  },
-  "monitor": {
-    "id": "<uuid>",
-    "type": "http | tls | dns | cron | browser",
-    "friendly_name": "...",
-    "uri": "https://api.example.com"  // for HTTP
-  },
-  "account": {
-    "id": "<uuid>"
-  }
+  "id": "0f1c3a92-5c1e-4c3b-9f43-3d2a6c1b7e10",
+  "event": "monitor.down",
+  "severity": "critical",
+  "created_at": "2026-03-14T09:26:53Z",
+  "account_id": "<account-uuid>",
+  "metadata": { "team": "payments" },
+  "data": { }
 }
 ```
 
-## Receiver expectations
+- `id` is the delivery ID. It is the same on every retry of one delivery, so use it to drop duplicates.
+- `metadata` appears only if you set some on the endpoint (see [Payload settings](#payload-settings)).
+- `data` depends on the event. For an HTTP monitor going down or recovering it is the check result:
 
-Your endpoint should:
-
-- Return any 2xx within 5 seconds. Site Qwality treats anything else as a failure.
-- Be idempotent, since the same event can be retried on receiver failure.
-- Accept large bodies (incidents with many updates can be 10–50KB).
-- Be reachable at a public address. A URL whose host is a private, loopback or link-local address (`10.x`, `192.168.x`, `127.0.0.1`, `localhost`, `169.254.169.254`, and their IPv6 equivalents) is refused with a `400` when you save it. A hostname that resolves only to such addresses when we deliver fails with the error kind `blocked_destination` and is not retried. The same applies to Discord, Microsoft Teams, Google Chat and Mattermost webhook URLs.
-
-## Securing the receiver
-
-The webhook URL is the auth, so anyone who knows it can POST. Treat the URL as a secret.
-
-For stronger guarantees, embed a shared secret in the URL:
-
+```json
+{
+  "id": "<result-uuid>",
+  "account_id": "<account-uuid>",
+  "http_job_id": "<monitor-uuid>",
+  "created_at": "2026-03-14T09:26:51Z",
+  "check_region": "aws-us-east-1",
+  "response_http_code": 503,
+  "request_uri": "https://api.example.com/health",
+  "final_uri": "https://api.example.com/health",
+  "request_duration_ms": 412,
+  "failure_reason": "Expected status 200, got 503",
+  "status": "failed"
+}
 ```
-https://incidents.example.com/sq-webhook?token=<long-random>
+
+The full result also carries the response headers and body, the timing breakdown and the request headers (with values masked except for a short list of harmless headers). Use `fields` in the payload settings to send only the keys you need.
+
+### Events
+
+| Event | Severity |
+|---|---|
+| `monitor.down` | critical |
+| `monitor.recover` | info |
+| `incident.created` | critical |
+| `incident.resolved` | info |
+| `tls.expiring` | warning |
+| `dns.expiring` | warning |
+| `dns.record_change` | warning |
+| `page_speed.degraded` | warning |
+| `alert.firing` | critical |
+| `alert.resolved` | info |
+| `rum.issue.created` | warning |
+| `rum.issue.regressed` | critical |
+| `rum.issue.escalating` | critical |
+| `rum.alert.firing` | critical |
+| `rum.alert.resolved` | info |
+
+## Request headers
+
+| Header | Value |
+|---|---|
+| `Content-Type` | `application/json` |
+| `X-SiteQwality-Delivery` | The delivery ID, equal to `id` in the body. |
+| `X-SiteQwality-Timestamp` | Unix seconds when this attempt was signed. |
+| `X-SiteQwality-Signature` | `v1=` followed by the hex HMAC. |
+| `X-SiteQwality-Event` | The event name. Not signed. |
+| `X-SiteQwality-Attempt` | `1` to `6`. Not signed. |
+
+## Verify the signature
+
+The signature is an HMAC-SHA256 over the delivery ID, the timestamp and the raw request body, joined with dots:
+
+```text
+signed_payload = "{X-SiteQwality-Delivery}.{X-SiteQwality-Timestamp}.{raw body}"
+signature      = "v1=" + hex(HMAC_SHA256(secret, signed_payload))
 ```
 
-…and verify the token server-side. Site Qwality doesn't currently sign requests with HMAC; if you need that, request it via support.
+The key is the secret exactly as shown, `sqwh_` included. Each attempt is signed again with a fresh timestamp, so a retry 30 minutes later still passes a 5-minute tolerance check.
+
+```js
+const crypto = require('crypto');
+
+function verify(secret, headers, rawBody) {
+  const id = headers['x-siteqwality-delivery'];
+  const ts = headers['x-siteqwality-timestamp'];
+  if (Math.abs(Date.now() / 1000 - Number(ts)) > 300) return false;
+
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(`${id}.${ts}.${rawBody}`) // the raw body, not a re-serialized object
+    .digest('hex');
+
+  // After a rotation the header carries two space-separated entries.
+  return String(headers['x-siteqwality-signature'] || '')
+    .split(' ')
+    .some((entry) => {
+      if (!entry.startsWith('v1=')) return false;
+      const got = entry.slice(3);
+      return got.length === expected.length &&
+        crypto.timingSafeEqual(Buffer.from(got), Buffer.from(expected));
+    });
+}
+```
+
+Reject requests older than 300 seconds, and use the delivery ID to ignore a delivery you have already processed.
+
+### Rotate the secret
+
+Open the webhook integration from **Manage → Integrations** and choose **Rotate secret**, or call `POST /integration/webhook/{id}/rotate_secret` from an admin session. API keys cannot rotate secrets. The new secret is shown once. For the next 24 hours every delivery carries two signatures in `X-SiteQwality-Signature`, one under each secret, so a verifier that checks each entry keeps working while you deploy the new secret.
+
+## Delivery and retries
+
+Each attempt times out after 15 seconds. Your endpoint should answer with a 2xx quickly and do slow work afterwards.
+
+| Response | What happens |
+|---|---|
+| 2xx | Delivered. |
+| 3xx | Failed, not retried. Redirects are not followed. |
+| 408 or 429 | Retried. A `Retry-After` header can push the next attempt later, but not past the last retry. |
+| Other 4xx | Failed, not retried. |
+| 5xx, timeout or connection error | Retried. |
+
+Retries run 10 seconds, 30 seconds, 2 minutes, 8 minutes and 30 minutes after the first attempt: six attempts at most, and a final answer 30 minutes after the first try. A delivery that has not succeeded by then is marked failed.
+
+## Delivery log and replay
+
+Open the webhook integration from **Manage → Integrations** to see every delivery to the endpoint, each attempt, your server's status code and how long it took. Deliveries are kept for 30 days. From a delivery you can replay it.
+
+The same log is available through the API:
+
+- `GET /integration/webhook/{id}/deliveries?limit=25&offset=0&state=failed` lists deliveries (`limit` up to 100; `state` is `pending`, `delivered`, `failed` or `cancelled`).
+- `GET /integration/webhook/{id}/delivery/{delivery_id}` returns one delivery with the request body and every attempt.
+- `POST /integration/webhook/{id}/delivery/{delivery_id}/replay` sends it again and returns `202` with the new delivery's ID.
+
+A replay is a new delivery with its own ID header, timestamp and signature under the current secret. The body is unchanged, so `id` in the body still names the original delivery. A delivery whose stored body was truncated cannot be replayed (`409`).
+
+## Payload settings
+
+Each endpoint has four optional settings, on the integration's page or through `GET` and `PUT /integration/webhook/{id}/settings`:
+
+```bash
+curl -X PUT https://api.siteqwality.com/integration/webhook/$INTEGRATION_ID/settings \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "events": ["monitor.down", "monitor.recover"],
+    "min_severity": "warning",
+    "fields": ["http_job_id", "status", "response_http_code", "failure_reason"],
+    "metadata": { "team": "payments", "env": "prod" }
+  }'
+```
+
+- `events`: send only these events. Unset means all events.
+- `min_severity`: drop events below `info`, `warning` or `critical`. Unset means `info` (everything).
+- `fields`: keep only these keys in `data`. Unset means the whole object.
+- `metadata`: a flat object added to every envelope. At most 10 keys, keys up to 64 characters, values up to 256.
+
+An unknown event or field name, or an empty list, is refused with a `400` that names it. The `GET` response lists the selectable fields and events.
+
+## Incident webhooks
+
+A service can also send `incident.created` and `incident.resolved` events to a webhook URL as a broadcast target. Those deliveries use the same envelope and retries, but they are not signed and do not appear in an integration's delivery log, because a service target is not a webhook integration. The signature check above cannot verify them.
 
 ## Multiple integrations
 
-Create one webhook integration per destination URL. Channels can then route the same notification group to multiple destinations (a webhook + a Slack channel + an email) by attaching one channel per destination to the group.
-
-<Aside type="tip">
-For one-way "log every incident to my data warehouse" use cases, point a webhook integration at an ingest URL (Segment, Snowpipe, your own /events endpoint). It's a great audit trail.
-</Aside>
+Create one webhook integration per destination URL. Attach one channel per destination to a notification group to send the same alerts to a webhook, a Slack channel and an email at once.
 
 ## See also
 
-<LinkCard title="Channels reference" description="webhook channel detail shape." href="/incident-management/notifications/channels/#webhook" />
-<LinkCard title="Integrations overview" description="The five integration types." href="/integrations/overview/" />
+<LinkCard title="Channels reference" description="webhook channel detail shape, and which alerts reach which channel." href="/incident-management/notifications/channels/#webhook" />
+<LinkCard title="Integrations overview" description="Every integration type." href="/integrations/overview/" />

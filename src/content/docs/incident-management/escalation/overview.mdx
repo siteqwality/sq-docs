@@ -11,7 +11,7 @@ An **escalation policy** is the rule for *what to do if no one acknowledges an i
 
 ## What starts an escalation
 
-An escalation runs when an incident that has a `service_id` opens, and that [service](/getting-started/concepts/) has an `escalation_policy_id` set. That is the only wiring: the policy is attached to the service, not to the monitor and not to the notification group.
+An escalation runs when an incident that has a `service_id` opens, and that [service](/incident-management/services/overview/) has an `escalation_policy_id` set. That is the only wiring: the policy is attached to the service, not to the monitor and not to the notification group.
 
 This applies equally to incidents a monitor opened automatically and to incidents you [created by hand](/incident-management/incidents/how-to/manual-incidents/). An incident with no `service_id`, or whose service has no policy, never escalates.
 
@@ -26,7 +26,7 @@ Adding levels through the API without an explicit `level_number` auto-assigns `m
 | Field | What it is |
 |---|---|
 | `name` | Human label. `"Primary on-call escalation"`. |
-| `repeat_count` | How many full passes through the levels to run. Defaults to `3`. |
+| `repeat_count` | How many more passes through the levels to run after the first. `0` to `20`, default `3`. |
 | `levels[]` | Ordered list of `EscalationLevel`s. |
 
 Each level:
@@ -73,7 +73,7 @@ Incident opens
    repeat or stop (per repeat_count)
 ```
 
-Each level does three things in order: resolve its targets (on-call schedules resolve at firing time, so handoffs work transparently), page each resolved user through their own [notification rules](/incident-management/notifications/overview/#notification-rules), and schedule a one-shot timeout for `timeout_minutes` later. When that timeout fires, the policy advances.
+Each level does three things in order: resolve its targets (on-call schedules resolve at firing time, so handoffs work transparently), page each resolved user through their own [notification rules](/incident-management/notifications/overview/#notification-rules-per-user), and schedule a one-shot timeout for `timeout_minutes` later. When that timeout fires, the policy advances.
 
 A level with no resolvable targets still schedules its timeout and still advances. It just pages nobody.
 
@@ -85,7 +85,6 @@ Every route into acknowledgement does this, so it does not matter how the respon
 
 - `POST /incident/{id}/acknowledge` and `POST /incident/{id}/resolve`
 - the [one-click links](/incident-management/incidents/how-to/one-click-actions/) in email and SMS
-- the **Acknowledge** and **Resolve** buttons in Slack
 - automatic recovery, when the monitor that opened the incident comes back
 
 <Aside type="caution" title="An exhausted policy can still page once more">
@@ -98,31 +97,27 @@ Acknowledging or resolving is the only thing that suppresses those. Waiting for 
 
 Two different mechanisms with overlapping vibes:
 
-- **Notification groups** are the raw fanout: "this monitor's alerts go to these channels." Channel-level. No retry, no escalation.
-- **Escalation policies** are the smart routing: "if no one acks, move on." User and schedule level, hooking into per-user notification rules.
+- **Notification groups** are the raw fanout: "this monitor's alerts go to these channels." Channel-level. No escalation.
+- **Escalation policies** are the routing for incidents: "if no one acks, move on." User and schedule level, hooking into per-user notification rules.
 
-A monitor's alert always fires its notification group. The group can include channels that further trigger an escalation policy. In practice: the group sends a Slack ping for visibility; the escalation policy is what actually pages the on-call.
+The two paths are separate. A monitor's alert always goes to its notification groups, and nothing in a group starts an escalation. An escalation starts only when an incident opens on a service with a policy. In practice: the group sends a Slack message for visibility, and the service's escalation policy is what pages the on-call.
 
 ## Repeat cycles
 
-`repeat_count` is **how many full passes through the levels the policy makes**, and it defaults to `3`.
+`repeat_count` is **how many more times the policy runs through its levels after the first pass**. It accepts `0` to `20` and defaults to `3` in the API.
 
-Walking the last level's timeout takes the policy back to level 1 and counts one completed pass. When the completed passes reach `repeat_count`, the escalation becomes `exhausted` and stops paging.
+Walking the last level's timeout takes the policy back to level 1 for another pass. When the repeats are used up, the escalation becomes `exhausted` and stops paging.
 
 | `repeat_count` | Behavior |
 |---|---|
-| `3` (default) | Three full passes through every level, then stop. |
-| `1` | One pass. The last level's timeout exhausts the policy. |
-| `0` | **Degenerate.** Level 1 pages, and the first timeout exhausts the policy immediately. It never reaches level 2. |
-| large | Keeps cycling. There is no enforced maximum. |
-
-<Aside type="caution">
-`repeat_count: 0` does not mean "one pass and stop". It means the policy gives up at the very first timeout, so only level 1 ever pages. If you want a single pass through every level, set `1`.
-</Aside>
+| `0` | One pass through every level, then stop. |
+| `1` | Two passes, then stop. |
+| `3` (API default) | Four passes, then stop. |
+| `20` | The maximum: 21 passes. |
 
 ## Escalation state
 
-Each incident carries one escalation state, visible on the incident:
+Each incident carries one escalation state. The incident API and dashboard do not show it today.
 
 | State | Meaning |
 |---|---|
@@ -133,7 +128,6 @@ Each incident carries one escalation state, visible on the incident:
 ## When to use multiple policies
 
 - One per **service** if your on-call rotations differ by service ownership.
-- One per **severity** if `critical` should escalate faster than `major`.
 - One per **environment** if `prod` should hit on-call but `staging` should only ping a Slack channel.
 
 ## See also

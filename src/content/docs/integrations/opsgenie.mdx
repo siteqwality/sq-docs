@@ -1,21 +1,21 @@
 ---
-title: OpsGenie integration
-description: Create OpsGenie alerts from monitor failures and close them automatically on recovery, keyed by alias.
+title: Jira Service Management (Opsgenie) integration
+description: Create Opsgenie alerts from monitor failures and close them automatically on recovery, keyed by alias.
 last_verified: 2026-08-02
 owner: jj
 ---
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-The OpsGenie integration creates an alert when a monitor goes down and closes that same alert when the monitor recovers. Pairing is done through the alert **alias**, which Site Qwality derives from the monitor and the outage.
+The Jira Service Management (Opsgenie) integration creates an alert through the Opsgenie Alert API when a monitor goes down and closes that same alert when the monitor recovers. Pairing is done through the alert **alias**, which Site Qwality derives from the monitor and the outage. In the API and in channel details the type is still called `opsgenie`.
 
 ## What you need
 
-An **API key** from an OpsGenie API integration.
+An **API key** from an Opsgenie API integration.
 
 <Steps>
 
-1. In OpsGenie, go to **Settings → Integrations**.
+1. In Opsgenie, go to **Settings → Integrations**.
 
 2. Add an **"API"** integration.
 
@@ -25,21 +25,21 @@ An **API key** from an OpsGenie API integration.
 
 ## Connect it
 
-In the dashboard, **Integrations → Add Integrations → OpsGenie**. Name it, paste the key into **API Key**, and click **Add**. Or via the API:
+In the dashboard, **Manage → Integrations → Jira Service Management (Opsgenie)**. Name it, paste the key into **API Key**, and click **Add**. Or via the API:
 
 ```bash
 curl -X POST https://api.siteqwality.com/integration/opsgenie \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "friendly_name": "Acme OpsGenie",
+    "friendly_name": "Acme Opsgenie",
     "api_key": "<opsgenie-api-integration-key>"
   }'
 ```
 
-Both fields are required and must be non-empty. The key is not verified against OpsGenie at save time.
+Both fields are required and must be non-empty. The key is not verified against Opsgenie at save time.
 
-The API key is a secret. `GET /integration` returns `"details": {}` for OpsGenie integrations rather than echoing it back.
+The API key is a secret. `GET /integration` returns `"details": {}` for these integrations rather than echoing it back.
 
 ## Create a channel
 
@@ -68,9 +68,9 @@ sq-browser-<browser-check-id>-<state-transition-id>
 - **Monitor goes down** → `POST /v2/alerts` with `message: "Monitor DOWN: <name>"`, a description carrying the URL and failure reason, and that alias.
 - **Monitor recovers** → `POST /v2/alerts/<alias>/close?identifierType=alias`, with the recovery message attached as the close note.
 
-OpsGenie deduplicates open alerts by alias, so repeated failures within one outage update a single alert rather than stacking. A separate outage later produces a different state transition, and therefore a new alert.
+Opsgenie deduplicates open alerts by alias, so repeated failures within one outage update a single alert rather than stacking. A separate outage later produces a different state transition, and therefore a new alert.
 
-Alert messages longer than 130 characters are truncated to fit the OpsGenie limit.
+Alert messages longer than 130 characters are truncated to fit the Opsgenie limit.
 
 ### Priority
 
@@ -85,19 +85,20 @@ Priority is fixed and not configurable per channel:
 <Aside type="caution" title="Domain expiry alerts do not auto-close">
 Domain and DNS expiry warnings are **create-only**: no recovery event exists for them. They key on the DNS job plus the expiry date (`sq-dns-expiry-<job-id>-YYYY-MM-DD`), so repeated warnings for the same date collapse into one alert, but nothing ever closes it.
 
-Close those alerts in OpsGenie yourself. Renewing the domain does not close them, and since renewal moves the expiry date, the next warning creates a **new** alert while the old one stays open.
+Close those alerts in Opsgenie yourself. Renewing the domain does not close them, and since renewal moves the expiry date, the next warning creates a **new** alert while the old one stays open.
 </Aside>
 
 ## Delivery behavior
 
-A failed send is retried up to 3 times in-process, which is safe because the alias makes both calls idempotent. If all 3 fail, the notifier fails the event so it gets retried rather than dropping the alert quietly.
+A failed send is retried up to 3 times in quick succession, which is safe because the alias makes the call idempotent. A 4xx answer other than 408 or 429 means Opsgenie refused the event: it is recorded as rejected and not retried. Any other failure fails the event, and it is run up to two more times. If those fail too, the alert is dropped with no record in alert history, so pair Opsgenie with a second channel for anything you cannot afford to miss.
 
 ## Limitations
 
-- The endpoint is the US instance, `api.opsgenie.com`. The EU instance is not configurable.
-- OpsGenie channels fire for **HTTP monitors, browser checks, and DNS/domain expiry**. TLS expiry and cron/heartbeat monitors only support email, SMS, and Slack today; an OpsGenie channel on a group used by those monitor types is skipped.
+- The endpoint is the US Opsgenie instance, `api.opsgenie.com`. The EU instance and other Jira Service Management alert endpoints are not configurable.
+- These channels fire for **HTTP monitors, browser checks, domain expiry warnings, log, metric and trace alert rules, and RUM issues**. Heartbeat (cron) monitors, TLS expiry warnings, page speed alerts and DNS record changes do not reach Opsgenie today: a channel on a group used by those sources is skipped. See the [coverage table](/incident-management/notifications/channels/#which-alerts-reach-which-channels).
+- Incidents and escalation policies do not page through Opsgenie.
 
 ## See also
 
-<LinkCard title="Channels reference" description="Full opsgenie channel detail shape." href="/incident-management/notifications/channels/#opsgenie" />
+<LinkCard title="Channels reference" description="Full Opsgenie channel detail shape." href="/incident-management/notifications/channels/#jira-service-management-opsgenie" />
 <LinkCard title="PagerDuty" description="The same lifecycle model, different provider." href="/integrations/pagerduty/" />

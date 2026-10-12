@@ -22,12 +22,17 @@ Site Qwality's incident management module wires these five together. You can use
 <CardGrid>
   <LinkCard
     title="Incidents"
-    description="Record + timeline of an outage. Auto-opened by monitors, or created manually for non-monitor events."
+    description="Record + timeline of an outage. Auto-opened by monitors linked to a service, or created manually for non-monitor events."
     href="/incident-management/incidents/overview/"
   />
   <LinkCard
+    title="Services"
+    description="Group monitors, pick the escalation policy, and decide whether failures open incidents."
+    href="/incident-management/services/overview/"
+  />
+  <LinkCard
     title="On-call schedules"
-    description="Layered rotations across timezones with overrides for holidays and handoffs."
+    description="Layered rotations in each schedule's timezone, with overrides for holidays and handoffs."
     href="/incident-management/on-call/overview/"
   />
   <LinkCard
@@ -50,39 +55,35 @@ Site Qwality's incident management module wires these five together. You can use
 ## How they fit together
 
 ```
-┌──────────────────────┐
-│ Monitor flips status │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ Incident opened      │  ←── manual incidents go here too
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ Notification group   │  ── channels: email, Slack, webhooks, etc.
-│ (account-level)      │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ Escalation policy    │  ── targets: users + on-call schedules
-│ (per incident)       │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ User contact methods │  ── personal: email, SMS, phone-call, Slack DM
-│ × notification rules │  ── personal: "high urgency? SMS at 0min, call at 5min"
-└──────────────────────┘
+Monitor alerts                        Incidents
+
+┌──────────────────────┐              ┌──────────────────────────────┐
+│ Monitor flips status │              │ Monitor linked to a service  │
+└──────────┬───────────┘              │ in auto mode fails, or you   │
+           │                          │ open an incident by hand     │
+           ▼                          └──────────────┬───────────────┘
+┌──────────────────────┐                             │
+│ Notification groups  │                             ▼
+│ (account-level)      │              ┌──────────────────────────────┐
+│ channels: email,     │              │ Service's escalation policy  │
+│ Slack, webhooks, ... │              │ targets: users + schedules   │
+└──────────────────────┘              └──────────────┬───────────────┘
+                                                     │
+                                                     ▼
+                                      ┌──────────────────────────────┐
+                                      │ User contact methods         │
+                                      │ (email, SMS, Slack DM)       │
+                                      │ × notification rules         │
+                                      └──────────────────────────────┘
 ```
+
+The two paths are separate: a monitor alert goes to the monitor's notification groups whether or not an incident opens, and an incident pages people only through its service's escalation policy.
 
 The split between **notification groups** (account-level "where this monitor's alerts go") and **contact methods + rules** (per-user "how I personally want to be reached") is intentional. It lets the team configure routing once and lets each engineer set their own delivery preferences.
 
 ## When NOT to use this
 
-- **Don't open incidents for transient flakes.** Set the notification group's `delay_send_after_minutes` so a check that fails once and recovers within a minute doesn't page anyone. See [Notification groups](/incident-management/notifications/overview/#notification-groups).
+- **Don't page for transient flakes.** Raise the monitor's confirmation settings so a single failed check does not count as down. A notification group's `delay_send_after_minutes` holds back the monitor alert (HTTP and browser checks only), but it does not stop an incident from opening. See [Notification groups](/incident-management/notifications/overview/#notification-groups).
 - **Don't escalate everything.** Reserve escalation policies for high-urgency incidents. For warnings, a single Slack channel notification is enough.
 - **Don't put your CTO on every escalation policy.** They'll mute everything within a week. Build escalation chains with clear ownership: primary on-call → secondary → engineering manager.
 

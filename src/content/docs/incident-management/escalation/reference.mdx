@@ -14,14 +14,16 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `name` | string | required | Human label, shown in dashboards and per-incident views. |
-| `repeat_count` | int | `3` | How many full passes through the levels to run before giving up. See [repeat cycles](/incident-management/escalation/overview/#repeat-cycles). Not range-validated. |
+| `repeat_count` | int | `3` | How many more times to run through the levels after the first pass, from `0` to `20`. See [repeat cycles](/incident-management/escalation/overview/#repeat-cycles). |
+
+Deleting a policy needs an admin or an API key; other roles get `403`.
 
 ## Escalation level
 
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `level_number` | int | next-free | Sort order within the policy. Lower runs first. Auto-assigned to `max(existing) + 1` if omitted. |
-| `timeout_minutes` | int | required | How long to wait for any responder ack at this level before advancing. Whole minutes only. Not range-validated. |
+| `timeout_minutes` | int | required | How long to wait for any responder ack at this level before advancing. Whole minutes, from `1` to `1440` (one day). |
 | `target_user_ids` | uuid[] | `[]` | Page these specific users. Each user's notification rules + contact methods determine the actual delivery. |
 | `target_schedule_ids` | uuid[] | `[]` | Page whoever is on-call in these on-call schedules at firing time. |
 
@@ -109,12 +111,7 @@ A level's targets are resolved and de-duplicated, then each user is paged throug
 
 This mapping is fixed and cannot be overridden per policy. A targeted user with no rule matching that urgency is not paged at all, which is the most common reason a level appears to do nothing.
 
-Two further limits on delivery, both worth knowing before you design a chain:
-
-- `phone_call` contact methods have no transport and are skipped at send time.
-- A contact method's `verified` flag is not checked before paging.
-
-See [notifications](/incident-management/notifications/overview/#contact-methods-per-user) for both.
+Contact methods are email, SMS and Slack DM; there are no phone calls. A contact method's `verified` flag is not checked before paging. See [notifications](/incident-management/notifications/overview/#contact-methods-per-user).
 
 ## Escalation state values
 

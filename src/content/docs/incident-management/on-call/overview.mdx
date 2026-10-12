@@ -1,6 +1,6 @@
 ---
 title: On-call schedules
-description: Layered rotations across timezones with overrides. A schedule produces "who's on call right now" for any timestamp.
+description: Layered rotations in the schedule's timezone, with overrides. A schedule produces "who's on call right now" for any timestamp.
 last_verified: 2026-08-01
 owner: jj
 ---
@@ -12,7 +12,7 @@ An **on-call schedule** is a named rotation of users that, given any timestamp, 
 ## When to use schedules
 
 - You want pages to follow a rotation rather than always hitting the same person.
-- You have responders in multiple timezones and want the page to land where it's awake.
+- You want handoffs at a fixed local time, kept steady across DST changes.
 - You want to handle holiday cover and one-off swaps cleanly.
 
 If you only have one engineer, you don't need a schedule: just point your escalation policy at that user directly.
@@ -31,7 +31,7 @@ When asked who's on call at time `T`:
 1. Apply overrides first. If any override covers `T`, that user is on call. Done.
 2. Otherwise walk layers from the **highest `layer_number` downward**. For each layer in its `effective_from`/`effective_until` window, compute whose turn it is given the rotation type. The first layer that returns a user wins.
 
-This means **higher-`layer_number` layers shadow lower ones during their effective windows**. Useful pattern: a "weekend coverage" layer with `effective_from`/`effective_until` set to weekend hours, sitting on top of a base "weekday rotation" layer with a lower `layer_number`.
+This means **higher-`layer_number` layers shadow lower ones during their effective windows**. A window is two absolute timestamps, not a time of day or a day of the week, so a higher layer covers all 24 hours of every day inside its window. Use one for a bounded period, such as a launch week, not for recurring night or weekend shifts.
 
 ## Layer rotation types
 
@@ -59,21 +59,13 @@ Overrides are time-bounded with `start_at` and `end_at`. When overrides overlap,
 
 One layer, `rotation_type: weekly`, `handoff_day: 1` (Monday), `handoff_time: 09:00`, `participants: [alice, bob, carol]`. Each engineer is on for one week starting Monday morning.
 
-### Follow-the-sun
-
-Three layers, all `rotation_type: weekly`. Layer 3 (highest priority): `effective_from`/`effective_until` covers Asia-Pacific awake hours, participants are APAC engineers. Layer 2: EMEA hours, EMEA engineers. Layer 1: Americas hours, Americas engineers. The escalation policy points at this one schedule and gets the awake engineer for free.
-
 ### Primary + secondary
 
 Two separate schedules: `Primary` and `Secondary`. Escalation policy: level 1 → `Primary`, level 2 → `Secondary`. Each schedule rotates independently.
 
 ## Pricing
 
-On-call schedules are included on every paid plan. Free tier is limited to a single non-rotating responder list.
-
-<Aside type="caution">
-Pricing tier specifics are in flux. Confirm current limits in the **Settings → Billing** screen of your account.
-</Aside>
+The free plan includes 1 on-call responder. Rotations need more than one person, so they need a responder pack. See [pricing](https://siteqwality.com/pricing/).
 
 ## See also
 

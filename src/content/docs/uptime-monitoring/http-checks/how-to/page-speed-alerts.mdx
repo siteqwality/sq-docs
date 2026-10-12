@@ -61,9 +61,9 @@ Only the **performance** category is compared. SEO, accessibility, and best-prac
 Page-speed alerts fan out through the **parent HTTP monitor's notification groups**. There is no separate page-speed routing: whatever `group_notification_ids` the HTTP check has, the page-speed alert uses.
 
 <Aside type="caution" title="Not every channel type is supported">
-Page-speed alerts deliver over **email, SMS, Slack, webhook, Discord, and Microsoft Teams** only.
+Page-speed alerts deliver over **email, SMS, Slack, webhook, Telegram, Discord, and Microsoft Teams** only.
 
-Telegram, PagerDuty, OpsGenie, Google Chat, Mattermost, Pushover, and Pushbullet channels are skipped. If a monitor's group contains only those types, its page-speed alerts go nowhere. Add an email or Slack channel to the group if you want page-speed coverage.
+PagerDuty, Jira Service Management (Opsgenie), Google Chat, Mattermost, Pushover, and Pushbullet channels are skipped. See [which alerts reach which channels](/incident-management/notifications/channels/#which-alerts-reach-which-channels). If a monitor's group contains only those types, its page-speed alerts go nowhere. Add an email or Slack channel to the group if you want page-speed coverage.
 </Aside>
 
 ## What it does not do

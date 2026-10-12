@@ -7,43 +7,35 @@ owner: jj
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-The Telegram integration uses the Site Qwality bot. Setup is a two-step flow because Telegram doesn't expose a webhook URL; instead, you message the bot a one-time code, and Site Qwality records the chat ID.
+The Telegram integration uses the Site Qwality bot. Setup is a two-step flow because Telegram doesn't expose a webhook URL: you send the bot a one-time code, and Site Qwality records the chat ID.
 
 ## Set up
 
 <Steps>
 
-1. **Settings → Integrations → Telegram → Add → Start setup.**
+1. **Manage → Integrations → Telegram.** Give the integration a name and click **Start Setup**.
 
-2. The dashboard generates a **setup code** (a long alphanumeric string).
+2. The dashboard shows a link to the Site Qwality bot (`t.me/SiteQwality_bot`) that carries a one-time setup code. Open it in Telegram and press **Start**. This sends `/start <setup-code>` to the bot, which records the chat. The bot does not reply.
 
-3. Open Telegram, find the Site Qwality bot, send the message:
-
-   ```
-   /start <setup-code>
-   ```
-
-4. The bot replies confirming the chat is registered.
-
-5. Back in Site Qwality, click **Finish**. The integration is created with the chat's ID.
+3. Back in Site Qwality, click **Check**. When it shows **Completed**, click **Add**. The integration is created for that chat.
 
 </Steps>
 
-For group chats, add the bot to the group first, then send the `/start <code>` command in the group.
+For a group chat, add the bot to the group first, then send `/start <setup-code>` in the group.
 
 Or driven via API:
 
 ```bash
-# Step 1: start the setup
+# Step 1: start the setup; the response includes setup_code and expires_at
 curl -X POST https://api.siteqwality.com/integration/telegram/start \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-The response includes the `setup_code`. After the user messages the bot:
+Send `/start <setup-code>` to the bot from the chat you want to use, then:
 
 ```bash
 # Step 2: poll until chat_id is set
-curl https://api.siteqwality.com/integration/telegram/get_setup_state \
+curl "https://api.siteqwality.com/integration/telegram/get_setup_state?setup_state_code=<setup-code>" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 
 # Step 3: finalize once chat_id is non-null
@@ -73,13 +65,14 @@ curl -X POST https://api.siteqwality.com/notification \
 
 ## Format
 
-Messages are HTML-formatted plain text with the monitor name, status, and a link to the incident in Site Qwality.
+For an HTTP monitor, a message has a title (**Monitor Down** or **Monitor Up**), the monitor and the URL that was checked. A down message adds the time and the failure reason; a recovery adds when the outage started, when it resolved and the total downtime. Other monitor types send their own short summary. Messages have no link back to Site Qwality.
 
 ## Notes
 
-- Setup codes expire after a fixed window. If the code expires before you message the bot, restart the setup.
+- Setup codes expire one hour after you start the setup. If the code expires before you message the bot, start again.
 - One integration per chat. Use multiple integrations for multiple destinations.
-- Telegram has a global rate limit (~30 msg/sec) but per-chat limits are stricter (~1 msg/sec). Heavy alert bursts may queue.
+- A send is tried once and is not queued or retried later, so a message Telegram rate-limits can be lost.
+- Telegram is a recipient you choose. Telegram processes the messages under its own terms; it is not a Site Qwality subprocessor.
 
 ## See also
 

@@ -22,16 +22,7 @@ curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
   -H "Content-Type: application/json" \
   -d '{
     "type": "sms",
-    "details": { "country_code": 1, "phone_number": "5551234567" }
-  }'
-
-# Phone call
-curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "phone_call",
-    "details": { "country_code": 1, "phone_number": "5551234567" }
+    "details": { "country_code": "1", "phone_number": "5551234567" }
   }'
 
 # Email
@@ -44,7 +35,7 @@ curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
   }'
 ```
 
-`type` is one of `email`, `sms`, `phone_call`, `slack_dm`.
+`type` is one of `email`, `sms` or `slack_dm`. A `slack_dm` contact method takes a Slack bot token and a channel or user ID that you paste in. There are no phone calls: `phone_call` is refused.
 
 ## Recommended high-urgency stack
 
@@ -62,13 +53,13 @@ curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
     "position": 0
   }'
 
-# 5 min: call me
+# 5 min: Slack DM me
 curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "urgency": "high",
-    "contact_method_id": "<call-id>",
+    "contact_method_id": "<slack-dm-id>",
     "delay_minutes": 5,
     "position": 1
   }'
@@ -112,7 +103,7 @@ Escalation policy timeouts and personal-rule delays are **independent timers**. 
 | Time | Event |
 |---|---|
 | 0 min | Escalation level fires you. Your rule at 0 min fires (SMS). |
-| 5 min | Your rule at 5 min fires (call). Still no ack. |
+| 5 min | Your rule at 5 min fires (Slack DM). Still no ack. |
 | 5 min | Escalation policy advances to level 2 and pages the next person. |
 | 15 min | Your rule at 15 min fires (email). |
 
@@ -121,11 +112,11 @@ You'll keep getting your full personal stack even after escalation has moved on.
 ## Tips
 
 - **Don't put SMS at high delay.** SMS is the fastest signal; reserve it for `delay_minutes: 0`.
-- **Phone calls work as a deduplicator.** If the SMS already woke you, you'll silence the call. If it didn't, the ringing definitely will.
+- **Pair SMS with a second method.** An SMS is tried once, so a later Slack DM or email catches a message that did not arrive.
 - **Email is the catcher's mitt.** A 15-minute email rule means "if I missed everything, at least the message is in my inbox."
 
 <Aside type="tip">
-On a paid plan? Add `slack_dm` as a contact method too. It's quieter than SMS but more visible than email, a good middle option for "I want to know but don't need to wake up."
+A `slack_dm` contact method is quieter than SMS but more visible than email, a good middle option for "I want to know but don't need to wake up."
 </Aside>
 
 ## See also

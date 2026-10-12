@@ -98,7 +98,7 @@ export default defineConfig({
 						'- [Account and team setup](https://docs.siteqwality.com/getting-started/account-and-team/): roles, API keys and scopes.',
 						'- [Uptime monitoring](https://docs.siteqwality.com/uptime-monitoring/overview/): HTTP, SSL/TLS, domain expiry, cron and browser checks.',
 						'- [Observability](https://docs.siteqwality.com/observability/overview/): logs, metrics, traces, RUM and session replay.',
-						'- [Incident management](https://docs.siteqwality.com/incident-management/overview/): incidents, on-call, escalation, notifications, maintenance windows.',
+						'- [Incident management](https://docs.siteqwality.com/incident-management/overview/): incidents, services, on-call, escalation, notifications, maintenance windows.',
 						'- [Status pages](https://docs.siteqwality.com/status-pages/overview/)',
 						'- [Integrations](https://docs.siteqwality.com/integrations/overview/): Slack, Teams, PagerDuty, webhooks and more.',
 						'- [API Reference](https://docs.siteqwality.com/api-reference/): every REST endpoint at `https://api.siteqwality.com`, authenticated with `Authorization: Bearer <API key>`.',
@@ -281,6 +281,14 @@ export default defineConfig({
 									collapsed: true,
 									autogenerate: { directory: 'incident-management/incidents/how-to' },
 								},
+							],
+						},
+						{
+							label: 'Services',
+							collapsed: true,
+							items: [
+								{ label: 'Overview', slug: 'incident-management/services/overview' },
+								{ label: 'Reference', slug: 'incident-management/services/reference' },
 							],
 						},
 						{

@@ -7,7 +7,7 @@ owner: jj
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-By default a status page lives at `<page-id>.siteqwality.com`. Adding a custom domain (typically `status.yourcompany.com`) takes a few minutes plus DNS propagation time.
+By default a status page lives at `https://statuspage.siteqwality.com/<account-id>/<page-id>`. Adding a custom domain (typically `status.yourcompany.com`) takes a few minutes plus DNS propagation time.
 
 Site Qwality provisions the TLS certificate via AWS Certificate Manager (ACM) and serves the page from the same edge as the default URL. There's no extra runtime cost or proxy hop.
 
@@ -98,7 +98,7 @@ Open `https://status.example.com` in a fresh browser. You should see:
 
 - A valid TLS certificate (no warnings).
 - Your branded status page.
-- The default URL (`<page-id>.siteqwality.com`) still works as a fallback.
+- The default URL (`https://statuspage.siteqwality.com/<account-id>/<page-id>`) still works as a fallback.
 
 ## Removing a custom domain
 

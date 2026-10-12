@@ -25,7 +25,7 @@ An **Integration Key** (also called a routing key) from a PagerDuty service.
 
 ## Connect it
 
-In the dashboard, **Integrations → Add Integrations → PagerDuty**. Give it a name, paste the key into **Integration Key (Events API v2)**, and click **Add**. Or via the API:
+In the dashboard, **Manage → Integrations → PagerDuty**. Give it a name, paste the key into **Integration Key (Events API v2)**, and click **Add**. Or via the API:
 
 ```bash
 curl -X POST https://api.siteqwality.com/integration/pagerduty \
@@ -39,7 +39,7 @@ curl -X POST https://api.siteqwality.com/integration/pagerduty \
 
 Both fields are required and must be non-empty. The key is not validated against PagerDuty at save time, so a typo surfaces as a failed notification later, not as an error here.
 
-The routing key is a secret: it is stored encrypted at rest and `GET /integration` returns `"details": {}` for PagerDuty integrations rather than echoing it back.
+The routing key is a secret: `GET /integration` returns `"details": {}` for PagerDuty integrations rather than echoing it back.
 
 ## Create a channel
 
@@ -88,14 +88,15 @@ Expiry warnings always send at severity `warning`, ignoring the channel's config
 
 ## Delivery behavior
 
-A failed send is retried up to 3 times in-process. This is safe because the dedup key makes the call idempotent. If all 3 attempts fail, the notifier fails the whole event so it is retried again rather than dropping the page silently.
+A failed send is retried up to 3 times in quick succession, which is safe because the dedup key makes the call idempotent. A 4xx answer other than 408 or 429 means PagerDuty refused the event: it is recorded as rejected and not retried. Any other failure fails the event, and it is run up to two more times. If those fail too, the alert is dropped with no record in alert history, so pair PagerDuty with a second channel for anything you cannot afford to miss.
 
 ## Limitations
 
 - The endpoint is the global `events.pagerduty.com`. The EU service region is not configurable.
-- PagerDuty channels fire for **HTTP monitors, browser checks, and DNS/domain expiry**. TLS expiry and cron/heartbeat monitors only support email, SMS, and Slack today; a PagerDuty channel attached to a group used by those monitor types is skipped.
+- PagerDuty channels fire for **HTTP monitors, browser checks, heartbeat (cron) monitors, domain expiry warnings, DNS record changes, log, metric and trace alert rules, and RUM issues**. TLS expiry warnings and page speed alerts do not reach PagerDuty today: a PagerDuty channel attached to a group used by those sources is skipped. See the [coverage table](/incident-management/notifications/channels/#which-alerts-reach-which-channels).
+- Incidents and escalation policies do not page through PagerDuty. The integration sends monitor and alert-rule events only.
 
 ## See also
 
 <LinkCard title="Channels reference" description="Full pagerduty channel detail shape." href="/incident-management/notifications/channels/#pagerduty" />
-<LinkCard title="OpsGenie" description="The same lifecycle model, different provider." href="/integrations/opsgenie/" />
+<LinkCard title="Jira Service Management (Opsgenie)" description="The same lifecycle model, different provider." href="/integrations/opsgenie/" />

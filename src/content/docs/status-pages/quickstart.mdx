@@ -7,7 +7,7 @@ owner: jj
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have a public status page at `<page-id>.siteqwality.com` showing the status of an HTTP check, with a custom logo and brand color, and you'll have published one incident update to it.
+By the end of this guide you'll have a public status page at `https://statuspage.siteqwality.com/<account-id>/<page-id>` showing the status of an HTTP check, with a custom logo and brand color, and you'll have published one incident update to it.
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ By the end of this guide you'll have a public status page at `<page-id>.siteqwal
 
 2. Set the **friendly name**. This is the public page title, so use your product name, e.g. `Acme Cloud`.
 
-3. Click **Create**. You're dropped onto the page settings, with a unique URL (`<id>.siteqwality.com`) shown at the top.
+3. Click **Create**. You're dropped onto the page settings, with the page's public URL (`https://statuspage.siteqwality.com/<account-id>/<page-id>`) shown at the top.
 
 </Steps>
 
@@ -39,7 +39,7 @@ curl -X POST https://api.siteqwality.com/status_page \
   -d '{ "friendly_name": "Acme Cloud" }'
 ```
 
-Returns the new page's `id`. The default URL is `https://<id>.siteqwality.com`.
+Returns the new page's `id`. The public URL is `https://statuspage.siteqwality.com/<account-id>/<page-id>`.
 
 </TabItem>
 </Tabs>
@@ -148,7 +148,7 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/branding \
 
 ## 4. Publish your first incident
 
-Most incidents on a status page should be auto-published from the same incident the monitor opened internally. Let's create a manual one to confirm the publish path works.
+An incident reaches a status page when you create it on the page, or when a [service](/incident-management/services/overview/) publishes an incident it opened automatically. Let's create one by hand to confirm the page shows it.
 
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
@@ -163,7 +163,7 @@ Most incidents on a status page should be auto-published from the same incident 
 
 4. Save. The incident appears immediately on the public page.
 
-5. To resolve, post an update with status `resolved` and a closing message.
+5. To resolve, post a closing update with status `resolved`, then mark the incident resolved. The update alone adds a line to the timeline but leaves the incident open on the page.
 
 </Steps>
 
@@ -179,16 +179,26 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident \
     "title": "Investigating elevated API latency",
     "severity": "minor",
     "message": "Our monitoring detected increased latency on the API. We are looking into it now.",
-    "affected_http_job_ids": ["acct_abc123"]
+    "affected_http_job_ids": ["<http-job-id>"]
   }'
 
-# Add an update later
+# Post the closing update (emails confirmed subscribers)
 curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident/$INCIDENT_ID/update \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "status": "resolved",
-    "message": "Latency has returned to baseline. We are continuing to monitor."
+    "message": "Latency has returned to baseline."
+  }'
+
+# Mark the incident resolved so the page shows it as closed
+curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident/$INCIDENT_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Investigating elevated API latency",
+    "severity": "minor",
+    "status": "resolved"
   }'
 ```
 
@@ -197,7 +207,7 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident/$I
 
 ## 5. Confirm visitors can see it
 
-Open `https://<page-id>.siteqwality.com` in an incognito window. You should see:
+Open `https://statuspage.siteqwality.com/<account-id>/<page-id>` in an incognito window. You should see:
 
 - Your logo and brand colors.
 - Each component with its current status (green check if healthy, red if failing).

@@ -1,27 +1,29 @@
 ---
 title: Microsoft Teams integration
-description: Connect a Teams channel via incoming webhook URL.
+description: Post monitor alerts to a Teams channel through a Workflows webhook.
 last_verified: 2026-05-03
 owner: jj
 ---
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-The Microsoft Teams integration uses an incoming webhook URL from a Teams channel connector. Site Qwality posts Adaptive Cards rendered with status color, monitor details, and a link to the incident.
+The Microsoft Teams integration posts alerts to a Teams channel through a Workflows webhook URL. Each alert is an Adaptive Card with a coloured title (red when a monitor goes down, green when it recovers) and a fact set: **Monitor**, **Status** and **URL** on every card, **Reason** when the check reported one, and **Started** and **Resolved** on a recovery. The card has no link back to Site Qwality.
+
+<Aside type="caution" title="Office 365 Connectors no longer work">
+Microsoft retired Office 365 Connectors in Teams in May 2026, so Incoming Webhook connector URLs (`outlook.office.com/webhook/...` or `*.webhook.office.com`) no longer deliver. Use a Workflows webhook as described below. If you have a Teams integration with a connector URL, create a new integration with a Workflows URL and point your notification channels at it.
+</Aside>
 
 ## Set up
 
 <Steps>
 
-1. In Microsoft Teams, navigate to the channel you want alerts posted to.
+1. In Microsoft Teams, open the channel you want alerts posted to.
 
-2. Click the channel's **More options (...) → Connectors**.
+2. Open **Workflows** for the channel (from the channel's **More options (...)** menu, or the Workflows app) and choose the template **Post to a channel when a webhook request is received**.
 
-3. Find **Incoming Webhook**, click **Configure**, give it a name (`Site Qwality Alerts`), upload an icon (optional), and **Create**.
+3. Pick the team and channel, then finish the flow. Teams shows the flow's webhook URL. Copy it.
 
-4. Copy the generated webhook URL.
-
-5. In Site Qwality: **Settings → Integrations → Microsoft Teams → Add**. Paste the URL. Save.
+4. In Site Qwality: **Manage → Integrations → Microsoft Teams**. Give the integration a name, paste the URL and save.
 
 </Steps>
 
@@ -33,9 +35,15 @@ curl -X POST https://api.siteqwality.com/integration/microsoft_teams \
   -H "Content-Type: application/json" \
   -d '{
     "friendly_name": "Ops Teams channel",
-    "url": "https://outlook.office.com/webhook/<unique>"
+    "url": "<your Workflows webhook URL>"
   }'
 ```
+
+<Aside type="note" title="Things to know about Workflows flows">
+- A flow belongs to the person who created it. If they leave your organisation, the flow stops, so add a co-owner to the flow in Power Automate.
+- On some Microsoft 365 plans, Microsoft turns off a flow that has had no successful run for 90 days. A channel for a quiet monitor can reach that, so check the flow if a channel has been silent for a long time.
+- Your organisation must allow Workflows in Teams.
+</Aside>
 
 ## Create a notification channel
 
@@ -54,13 +62,15 @@ curl -X POST https://api.siteqwality.com/notification \
 
 The destination is implicit in the integration's webhook URL, so you don't specify a channel separately.
 
+## What reaches Teams
+
+HTTP monitors, browser checks, TLS and domain expiry warnings, page speed alerts, log, metric and trace alert rules, and RUM issues all post to Teams. Heartbeat (cron) monitors and DNS record changes do not post to Teams today, and incidents and escalations do not use Teams. See the [coverage table](/incident-management/notifications/channels/#which-alerts-reach-which-channels).
+
+A send is tried up to three times in quick succession. There is no later retry.
+
 ## Multiple channels
 
-For multiple Teams destinations, create one integration per destination (each with its own webhook URL). Then create one notification per integration.
-
-<Aside type="caution">
-Teams incoming webhooks are being deprecated by Microsoft in favor of the Workflows app, and the URL format may change. Watch their announcements; Site Qwality will follow the migration.
-</Aside>
+For multiple Teams destinations, create one flow and one integration per channel. Then create one notification per integration.
 
 ## See also
 

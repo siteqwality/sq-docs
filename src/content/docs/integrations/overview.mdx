@@ -1,6 +1,6 @@
 ---
 title: Integrations
-description: Connect Site Qwality to Slack, Teams, Discord, Telegram, PagerDuty, OpsGenie, Google Chat, Mattermost, Pushover, Pushbullet, and arbitrary webhooks.
+description: Connect Site Qwality to Slack, Teams, Discord, Telegram, PagerDuty, Jira Service Management (Opsgenie), Google Chat, Mattermost, Pushover, Pushbullet, and your own webhooks.
 last_verified: 2026-08-02
 owner: jj
 ---
@@ -19,8 +19,8 @@ To let an AI assistant such as Claude or ChatGPT work with your account instead,
 ## Chat and messaging
 
 <CardGrid>
-  <LinkCard title="Slack" description="OAuth-installed app. Posts rich blocks to any channel; supports interactive Acknowledge and Resolve buttons." href="/integrations/slack/" />
-  <LinkCard title="Microsoft Teams" description="Incoming webhook URL from a Teams channel connector. Posts Adaptive Cards." href="/integrations/microsoft-teams/" />
+  <LinkCard title="Slack" description="OAuth-installed app. Posts monitor alerts to any channel." href="/integrations/slack/" />
+  <LinkCard title="Microsoft Teams" description="Workflows webhook URL for a Teams channel. Posts Adaptive Cards." href="/integrations/microsoft-teams/" />
   <LinkCard title="Discord" description="Incoming webhook URL from a Discord channel. Posts embeds." href="/integrations/discord/" />
   <LinkCard title="Telegram" description="Bot-based via setup-code flow. Direct messages or group chats." href="/integrations/telegram/" />
   <LinkCard title="Google Chat" description="Incoming webhook URL for a space. Posts card messages." href="/integrations/google-chat/" />
@@ -31,7 +31,7 @@ To let an AI assistant such as Claude or ChatGPT work with your account instead,
 
 <CardGrid>
   <LinkCard title="PagerDuty" description="Events API v2. Outages trigger an incident; recoveries resolve the same incident automatically." href="/integrations/pagerduty/" />
-  <LinkCard title="OpsGenie" description="Alerts API. Outages create an alert; recoveries close it automatically by alias." href="/integrations/opsgenie/" />
+  <LinkCard title="Jira Service Management (Opsgenie)" description="Opsgenie Alerts API. Outages create an alert; recoveries close it automatically by alias." href="/integrations/opsgenie/" />
 </CardGrid>
 
 ## Push to your devices
@@ -44,13 +44,11 @@ To let an AI assistant such as Claude or ChatGPT work with your account instead,
 ## Anything else
 
 <CardGrid>
-  <LinkCard title="Webhooks" description="Generic outbound webhook URL. POSTs incident JSON to your endpoint." href="/integrations/webhooks/" />
+  <LinkCard title="Webhooks" description="Signed JSON POSTs to your own URL, with retries and a delivery log." href="/integrations/webhooks/" />
 </CardGrid>
 
 <Aside type="note" title="Not every channel works with every monitor type">
-PagerDuty, OpsGenie, Google Chat, Mattermost, Pushover, and Pushbullet fire for **HTTP monitors, browser checks, and DNS/domain expiry**. TLS expiry and cron/heartbeat monitors support only email, SMS, and Slack today, and a channel of an unsupported type on those monitors is skipped rather than erroring.
-
-[Page-speed alerts](/uptime-monitoring/http-checks/how-to/page-speed-alerts/) are narrower still: email, SMS, Slack, webhook, Discord, and Teams only.
+HTTP monitors, browser checks, domain expiry, alert rules and RUM issues reach every channel type. Heartbeat (cron) monitors, TLS expiry, [page-speed alerts](/uptime-monitoring/http-checks/how-to/page-speed-alerts/) and DNS record changes reach only some, and a channel of a type that a source does not support is skipped without an error. See [which alerts reach which channels](/incident-management/notifications/channels/#which-alerts-reach-which-channels).
 </Aside>
 
 ## How integrations and channels relate
@@ -79,7 +77,7 @@ So the typical setup flow is:
 
 ## Pricing
 
-Integrations themselves are free. Delivery costs (SMS, phone calls) are extra and per-message; see [Notifications](/incident-management/notifications/overview/#pricing).
+Integrations themselves are free. SMS uses credits; see [Notifications](/incident-management/notifications/overview/#pricing).
 
 ## See also
 

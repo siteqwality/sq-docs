@@ -35,7 +35,7 @@ A request that identifies its caller and is then denied **is** recorded, with th
 | `impersonated_staff` | A Site Qwality staff member acting as one of your users. `impersonated_by` records which staff member. |
 | `connected_app` | An [AI assistant](/integrations/mcp/) (or other OAuth app) acting as the member who approved it. `actor_user_id` and `actor_user_email` identify the member; `connected_app` names the app. |
 | `partner` | A user of your [partner account](/partners/context-switching/) acting on this account. |
-| `system` | Reserved. Nothing produces it today. |
+| `system` | Written by Site Qwality itself rather than by a request. Today that is the `account.created` entry recorded when the account is set up. |
 
 ## Reading the log
 
@@ -79,7 +79,7 @@ curl -G https://api.siteqwality.com/account/audit_log \
 ```
 
 <Aside type="caution" title="Super admin, admin, or auditor session required">
-The endpoint is gated on the super admin, admin, or auditor role, which only a logged-in user session carries. API keys and M2M clients get a `403`: a leaked automation credential must not be able to read every member's actions and IP addresses. Programmatic export for SIEM ingestion is on the roadmap.
+The endpoint is gated on the super admin, admin, or auditor role, which only a logged-in user session carries. API keys and M2M clients get a `403`: a leaked automation credential must not be able to read every member's actions and IP addresses. There is no programmatic export for SIEM ingestion today.
 </Aside>
 
 | Param | Default | Notes |

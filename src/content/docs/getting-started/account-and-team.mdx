@@ -27,10 +27,10 @@ Open **Account → Security** to add a passkey, set up an authenticator app, or 
 
 4. Roles, changeable later by any Super Admin from the dropdown in the Users table:
    - **Super Admin**: everything, including billing, role assignment, and SSO/SCIM. Multiple people can hold it. The account's original user is always a Super Admin and cannot be demoted or deleted.
-   - **Admin**: team and credential management (invites, API keys, the audit log), everything except billing, roles, and SSO/SCIM.
-   - **Member**: full product access (monitors, incidents, dashboards), but no team, credential, or billing management. New users start here.
-   - **Auditor**: read-only across the product, plus access to the [audit log](/enterprise/audit-log/). For compliance reviewers who should see everything and touch nothing.
-   - **Viewer**: read-only. The one exception: a viewer who is on call can still acknowledge and resolve incidents. Viewers cannot read the audit log.
+   - **Admin**: team and credential management (invites, API keys, the audit log) and deleting escalation policies, on-call schedules and services: everything except billing, roles, and SSO/SCIM.
+   - **Member**: full product access (monitors, incidents, dashboards), but no team, credential, or billing management, and no deleting escalation policies, on-call schedules or services. New users start here.
+   - **Auditor**: read-only across the product, plus access to the [audit log](/enterprise/audit-log/). An auditor can still manage their own contact methods and notification rules. For compliance reviewers who should see everything and change nothing else.
+   - **Viewer**: read-only, except that a viewer can acknowledge and resolve incidents and manage their own contact methods and notification rules. Viewers cannot read the audit log.
 
 </Steps>
 
@@ -42,23 +42,24 @@ Directory-managed teams should map IdP groups to the exact role IDs in [SCIM rol
 
 ## Set up your contact methods
 
-A *contact method* is **how you personally** can be reached, whether that's your email, your phone for SMS, your phone for calls, or your Slack DM. Distinct from a notification *channel*, which is account-level.
+A *contact method* is **how you personally** can be reached, whether that's your email, your phone for SMS, or a Slack DM. Distinct from a notification *channel*, which is account-level.
 
-Each user manages their own contact methods in their personal settings, under **Notifications → Contact methods**. Available types:
+Each user manages their own contact methods in their personal settings, under **Notifications → Contact methods**. Admins can also manage other users' contact methods. Available types:
 
 | Type | What it is |
 |---|---|
-| `email` | Your inbox. Always pre-populated with your sign-up address. |
-| `sms` | A verified phone number. Site Qwality sends a verification code on add. |
-| `phone_call` | The same verified number, dialed instead of SMS-ed for high-urgency pages. |
-| `slack_dm` | DM via the Slack integration once your account has connected it. |
+| `email` | An email address. |
+| `sms` | A phone number. There is no verification code, so check the number when you add it. |
+| `slack_dm` | A Slack bot token and a channel or user ID that you paste in. It does not use the Slack integration. |
+
+None are created for you, and there are no phone calls.
 
 Once contact methods exist, set up **notification rules** to define which method fires for which urgency:
 
-- *High* urgency: incidents from monitors, escalation pages, anything that should wake you up.
-- *Low* urgency: informational, status-only.
+- *High* urgency: incidents with severity `critical` or `major`.
+- *Low* urgency: incidents with severity `minor`.
 
-A rule has an urgency, a contact method, and an optional `delay_minutes`. Stack multiple rules at increasing delays for personal escalation: SMS at 0 min, phone call at 5 min, email at 15 min.
+A rule has an urgency, a contact method, and an optional `delay_minutes`. Stack multiple rules at increasing delays for personal escalation: SMS at 0 min, Slack DM at 5 min, email at 15 min. A user with no rule for an incident's urgency is not paged.
 
 See the [Notification rules how-to](/incident-management/notifications/how-to/notification-rules/) for the full setup.
 
@@ -83,10 +84,10 @@ Anything you can do in the dashboard, you can do via the API. Generate a key und
 
 </Steps>
 
-Keys are scoped to the account, not the user. Revoke immediately if leaked.
+Keys belong to the account, not the user. Revoke immediately if leaked. Rotating a key ends the old one at once, so deploy the new value right away.
 
 <Aside type="tip">
-An API key can do everything the account can. For automation that should be limited to specific resources, or that a third party operates, use an [M2M API client](/enterprise/api-clients/) instead: scoped permissions, short-lived tokens, built-in rotation, and immediate revocation.
+An API key with no scopes can do everything the account can, so give each key only the scopes it needs. For automation that should be limited to specific resources, or that a third party operates, use an [M2M API client](/enterprise/api-clients/) instead: scoped permissions, short-lived tokens, built-in rotation, and immediate revocation.
 </Aside>
 
 Whichever you use, every change either one makes is recorded in the [audit log](/enterprise/audit-log/).
@@ -107,7 +108,7 @@ Usage-relevant counters (monitor count, ingested logs/metrics/traces volume, RUM
 
 ## Set up integrations early
 
-The rest of these docs assume Slack/Teams/Discord/Telegram/webhook integrations are already connected if you reference them. Connect the ones you use under **Settings → Integrations** before you wire monitors to them. See [Integrations overview](/integrations/overview/) for the per-tool setup steps.
+The rest of these docs assume Slack/Teams/Discord/Telegram/webhook integrations are already connected if you reference them. Connect the ones you use under **Manage → Integrations** before you wire monitors to them. See [Integrations overview](/integrations/overview/) for the per-tool setup steps.
 
 ## What's next
 

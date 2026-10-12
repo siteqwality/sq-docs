@@ -9,7 +9,7 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 An **incident** is the durable record of "something is broken." Every page, every escalation, every status-page update hangs off an incident. They're created two ways:
 
-1. **Auto**: when a monitor flips from healthy to failing, Site Qwality opens an incident with `auto_created: true`.
+1. **Auto**: when a monitor linked to a [service](/incident-management/services/overview/) in `auto` or `auto_with_confirmation` mode starts failing, Site Qwality opens an incident with `auto_created: true`, or adds the monitor to the service's open incident if one opened within the merge window. Monitors with no service never open incidents.
 2. **Manual**: when you create one in the dashboard or via `POST /incident`. Use this for non-monitor events ("partial Stripe outage breaking webhooks," "a cron job took down the queue").
 
 Either way the lifecycle is the same.
@@ -46,13 +46,13 @@ A status page incident can be `status: monitoring` while still `responder_status
 | `major` | Customer-facing feature broken for a subset of users; one region down with traffic still served from another. |
 | `critical` | Full outage; data loss; security incident. Wakes everyone up. |
 
-The severity field is informational; *it doesn't change escalation behavior*. To change who gets paged, use a different notification group or escalation policy. Severity drives sort order, color coding, and any filters you set up on the alerting fabric.
+Severity sets the urgency of the page: `critical` and `major` incidents page at **high** urgency, `minor` at **low**, and each responder's [notification rules](/incident-management/notifications/how-to/notification-rules/) decide how each urgency reaches them. It does not choose a different escalation policy: the policy comes from the incident's service.
 
 ## Lifecycle: a typical auto-created incident
 
-1. HTTP check `prod-api` flips from `success` to `failure` at 03:14:22.
-2. Incident opens automatically with `auto_created: true`, `status: investigating`, `responder_status: triggered`, `affected_http_job_ids: [<job_id>]`.
-3. The check's notification group fires; channels get the page; targeted users' contact methods fire per their notification rules.
+1. HTTP check `prod-api`, linked to the `API` service in `auto` mode, flips from `success` to `failure` at 03:14:22.
+2. Incident opens automatically with `auto_created: true`, `status: investigating`, `responder_status: triggered`, and the service's default severity.
+3. The service's escalation policy pages the on-call through their notification rules. Separately, the check's notification groups send their usual monitor alert.
 4. The on-call engineer receives an SMS at 03:14:30. They open the dashboard and click **Acknowledge** at 03:15:10.
 5. `responder_status` flips to `acknowledged`. Escalation stops.
 6. They post an incident update at 03:18: `status: identified`, message `"Database failover stuck. Manually promoting standby."`
@@ -67,7 +67,7 @@ You can override any of these transitions manually if needed: the auto-resolutio
 - A bug in production that doesn't manifest as a monitor failure (UI broken, auth flow broken for a subset of users).
 - Coordination of a complex outage across multiple teams. One canonical incident with a clear timeline beats six Slack threads.
 
-For these, use `POST /incident` (standalone) or `POST /status_page/{id}/incident` (auto-publishes to a specific page).
+For these, use `POST /incident` (standalone) or `POST /status_page/{id}/incident` (creates it on that page and emails the page's confirmed subscribers). Add `service_id` to page the service's escalation policy.
 
 ## Acknowledgement
 
