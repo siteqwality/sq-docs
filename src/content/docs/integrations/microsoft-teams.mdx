@@ -11,6 +11,8 @@ The Microsoft Teams integration posts alerts to a Teams channel through a Workfl
 
 <Aside type="caution" title="Office 365 Connectors no longer work">
 Microsoft retired Office 365 Connectors in Teams in May 2026, so Incoming Webhook connector URLs (`outlook.office.com/webhook/...` or `*.webhook.office.com`) no longer deliver. Use a Workflows webhook as described below. If you have a Teams integration with a connector URL, create a new integration with a Workflows URL and point your notification channels at it.
+
+Saving a connector URL is refused with a `400` that says so, and so is a Workflows URL on the retired `logic.azure.com` hosts.
 </Aside>
 
 ## Set up

@@ -7,35 +7,29 @@ owner: jj
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-The Slack integration installs an OAuth app into your workspace once. Each notification channel you create afterwards specifies a destination Slack channel.
+The Slack integration installs an OAuth app into one Slack workspace. Each notification channel you create afterwards specifies a destination Slack channel.
 
 ## Install
 
+Only an account admin can install it.
+
 <Steps>
 
-1. **Manage → Integrations → Slack**, then continue to Slack.
+1. **Manage → Integrations → Slack**. Optionally type a name (it defaults to the workspace name followed by "Slack"), then click **Add to Slack**.
 
-2. You're redirected to Slack's OAuth consent screen. Approve.
+2. You're sent to Slack's consent screen. Pick the workspace and approve.
 
-3. Slack redirects back to Site Qwality with a code. Give the integration a name and add it. The dashboard exchanges the code for a workspace token and stores it as an integration.
-
-4. The Slack integration now appears in your list under the name you typed.
+3. Slack sends you back to Site Qwality, which finishes the install. The integration appears in your list.
 
 </Steps>
 
-If you'd rather drive this from the API:
+The link to Slack works once, for 10 minutes, and only for the admin who clicked **Add to Slack**. If it expired or was already used, or you cancel on Slack's screen, nothing is connected: click **Add to Slack** again.
 
-```bash
-# After completing OAuth manually and capturing the code:
-curl -X POST https://api.siteqwality.com/integration/slack \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "friendly_name": "Acme Slack",
-    "code": "<slack-oauth-code>",
-    "redirect_uri": "https://app.siteqwality.com/integrations/slack/callback"
-  }'
-```
+The app asks for two scopes: `chat:write` to post, and `chat:write.public` to post in public channels without joining them.
+
+The install runs only from the dashboard, because it is a round trip through Slack in your browser. API keys, API clients and AI assistants get a `403` that says "Connect Slack from the Integrations page in the dashboard."
+
+Org-wide Enterprise Grid installs are not supported yet. Install the app into a single workspace instead.
 
 ## Add the bot to private channels
 

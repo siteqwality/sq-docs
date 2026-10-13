@@ -103,7 +103,7 @@ Scopes are `read:<family>` or `write:<family>`. Eleven families exist:
 |---|---|
 | `monitors` | HTTP, TLS, DNS, cron and browser checks |
 | `incidents` | Incidents, escalation policies, on-call schedules, maintenance windows |
-| `notifications` | Notification channels, groups, integrations |
+| `notifications` | Notification channels and groups, and reading integrations |
 | `status_pages` | Status pages and their components |
 | `logs` | Log query, parsers, saved views |
 | `metrics` | Metric query endpoints and saved views |
@@ -116,6 +116,8 @@ Scopes are `read:<family>` or `write:<family>`. Eleven families exist:
 `write` covers `POST`, `PUT`, `PATCH` and `DELETE`. Everything else is `read`. **Granting `write` does not imply `read`**; if a client needs both, grant both.
 
 One scope sits outside the families: `read:rum_replay` lets a client watch [session replays](/observability/replay/reference/#who-can-watch-a-replay). It is never implied, not by `read:rum` and not by a key with no scope list, so a client that downloads replays needs both `read:rum` and `read:rum_replay`.
+
+`integrations:manage` also sits outside the families. Adding, changing or deleting an [integration](/integrations/overview/#who-can-change-integrations) needs it, because each integration holds a credential; `write:notifications` does not cover those writes. Reading integrations stays under `read:notifications`, with credentials masked.
 
 <Aside type="caution" title="Anything outside those eleven families is refused">
 Scope checking is fail-closed. Account management, billing, authentication, staff endpoints and webhooks are **not** covered by any family, so an M2M client gets a `403` on them no matter what scopes it holds.

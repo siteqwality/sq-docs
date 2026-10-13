@@ -39,7 +39,7 @@ curl -X POST https://api.siteqwality.com/integration/opsgenie \
 
 Both fields are required and must be non-empty. The key is not verified against Opsgenie at save time.
 
-The API key is a secret. `GET /integration` returns `"details": {}` for these integrations rather than echoing it back.
+The API key is a secret. `GET /integration` never returns it: `opsgenie_api_key` shows it as `****` followed by its last four characters (just `****` when it is shorter than 16 characters).
 
 ## Create a channel
 

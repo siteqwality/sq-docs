@@ -33,6 +33,8 @@ curl -X POST https://api.siteqwality.com/integration/discord \
   }'
 ```
 
+The URL must be a Discord webhook URL (`https://discord.com/api/webhooks/...`), or the save is refused with a `400`. `GET /integration` shows it only as `https://discord.com/****`.
+
 ## Create a notification channel
 
 ```bash

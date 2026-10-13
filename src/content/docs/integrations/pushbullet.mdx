@@ -39,7 +39,7 @@ curl -X POST https://api.siteqwality.com/integration/pushbullet \
 
 Both fields are required and must be non-empty. The token is not verified against Pushbullet at save time.
 
-The token is a secret: `GET /integration` returns `"details": {}` for Pushbullet, and the token is redacted from the stored delivery record.
+The token is a secret: `GET /integration` never returns it, and it is redacted from the stored delivery record. `pushbullet_access_token` shows it as `****` followed by its last four characters (just `****` when it is shorter than 16 characters).
 
 <Aside type="caution">
 A Pushbullet account access token grants full access to the account, not just the ability to push. Create it on an account you are comfortable dedicating to alerting.

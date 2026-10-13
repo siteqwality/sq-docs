@@ -215,7 +215,7 @@ Access is granted per area, as `read:<area>` and `write:<area>`. On the consent 
 |---|---|---|
 | Monitors | `read:monitors`, `write:monitors` | HTTP, SSL/TLS, domain expiry, cron and browser checks |
 | Incidents | `read:incidents`, `write:incidents` | Incidents, escalation policies, on-call schedules, maintenance windows |
-| Notifications | `read:notifications`, `write:notifications` | Notification channels, groups and integrations |
+| Notifications | `read:notifications`, `write:notifications` | Notification channels and groups, and reading integrations |
 | Status Pages | `read:status_pages`, `write:status_pages` | Status pages and their components |
 | Logs | `read:logs`, `write:logs` | Log search, parsers, saved views |
 | Metrics | `read:metrics`, `write:metrics` | Metric queries and saved views |
@@ -226,6 +226,8 @@ Access is granted per area, as `read:<area>` and `write:<area>`. On the consent 
 | User notification settings | `read:users`, `write:users` | Each user's contact methods and notification rules |
 
 Services and user notification settings are available to assistants that connect with an API key. The consent page does not offer them yet, so an assistant that signs in with OAuth cannot reach them.
+
+Adding, changing or removing an integration needs the separate `integrations:manage` permission. You can tick it on an API key; the consent page never offers it.
 
 Session replay content is never available to an assistant, whatever it is granted: it stays with the people allowed to [watch replays](/observability/replay/reference/#who-can-watch-a-replay).
 

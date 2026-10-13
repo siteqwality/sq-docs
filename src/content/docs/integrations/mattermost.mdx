@@ -35,10 +35,10 @@ curl -X POST https://api.siteqwality.com/integration/mattermost \
   }'
 ```
 
-The request field is `url`; the stored and returned field is `mattermost_webhook_url`. Both fields are required and must be non-empty, and the URL is not validated or tested at save time.
+The request field is `url`; the stored field is `mattermost_webhook_url`. Both fields are required. The URL must use `https` on a public host, or the save is refused with a `400`. It is not test-sent at save time.
 
-<Aside type="caution" title="The webhook URL is readable after saving">
-The Mattermost webhook URL is **echoed back in full** by `GET /integration` and recorded verbatim on each delivery record. Anyone with read access to your integrations can post to that channel. Regenerate the webhook in Mattermost if that access changes.
+<Aside type="note" title="The webhook URL does not read back">
+`GET /integration` shows the Mattermost webhook URL as its scheme and host only, such as `https://your-mattermost.example.com/****`, and delivery records show only the host. Keep your own copy if you need it again. To change it, add a new integration and delete the old one.
 </Aside>
 
 ## Create a channel

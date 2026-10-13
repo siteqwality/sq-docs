@@ -27,8 +27,8 @@ Open **Account → Security** to add a passkey, set up an authenticator app, or 
 
 4. Roles, changeable later by any Super Admin from the dropdown in the Users table:
    - **Super Admin**: everything, including billing, role assignment, and SSO/SCIM. Multiple people can hold it. The account's original user is always a Super Admin and cannot be demoted or deleted.
-   - **Admin**: team and credential management (invites, API keys, the audit log) and deleting escalation policies, on-call schedules and services: everything except billing, roles, and SSO/SCIM.
-   - **Member**: full product access (monitors, incidents, dashboards), but no team, credential, or billing management, and no deleting escalation policies, on-call schedules or services. New users start here.
+   - **Admin**: team and credential management (invites, API keys, integrations, the audit log) and deleting escalation policies, on-call schedules and services: everything except billing, roles, and SSO/SCIM.
+   - **Member**: full product access (monitors, incidents, dashboards), but no team, credential, or billing management, and no deleting escalation policies, on-call schedules or services. Members see integrations with their credentials masked but cannot add, change or remove them. New users start here.
    - **Auditor**: read-only across the product, plus access to the [audit log](/enterprise/audit-log/). An auditor can still manage their own contact methods and notification rules. For compliance reviewers who should see everything and change nothing else.
    - **Viewer**: read-only, except that a viewer can acknowledge and resolve incidents and manage their own contact methods and notification rules. Viewers cannot read the audit log.
 

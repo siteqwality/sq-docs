@@ -38,7 +38,7 @@ curl -X POST https://api.siteqwality.com/integration/pushover \
 
 All three fields are required and must be non-empty. Neither credential is verified against Pushover at save time.
 
-Both are secrets: `GET /integration` returns `"details": {}` for Pushover, and both values are redacted from the stored delivery record.
+Both are secrets: `GET /integration` never returns them, and both are redacted from the stored delivery record. `pushover_user_key` and `pushover_app_token` each show as `****` followed by the last four characters (just `****` when shorter than 16 characters).
 
 ## Create a channel
 

@@ -35,14 +35,12 @@ curl -X POST https://api.siteqwality.com/integration/google_chat \
   }'
 ```
 
-Note the request field is `url`, while the stored and returned field is `google_chat_webhook_url`.
+Note the request field is `url`, while the stored field is `google_chat_webhook_url`.
 
-Both fields are required and must be non-empty. Nothing validates that the value is a URL at all, let alone a working one, so a typo shows up as a failed notification rather than an error at save time.
+Both fields are required. The URL must start with `https://chat.googleapis.com/v1/spaces/`; anything else is refused with a `400` at save time. Whether the webhook still works is not checked, so a deleted webhook shows up as a failed notification.
 
-<Aside type="caution" title="The webhook URL is readable after saving">
-A Google Chat webhook URL contains its own auth token in the query string. Unlike the PagerDuty and Opsgenie credentials, it is **echoed back in full** by `GET /integration`, and it is also recorded verbatim in the delivery record for each send.
-
-Treat anyone with read access to your account's integrations as holding the ability to post into that space, and rotate the webhook in Google Chat if that access changes.
+<Aside type="note" title="The webhook URL does not read back">
+A Google Chat webhook URL carries its own auth token in the query string, so `GET /integration` shows only `https://chat.googleapis.com/****`, and delivery records show only the host. Keep your own copy if you need it again. To change it, add a new integration and delete the old one.
 </Aside>
 
 ## Create a channel
