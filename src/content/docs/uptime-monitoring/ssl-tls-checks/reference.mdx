@@ -1,7 +1,7 @@
 ---
 title: TLS check reference
 description: Every field on a TLS check, with status meanings.
-last_verified: 2026-05-03
+last_verified: 2026-10-13
 owner: jj
 ---
 
@@ -18,6 +18,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `http_job_id` | uuid | The HTTP check this TLS check was paired with on creation. |
 | `current_status` | enum | See status table below. |
 | `domain` | string | Hostname extracted from the HTTP check's URL. |
+| `port` | int | Port the handshake connects to. `443` unless set with `tls_port` on the HTTP check. |
 | `expiry_date` | rfc3339 \| null | Cert's `notAfter` (set after first successful handshake). |
 | `last_run_at` | rfc3339 \| null | Most recent handshake timestamp. |
 | `last_status_change_at` | rfc3339 \| null | When `current_status` last transitioned. |
@@ -27,10 +28,13 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 
 | Status | Meaning |
 |---|---|
-| `healthy` | Most recent handshake succeeded; cert valid, chain trusted, hostname matches, expiry > warning threshold. |
-| `pending_failure` | One handshake failed; the next will confirm. Suppresses alerts on transient blips. |
-| `failed` | Two consecutive handshake failures: chain invalid, hostname mismatch, or cert expired. Triggers notifications. |
-| `expiring_soon` | Cert is valid but expiry is within the warning window (default 14 days). |
+| `good` | Most recent handshake succeeded and the certificate is valid. |
+| `bad` | The certificate is invalid or has expired. Triggers notifications. |
+| `unknown` | The check could not connect or read a certificate (DNS failure, refused or timed-out connection, nothing serving TLS on the port). |
+
+<Aside type="note" title="Unknown for more than a day">
+A TLS check that stays `unknown` for more than 24 hours means certificate expiry is not being watched. Site Qwality emails the account owners once per stretch and records a `tls_unknown` event on the HTTP check (see [monitor events](/uptime-monitoring/http-checks/reference/#monitor-events)). A wrong port is a common cause: set `tls_port`.
+</Aside>
 
 ## Endpoints
 
@@ -42,6 +46,16 @@ The TLS check is read-only via its own endpoints (you create it implicitly by se
 | `GET` | `/tls/job/{tls_job_id}/recent` | Recent handshake results. |
 
 To enable/disable TLS monitoring, `PUT /http/job/{job_id}` with `monitor_tls: true|false`.
+
+## Port
+
+The handshake connects to port `443` by default. To check a certificate served elsewhere, send `tls_port` (1 to 65535) on `POST /http/job` or `PUT /http/job/{job_id}`. `GET /http/job/{job_id}` returns the port in use as `tls_port` when TLS monitoring is on.
+
+| Request | Result |
+|---|---|
+| `tls_port` outside 1 to 65535 | `400`. |
+| `tls_port` with `monitor_tls: false` | `400`. |
+| `PUT` with `tls_port` on a check without TLS monitoring and no `monitor_tls` | `409`. Send `monitor_tls: true` with it. |
 
 ## See also
 

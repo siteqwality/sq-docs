@@ -1,7 +1,7 @@
 ---
 title: HTTP check reference
 description: Every field on an HTTP check, with defaults, validation limits, and status meanings.
-last_verified: 2026-10-11
+last_verified: 2026-10-13
 owner: jj
 ---
 
@@ -38,6 +38,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `keyword_search_regex` | bool | `false` | Interpret `keyword_search` as a regular expression. |
 | `group_notification_ids` | uuid[] | none | Notification groups to fire on state change. Maximum 10, no duplicates, must belong to your account. |
 | `monitor_tls` | bool | `true` | Provision a paired [TLS check](/uptime-monitoring/ssl-tls-checks/overview/) for the URL's hostname. |
+| `tls_port` | int | `443` | Port the TLS check connects to, 1 to 65535. Needs `monitor_tls`. See [TLS port](/uptime-monitoring/ssl-tls-checks/reference/#port). |
 | `monitor_dns` | bool | `true` | Provision a paired [domain expiry check](/uptime-monitoring/dns-checks/overview/) for the URL's registrable domain. Silently skipped at create time, and rejected with `400` on update, when the host is on a shared platform suffix such as `*.vercel.app`. |
 | `monitor_page_speed` | bool | `false` | Provision a paired page-speed (Lighthouse) check on a slower schedule. |
 | `tags` | string[] | none | Free-form tags. Used for grouping and [maintenance-window](/incident-management/maintenance/overview/) matching. |
@@ -62,6 +63,8 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `page_speed_job_id` | uuid \| null | Paired page-speed check, if `monitor_page_speed` is on. |
 | `group_notifications` | object[] \| null | Full notification-group objects resolved from `group_notification_ids`. |
 | `service_id` | uuid \| null | Service this check belongs to, set via the [service endpoints](/api-reference/). |
+| `tls_port` | int | Fetch one check only, when TLS monitoring is on. The port the TLS check uses. |
+| `not_checked_reason` | string \| null | Set only while an active check is not being run. `quota`: the account's uptime quota for this period is used up. See [not checked](#not-checked). |
 
 ## Status enum
 
@@ -70,6 +73,22 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `success` | The monitor is not in a confirmed failure. A monitor whose recent checks have failed but not yet met its `confirmation_threshold` stays `success`. |
 | `failed` | Confirmed failure. Notifications fire and an incident opens. |
 | `pending_failure` | Legacy value. Nothing sets it today; debouncing is handled by [`confirmation_threshold`](/uptime-monitoring/http-checks/how-to/confirmation-threshold/). Treat it as `success` if you encounter it on an old record. |
+
+## Not checked
+
+When an account uses up its uptime quota for the period and the plan stops checks at the limit, active checks are skipped until the quota resets or the plan is upgraded. While that lasts, `GET /http/job/{job_id}` and `GET /monitors` return `not_checked_reason: "quota"` for each active check, and the dashboard shows **Not checked: quota** instead of the last status. `current_status` keeps its last value, so do not read it as up. A paused check shows as paused, never as not checked. The first skipped run of each period records a `quota_not_checked` [monitor event](#monitor-events).
+
+## Monitor events
+
+`GET /monitors/{monitor_id}/events?kind=http|cron|browser&limit=25` lists things that happened to a monitor besides going down and recovering, newest first. `kind` defaults to `http`; `limit` is 1 to 100 (default 25).
+
+| `kind` | Recorded when |
+|---|---|
+| `quota_not_checked` | The first run of a usage period was skipped because the quota is used up. `data` has `product` and `period`. |
+| `schedule_missing` | A daily sweep found the monitor's schedule (or its TLS or domain check's schedule) missing or switched off. `data.repaired` says whether it was switched back on. The account owners are emailed. |
+| `tls_unknown` | The TLS check could not connect for more than a day. The account owners are emailed. |
+
+Returns `404` when the monitor is not in your account and `400` for an unknown `kind`. New event kinds may be added; ignore ones you do not know.
 
 ## Check locations
 
@@ -141,6 +160,7 @@ The negotiated version actually observed on each run is recorded on the check re
 | `GET` | `/http/job/{job_id}/recent-checks` | Recent check results per location. |
 | `GET` | `/check-locations` | Every check location, with its status and capabilities. |
 | `GET` | `/http/job/{job_id}/events` | Status-transition events. |
+| `GET` | `/monitors/{monitor_id}/events` | [Monitor events](#monitor-events): quota skips, missing schedules, TLS checks that cannot connect. |
 | `GET` | `/http/job/{job_id}/uptime_percentage` | Uptime percentage and incident count for a date range. |
 | `GET` | `/http/job/{job_id}/performance` | Per-phase timing (dns/tcp/tls/ttfb/download). |
 | `GET` | `/http/job/result/{job_result_id}/details` | Full detail for one recorded result. |

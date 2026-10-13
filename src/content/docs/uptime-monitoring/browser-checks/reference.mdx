@@ -1,7 +1,7 @@
 ---
 title: Browser check reference
 description: Settings, the step API, supported assertions, and captured artifacts.
-last_verified: 2026-10-07
+last_verified: 2026-10-13
 owner: jj
 ---
 
@@ -19,11 +19,24 @@ The full request schema is in the auto-generated [API Reference](/api-reference/
 | `timeout_seconds` | int | `60` | Max script runtime, 1–300. The actual user-script budget is `timeout - 30s`. |
 | `check_regions` | string[] | `["aws-us-east-1"]` | Locations to run from. Browser checks run from `aws-us-east-1` only; see [supported locations](#supported-locations). |
 | `min_healthy_regions` | int | `1` | Required healthy locations for overall status. At least `1`, at most the number of `check_regions`. |
+| `rerun_on_failure` | bool \| null | `null` | Rerun a failed run once from the same location before counting it. See [rerun and confirmation](#rerun-and-confirmation). The dashboard turns it on for new checks. |
+| `confirmation_threshold` | int \| null | `null` | Failed runs in a row needed before the check goes `failed` and alerts, `1` to `10`. `null` or `1` alerts on the first failure. |
 | `group_notification_ids` | uuid[] | `[]` | Notification groups; cap of 10. |
 | `state` | enum | `active` | `active` or `paused`. Paused checks don't run. |
 | `tags` | string[] | `[]` | Free-form labels for filtering and maintenance windows. |
 | `service_id` | uuid \| null | `null` | Optional logical service grouping. |
 | `current_status` | enum | derived | `success` or `failed`. A legacy `pending_failure` value exists in the enum but nothing sets it. |
+| `not_checked_reason` | string \| null | derived | Set only while an active check is not being run. `quota`: the account's browser check minutes for this period are used up. `current_status` then keeps its last value. |
+
+## Rerun and confirmation
+
+With `rerun_on_failure: true`, a failed run is held back and the same script runs once more from the same location, usually within a minute. Only the rerun's result counts, so a one-off blip never alerts. A rerun is billed in browser check minutes like any run, so a failing check can use up to twice its usual minutes. A rerun is skipped when the minutes are used up or the check was paused, and the next failed run then counts without one. A check already `failed` is not rerun.
+
+`confirmation_threshold` counts the failures that stand after any rerun: the check goes `failed` only after that many in a row (per location, judged against `min_healthy_regions`). Recovery is immediate. A check created through the API without these fields, and every check made before they existed, keeps the old behaviour: no rerun and an alert on the first failure.
+
+| Request | Result |
+|---|---|
+| `confirmation_threshold` outside 1 to 10 | `400`. |
 
 ## Supported locations
 
