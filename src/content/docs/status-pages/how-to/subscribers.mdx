@@ -1,7 +1,7 @@
 ---
 title: Manage subscribers
 description: Let visitors subscribe to status page incident updates by email.
-last_verified: 2026-05-03
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -27,7 +27,9 @@ Visitors subscribe with the form on the public status page, and every email has 
 
 ## See and manage the list
 
-Use the API (there is no dashboard screen for this yet). You need an API key with access to status pages.
+In the dashboard, open the status page and use the **Subscribers** tab. It shows the counts and the places used out of 1,000, filters by state or address, adds an address (which gets a confirmation email), removes one and exports the list as CSV or JSON.
+
+The same through the API needs an API key with access to status pages.
 
 ```bash
 # How many, and in which state
@@ -67,7 +69,7 @@ A confirmation email is sent on subscribe; the visitor must click the link to ac
 
 - SMS, RSS, or webhook subscribers.
 - Per-component subscriptions.
-- Bulk import, and subscriber management in the dashboard.
+- Bulk import.
 
 ## See also
 

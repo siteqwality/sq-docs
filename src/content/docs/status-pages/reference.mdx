@@ -31,6 +31,8 @@ Attach an HTTP check with `POST /status_page/{status_page_id}/http_job/{http_job
 
 The component's live status is the underlying monitor's status; there is no separate status field to set.
 
+Group, order, describe and hide components in the dashboard's **Layout** tab or with `PUT /status_page/{id}/layout`, which saves the whole layout at once. See [Group and order status page components](/status-pages/how-to/organize-components/).
+
 A page shows at most 100 monitors, HTTP and browser checks together. Attaching a 101st returns `400` with `A status page can show at most 100 monitors`. Sending the attach again for a monitor already on the page still works and just updates its `friendly_name`.
 
 ## Branding
@@ -119,6 +121,7 @@ The people who signed up for email about a page. A page holds at most 1000 (conf
 |---|---|---|
 | `POST` / `GET` | `/status_page` | Create / list pages. |
 | `PUT` / `DELETE` | `/status_page/{status_page_id}` | Rename / delete a page. |
+| `GET` / `PUT` | `/status_page/{id}/layout` | Read / replace the groups, order and per-component settings. |
 | `GET` | `/status_page/{id}/http_job` | List attached HTTP checks. |
 | `POST` / `PUT` / `DELETE` | `/status_page/{id}/http_job/{http_job_id}` | Attach / update / detach an HTTP check. |
 | `GET` | `/status_page/{id}/browser_check` | List attached browser checks. |
@@ -151,8 +154,9 @@ The page response has these fields:
 | Field | Type | Description |
 |---|---|---|
 | `global_status` | enum | The headline: `operational`, `unknown`, `degraded_performance`, `partial_outage`, `major_outage` or `under_maintenance`. `unknown` means no monitor has a current reading. |
-| `http_jobs[]` | array | One entry per HTTP check: `http_job_id`, `friendly_name`, `sla_target_percentage` (or `null`), `current_status`, and `performance_data[]` with one row per day (`day`, `uptime_percentage`, `avg_response_time_ms`, `p50_response_time_ms`, `p95_response_time_ms`, `p99_response_time_ms`). |
-| `browser_checks[]` | array | One entry per browser check: `browser_check_id`, `friendly_name`, `sla_target_percentage`, `current_status`. No daily data. |
+| `groups[]` | array | Section headings in page order: `id`, `name`, `description`. A group with nothing to show is left out. |
+| `http_jobs[]` | array | One entry per HTTP check: `http_job_id`, `friendly_name`, `sla_target_percentage` (or `null`), `current_status`, `group_id` (`null` for ungrouped), `description`, `show_uptime`, `order` (rank among the page's components, compare within one group), and `performance_data[]` (empty when `show_uptime` is `false`) with one row per day (`day`, `uptime_percentage`, `avg_response_time_ms`, `p50_response_time_ms`, `p95_response_time_ms`, `p99_response_time_ms`). |
+| `browser_checks[]` | array | One entry per browser check: `browser_check_id`, `friendly_name`, `sla_target_percentage`, `current_status`, and the same `group_id`, `description`, `show_uptime` and `order`. No daily data. |
 | `active_incidents[]` | array | Open incidents with their `updates[]`. |
 | `upcoming_maintenances[]` | array | Maintenance that is scheduled or in progress: `id`, `title`, `body`, `status`, `scheduled_start_at`, `scheduled_end_at`, `affected_http_job_ids`. |
 | `incident_history[]` | array | The latest 30 incidents, same shape as `active_incidents`, with `resolved_at` once closed. |
