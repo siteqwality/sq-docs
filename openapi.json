@@ -2955,6 +2955,9 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Caller has no billing role"
+          },
           "409": {
             "description": "Account has no Stripe customer"
           },
@@ -3052,6 +3055,9 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Caller has no billing role"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -3083,6 +3089,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller has no billing role"
           },
           "409": {
             "description": "Account has no Stripe customer"
@@ -7946,13 +7955,13 @@
         "tags": [
           "Incidents"
         ],
-        "summary": "Opening a signed incident link. Verifies the token and shows a\nconfirmation page whose button POSTs back to this URL. Changes nothing,\nso a mail scanner or link preview fetching it is harmless.\nUnauthenticated: the HMAC token is the credential.",
+        "summary": "Opening an incident link: shows a confirmation page whose button POSTs\nback to this URL. Reads only, so a mail scanner fetching it is harmless.\nUnauthenticated: the single-use token is the credential.",
         "operationId": "incident_action_link",
         "parameters": [
           {
             "name": "token",
             "in": "path",
-            "description": "Signed incident action token",
+            "description": "Single-use incident action token from an email or SMS",
             "required": true,
             "schema": {
               "type": "string"
@@ -7961,25 +7970,25 @@
         ],
         "responses": {
           "200": {
-            "description": "Confirmation page, or an already-done page (HTML). Nothing is changed.",
-            "content": {
-              "text/html": {}
-            }
-          },
-          "400": {
-            "description": "Invalid or expired link",
+            "description": "Confirmation page (HTML). Nothing is changed.",
             "content": {
               "text/html": {}
             }
           },
           "404": {
-            "description": "Incident not found",
+            "description": "Unknown link. Nothing is changed.",
             "content": {
               "text/html": {}
             }
           },
-          "503": {
-            "description": "Action links not configured",
+          "410": {
+            "description": "Retired, used, expired or superseded link. Nothing is changed.",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "500": {
+            "description": "The link could not be checked",
             "content": {
               "text/html": {}
             }
@@ -7990,13 +7999,13 @@
         "tags": [
           "Incidents"
         ],
-        "summary": "Confirming a signed incident link: acknowledges or resolves the incident\nand cancels escalation. This is the button on the GET page.\nUnauthenticated: the HMAC token is the credential.",
+        "summary": "Confirming an incident link: uses it up, acknowledges or resolves the\nincident as the recipient, revokes the incident's other links and cancels\nescalation. This is the button on the GET page.\nUnauthenticated: the single-use token is the credential.",
         "operationId": "incident_action_link_confirm",
         "parameters": [
           {
             "name": "token",
             "in": "path",
-            "description": "Signed incident action token",
+            "description": "Single-use incident action token from an email or SMS",
             "required": true,
             "schema": {
               "type": "string"
@@ -8005,25 +8014,25 @@
         ],
         "responses": {
           "200": {
-            "description": "Action applied, or it had already been (HTML result page)",
-            "content": {
-              "text/html": {}
-            }
-          },
-          "400": {
-            "description": "Invalid or expired link",
+            "description": "Action applied (HTML result page)",
             "content": {
               "text/html": {}
             }
           },
           "404": {
-            "description": "Incident not found",
+            "description": "Unknown link. Nothing is changed.",
             "content": {
               "text/html": {}
             }
           },
-          "503": {
-            "description": "Action links not configured",
+          "410": {
+            "description": "Retired, used, expired or superseded link. Nothing is changed.",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "500": {
+            "description": "The link could not be processed",
             "content": {
               "text/html": {}
             }
@@ -8467,6 +8476,12 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
+          "422": {
+            "description": "Name or credential missing, or name over 256 characters"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -8504,6 +8519,12 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
+          "422": {
+            "description": "Name or credential missing, or name over 256 characters"
           },
           "500": {
             "description": "Internal server error"
@@ -8543,6 +8564,12 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
+          "422": {
+            "description": "Name or credential missing, or name over 256 characters"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -8580,6 +8607,12 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
+          "422": {
+            "description": "Name or credential missing, or name over 256 characters"
           },
           "500": {
             "description": "Internal server error"
@@ -8619,6 +8652,12 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
+          "422": {
+            "description": "Name or credential missing, or name over 256 characters"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -8656,6 +8695,12 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
+          "422": {
+            "description": "Name or credential missing, or name over 256 characters"
           },
           "500": {
             "description": "Internal server error"
@@ -8695,6 +8740,12 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
+          "422": {
+            "description": "Name or credential missing, or name over 256 characters"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -8733,6 +8784,12 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
+          "422": {
+            "description": "Name or credential missing, or name over 256 characters"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -8749,7 +8806,7 @@
         "tags": [
           "Integrations"
         ],
-        "summary": "Add a Slack integration via OAuth code exchange.",
+        "summary": "Finish a Slack install: check the `state`, spend it, exchange the code.",
         "operationId": "add_slack_integration",
         "requestBody": {
           "content": {
@@ -8762,14 +8819,55 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Slack integration added"
           },
           "400": {
-            "description": "Invalid request body or OAuth code"
+            "description": "Missing, foreign, expired or reused state; declined, expired or reused code; an org-wide install"
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not an admin, or not a dashboard session"
+          },
+          "422": {
+            "description": "Name over 256 characters"
+          },
+          "502": {
+            "description": "Slack could not be reached, or refused our app's credentials"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/integration/slack/install": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Start a Slack install: a single-use `state` bound to this account and\nuser, valid for 10 minutes, and the Slack authorize URL that carries it.",
+        "operationId": "start_slack_install",
+        "responses": {
+          "200": {
+            "description": "Authorize URL issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlackInstallResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not an admin, or not a dashboard session"
           },
           "500": {
             "description": "Internal server error"
@@ -8808,6 +8906,12 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
+          "422": {
+            "description": "Name or credential missing, or name over 256 characters"
           },
           "500": {
             "description": "Internal server error"
@@ -8890,6 +8994,9 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -8927,6 +9034,12 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
+          "422": {
+            "description": "Name or credential missing, or name over 256 characters"
           },
           "500": {
             "description": "Internal server error"
@@ -8975,8 +9088,14 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
           "404": {
             "description": "Integration not found"
+          },
+          "422": {
+            "description": "Name missing or over 256 characters"
           },
           "500": {
             "description": "Internal server error"
@@ -9013,8 +9132,14 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "403": {
+            "description": "Not an admin, or the key lacks integrations:manage"
+          },
           "404": {
             "description": "Integration not found"
+          },
+          "409": {
+            "description": "A newer version created this integration; it cannot be deleted yet"
           },
           "500": {
             "description": "Internal server error"
@@ -11338,6 +11463,80 @@
         ]
       }
     },
+    "/monitors/{monitor_id}/events": {
+      "get": {
+        "tags": [
+          "Monitors"
+        ],
+        "operationId": "get_monitor_events",
+        "parameters": [
+          {
+            "name": "monitor_id",
+            "in": "path",
+            "description": "Monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "`http` (default), `cron` or `browser`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size, 1 to 100 (default 25).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The monitor's events, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonitorEventsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown monitor kind"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/notification": {
       "post": {
         "tags": [
@@ -11364,6 +11563,9 @@
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "422": {
+            "description": "The integration is not in this account, or is another type"
           },
           "500": {
             "description": "Internal server error"
@@ -11455,6 +11657,12 @@
           },
           "404": {
             "description": "Notification not found"
+          },
+          "409": {
+            "description": "A newer version created this destination; it cannot be edited yet"
+          },
+          "422": {
+            "description": "The integration is not in this account, or is another type"
           },
           "500": {
             "description": "Internal server error"
@@ -20407,22 +20615,34 @@
       },
       "AddSlackIntegrationRequest": {
         "type": "object",
-        "required": [
-          "friendly_name",
-          "code"
-        ],
         "properties": {
-          "friendly_name": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          },
-          "redirect_uri": {
+          "state": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The `state` Slack returned to the callback, as issued by\n`POST /integration/slack/install`."
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The `code` Slack returned. Absent when the user declined."
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The `error` Slack returned instead of a code (`access_denied`)."
+          },
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Defaults to the Slack workspace name. Other fields, such as an old\nclient's `redirect_uri`, are ignored: the state carries the redirect."
           }
         }
       },
@@ -21023,9 +21243,11 @@
         ],
         "properties": {
           "discord_webhook_url": {
-            "type": "string"
+            "type": "string",
+            "description": "Masked webhook URL."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ApiGoogleChatIntegrationDetails": {
         "type": "object",
@@ -21034,9 +21256,11 @@
         ],
         "properties": {
           "google_chat_webhook_url": {
-            "type": "string"
+            "type": "string",
+            "description": "Masked webhook URL."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ApiIntegrationDetails": {
         "oneOf": [
@@ -21073,7 +21297,8 @@
           {
             "$ref": "#/components/schemas/ApiPushbulletIntegrationDetails"
           }
-        ]
+        ],
+        "description": "`details` on a read, per type. A URL keeps its scheme and host, a key or token at most\nits last 4 characters; the full value is never returned after create."
       },
       "ApiKeyStatus": {
         "type": "string",
@@ -21214,9 +21439,11 @@
         ],
         "properties": {
           "mattermost_webhook_url": {
-            "type": "string"
+            "type": "string",
+            "description": "Masked webhook URL."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ApiMicrosoftTeamsIntegrationDetails": {
         "type": "object",
@@ -21225,28 +21452,81 @@
         ],
         "properties": {
           "teams_webhook_url": {
-            "type": "string"
+            "type": "string",
+            "description": "Masked Workflows webhook URL."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ApiOpsGenieIntegrationDetails": {
         "type": "object",
-        "description": "The API key is a secret, so the API shape is empty."
+        "required": [
+          "opsgenie_api_key"
+        ],
+        "properties": {
+          "opsgenie_api_key": {
+            "type": "string",
+            "description": "Masked API key."
+          }
+        },
+        "additionalProperties": false
       },
       "ApiPagerDutyIntegrationDetails": {
         "type": "object",
-        "description": "The routing key is a secret, so the API shape is empty (same treatment as\nthe Slack token)."
+        "required": [
+          "pagerduty_routing_key"
+        ],
+        "properties": {
+          "pagerduty_routing_key": {
+            "type": "string",
+            "description": "Masked Events API v2 routing key."
+          }
+        },
+        "additionalProperties": false
       },
       "ApiPushbulletIntegrationDetails": {
         "type": "object",
-        "description": "The access token is a secret, so the API shape is empty."
+        "required": [
+          "pushbullet_access_token"
+        ],
+        "properties": {
+          "pushbullet_access_token": {
+            "type": "string",
+            "description": "Masked access token."
+          }
+        },
+        "additionalProperties": false
       },
       "ApiPushoverIntegrationDetails": {
         "type": "object",
-        "description": "The user key and app token are secrets, so the API shape is empty."
+        "required": [
+          "pushover_user_key",
+          "pushover_app_token"
+        ],
+        "properties": {
+          "pushover_user_key": {
+            "type": "string",
+            "description": "Masked user key."
+          },
+          "pushover_app_token": {
+            "type": "string",
+            "description": "Masked application token."
+          }
+        },
+        "additionalProperties": false
       },
       "ApiSlackIntegrationDetails": {
-        "type": "object"
+        "type": "object",
+        "required": [
+          "slack_token"
+        ],
+        "properties": {
+          "slack_token": {
+            "type": "string",
+            "description": "Masked bot token, e.g. `****abcd`."
+          }
+        },
+        "additionalProperties": false
       },
       "ApiWebhookIntegrationDetails": {
         "type": "object",
@@ -21255,16 +21535,18 @@
         ],
         "properties": {
           "webhook_url": {
-            "type": "string"
+            "type": "string",
+            "description": "Masked endpoint, e.g. `https://example.com/****`."
           },
           "signing_secret": {
             "type": [
               "string",
               "null"
             ],
-            "description": "The signing secret, present ONLY on the create response.\n\nThe `From` impl below always produces `None`, and every read path goes\nthrough it, so \"never returned on a read\" is structural rather than a\nconvention someone has to remember. The create handler sets it\nexplicitly, once. Pinned by `from_never_reveals_the_signing_secret`."
+            "description": "The signing secret, present ONLY on the create response. Reads never\ncarry it: the mask rules have no entry for it."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ArtifactUrlResponse": {
         "type": "object",
@@ -21741,7 +22023,7 @@
           },
           "status": {
             "type": "string",
-            "description": "One of `updated`, `requires_payment`, `scheduled`,\n`scheduled_change_cancelled`. See [`change_plan_status`]."
+            "description": "One of `updated`, `requires_payment`, `requires_payment_method`,\n`scheduled`, `scheduled_change_cancelled`. See [`change_plan_status`]."
           },
           "client_secret": {
             "type": [
@@ -21779,14 +22061,14 @@
           },
           "status": {
             "type": "string",
-            "description": "sent | delivered | delayed | soft_bounced | failed | rejected |\nbounced | complained"
+            "description": "sent | delivered | delayed | soft_bounced | failed | rejected |\nbounced | complained | skipped"
           },
           "reason": {
             "type": [
               "string",
               "null"
             ],
-            "description": "The provider's reason for a non-success status, URLs reduced to hosts."
+            "description": "The provider's reason for a non-success status, URLs reduced to hosts.\nFor `skipped`, a slug such as `sms_quota` or `tls_channel_unsupported`."
           }
         }
       },
@@ -21800,7 +22082,7 @@
         "properties": {
           "state": {
             "type": "string",
-            "description": "`healthy`: the most recent delivery reached the provider.\n`degraded`: it was refused, bounced, complained about or could not be\nsent, so the next alert will likely not arrive either.\n`unknown`: nothing sent in the lookback window."
+            "description": "`healthy`: the most recent delivery reached the provider.\n`degraded`: it was refused, bounced, complained about, could not be\nsent, or skipped for a reason the channel must fix (such as\n`sms_quota`), so the next alert will likely not arrive either.\n`unknown`: nothing sent in the lookback window.\nA skip by design, such as `heartbeat_channel_unsupported`, is listed in\n`recent` but never judged."
           },
           "recent": {
             "type": "array",
@@ -22594,6 +22876,21 @@
             "items": {
               "type": "string"
             }
+          },
+          "confirmation_threshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Consecutive failed runs (by the location quorum) before the check is\nDOWN, 1 to 10. Omitted or `null` means 1."
+          },
+          "rerun_on_failure": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Rerun a failed run once from the same location before it counts. The\nrerun uses synthetic minutes. Omitted or `null` means off."
           }
         }
       },
@@ -23050,6 +23347,14 @@
               "null"
             ],
             "description": "When set, the JSONPath result must stringify to this value."
+          },
+          "tls_port": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Port the TLS check connects to, 1 to 65535. Omitted keeps the stored\nport (443 for a new TLS check). Needs `monitor_tls`."
           }
         }
       },
@@ -27022,7 +27327,8 @@
             "$ref": "#/components/schemas/IntegrationType"
           },
           "details": {
-            "$ref": "#/components/schemas/ApiIntegrationDetails"
+            "$ref": "#/components/schemas/ApiIntegrationDetails",
+            "description": "The stored details with every credential masked by\n[`crate::credential_mask::integration_rules`]."
           },
           "created_at": {
             "type": "string",
@@ -27054,7 +27360,8 @@
           "total_cents",
           "currency",
           "status",
-          "description"
+          "description",
+          "payable"
         ],
         "properties": {
           "id": {
@@ -27093,6 +27400,17 @@
           "description": {
             "type": "string",
             "description": "A readable summary of the line items. Deliberately NOT Stripe's\ntop-level `description`, which is null on every subscription invoice we\ngenerate and would leave the whole column blank."
+          },
+          "payable": {
+            "type": "boolean",
+            "description": "True only for an open invoice the pay endpoint will accept."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why an open invoice cannot be paid here, shown in place of \"Pay now\"."
           }
         }
       },
@@ -28947,6 +29265,60 @@
           }
         }
       },
+      "MonitorEvent": {
+        "type": "object",
+        "description": "One monitor event.",
+        "required": [
+          "id",
+          "kind",
+          "data",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "description": "`quota_not_checked`, `schedule_missing` or `tls_unknown`. New kinds may be added."
+          },
+          "data": {
+            "type": "object",
+            "description": "Kind-specific detail, for example `{\"product\": \"uptime\", \"period\": \"2026-10\"}`."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MonitorEventsResponse": {
+        "type": "object",
+        "description": "`GET /monitors/{monitor_id}/events` response.",
+        "required": [
+          "monitor_id",
+          "kind",
+          "events"
+        ],
+        "properties": {
+          "monitor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "description": "`http`, `cron` or `browser`."
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonitorEvent"
+            },
+            "description": "Newest first."
+          }
+        }
+      },
       "MonitorGridConfig": {
         "type": "object",
         "properties": {
@@ -29455,6 +29827,13 @@
             "minimum": 0
           }
         }
+      },
+      "NotCheckedReason": {
+        "type": "string",
+        "description": "Why an active monitor is not being checked. Serialized as `not_checked_reason`.",
+        "enum": [
+          "quota"
+        ]
       },
       "NoteAlign": {
         "type": "string",
@@ -30005,35 +30384,6 @@
           "downtime"
         ]
       },
-      "OverviewCard": {
-        "type": "object",
-        "required": [
-          "id",
-          "brand",
-          "last4",
-          "exp_month",
-          "exp_year"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "brand": {
-            "type": "string"
-          },
-          "last4": {
-            "type": "string"
-          },
-          "exp_month": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "exp_year": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
       "OverviewResponse": {
         "type": "object",
         "required": [
@@ -30072,7 +30422,8 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/OverviewCard"
+                "$ref": "#/components/schemas/PaymentMethodResponse",
+                "description": "What Stripe charges: the subscription's default, else the customer's. Any type, not only cards."
               }
             ]
           }
@@ -30601,6 +30952,13 @@
             "type": "string",
             "format": "uuid",
             "description": "Client-generated, stable across retries of ONE pay attempt. Same\ncontract as the add-on endpoint: the same value twice is one charge."
+          },
+          "payment_method_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The saved card to charge. Omitted: Stripe charges the subscription default."
           }
         }
       },
@@ -30627,10 +30985,10 @@
         "type": "object",
         "required": [
           "id",
+          "type",
+          "label",
           "brand",
           "last4",
-          "exp_month",
-          "exp_year",
           "is_default",
           "is_expired"
         ],
@@ -30638,22 +30996,39 @@
           "id": {
             "type": "string"
           },
+          "type": {
+            "type": "string",
+            "description": "Stripe's payment method type: `card`, `link`, `us_bank_account`, ..."
+          },
+          "label": {
+            "type": "string",
+            "description": "How to name it, for example \"Visa ending 4242\" or \"Link (pat@example.com)\"."
+          },
           "brand": {
-            "type": "string"
+            "type": "string",
+            "description": "Card brand; empty for other types."
           },
           "last4": {
             "type": "string"
           },
           "exp_month": {
-            "type": "integer",
-            "format": "int64"
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Cards only."
           },
           "exp_year": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64"
           },
           "is_default": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "The method Stripe charges: the subscription's default, else the customer's."
           },
           "is_expired": {
             "type": "boolean",
@@ -37143,7 +37518,9 @@
           "type": {
             "$ref": "#/components/schemas/ServiceNotificationTargetType"
           },
-          "details": {},
+          "details": {
+            "description": "Stored details with a webhook URL cut to its host; a Slack token reads\nback as `has_token: true`."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -37480,6 +37857,23 @@
               "null"
             ],
             "description": "`uptime >= target`; `null` when there is no data to judge."
+          }
+        }
+      },
+      "SlackInstallResponse": {
+        "type": "object",
+        "required": [
+          "authorize_url",
+          "expires_at"
+        ],
+        "properties": {
+          "authorize_url": {
+            "type": "string",
+            "description": "Open this in the browser. It carries a signed, single-use `state`."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -38998,7 +39392,8 @@
           "http_job_id",
           "current_status",
           "domain",
-          "created_at"
+          "created_at",
+          "port"
         ],
         "properties": {
           "id": {
@@ -39043,6 +39438,11 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Port the TLS check connects to."
           }
         }
       },
@@ -40013,6 +40413,17 @@
             "type": "string",
             "description": "`active` or `paused`."
           },
+          "not_checked_reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NotCheckedReason",
+                "description": "Set on an ACTIVE monitor that is not being checked: `quota` while the\naccount's quota for its product is used up. Show this instead of `current_status`."
+              }
+            ]
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -40476,6 +40887,21 @@
             "items": {
               "type": "string"
             }
+          },
+          "confirmation_threshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Consecutive failed runs (by the location quorum) before the check is\nDOWN, 1 to 10. Omitted or `null` means 1."
+          },
+          "rerun_on_failure": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Rerun a failed run once from the same location before it counts. The\nrerun uses synthetic minutes. Omitted or `null` means off."
           }
         }
       },
@@ -40890,6 +41316,14 @@
               "string",
               "null"
             ]
+          },
+          "tls_port": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Port the TLS check connects to, 1 to 65535. Omitted keeps the stored\nport (443 for a new TLS check). Needs `monitor_tls`."
           }
         }
       },
@@ -41831,7 +42265,9 @@
           "type": {
             "$ref": "#/components/schemas/ContactMethodType"
           },
-          "details": {},
+          "details": {
+            "description": "Stored details with a Slack DM token masked."
+          },
           "verified": {
             "type": "boolean"
           },
