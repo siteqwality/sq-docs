@@ -85,7 +85,7 @@ Customer-facing planned-downtime entries under `/status_page/{status_page_id}/ma
 | `affected_http_job_ids` | uuid[] | create + update | Which components the maintenance covers. |
 | `status` | enum | update only | `scheduled`, `in_progress`, or `completed`. New entries start as `scheduled`. |
 
-The page shows a `scheduled` entry as in progress once `scheduled_start_at` passes, and drops it after `scheduled_end_at`, so you do not have to move it by hand. Setting `in_progress` starts it early, and `completed` ends it early. Leave `affected_http_job_ids` empty to cover the whole page. Creating a maintenance emails the page's confirmed subscribers. See [Publish a status page maintenance](/status-pages/how-to/publish-maintenance/).
+The page shows a `scheduled` entry as in progress once `scheduled_start_at` passes, and drops it after `scheduled_end_at`, so you do not have to move it by hand. Setting `in_progress` starts it early, and `completed` ends it early. Leave `affected_http_job_ids` empty to cover the whole page. Creating a maintenance emails the page's confirmed subscribers, and so do its start and end. See [Publish a status page maintenance](/status-pages/how-to/publish-maintenance/).
 
 ## Incidents on a page
 

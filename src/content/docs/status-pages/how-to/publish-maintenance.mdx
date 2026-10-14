@@ -1,13 +1,13 @@
 ---
 title: Publish a status page maintenance
-description: Tell visitors about planned work, show it on your status page, and email your subscribers.
+description: Tell visitors about planned work, show it on your status page, and email your subscribers when it is scheduled, starts and ends.
 last_verified: 2026-10-14
 owner: jj
 ---
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
-A **status page maintenance** is the customer-facing notice for planned work. It appears on your public status page, marks the components it covers as under maintenance instead of down, and emails your confirmed subscribers when you create it.
+A **status page maintenance** is the customer-facing notice for planned work. It appears on your public status page, marks the components it covers as under maintenance instead of down, and emails your confirmed subscribers when you schedule it, when it starts and when it ends.
 
 <Aside type="note">
 A [maintenance window](/incident-management/maintenance/overview/) is a different thing. It only silences alerts and never appears on a status page. For a planned outage you usually want both.
@@ -67,7 +67,7 @@ Maintenance covers HTTP checks you pick. A browser check shows maintenance only 
 
 ## Subscribers
 
-Subscribers get one email when you create the maintenance. Editing it, starting it or completing it does not send another. If the plan changes, create a new maintenance or post the change as an incident update.
+Confirmed subscribers get three emails: one when you create the maintenance, one within a minute of the start time, and one within a minute of the end time. Starting or completing it by hand sends the same start or end email. Editing it sends nothing, and a maintenance you complete before it started sends no start or end email. If the plan changes, create a new maintenance or post the change as an incident update.
 
 ## Change or cancel it
 
