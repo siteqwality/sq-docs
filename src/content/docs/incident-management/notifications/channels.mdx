@@ -1,7 +1,7 @@
 ---
 title: Channels reference
 description: Every notification channel type, from email and SMS to PagerDuty, Jira Service Management (Opsgenie), Google Chat, Mattermost, Pushover, and Pushbullet, and which alerts reach each one.
-last_verified: 2026-08-02
+last_verified: 2026-10-13
 owner: jj
 ---
 
@@ -22,7 +22,7 @@ Every channel has:
 This page documents `details` for each type.
 
 <Aside type="caution" title="Channel support varies by alert source">
-Not every alert source reaches every channel type. A channel of a type the source does not support is **skipped**: nothing errors and no alert arrives on it. Check [which alerts reach which channels](#which-alerts-reach-which-channels) before you rely on a channel, and keep an email or SMS channel in every group that has to page someone.
+Not every alert source reaches every channel type. A channel of a type the source does not support is **skipped**: no alert arrives on it, and a `skipped` receipt records why (see [Skipped deliveries](#skipped-deliveries)). Saving the monitor still succeeds, with a warning. Check [which alerts reach which channels](#which-alerts-reach-which-channels) before you rely on a channel, and keep an email or SMS channel in every group that has to page someone.
 </Aside>
 
 ## Which alerts reach which channels
@@ -35,6 +35,43 @@ Not every alert source reaches every channel type. A channel of a type the sourc
 | DNS record changes | Email, webhook, PagerDuty | Every other type |
 
 Incidents do not use notification channels. Escalation steps reach responders through their [contact methods](/incident-management/notifications/overview/) (email, SMS, or a Slack DM with a bot token you paste in), and a service broadcasts to its own targets (email, a Slack channel with a pasted bot token, or a webhook URL). Maintenance windows send no notifications, and status page updates go only to the page's email subscribers.
+
+## Skipped deliveries
+
+When an alert is deliberately not sent to a channel, Site Qwality records a receipt with the status `skipped` and a reason slug.
+
+| Reason | Meaning | Marks the channel degraded |
+|---|---|---|
+| `heartbeat_channel_unsupported` | Heartbeat alerts cannot be sent to this channel type yet. | No |
+| `tls_channel_unsupported` | TLS certificate alerts cannot be sent to this channel type yet. | No |
+| `page_speed_channel_unsupported` | Page speed alerts cannot be sent to this channel type yet. | No |
+| `dns_record_channel_unsupported` | DNS record change alerts cannot be sent to this channel type yet. | No |
+| `sms_quota` | The account is over its SMS quota and has no SMS credits left. | Yes |
+| `sms_platform_limit` | Site Qwality's own monthly SMS sending limit was reached. The problem is on our side, not in your channel. | Yes |
+
+Other slugs are reserved and not recorded yet. Treat a reason you do not recognise as a plain skip.
+
+Skipped receipts appear in a channel's recent deliveries (`health.recent` on `GET /notification/{id}` and on each channel in `GET /notification_group`) and in a monitor's alert history (`GET /monitors/{id}/alert_history`, with the slug in `detail`). A skip by design, such as `heartbeat_channel_unsupported`, is listed but does not change the channel's `health.state`. An `sms_quota` or `sms_platform_limit` skip sets it to `degraded`, because the next alert will likely not arrive either.
+
+### Warnings when you save a monitor
+
+Creating or updating an HTTP, heartbeat or DNS record monitor still succeeds when one of its notification groups holds a channel its alerts cannot reach. The response carries a `warnings` array beside `data`, one entry per channel and alert source:
+
+```json
+"warnings": [
+  {
+    "code": "channel_not_supported_for_source",
+    "message": "Heartbeat alerts cannot be sent to Discord yet, so \"On-call\" will skip that channel for them.",
+    "notification_group_id": "<group-uuid>",
+    "notification_id": "<channel-uuid>",
+    "channel": "discord",
+    "source": "heartbeat",
+    "reason": "heartbeat_channel_unsupported"
+  }
+]
+```
+
+`source` is `heartbeat`, `tls_expiry`, `page_speed` or `dns_record`, and `reason` is the slug the skipped receipts will carry. An HTTP monitor is also checked for the alerts of its paired TLS and page speed checks. The field is left out when there is nothing to warn about.
 
 ## Email
 
@@ -65,7 +102,7 @@ Incidents do not use notification channels. Escalation steps reach responders th
 - `country_code` is the country dialing prefix as an integer (1 for US, 44 for UK, 49 for DE, etc).
 - `phone_number` is the local number with no formatting characters.
 - Validation requires a parseable phone number.
-- Each message uses your account's SMS credits.
+- Each message uses your account's SMS credits. When the account is over its SMS quota and has no credits left, the message is not sent and is recorded as skipped with `sms_quota`.
 
 <Aside type="caution">
 SMS delivery is best-effort and is tried once. For critical pages, pair SMS with a second channel such as email or a push app.
@@ -242,7 +279,7 @@ Not all channels behave the same when a send fails. This matters when you are ch
 
 | Channels | On failure |
 |---|---|
-| Webhooks | Up to 6 attempts over 30 minutes. Every attempt is in the endpoint's [delivery log](/integrations/webhooks/#delivery-log-and-replay). |
+| Webhooks | Up to 6 attempts over 30 minutes. Every attempt is in the endpoint's [delivery log](/integrations/webhooks/#delivery-log-and-replay). While retries are pending the alert's receipt reads `delayed`; when they end it becomes `delivered`, `failed` or `rejected`. |
 | PagerDuty, Opsgenie | 3 attempts. A `4xx` other than `408` or `429` is recorded as rejected. Other failures run the send again up to twice; after that the alert is **dropped with no record**. |
 | Pushover, Pushbullet | 1 attempt. A `4xx` is recorded as rejected. Other failures run the send again up to twice; after that the alert is dropped with no record. |
 | Email, SMS, Slack, Telegram | 1 attempt. A failure runs the send again up to twice; after that the alert is dropped with no record. |
@@ -253,7 +290,8 @@ For a page that must arrive, use more than one channel type.
 ## Common pitfalls
 
 - **Channel created but no notifications arrive.** First check whether the channel is attached to a *group* and the group is attached to the *monitor*. Channels alone don't deliver.
-- **Channel never delivers and shows no recent alerts.** Creating a channel does not check that the integration ID exists on your account or matches the channel type, so a typo makes a channel that can never deliver. Copy the ID from `GET /integration`.
+- **Channel save refused with a `422`.** A channel must name an integration of its own type in your account, so a mistyped ID or an ID of another integration type is refused. Copy the ID from `GET /integration`.
+- **Alerts show as skipped.** The alert source cannot use that channel type, or SMS ran out of quota. See [Skipped deliveries](#skipped-deliveries).
 - **SMS not arriving.** Verify the country code is the integer prefix (`1`, not `"+1"`); confirm the number is plain digits.
 
 ## See also

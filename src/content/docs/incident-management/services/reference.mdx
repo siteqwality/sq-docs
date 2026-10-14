@@ -1,7 +1,7 @@
 ---
 title: Services reference
 description: Service fields, broadcast target types and every /service endpoint.
-last_verified: 2026-10-12
+last_verified: 2026-10-13
 owner: jj
 ---
 
@@ -55,7 +55,7 @@ Create one with `type` and `details`:
 |---|---|---|
 | `email` | `{ "email": "oncall@example.com" }` | Any address. |
 | `slack_channel` | `{ "slack_token": "xoxb-...", "channel": "#incidents" }` | A Slack bot token you supply, not the [Slack integration](/integrations/slack/). The token is write-only: it reads back as `"has_token": true`. |
-| `webhook` | `{ "url": "https://hooks.example.com/incidents" }` | Must be a public URL. Uses the [webhook envelope](/integrations/webhooks/#payload) and retry schedule, unsigned, and does not appear in the integration's delivery log. |
+| `webhook` | `{ "url": "https://hooks.example.com/incidents" }` | Must be a public URL. It reads back as its scheme and host only, such as `https://hooks.example.com/****`. Uses the [webhook envelope](/integrations/webhooks/#incident-webhooks) and retry schedule, unsigned, and does not appear in the integration's delivery log. |
 
 ```bash
 curl -X POST https://api.siteqwality.com/service/$SERVICE_ID/notification_target \

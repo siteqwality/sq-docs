@@ -1,7 +1,7 @@
 ---
 title: Webhook integrations
 description: Send a signed JSON POST to your own URL for monitor, alert and RUM events, with retries and a delivery log.
-last_verified: 2026-08-02
+last_verified: 2026-10-13
 owner: jj
 ---
 
@@ -38,6 +38,10 @@ curl -X POST https://api.siteqwality.com/integration/webhook \
 ```
 
 The `201` response carries the secret in `details.signing_secret`. Store it now. It starts with `sqwh_`. Endpoints created before signing existed also have a secret: rotate it to get one you can see.
+
+Only an account admin can add, change or remove a webhook integration. An API key or API client needs the `integrations:manage` scope for that; `write:notifications` is not enough. See [Who can change integrations](/integrations/overview/#who-can-change-integrations).
+
+The URL never reads back in full. `GET /integration`, and the create response itself, show `webhook_url` as its scheme and host only, such as `https://events.example.com/****`. To point at a different URL, add a new integration and delete the old one.
 
 The URL must be reachable at a public address. A URL whose host is a private, loopback or link-local address (`10.x`, `192.168.x`, `127.0.0.1`, `localhost`, `169.254.169.254`, and their IPv6 equivalents) is refused with a `400` when you save it. A hostname that resolves only to such addresses at delivery time fails with `blocked_destination` and is not retried. The same check applies to Discord, Microsoft Teams, Google Chat and Mattermost URLs.
 
@@ -181,9 +185,24 @@ Each attempt times out after 15 seconds. Your endpoint should answer with a 2xx 
 
 Retries run 10 seconds, 30 seconds, 2 minutes, 8 minutes and 30 minutes after the first attempt: six attempts at most, and a final answer 30 minutes after the first try. A delivery that has not succeeded by then is marked failed.
 
+### What the alert records
+
+An alert sent to a webhook channel also has a receipt, which the monitor's alert history and the channel's health read. It records the first attempt. While retries are pending it reads `delayed`, and when the attempts end it takes the final result:
+
+| Outcome | Receipt status | Detail, for example |
+|---|---|---|
+| A later attempt got a 2xx | `delivered` | `Delivered on attempt 3 (HTTP 200)` |
+| Every attempt failed with a retryable error | `failed` | `Not delivered: gave up after 6 attempts. Last error: ...` |
+| Your endpoint refused an attempt with an answer that is not retried | `rejected` | `Not delivered: the endpoint refused attempt 2: ...` |
+| The integration was deleted while retries were pending | `failed` | `Not delivered: the webhook endpoint no longer exists` |
+
+The remaining attempts of a delivery to a deleted integration are cancelled. A replay has no receipt of its own.
+
 ## Delivery log and replay
 
 Open the webhook integration from **Manage → Integrations** to see every delivery to the endpoint, each attempt, your server's status code and how long it took. Deliveries are kept for 30 days. From a delivery you can replay it.
+
+Each attempt keeps the first 8 KiB of your server's response body. Site Qwality stops reading a response after 64 KiB, and records the full size from `Content-Length` when your server sent one (otherwise the bytes it read). A response body that is not UTF-8 text is kept as its size only. Response headers keep their names, but only a short list of harmless headers keep their values.
 
 The same log is available through the API:
 
@@ -191,11 +210,13 @@ The same log is available through the API:
 - `GET /integration/webhook/{id}/delivery/{delivery_id}` returns one delivery with the request body and every attempt.
 - `POST /integration/webhook/{id}/delivery/{delivery_id}/replay` sends it again and returns `202` with the new delivery's ID.
 
-A replay is a new delivery with its own ID header, timestamp and signature under the current secret. The body is unchanged, so `id` in the body still names the original delivery. A delivery whose stored body was truncated cannot be replayed (`409`).
+With an API key, reading the log needs `read:notifications` and replaying needs `write:notifications`. A replay changes no credential, so it does not need `integrations:manage`.
+
+A replay is a new delivery with its own ID header, timestamp and signature under the current secret. The body is unchanged, so `id` in the body still names the original delivery. A request body over 64 KiB is still sent in full, but the log keeps only its first 64 KiB, so that delivery cannot be replayed (`409`).
 
 ## Payload settings
 
-Each endpoint has four optional settings, on the integration's page or through `GET` and `PUT /integration/webhook/{id}/settings`:
+Each endpoint has four optional settings, on the integration's page or through `GET` and `PUT /integration/webhook/{id}/settings`. Changing them follows the same rule as creating the integration: an account admin, or an API key with `integrations:manage`.
 
 ```bash
 curl -X PUT https://api.siteqwality.com/integration/webhook/$INTEGRATION_ID/settings \
@@ -219,6 +240,22 @@ An unknown event or field name, or an empty list, is refused with a `400` that n
 ## Incident webhooks
 
 A service can also send `incident.created` and `incident.resolved` events to a webhook URL as a broadcast target. Those deliveries use the same envelope and retries, but they are not signed and do not appear in an integration's delivery log, because a service target is not a webhook integration. The signature check above cannot verify them.
+
+`data` for an incident event:
+
+```json
+{
+  "incident_id": "<incident-uuid>",
+  "incident_title": "checkout-api is down",
+  "severity": "critical",
+  "service_name": "Checkout",
+  "affected_monitors": ["checkout-api"],
+  "responder_status": "triggered",
+  "incident_url": "https://app.siteqwality.com/incidents/<incident-uuid>"
+}
+```
+
+`incident_url` opens the incident in Site Qwality, which needs a sign-in. The payload carries no acknowledge or resolve links: a webhook can reach a shared place, so those links only go to the paged person by [email and SMS](/incident-management/incidents/how-to/one-click-actions/). The event is `incident.resolved` when `responder_status` is `resolved`, and `incident.created` otherwise.
 
 ## Multiple integrations
 

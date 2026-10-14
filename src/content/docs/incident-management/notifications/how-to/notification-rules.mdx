@@ -1,7 +1,7 @@
 ---
 title: Set up personal notification rules
 description: Stack contact methods at increasing delays so high-urgency pages always reach you, but low-urgency ones don't wake you up.
-last_verified: 2026-05-03
+last_verified: 2026-10-13
 owner: jj
 ---
 
@@ -35,7 +35,7 @@ curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
   }'
 ```
 
-`type` is one of `email`, `sms` or `slack_dm`. A `slack_dm` contact method takes a Slack bot token and a channel or user ID that you paste in. There are no phone calls: `phone_call` is refused.
+`type` is one of `email`, `sms` or `slack_dm`. A `slack_dm` contact method takes a Slack bot token and a channel or user ID that you paste in. The token never reads back in full: it shows as `****` followed by its last four characters. There are no phone calls: `phone_call` is refused.
 
 ## Recommended high-urgency stack
 
