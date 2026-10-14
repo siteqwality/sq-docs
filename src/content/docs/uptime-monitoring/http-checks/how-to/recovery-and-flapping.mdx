@@ -1,0 +1,57 @@
+---
+title: Confirm recoveries and hold flapping alerts
+description: Use recovery_period_runs to send the all clear only after several healthy checks, and flap_hold to stop a monitor that keeps bouncing from paging you on every change.
+last_verified: 2026-10-14
+owner: jj
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+A site that comes back for one check and fails again sends you an all clear and then a second outage alert a minute later. A site that bounces up and down every few minutes sends a pair of alerts every time. Two HTTP check settings deal with this:
+
+- `recovery_period_runs` waits for several healthy checks before the all clear.
+- `flap_hold` holds short outages while a monitor flaps and sends one notice instead.
+
+New monitors get both: a recovery period of `2` and the flap hold on. Monitors created before they shipped keep `recovery_period_runs: 1` and `flap_hold: false`, so nothing changes until you opt in. The monitor form offers the new defaults on those monitors.
+
+| Field | Type | Default for new monitors | Range |
+|---|---|---|---|
+| `recovery_period_runs` | int | `2` | `1` to `10`. `1` sends the all clear on the first healthy check. |
+| `flap_hold` | bool | `true` | |
+
+```bash
+curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "recovery_period_runs": 2, "flap_hold": true }'
+```
+
+Out-of-range values are rejected with `400` and the message `recovery_period_runs must be between 1 and 10`. There is no plan gate.
+
+## Recovery period
+
+The monitor goes back to `success` on the first healthy check, as before. Uptime, SLA reports and the outage's recorded duration all use that first healthy check. What waits for the recovery period:
+
+- the all clear notification on every channel;
+- automatic resolution of the incident the outage opened.
+
+A failed check inside the period resets the count. If the monitor goes back down before the all clear was due, nobody is told twice: the open incident stays open, and the outage alert that already went out still stands. When the all clear does go out, it gives the time of the last recovery.
+
+A 60 second monitor with `recovery_period_runs: 2` sends the all clear one minute after the first healthy check.
+
+## Flap hold
+
+A monitor is flapping after **4 status changes within 30 minutes**. While it flaps:
+
+- One **Flapping** notice goes out to the monitor's email, Slack, Microsoft Teams, Discord, Google Chat, Mattermost, Telegram and Pushbullet channels.
+- Each new outage is held. If the monitor recovers within **5 minutes**, the held outage and its recovery are dropped together. If it is still down after 5 minutes, the held outage is sent to every channel, paging ones included, and the incident opens.
+- Once the monitor has had no status change for **15 minutes**, a **Stable** summary says how many outages were held.
+
+SMS, PagerDuty, Opsgenie and Pushover never get the Flapping or Stable notices, only outages that broke through. Webhooks get no flap notices today.
+
+Held outages show on the monitor page with **Alert held while flapping**, and **then sent** once one broke through. The activity feed records when flapping started, each break-through and when it ended.
+
+## See also
+
+<LinkCard title="Require N failed checks before alerting" description="confirmation_threshold, the location quorum and transport retries." href="/uptime-monitoring/http-checks/how-to/confirmation-threshold/" />
+<LinkCard title="HTTP check reference" description="Every field on an HTTP check, with defaults and limits." href="/uptime-monitoring/http-checks/reference/" />

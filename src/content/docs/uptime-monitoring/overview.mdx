@@ -38,7 +38,7 @@ HTTP checks can run from **24 check locations across 18 countries and territorie
 
 Start with a location near your users. Add another cloud provider when you want to compare network paths, and choose locations on other continents to cover a global audience. The dashboard groups locations by continent and lets you search by city, country code, provider or location id. Adding locations to the available list does not change an existing monitor: only its selected locations run.
 
-Every selected location runs on each scheduled tick, and the results are evaluated together. `min_healthy_regions` sets how many of them must pass for the monitor to count as healthy. A location that cannot return a result in a run (because its provider is unreachable, for example) is left out of that run instead of counting as a failure. See [location quorum](/uptime-monitoring/http-checks/how-to/confirmation-threshold/#2-location-quorum) for the details.
+Every selected location runs on each scheduled tick, and the results are evaluated together. `min_healthy_regions` sets how many of them must pass for the monitor to count as healthy. A location that cannot return a result in a run (because its provider is unreachable, for example) is left out of that run instead of counting as a failure, and a run where the only answer of several locations is a failure is inconclusive. See [location quorum](/uptime-monitoring/http-checks/how-to/confirmation-threshold/#2-location-quorum) for the details.
 
 Checks do not come from fixed IP addresses. To let them through a firewall or bot protection, see [allowlisting our checks](/uptime-monitoring/http-checks/allowlisting/).
 

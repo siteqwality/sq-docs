@@ -65,9 +65,9 @@ That last one has a visible consequence: because the downtime window opens at co
 Alert payloads are byte-identical whatever the threshold. An email or SMS will not say "after 3 consecutive failures", because the notification carries no such field.
 </Aside>
 
-## Recovery is never delayed
+## Recovery is not threshold-gated
 
-One successful check that satisfies the location quorum closes the state transition immediately. All-clear notifications and automatic incident resolution are never threshold-gated, in either direction. The threshold only ever slows down bad news.
+One successful check that satisfies the location quorum closes the state transition immediately, whatever the threshold. The all clear and automatic incident resolution wait only for the monitor's [recovery period](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/), which is `2` healthy checks on new monitors and `1` (immediate) on monitors created before it shipped.
 
 ## How it composes with the other two failure filters
 
@@ -97,6 +97,14 @@ A check that fails once and succeeds on retry is recorded as a plain success. It
 
 <Aside type="note" title="A location that returns nothing is left out">
 If a location cannot return a result in a run (its provider is unreachable, for example), nothing is recorded for it and it is left out of that evaluation: `min_healthy_regions` is capped at the number of locations that did report. A monitor set to three locations with `min_healthy_regions: 2` whose third location is unreachable is evaluated as 2 of 2 for that run, not failed. For a single-location monitor, the executor attempts the default location when it is different and enough execution time remains. If no location reports a result, the monitor's status stays unchanged. See [check locations](/uptime-monitoring/http-checks/reference/#check-locations).
+</Aside>
+
+<Aside type="note" title="One failed answer is inconclusive">
+With two or more locations, a run where only one location answered and it failed is **inconclusive**: its result is recorded, but the status does not change. If the next run is inconclusive too, the monitor is decided on what answered and the outage is marked `degraded_quorum`. One passing answer is enough to stay healthy.
+</Aside>
+
+<Aside type="note" title="Some locations failing is shown, not paged">
+A run that passes the quorum while some locations fail leaves the monitor up. The monitor shows **Failed in 1 of 2 locations** (for example) until a run passes everywhere, and nobody is paged.
 </Aside>
 
 ### 3. Confirmation threshold

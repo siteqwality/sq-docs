@@ -92,7 +92,7 @@ The full request schema is in the [API Reference](/api-reference/operations/crea
 
 3. **Force a failure to test notifications.** Edit the check and change the URL to `https://mock.codes/500`. The next tick will fail, the monitor's status will flip, and your notification group will fire.
 
-4. **Flip it back.** Restore the URL to `https://mock.codes/200`. The monitor recovers on the next tick and the incident auto-resolves.
+4. **Flip it back.** Restore the URL to `https://mock.codes/200`. The monitor recovers on the next tick. The all clear goes out, and the incident auto-resolves, after the recovery period (2 healthy checks on a new monitor).
 
 </Steps>
 

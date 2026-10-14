@@ -29,7 +29,7 @@ A place Site Qwality runs checks from, on AWS, Google Cloud or Microsoft Azure. 
 
 ### Min healthy regions
 
-When a monitor runs in N locations, this knob says "consider the monitor failing only if fewer than M locations report healthy." With one location it is always 1 of 1. A location that returns no result in a run is left out of that run, so it never counts against the monitor.
+When a monitor runs in N locations, this knob says "consider the monitor failing only if fewer than M locations report healthy." With one location it is always 1 of 1. A location that returns no result in a run is left out of that run, so it never counts against the monitor. When only one location of several answers and it failed, the run is inconclusive and the status waits for the next run.
 
 ## Incident vocabulary
 

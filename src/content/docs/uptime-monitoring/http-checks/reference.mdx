@@ -22,6 +22,8 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `check_regions` | string[] | `["aws-us-east-1"]` | Location ids the check runs from. Omitted or empty falls back to the default. More than one requires a paid uptime plan. See [check locations](#check-locations). |
 | `min_healthy_regions` | int | `1` | Minimum locations that must pass for the check to count as healthy. At least `1`, at most the number of `check_regions`. In a run where some locations return no result, it is capped at the number that did. |
 | `confirmation_threshold` | int | `1` | Consecutive failed checks required before the monitor transitions to `failed` and alerts. `1` to `10`. See [requiring N failed checks](/uptime-monitoring/http-checks/how-to/confirmation-threshold/). |
+| `recovery_period_runs` | int | `2` | Consecutive healthy checks before the all clear is sent and the incident resolves. `1` to `10`; `1` is immediate. Monitors created before this field existed have `1`. See [recovery and flapping](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/). |
+| `flap_hold` | bool | `true` | Hold short outages while the monitor flaps and send one notice instead. Monitors created before this field existed have `false`. See [recovery and flapping](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/). |
 | `follow_redirects` | bool | `true` | Follow HTTP redirects before evaluating the response. |
 | `request_body` | string | none | Body sent with the request. |
 | `content_type` | enum | none | `Content-Type` of the request body. See [content types](#content-types). |
@@ -64,6 +66,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `group_notifications` | object[] \| null | Full notification-group objects resolved from `group_notification_ids`. |
 | `service_id` | uuid \| null | Service this check belongs to, set via the [service endpoints](/api-reference/). |
 | `tls_port` | int | Fetch one check only, when TLS monitoring is on. The port the TLS check uses. |
+| `partial_failure` | object \| absent | Present while runs pass the quorum but some locations fail: `failed_locations` (location ids), `total_locations` and `since` (rfc3339). Never paged. |
 | `not_checked_reason` | string \| null | Set only while an active check is not being run. `quota`: the account's uptime quota for this period is used up. See [not checked](#not-checked). |
 
 ## Status enum
@@ -87,6 +90,15 @@ When an account uses up its uptime quota for the period and the plan stops check
 | `quota_not_checked` | The first run of a usage period was skipped because the quota is used up. `data` has `product` and `period`. |
 | `schedule_missing` | A daily sweep found the monitor's schedule (or its TLS or domain check's schedule) missing or switched off. `data.repaired` says whether it was switched back on. The account owners are emailed. |
 | `tls_unknown` | The TLS check could not connect for more than a day. The account owners are emailed. |
+| `inconclusive_run` | One location of several answered, and it failed. The status did not change. `data` has `selected`, `reported` and `failed_locations`. |
+| `degraded_quorum` | A second inconclusive run in a row took the monitor down on fewer locations. `data` has `transition_id` and `locations`. |
+| `partial_failure` | A run passed while some locations failed, the first in a row. `data` has `failed_locations` and `total_locations`. |
+| `recovery_pending` | The monitor recovered and the all clear waits for the recovery period. `data.runs_needed` is the period. |
+| `recovery_reset` | A check failed during the recovery period, so the count restarted. |
+| `recovery_confirmed` | The recovery period passed and the all clear went out. |
+| `flap_started` | The monitor started flapping. `data` has `transitions` and `window_minutes`. |
+| `flap_break_through` | A held outage lasted long enough to be sent. `data.break_through_minutes` is the limit. |
+| `flap_ended` | The monitor was stable long enough to stop flapping. `data.held` counts the outages held. |
 
 Returns `404` when the monitor is not in your account and `400` for an unknown `kind`. New event kinds may be added; ignore ones you do not know.
 
@@ -122,7 +134,9 @@ How `check_regions` is validated on create and update:
 | A location that cannot run this check type | `400`. |
 | More than one location without a paid uptime plan | `403` with `multi_region_requires_paid_plan`. |
 
-On every scheduled run, each selected location makes the request and returns its own result, recorded with that location's id in `check_region`. Each result counts as one check toward your monthly check volume. A location that cannot return a result in a run (its provider is unreachable, for example) is left out of that run: nothing is recorded for it, it is not billed, and the quorum is evaluated over the locations that did report. If a monitor has exactly one location and it cannot report, the executor attempts the default location when it is different and enough execution time remains. A returned result is recorded under the default's id. If no location returns a result, the monitor's status stays unchanged.
+On every scheduled run, each selected location makes the request and returns its own result, recorded with that location's id in `check_region`. Each result counts as one check toward your monthly check volume. A location that cannot return a result in a run (its provider is unreachable, for example) is left out of that run: nothing is recorded for it, it is not billed, and the quorum is evaluated over the locations that did report. If a monitor has exactly one location and it cannot report, the executor attempts the default location when it is different and enough execution time remains. A returned result is recorded under the default's id. If no location returns a result, the monitor's status stays unchanged. With two or more locations, a run where only one answered and it failed is [inconclusive](/uptime-monitoring/http-checks/how-to/confirmation-threshold/#2-location-quorum): the status changes only if the next run is inconclusive too.
+
+Outages list each failing location: `GET /http/job/{job_id}/events` returns `failed_locations`, `total_locations` and `degraded_quorum` on each outage, and `held_reason: "flap"` with `held_released_at` when its alert was held for flapping.
 
 Checks do not come from fixed IP addresses. See [allowlisting our checks](/uptime-monitoring/http-checks/allowlisting/).
 
