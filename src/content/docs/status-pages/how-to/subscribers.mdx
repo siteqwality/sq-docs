@@ -19,11 +19,41 @@ The back-end emails every confirmed subscriber on the page in three cases:
 
 - An incident is created on the status page (`POST /status_page/{status_page_id}/incident`).
 - An update is posted through the page (`POST /status_page/{status_page_id}/incident/{incident_id}/update`).
-- Maintenance is scheduled on the page.
+- Maintenance is scheduled on the page, when it starts and when it ends.
 
 Nothing is sent when you publish an existing incident to a page, post an update through `POST /incident/{incident_id}/update`, resolve an incident, edit maintenance, or when a service publishes an incident automatically. If subscribers should hear about a change, post it as an update through the page.
 
-Visitors subscribe with the form on the public status page, and every email has an unsubscribe link. There is no API for adding or removing subscribers.
+Visitors subscribe with the form on the public status page, and every email has an unsubscribe link.
+
+## See and manage the list
+
+Use the API (there is no dashboard screen for this yet). You need an API key with access to status pages.
+
+```bash
+# How many, and in which state
+curl -s -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber?limit=1" | jq '.counts, .capacity'
+
+# Find an address
+curl -s -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber?q=ann@"
+
+# Download everything as CSV
+curl -s -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber/export" -o subscribers.csv
+
+# Ask someone to subscribe (they get a confirmation link)
+curl -s -X POST -H "Authorization: Bearer $SITEQWALITY_API_KEY" -H "Content-Type: application/json" \
+  -d '{"email":"ann@example.com"}' "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber"
+
+# Remove one (an erasure request, or a mistake)
+curl -s -X DELETE -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber/$SUBSCRIBER_ID"
+```
+
+Adding an address never skips the confirmation step, so you cannot sign someone up who did not ask. A page holds at most 1000 subscribers. Fields and limits are in the [status page reference](/status-pages/reference/#subscribers).
+
+When someone asks you to delete their data, remove them here. Delivery records for mail to subscribers are cleared within two days after the address is gone.
 
 A confirmation email is sent on subscribe; the visitor must click the link to activate. This protects against visitors being signed up against their will.
 
@@ -37,7 +67,7 @@ A confirmation email is sent on subscribe; the visitor must click the link to ac
 
 - SMS, RSS, or webhook subscribers.
 - Per-component subscriptions.
-- Bulk subscriber management in the dashboard.
+- Bulk import, and subscriber management in the dashboard.
 
 ## See also
 

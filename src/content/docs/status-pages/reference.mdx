@@ -93,6 +93,26 @@ The page shows a `scheduled` entry as in progress once `scheduled_start_at` pass
 
 Incidents published to a page (via `status_page_id` at creation, or `POST /incident/{id}/publish`) render with their updates. Field-by-field: [Incident reference](/incident-management/incidents/reference/).
 
+## Subscribers
+
+The people who signed up for email about a page. A page holds at most 1000 (confirmed and pending together); beyond that the public form and `POST` below answer `409`.
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | uuid | Subscriber id, used to remove one. |
+| `email` | string | Lower-cased address. |
+| `state` | enum | `confirmed` gets notices. `pending` has not clicked the link yet. `expired` never did and the link lapsed; a daily job removes it a week later. |
+| `subscribed_at` | rfc3339 | When the address was first submitted. |
+| `confirmed_at` | rfc3339 | Absent until confirmed. |
+
+`GET /status_page/{id}/subscriber` returns one page, newest first, as `{"data": [...], "total": N, "counts": {"confirmed", "pending", "expired"}, "capacity": 1000}`. `total` is the number matching your filters; `counts` always covers the whole list. Filters: `state`, `q` (part of an address, ignoring case), `limit` (default 50, at most 200) and `offset`.
+
+`POST /status_page/{id}/subscriber` with `{"email": "you@example.com"}` sends that address a confirmation link. It joins the list as `pending` and receives nothing until the person clicks. The answer is `{"email": "...", "result": "confirmation_sent"}`, or `"nothing_to_send"` when the address already subscribed or a link went out in the last hour. It returns `400` for anything but a plain address, `409` for a full page and `429` after 30 confirmation emails to the page in an hour.
+
+`GET /status_page/{id}/subscriber/export` downloads the whole list as CSV (`email,state,subscribed_at,confirmed_at`), or JSON with `?format=json`. It takes the same `state` and `q` filters.
+
+`DELETE /status_page/{id}/subscriber/{subscriber_id}` removes one address, for an erasure request or a mistake. Nothing more is mailed to it, and `404` means no such subscriber on that page.
+
 ## Endpoints
 
 | Method | Path | Purpose |
@@ -103,6 +123,9 @@ Incidents published to a page (via `status_page_id` at creation, or `POST /incid
 | `POST` / `PUT` / `DELETE` | `/status_page/{id}/http_job/{http_job_id}` | Attach / update / detach an HTTP check. |
 | `GET` | `/status_page/{id}/browser_check` | List attached browser checks. |
 | `POST` / `PUT` / `DELETE` | `/status_page/{id}/browser_check/{browser_check_id}` | Attach / update / detach a browser check. |
+| `GET` / `POST` | `/status_page/{id}/subscriber` | List / add (by confirmation email) subscribers. |
+| `GET` | `/status_page/{id}/subscriber/export` | Download subscribers as CSV or JSON. |
+| `DELETE` | `/status_page/{id}/subscriber/{subscriber_id}` | Remove a subscriber. |
 | `POST` / `GET` | `/status_page/{id}/incident` | Create / list page incidents. |
 | `POST` / `GET` | `/status_page/{id}/maintenance` | Create / list scheduled maintenance. |
 | `PUT` / `DELETE` | `/status_page/{id}/maintenance/{maintenance_id}` | Update / delete maintenance. |
@@ -119,7 +142,7 @@ The status page front-end reads a public, unauthenticated JSON API. You can use 
 |---|---|---|
 | `GET` | `/status-page/{account_id}/{status_page_id}` | The whole page: headline, components, incidents, maintenance, branding. Optional `?limit=` sets how many days of `performance_data` come back for each HTTP check (default 45, at most 100); the status page asks for 90. |
 | `GET` | `/status-page/{account_id}/{status_page_id}/live` | A fresh status for each HTTP check, for polling. The page calls it every 60 seconds. |
-| `POST` | `/status-page/{account_id}/{status_page_id}/subscribe` | Starts an email subscription with `{"email": "you@example.com"}`. The address gets a confirmation link and receives nothing until it confirms. Returns 400 for an invalid address, 404 for an unknown page and 429 when rate limited. |
+| `POST` | `/status-page/{account_id}/{status_page_id}/subscribe` | Starts an email subscription with `{"email": "you@example.com"}`. The address gets a confirmation link and receives nothing until it confirms. Returns 400 for an invalid address, 404 for an unknown page, 409 when the page already holds 1000 subscribers and 429 when rate limited. |
 
 Both ids are in the page's address: `https://statuspage.siteqwality.com/<account-id>/<page-id>`. An unknown page returns 404.
 
