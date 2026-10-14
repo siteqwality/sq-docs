@@ -31,6 +31,8 @@ Attach an HTTP check with `POST /status_page/{status_page_id}/http_job/{http_job
 
 The component's live status is the underlying monitor's status; there is no separate status field to set.
 
+A page shows at most 100 monitors, HTTP and browser checks together. Attaching a 101st returns `400` with `A status page can show at most 100 monitors`. Sending the attach again for a monitor already on the page still works and just updates its `friendly_name`.
+
 ## Branding
 
 `PUT /status_page/{status_page_id}/branding`. All fields optional; omitted fields keep their value.
