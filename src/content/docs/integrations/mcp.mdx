@@ -1,7 +1,7 @@
 ---
 title: Connect AI assistants (MCP)
 description: Ask Claude, ChatGPT, Cursor and other AI assistants about your monitors, incidents and telemetry, and let them take everyday actions for you.
-last_verified: 2026-10-04
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -251,7 +251,7 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 | `list_incidents`, `get_incident` | Lists incidents, or shows one with its timeline. | Read |
 | `acknowledge_incident`, `resolve_incident` | Acknowledges or resolves an incident. | Write |
 | `create_incident` | Opens an incident, optionally on a status page. | Write |
-| `post_incident_update` | Posts an update to an incident and its status page. | Write |
+| `post_incident_update` | Adds a timeline update to an incident. It does not email status page subscribers or change the incident's status. | Write |
 | `list_status_pages` | Lists your status pages. | Read |
 | `search_logs` | Searches your logs. | Read |
 | `list_metric_names`, `query_metrics` | Lists your metrics, or queries one. | Read |

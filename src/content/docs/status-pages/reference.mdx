@@ -1,7 +1,7 @@
 ---
 title: Status page reference
 description: Every field on status pages, components, branding, custom domains, and scheduled maintenance.
-last_verified: 2026-08-01
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -85,6 +85,8 @@ Customer-facing planned-downtime entries under `/status_page/{status_page_id}/ma
 | `affected_http_job_ids` | uuid[] | create + update | Which components the maintenance covers. |
 | `status` | enum | update only | `scheduled`, `in_progress`, or `completed`. New entries start as `scheduled`. |
 
+The page shows a `scheduled` entry as in progress once `scheduled_start_at` passes, and drops it after `scheduled_end_at`, so you do not have to move it by hand. Setting `in_progress` starts it early, and `completed` ends it early. Leave `affected_http_job_ids` empty to cover the whole page. Creating a maintenance emails the page's confirmed subscribers. See [Publish a status page maintenance](/status-pages/how-to/publish-maintenance/).
+
 ## Incidents on a page
 
 Incidents published to a page (via `status_page_id` at creation, or `POST /incident/{id}/publish`) render with their updates. Field-by-field: [Incident reference](/incident-management/incidents/reference/).
@@ -106,6 +108,32 @@ Incidents published to a page (via `status_page_id` at creation, or `POST /incid
 | `POST` | `/status_page/{id}/branding/upload` | Presigned asset upload. |
 | `DELETE` | `/status_page/{id}/branding/asset/{asset_type}` | Remove an asset. |
 | `POST` / `GET` / `DELETE` | `/status_page/{id}/custom_domain` | Provision / read / remove the custom domain. |
+
+## Public status page API
+
+The status page front-end reads a public, unauthenticated JSON API. You can use it to show your status inside your own app. Base URL: `https://statuspageapi.siteqwality.com`. CORS allows any origin for `GET` and `POST`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/status-page/{account_id}/{status_page_id}` | The whole page: headline, components, incidents, maintenance, branding. Optional `?limit=` sets how many days of `performance_data` come back for each HTTP check (default 45, at most 100); the status page asks for 90. |
+| `GET` | `/status-page/{account_id}/{status_page_id}/live` | A fresh status for each HTTP check, for polling. The page calls it every 60 seconds. |
+| `POST` | `/status-page/{account_id}/{status_page_id}/subscribe` | Starts an email subscription with `{"email": "you@example.com"}`. The address gets a confirmation link and receives nothing until it confirms. Returns 400 for an invalid address, 404 for an unknown page and 429 when rate limited. |
+
+Both ids are in the page's address: `https://statuspage.siteqwality.com/<account-id>/<page-id>`. An unknown page returns 404.
+
+The page response has these fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `global_status` | enum | The headline: `operational`, `unknown`, `degraded_performance`, `partial_outage`, `major_outage` or `under_maintenance`. `unknown` means no monitor has a current reading. |
+| `http_jobs[]` | array | One entry per HTTP check: `http_job_id`, `friendly_name`, `sla_target_percentage` (or `null`), `current_status`, and `performance_data[]` with one row per day (`day`, `uptime_percentage`, `avg_response_time_ms`, `p50_response_time_ms`, `p95_response_time_ms`, `p99_response_time_ms`). |
+| `browser_checks[]` | array | One entry per browser check: `browser_check_id`, `friendly_name`, `sla_target_percentage`, `current_status`. No daily data. |
+| `active_incidents[]` | array | Open incidents with their `updates[]`. |
+| `upcoming_maintenances[]` | array | Maintenance that is scheduled or in progress: `id`, `title`, `body`, `status`, `scheduled_start_at`, `scheduled_end_at`, `affected_http_job_ids`. |
+| `incident_history[]` | array | The latest 30 incidents, same shape as `active_incidents`, with `resolved_at` once closed. |
+| `branding` | object \| null | Title, theme, logo, colors, header and footer text, and so on. `null` when none is saved. |
+
+`current_status` is one of `operational`, `degraded` (failing, not yet confirmed down), `down`, `paused`, `maintenance` or `unknown`. The `/live` response is a list with `http_job_id`, `status` (the same values), `success`, `response_time_ms` and `checked_at` for each HTTP check.
 
 ## See also
 

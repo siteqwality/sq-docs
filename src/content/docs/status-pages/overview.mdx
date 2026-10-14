@@ -1,7 +1,7 @@
 ---
 title: Status pages
 description: Branded, custom-domain public status pages with components, scheduled maintenance, and email subscribers.
-last_verified: 2026-05-03
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -29,10 +29,10 @@ A status page is composed of three layers:
 2. **Components**: links between the status page and underlying monitors. You attach an HTTP check or a browser check to a status page with a public-facing `friendly_name` and optional `sla_target_percentage`. The component's status is the underlying monitor's live status.
 3. **Incidents and maintenance**: published events. You post incidents and their updates yourself. A [service](/incident-management/services/overview/) can also publish the incidents it opens automatically, and those resolve when their monitors recover. Scheduled maintenance shows future planned downtime.
 
-When a visitor loads the page, the public status page API reads the latest status of every component, joins in any open incident or active maintenance, and renders the result via the public Next.js front-end.
+When a visitor loads the page, the [public status page API](/status-pages/reference/#public-status-page-api) reads the latest status of every component, joins in any open incident or active maintenance, and renders the result via the public Next.js front-end.
 
 <Aside type="tip">
-The status page back-end is a separate Lambda (`status-page-api`) reading the same Postgres + ClickHouse data as the dashboard, so there's no separate sync step. What's true in the dashboard is true on the page within seconds.
+The status page back-end is a separate Lambda (`status-page-api`) reading the same Postgres data as the dashboard, so there's no separate sync step. The page is rendered on request from data that is at most about 30 seconds old, and an open page refreshes its live status every 60 seconds, so a change in the dashboard shows up within about a minute.
 </Aside>
 
 ## What you can configure

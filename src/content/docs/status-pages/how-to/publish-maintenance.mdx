@@ -1,0 +1,76 @@
+---
+title: Publish a status page maintenance
+description: Tell visitors about planned work, show it on your status page, and email your subscribers.
+last_verified: 2026-10-14
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+
+A **status page maintenance** is the customer-facing notice for planned work. It appears on your public status page, marks the components it covers as under maintenance instead of down, and emails your confirmed subscribers when you create it.
+
+<Aside type="note">
+A [maintenance window](/incident-management/maintenance/overview/) is a different thing. It only silences alerts and never appears on a status page. For a planned outage you usually want both.
+</Aside>
+
+## Schedule one
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. Open the status page and go to the **Maintenance** tab.
+
+2. Click **Schedule Maintenance**.
+
+3. Enter a **Title** (for example `Database migration`) and an optional **Message** that says what visitors should expect.
+
+4. Set **Scheduled Start** and **Scheduled End**. The end must be after the start.
+
+5. Under **Affected Monitors**, pick the checks that will be affected. Leave it empty to cover the whole page.
+
+6. Save. Your confirmed subscribers get an email.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/maintenance \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Database migration",
+    "body": "The API will be read-only for about 30 minutes.",
+    "scheduled_start_at": "2026-11-06T02:00:00Z",
+    "scheduled_end_at": "2026-11-06T02:30:00Z",
+    "affected_http_job_ids": ["<http-job-id>"]
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+## What visitors see
+
+- Before the start time, the maintenance is listed as **scheduled**.
+- When the start time passes, the page shows it as **in progress** and the components it covers show **Maintenance** instead of an outage. If you leave `affected_http_job_ids` empty, the whole page shows **Under Maintenance**.
+- When the end time passes, it drops off the page.
+
+You do not have to move it by hand. To start early, set the status to `in_progress`. To finish early, set it to `completed`.
+
+<Aside type="caution">
+Maintenance covers HTTP checks you pick. A browser check shows maintenance only when the maintenance covers the whole page.
+</Aside>
+
+## Subscribers
+
+Subscribers get one email when you create the maintenance. Editing it, starting it or completing it does not send another. If the plan changes, create a new maintenance or post the change as an incident update.
+
+## Change or cancel it
+
+Edit it from the **Maintenance** tab, or with `PUT /status_page/{id}/maintenance/{maintenance_id}` (send the full body, including `status`). Delete it with `DELETE` on the same path.
+
+<LinkCard title="Status page reference" description="Every maintenance field and the public API." href="/status-pages/reference/" />

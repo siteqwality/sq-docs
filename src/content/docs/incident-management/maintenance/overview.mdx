@@ -93,7 +93,7 @@ Suppression applies to monitor notifications that carry monitor context (HTTP an
 - **Failure notifications are held, not dropped.** They are stored and re-evaluated when the window's current occurrence ends, so a monitor that is still down after the window pages then.
 - **Recovery notifications are suppressed** and clear the held failure for that monitor, so a blip fully inside the window pages no one.
 - **Auto-created incidents still open** for services configured to open them; the maintenance window suppresses the monitor's notification fanout, not incident creation.
-- **Status pages keep showing live status** unless you also publish a [status page maintenance](/status-pages/overview/) entry.
+- **Status pages keep showing live status** unless you also publish a [status page maintenance](/status-pages/how-to/publish-maintenance/) entry.
 
 `is_currently_active` on the response tells you whether the window is in effect right now (computed against the server clock).
 
@@ -115,5 +115,5 @@ You typically want both for a planned outage: the maintenance window so on-call 
 <CardGrid>
   <LinkCard title="Quickstart" description="Schedule your first deploy window." href="/incident-management/maintenance/quickstart/" />
   <LinkCard title="Recurring windows" description="Daily and weekly recurrence patterns in detail." href="/incident-management/maintenance/how-to/recurring/" />
-  <LinkCard title="Status page maintenance" description="The customer-facing companion to maintenance windows." href="/status-pages/overview/" />
+  <LinkCard title="Status page maintenance" description="The customer-facing companion to maintenance windows." href="/status-pages/how-to/publish-maintenance/" />
 </CardGrid>

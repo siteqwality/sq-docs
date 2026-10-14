@@ -1,7 +1,7 @@
 ---
 title: Status page quickstart
 description: Create a branded status page with components and your first published incident in under 10 minutes.
-last_verified: 2026-05-03
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -57,7 +57,7 @@ A *component* is a public-facing label for one of your monitors. Attach any HTTP
 
 2. Pick an HTTP check from the dropdown. Override the **public friendly name** if the internal one is too technical (`prod-api-eu-west-1` → `API`).
 
-3. Optionally set an **SLA target** (e.g. `99.9`). The page renders monthly uptime against this target.
+3. Optionally set an **SLA target** (e.g. `99.9`). The page compares the uptime over the range the visitor picked (7, 30, 60 or 90 days) with this target.
 
 4. Save.
 
@@ -212,10 +212,10 @@ Open `https://statuspage.siteqwality.com/<account-id>/<page-id>` in an incognito
 - Your logo and brand colors.
 - Each component with its current status (green check if healthy, red if failing).
 - The published incident at the top with its updates in chronological order.
-- Per-component uptime graph for the last 90 days.
+- For each HTTP check, a 90-day uptime bar chart and response-time percentiles. Browser checks show their current status and SLA label only.
 
 <Aside type="tip">
-The status page is statically rendered at the edge with a short cache TTL (~30 seconds), so visitors during an active incident always see fresh data.
+The status page is rendered on request and is not cached at the edge. Its data is at most about 30 seconds old, and an open page refreshes its live status every 60 seconds, so visitors during an active incident see fresh data.
 </Aside>
 
 ## What's next
