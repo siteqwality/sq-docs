@@ -40,7 +40,7 @@ The status page back-end is a separate Lambda (`status-page-api`) reading the sa
 | Concern | Settings |
 |---|---|
 | **Identity** | `friendly_name`, `page_title`, default theme (`light` / `dark` / `system`) |
-| **Branding** | logo, favicon, OG image, primary/accent color (`#hex`), header & footer text, custom CSS (50KB max), white-label toggle |
+| **Branding** | logo and dark theme logo, favicon, OG image, primary/accent color (`#hex`, kept readable in both themes), header & footer text, custom CSS (50KB max), white-label toggle |
 | **Custom domain** | bring your own subdomain (e.g. `status.example.com`). Site Qwality provisions an ACM cert and gives you the CNAME to add |
 | **Components** | attach any HTTP check, browser check or heartbeat monitor, add manual components, override a public name or status, set an SLA target, group and order them |
 | **Incidents** | manually open / update / resolve, or have a service publish the incidents it opens automatically (set through the API) |

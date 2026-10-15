@@ -1,0 +1,157 @@
+---
+title: Brand your status page
+description: Set colours and logos for the light and dark themes, clear branding fields, and style the page with custom CSS through its stable data-sq hooks.
+last_verified: 2026-10-15
+owner: jj
+---
+
+import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+A status page has a light and a dark theme, and visitors can switch between them. Branding covers both: colours that stay readable in each theme, a logo per theme, header and footer text, and custom CSS. Every field is listed in the [reference](/status-pages/reference/#branding).
+
+<Aside type="note">
+The page title and default theme are free. Every other branding field needs a paid plan, and removing the "Powered by Site Qwality" badge needs the White-Label status page pack.
+</Aside>
+
+## Colours
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. Open the status page and go to **Branding**.
+
+2. Under **Theme**, set the **Primary Color** (the page title and the subscribe heading) and the **Accent Color** (links, the Subscribe button, focus rings and the response time line). With no accent colour, the primary colour is used for both.
+
+3. Check the **Preview** at the top of the tab. It draws the page in both themes with the colours the page will actually use.
+
+4. Click **Save Settings**.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/branding \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "primary_color": "#0b3d91", "accent_color": "#f5a623" }'
+```
+
+</TabItem>
+</Tabs>
+
+The page keeps your colours readable. In each theme it uses a colour as given when it meets WCAG 2.2 AA against the page's backgrounds (4.5:1 for text, 3:1 for focus rings and the chart line), and otherwise the nearest lighter or darker shade of the same hue that does. A bright yellow accent, for example, shows as a deep olive in the light theme and as itself in the dark one. No colour reaches 4.5:1 on both backgrounds, so most brand colours shift in one theme. When you pick a colour that will be shifted, the dashboard shows its contrast ratio and the shade the page uses instead.
+
+## Logos for light and dark
+
+The **Logo** shows in the header in both themes. Add a **Dark theme logo** when your logo is drawn for a light background, such as dark lettering: the dark theme then shows it instead. With only a dark theme logo set, the light theme shows the page title.
+
+In the dashboard, use **Upload** next to each image under **Images**. Through the API, request an upload with `"file_type": "logo_dark"` and save the returned key as `logo_dark_s3_key`, as described in the [asset upload flow](/status-pages/reference/#asset-upload-flow). Logos can be PNG, JPEG, SVG or WebP up to 2 MB.
+
+## Clear a field
+
+A save changes only the fields it sends. To remove a value, send `null`:
+
+```bash
+curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/branding \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "footer_text": null, "accent_color": null, "logo_dark_s3_key": null }'
+```
+
+Each field goes back to its default: no footer text, the primary colour as the accent, and the light logo in both themes. Clearing an image key also deletes its file. Fields you leave out keep their values, and blank text clears a field just like `null`. Clearing never needs a paid plan.
+
+In the dashboard, empty a text field and save, use **Reset** next to a colour, or **Remove** next to an image. Images save as soon as they upload or are removed; the other fields save with **Save Settings**.
+
+## Custom CSS
+
+Custom CSS loads after the page's own styles. Target the page through its `data-sq` attributes. These names are the supported surface and stay the same between releases; class names and the element structure can change without notice.
+
+```css
+/* A taller logo */
+[data-sq="logo"] { height: 3rem; }
+
+/* A serif page title */
+[data-sq="title"] { font-family: Georgia, serif; }
+
+/* Keep the uptime bars but hide the percentage */
+[data-sq="uptime-percentage"] { display: none; }
+
+/* Underline the names of components that are down */
+[data-sq="component"][data-sq-status="down"] [data-sq="component-name"] {
+  text-decoration: underline wavy;
+}
+
+/* A different header background in the dark theme */
+.dark [data-sq="header"] { background: #101418; }
+```
+
+### Regions
+
+Every region carries `data-sq="<name>"`:
+
+| Name | Element |
+|---|---|
+| `header` | The page header: logo, title, header text and the theme switch. |
+| `title` | The heading that holds the logo or the page title. |
+| `logo` | The logo image. With a dark theme logo there are two, marked `data-sq-theme="light"` and `data-sq-theme="dark"`, and only the one for the current theme is displayed. |
+| `header-text` | The line under the title: your header text, or "System Status". |
+| `theme-toggle` | The light and dark switch. |
+| `main` | Everything between the header and the footer. |
+| `status` | The headline status banner. |
+| `incidents` | The open incidents section. |
+| `incident` | One incident: open, in the history, or on its own page. |
+| `maintenance` | The maintenance section. |
+| `maintenance-item` | One maintenance window. |
+| `components` | The card that lists the components. |
+| `group` | One section of components. |
+| `component` | One component row. |
+| `component-name` | A component's name. |
+| `component-status` | A component's status dot and label. |
+| `uptime-percentage` | A component's uptime figure. |
+| `uptime-bars` | A component's daily uptime bars. |
+| `history` | Past incidents, on the main page and the history page. |
+| `subscribe` | The email subscription form. |
+| `footer` | The footer. |
+| `footer-text` | Your footer text. |
+
+### State attributes
+
+| Attribute | On | Values |
+|---|---|---|
+| `data-sq-status` | `status` | `operational`, `degraded_performance`, `partial_outage`, `major_outage`, `under_maintenance`, `unknown` |
+| `data-sq-status` | `component` | `operational`, `degraded`, `down`, `paused`, `maintenance`, `unknown`. Absent until the first reading. |
+| `data-sq-status` | `incident` | `investigating`, `identified`, `monitoring`, `resolved` |
+| `data-sq-status` | `maintenance-item` | `scheduled`, `in_progress`, `completed` |
+| `data-sq-severity` | `incident` | `minor`, `major`, `critical` |
+| `data-sq-kind` | `component` | `http`, `browser` |
+| `data-sq-component-id` | `component` | The HTTP check or browser check id. |
+| `data-sq-group-id` | `group` | The group id. Absent on the section of ungrouped components. |
+| `data-sq-theme` | `logo` | `light`, `dark` |
+
+### Theme variables
+
+The page draws from CSS custom properties. Set them in `:root` for the light theme and in `.dark` for the dark theme. Custom CSS wins over the page's own values in both themes, so a value set only in `:root` applies to the dark theme too.
+
+| Variable | Used for |
+|---|---|
+| `--sq-page`, `--sq-panel`, `--sq-panel-alt` | Page background, cards, and raised areas inside cards. |
+| `--sq-edge` | Borders and dividers. |
+| `--sq-body`, `--sq-muted`, `--sq-faint` | Main, secondary and tertiary text. |
+| `--sq-wordmark` | The page title and the subscribe heading. |
+| `--sq-accent` | Focus rings, the response time line and other non-text accents. |
+| `--sq-accent-text` | Links. |
+| `--sq-accent-fill`, `--sq-on-accent` | The Subscribe button and text selection, and the label on them. |
+| `--sq-bar-up`, `--sq-bar-partial`, `--sq-bar-down`, `--sq-bar-none` | Uptime bar colours. |
+
+```css
+:root { --sq-page: #ffffff; --sq-panel: #ffffff; }
+.dark { --sq-page: #0d1117; --sq-panel: #161b22; }
+```
+
+<Aside type="caution">
+Values you set in custom CSS are used exactly as written; only the primary and accent colour fields are adjusted for contrast. Check both themes after a change. The "Powered by Site Qwality" badge has no hook: to remove it, turn on the white-label footer.
+</Aside>

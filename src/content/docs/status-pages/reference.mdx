@@ -84,29 +84,48 @@ An override wins over the monitor, a pause and any maintenance, and it counts to
 
 ## Branding
 
-`PUT /status_page/{status_page_id}/branding`. All fields optional; omitted fields keep their value.
+`PUT /status_page/{status_page_id}/branding`. Every field is optional. A field you leave out keeps its value; `null` clears it. Blank text (empty or only whitespace) clears too. Saving republishes the page, and the change is live within a minute.
 
-| Field | Type | Constraint | Description |
-|---|---|---|---|
-| `page_title` | string | max 100 chars | Browser-tab and page title. |
-| `default_theme` | enum | `light` \| `dark` \| `system` | Theme for first-time visitors. |
-| `primary_color` | string | `#rrggbb` | Primary brand color. |
-| `accent_color` | string | `#rrggbb` | Accent color. |
-| `header_text` | string | max 500 chars | Text above the component list. |
-| `footer_text` | string | max 500 chars | Text below the component list. |
-| `meta_description` | string | max 160 chars | SEO / OG description. |
-| `custom_css` | string | max 50 KB | Injected stylesheet. |
-| `white_label` | bool | paid plans | Removes Site Qwality attribution. |
-| `logo_s3_key` / `favicon_s3_key` / `og_image_s3_key` | string | from upload flow | Set after uploading the asset (below). |
+| Field | Type | Constraint | Description | Cleared to |
+|---|---|---|---|---|
+| `page_title` | string | max 100 characters | Browser tab title, and the header heading when there is no logo. | `Status Page` |
+| `default_theme` | enum | `light` \| `dark` \| `system` | Theme for first-time visitors. | `system` |
+| `primary_color` | string | `#rrggbb` | Page title and the subscribe heading. Also the accent when `accent_color` is unset. | body text colour |
+| `accent_color` | string | `#rrggbb` | Links, the Subscribe button, focus rings, text selection and the response time line. | `primary_color`, else Atlas clay |
+| `header_text` | string | max 500 characters | Line under the logo or title. | `System Status` |
+| `footer_text` | string | max 500 characters | Line in the footer. | nothing |
+| `meta_description` | string | max 160 characters | Search and link preview description. | a generated one |
+| `custom_css` | string | max 50 KB | Stylesheet loaded after the page's own. See [Brand your status page](/status-pages/how-to/branding/#custom-css). | nothing |
+| `white_label` | bool | White-Label pack to turn on | Removes the "Powered by Site Qwality" badge. | `false` |
+| `logo_s3_key` | string | from the upload flow | Header logo. | the title |
+| `logo_dark_s3_key` | string | from the upload flow | Header logo in the dark theme. | `logo_s3_key` |
+| `favicon_s3_key` | string | from the upload flow | Browser tab icon. | Site Qwality icon, none when white-labelled |
+| `og_image_s3_key` | string | from the upload flow | Link preview image. | none |
+
+`page_title` and `default_theme` are free. Setting any other field needs a paid plan (`403` otherwise), and turning `white_label` on needs the White-Label status page pack. Clearing a field is always allowed, so a downgraded account can return to the defaults.
+
+An `*_s3_key` must be the `s3_key` the upload endpoint returned for that asset type on this page; any other key returns `400`. Sending back the key already stored is accepted. Replacing or clearing a key deletes the old file.
+
+`GET` and `PUT` return the stored fields plus `logo_url`, `logo_dark_url`, `favicon_url` and `og_image_url`, the CDN addresses of the assets (`null` when unset).
+
+### Colours and contrast
+
+The page never draws a brand colour where it would be hard to read. For each theme it uses the colour as given when it meets WCAG 2.2 AA on the page's backgrounds, and otherwise the nearest shade of the same hue that does: 4.5:1 for text (the title, links), 3:1 for focus rings and the chart line. The Subscribe button keeps 4.5:1 between its fill and its label, which is ink or cream, whichever reads better. No colour reaches 4.5:1 on both the light and the dark background, so a strong brand colour usually shows a lighter or darker shade in one theme. The dashboard's Branding tab shows the ratio and the shade the page will use as you pick a colour, and previews both themes.
 
 ### Asset upload flow
 
-1. `POST /status_page/{id}/branding/upload` with `{ "file_type": "logo" | "favicon" | "og_image", "content_type": "...", "file_size_bytes": n }`.
-2. The response contains a presigned `upload_url`, the resulting `s3_key`, and `expires_in_seconds`.
+1. `POST /status_page/{id}/branding/upload` with `{ "file_type": "logo" | "logo_dark" | "favicon" | "og_image", "content_type": "...", "file_size_bytes": n }`. `file_size_bytes` is the file's exact size.
+2. The response contains a presigned `upload_url`, the resulting `s3_key`, and `expires_in_seconds` (300).
 3. `PUT` the file to `upload_url`, then `PUT /branding` with the returned key in the matching `*_s3_key` field.
-4. Remove an asset with `DELETE /status_page/{id}/branding/asset/{asset_type}`.
+4. Remove an asset with `DELETE /status_page/{id}/branding/asset/{asset_type}` (`logo`, `logo_dark`, `favicon` or `og_image`), or send `null` for its key.
 
-Public responses expose CDN URLs (`logo_url`, `favicon_url`, `og_image_url`), never S3 keys.
+| `file_type` | Content types | Max size |
+|---|---|---|
+| `logo`, `logo_dark` | `image/png`, `image/jpeg`, `image/svg+xml`, `image/webp` | 2 MB |
+| `favicon` | `image/png`, `image/x-icon`, `image/vnd.microsoft.icon`, `image/svg+xml` | 512 KB |
+| `og_image` | `image/png`, `image/jpeg`, `image/webp` | 5 MB |
+
+Public responses expose CDN URLs (`logo_url`, `logo_dark_url`, `favicon_url`, `og_image_url`), never S3 keys.
 
 ## Custom domain
 
@@ -216,7 +235,7 @@ The page response has these fields:
 | `active_incidents[]` | array | Open incidents with their `updates[]`. |
 | `upcoming_maintenances[]` | array | Maintenance that is scheduled or in progress: `id`, `title`, `body`, `status`, `scheduled_start_at`, `scheduled_end_at`, `affected_http_job_ids`. |
 | `incident_history[]` | array | The latest 30 incidents, same shape as `active_incidents`, with `resolved_at` once closed. Older ones come from `/history`. |
-| `branding` | object \| null | Title, theme, logo, colors, header and footer text, and so on. `null` when none is saved. |
+| `branding` | object \| null | `page_title`, `default_theme`, `logo_url`, `logo_dark_url` (absent when there is no dark logo), `favicon_url`, `og_image_url`, `primary_color`, `accent_color`, `header_text`, `footer_text`, `white_label`, `meta_description` and `custom_css`. `null` when none is saved. |
 | `page_url` | string | The page's public address: `https://<your-domain>` when a custom domain is live, otherwise `https://statuspage.siteqwality.com/<account-id>/<page-id>`. Incidents are at `<page_url>/incidents/<incident-id>` and the full history at `<page_url>/history`. |
 
 `current_status` is one of `operational`, `degraded` (failing, not yet confirmed down), `down`, `paused`, `maintenance` or `unknown`. With a status override in force it is the override's status, and every entry in `http_jobs`, `browser_checks` and `components` carries the override's note as `status_note` (`null` otherwise). The `/live` response is a list with `http_job_id`, `status` (the same values), `status_note`, `success`, `response_time_ms` and `checked_at` for each HTTP check.
@@ -229,4 +248,5 @@ The same page is also published as static files that update within a minute of a
 
 - [Status pages overview](/status-pages/overview/) for the three-layer model.
 - [Custom domain guide](/status-pages/how-to/custom-domain/) for DNS setup.
+- [Brand your status page](/status-pages/how-to/branding/) for colours, dark logos and custom CSS.
 - [API Reference](/api-reference/) for wire-level shapes.
