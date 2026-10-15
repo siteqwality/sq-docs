@@ -253,7 +253,7 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 | `create_incident` | Opens an incident, optionally on a status page. | Write |
 | `post_incident_update` | Adds an update to an incident's timeline with its new public status; `resolved` resolves it. Name a status page the incident is on to also email that page's confirmed subscribers. | Write |
 | `list_status_pages` | Lists your status pages, each with its public address (`page_url`). | Read |
-| `list_status_page_components` | Lists a status page's components in page order, with any status set by hand. | Read |
+| `list_status_page_components` | Lists a status page's components in page order (monitors, heartbeats and manual components), with any status set by hand. | Read |
 | `set_status_page_component_status` | Sets what a status page shows for one component, with an optional note and end time. | Write |
 | `clear_status_page_component_status` | Clears that status, so the page follows the monitor again. | Write |
 | `search_logs` | Searches your logs. | Read |
@@ -269,11 +269,12 @@ These tools manage status pages end to end. They use the Status Pages scopes, ex
 | `get_status_page` | Shows one page and its public address (`page_url`). | Read |
 | `create_status_page`, `rename_status_page` | Creates or renames a page. | Write |
 | `delete_status_page` | Deletes a page. | Write, asks first |
-| `get_status_page_layout` | Shows the page's groups and the order and settings of its components. | Read |
-| `update_status_page_layout` | Replaces the whole layout. | Write, asks first |
-| `list_status_page_monitors`, `get_status_page_monitor` | Lists the monitors on a page, or shows one with its page name and SLA target. | Read |
-| `add_status_page_monitor`, `update_status_page_monitor` | Adds a monitor to a page, or changes its page name or SLA target. | Write |
-| `remove_status_page_monitor` | Takes a monitor off a page. The monitor keeps running. | Write, asks first |
+| `update_status_page_layout` | Replaces the whole layout: groups, their order and the components in each. | Write, asks first |
+| `create_status_page_component`, `update_status_page_component` | Adds a manual component (one with no monitor, whose status you set), or renames it, changes its description or sets its status. | Write |
+| `delete_status_page_component` | Deletes a manual component. | Write, asks first |
+| `list_status_page_monitors`, `get_status_page_monitor` | Lists the HTTP monitors, browser checks and heartbeats (cron jobs) on a page, or shows one with its page name and SLA target. | Read |
+| `add_status_page_monitor`, `update_status_page_monitor` | Adds a monitor or heartbeat to a page, or changes its page name or SLA target. | Write |
+| `remove_status_page_monitor` | Takes a monitor or heartbeat off a page. It keeps running. | Write, asks first |
 | `list_status_page_incidents` | Lists the incidents shown on a page. | Read |
 | `publish_incident` | Shows an existing incident on a page. | Write |
 | `update_status_page_incident` | Changes a page incident's title or severity. Its status changes through `post_incident_update` or `resolve_incident`. | Write |
@@ -282,11 +283,12 @@ These tools manage status pages end to end. They use the Status Pages scopes, ex
 | `schedule_status_page_maintenance`, `update_status_page_maintenance` | Schedules or changes a maintenance window. Confirmed subscribers hear about new and rescheduled windows. | Write |
 | `delete_status_page_maintenance` | Deletes a maintenance window. | Write, asks first |
 | `list_status_page_subscribers`, `export_status_page_subscribers` | Lists a page's email subscribers, or exports them all as CSV. | Read |
-| `add_status_page_subscriber` | Sends an address a confirmation link. | Write |
+| `add_status_page_subscriber` | Sends an address a confirmation link, optionally for only some components or only incidents or maintenance. | Write |
+| `import_status_page_subscribers` | Imports addresses from CSV. Each gets a confirmation link; past the hourly limit they are queued. | Write |
 | `remove_status_page_subscriber` | Removes a subscriber. | Write, asks first |
 | `get_status_page_branding` | Shows a page's branding. | Read |
-| `update_status_page_branding`, `get_status_page_branding_upload_url` | Changes branding, or gets an upload link for a logo, favicon or social image. | Write |
-| `delete_status_page_branding_asset` | Removes a logo, favicon or social image. | Write, asks first |
+| `update_status_page_branding`, `get_status_page_branding_upload_url` | Changes branding, or gets an upload link for a logo, dark-theme logo, favicon or social image. | Write |
+| `delete_status_page_branding_asset` | Removes a logo, dark-theme logo, favicon or social image. | Write, asks first |
 | `get_status_page_custom_domain` | Shows a page's custom domain and the DNS records it needs. | Read |
 | `set_status_page_custom_domain` | Serves a page on your own domain. | Write |
 | `remove_status_page_custom_domain` | Stops serving a page on its custom domain. | Write, asks first |
