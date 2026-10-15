@@ -1,7 +1,7 @@
 ---
 title: Publish a status page maintenance
 description: Tell visitors about planned work, show it on your status page, and email your subscribers when it is scheduled, starts and ends.
-last_verified: 2026-10-14
+last_verified: 2026-10-15
 owner: jj
 ---
 
@@ -30,7 +30,7 @@ A [maintenance window](/incident-management/maintenance/overview/) is a differen
 
 5. Under **Affected Monitors**, pick the checks that will be affected. Leave it empty to cover the whole page.
 
-6. Save. Your confirmed subscribers get an email.
+6. Save. Confirmed subscribers get an email, unless they chose not to hear about maintenance or about these checks.
 
 </Steps>
 
@@ -67,7 +67,9 @@ Maintenance covers HTTP checks you pick. A browser check shows maintenance only 
 
 ## Subscribers
 
-Confirmed subscribers get three emails: one when you create the maintenance, one within a minute of the start time, and one within a minute of the end time. Starting or completing it by hand sends the same start or end email. Editing it sends nothing, and a maintenance you complete before it started sends no start or end email. If the plan changes, create a new maintenance or post the change as an incident update.
+Confirmed subscribers who take maintenance notices get three emails: one when you create the maintenance, one within a minute of the start time, and one within a minute of the end time. Starting or completing it by hand sends the same start or end email. Editing it sends nothing, and a maintenance you complete before it started sends no start or end email. If the plan changes, create a new maintenance or post the change as an incident update.
+
+A subscriber who chose specific components gets these emails only when the maintenance covers one of them, or covers the whole page. See [who gets which notice](/status-pages/how-to/subscribers/#who-gets-which-notice).
 
 ## Change or cancel it
 

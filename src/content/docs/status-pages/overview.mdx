@@ -45,10 +45,10 @@ The status page back-end is a separate Lambda (`status-page-api`) reading the sa
 | **Components** | attach any HTTP check, browser check or heartbeat monitor, add manual components, override a public name or status, set an SLA target, group and order them |
 | **Incidents** | manually open / update / resolve, or have a service publish the incidents it opens automatically (set through the API) |
 | **Maintenance** | publish scheduled windows ahead of planned work |
-| **Subscribers** | visitors subscribe by email and confirm through a link |
+| **Subscribers** | visitors subscribe by email, confirm through a link, and choose incidents, maintenance or both, for every component or only some; you can import a list, and each address still confirms |
 
 <Aside type="caution">
-Visitors subscribe with email and confirm the address. We send email on incident create/update and on status-page maintenance. Anyone can also follow incidents by [RSS or Atom](/status-pages/how-to/feeds-badge-embed/). SMS and webhook subscribers are not available.
+Visitors subscribe with email and confirm the address. We send email on incident create/update and on status-page maintenance, to the subscribers whose choices match. Anyone can also follow incidents by [RSS or Atom](/status-pages/how-to/feeds-badge-embed/). SMS and webhook subscribers are not available.
 </Aside>
 
 ## Pricing notes

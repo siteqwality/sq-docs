@@ -1,33 +1,57 @@
 ---
 title: Manage subscribers
-description: Let visitors subscribe to status page incident updates by email.
-last_verified: 2026-10-14
+description: Let visitors subscribe to status page incidents and maintenance by email, choose what they get, and manage or import the list.
+last_verified: 2026-10-15
 owner: jj
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-A *subscriber* is a visitor to your status page who confirmed an email address. They get an email when you create an incident on the page, post an update to it through the page, or schedule maintenance. Visitors who prefer a feed reader can follow the page's [RSS or Atom feed](/status-pages/how-to/feeds-badge-embed/) instead, with no sign-up. SMS and webhook subscribers are not available.
+A *subscriber* is someone who confirmed an email address on your status page. They get an email when you create an incident on the page, post an update to it through the page, or schedule maintenance, limited to the kinds of update and the components they chose. Visitors who prefer a feed reader can follow the page's [RSS or Atom feed](/status-pages/how-to/feeds-badge-embed/) instead, with no sign-up. Subscriptions are email only: SMS and webhook subscribers are not available.
 
 <Aside type="caution">
-The public status page has an email subscribe form. The visitor confirms the address from a link we send. Until they confirm, they get no mail.
+Every address confirms from a link we send before it gets any notice, whether the visitor used the public form, you added it, or it came in through an import. There is no way to add or import confirmed subscribers.
 </Aside>
 
-## How it works (today)
+## When subscribers get email
 
-The back-end emails every confirmed subscriber on the page in three cases:
+The back-end emails a page's subscribers in three cases:
 
 - An incident is created on the status page (`POST /status_page/{status_page_id}/incident`).
-- An update is posted through the page (`POST /status_page/{status_page_id}/incident/{incident_id}/update`).
+- An update is posted through the page (`POST /status_page/{status_page_id}/incident/{incident_id}/update`), including the update that resolves it.
 - Maintenance is scheduled on the page, when it starts and when it ends.
 
-Nothing is sent when you publish an existing incident to a page, post an update through `POST /incident/{incident_id}/update`, resolve an incident, edit maintenance, or when a service publishes an incident automatically. If subscribers should hear about a change, post it as an update through the page.
+Nothing is sent when you publish an existing incident to a page, post an update through `POST /incident/{incident_id}/update`, resolve an incident by editing it, edit maintenance, or when a service publishes an incident automatically. If subscribers should hear about a change, post it as an update through the page.
 
-Visitors subscribe with the form on the public status page, and every email has an unsubscribe link.
+### Who gets which notice
+
+Each subscriber chooses the kinds of update (incidents, maintenance, or both) and the components (every component, or specific ones the page shows). A notice goes to a `confirmed` subscriber when both choices match:
+
+| Notice | Goes to confirmed subscribers who |
+|---|---|
+| Incident opened, updated or resolved | take incidents, and chose every component or at least one component the incident affects. |
+| Maintenance scheduled, started or completed | take maintenance, and chose every component or at least one component the maintenance covers. |
+
+An incident with no affected components goes to everyone who takes incidents. A maintenance with no affected components covers the whole page, so it goes to everyone who takes maintenance. Set the affected components when you post, and people who follow one part of your service hear only about that part.
+
+### How notices go out
+
+A notice is queued the moment you post the incident, update or maintenance, then sent in the background in batches of 100, so a long list never slows the dashboard or the API. Each subscriber gets each notice once. A failed send is retried, up to 3 attempts in all. Every update to an incident is its own email.
+
+## Choose what to get
+
+The subscribe form on the public page takes just an email address, which subscribes to everything. A **Choose what to get** link on the form lets the visitor pick incidents, maintenance or both, and every component or only some.
+
+Every notice email has two links:
+
+- **Manage preferences** opens a page at `https://statuspageapi.siteqwality.com/subscribe/preferences?token=...` where the subscriber changes the kinds of update and the components, or unsubscribes. The page shown after confirming an address links there too.
+- **Unsubscribe** stops all mail from your page.
+
+Once an address is confirmed, only that preferences page changes its choices. Submitting the public form again with the same address does not, so nobody can change someone else's subscription by typing their address.
 
 ## See and manage the list
 
-In the dashboard, open the status page and use the **Subscribers** tab. It shows the counts and the places used out of 1,000, filters by state or address, adds an address (which gets a confirmation email), removes one and exports the list as CSV or JSON.
+In the dashboard, open the status page and use the **Subscribers** tab. It shows the count in each [state](#subscriber-states) and the places used out of 1,000, filters by state or address, adds an address, imports a CSV, removes an address and exports the list as CSV or JSON.
 
 The same through the API needs an API key with access to status pages.
 
@@ -40,38 +64,127 @@ curl -s -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
 curl -s -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber?q=ann@"
 
+# List the quarantined addresses
+curl -s -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber?state=quarantined"
+
 # Download everything as CSV
 curl -s -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber/export" -o subscribers.csv
-
-# Ask someone to subscribe (they get a confirmation link)
-curl -s -X POST -H "Authorization: Bearer $SITEQWALITY_API_KEY" -H "Content-Type: application/json" \
-  -d '{"email":"ann@example.com"}' "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber"
 
 # Remove one (an erasure request, or a mistake)
 curl -s -X DELETE -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber/$SUBSCRIBER_ID"
 ```
 
-Adding an address never skips the confirmation step, so you cannot sign someone up who did not ask. A page holds at most 1000 subscribers. Fields and limits are in the [status page reference](/status-pages/reference/#subscribers).
+Fields, states and limits are in the [status page reference](/status-pages/reference/#subscribers).
 
-When someone asks you to delete their data, remove them here. Delivery records for mail to subscribers are cleared within two days after the address is gone.
+## Add one address
 
-A confirmation email is sent on subscribe; the visitor must click the link to activate. This protects against visitors being signed up against their will.
+Adding an address sends it a confirmation email, and nothing else goes to it until the person clicks the link. You cannot sign someone up who did not ask.
+
+Through the API you can preselect what the person gets with `kinds` (`incident`, `maintenance`) and `component_ids` (ids of checks on the page). Leave both out for everything.
+
+```bash
+# Everything
+curl -s -X POST -H "Authorization: Bearer $SITEQWALITY_API_KEY" -H "Content-Type: application/json" \
+  -d '{"email":"ann@example.com"}' "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber"
+
+# Only incidents that affect one check
+curl -s -X POST -H "Authorization: Bearer $SITEQWALITY_API_KEY" -H "Content-Type: application/json" \
+  -d '{"email":"ann@example.com","kinds":["incident"],"component_ids":["<http-job-id>"]}' \
+  "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber"
+```
+
+The answer's `result` is `confirmation_sent`, `nothing_to_send` (the address is already subscribed, or a link went out to it in the last hour) or `quarantined` (mail to the address is blocked, see [Quarantined addresses](#quarantined-addresses)).
+
+## Import a CSV
+
+Import moves an existing list to Site Qwality, for example from another status page provider. Every new address gets a confirmation email and receives notices only after the person confirms. There is no way to import confirmed subscribers: consent has to come from each person, not from a file. Tell the people on your list before you import, so the confirmation email is expected.
+
+Import from the **Subscribers** tab, or send the file's contents to the API:
+
+```bash
+jq -Rs '{csv: .}' subscribers.csv | curl -s -X POST \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" -H "Content-Type: application/json" \
+  -d @- "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber/import"
+```
+
+The file:
+
+- A header row with a column named `email`, `e-mail`, `email address` or `e-mail address` (in any case) picks that column. Without one, the first cell in each row that contains `@` is the address, so a plain list with one address per line works too.
+- Blank lines are ignored.
+- At most 1,000 data rows per import. The page still holds at most 1,000 subscribers in total.
+- The CSV from the Subscribers export can be imported back as it is.
+
+### The hourly queue
+
+Confirmation emails are limited to 30 per page per hour, and 300 per hour across Site Qwality. An import uses at most 25 of the page's 30 each hour, so 5 stay free for visitors using the public form, and at most 250 of the overall 300. Imports on all of one account's pages together use at most 100 an hour. The first confirmations go out during the import itself. The rest wait in the `queued` state and go out automatically, oldest first, as room frees up; when several accounts have addresses queued, they take turns. At 25 an hour, 1,000 new addresses take about 40 hours, longer when other pages are sending at the same time. The import response reports the page's rate as `sends_per_hour`.
+
+### Row results
+
+The import reports a result for every row. `row` is the record number in the file, counting from 1 with the header row included.
+
+| Result | What happened |
+|---|---|
+| `confirmation_sent` | A confirmation email went out during the import. |
+| `queued` | The address joined as `queued` and gets its confirmation email when the hourly limit allows. |
+| `already_subscribed` | The address is already confirmed on the page. Nothing changed. |
+| `already_pending` | The address is already waiting to confirm. Nothing new was sent. |
+| `quarantined` | The address is quarantined. Imports never mail a quarantined address. |
+| `invalid` | Not a plain email address. |
+| `duplicate` | The address appears earlier in the same file. |
+| `page_full` | The page reached 1,000 subscribers before this row. |
+
+## Subscriber states
+
+| State | What it means | Counts toward 1,000 |
+|---|---|---|
+| `confirmed` | Clicked the confirmation link. Receives notices. | Yes |
+| `pending` | Sent a confirmation link (valid for 48 hours), not clicked yet. | Yes |
+| `queued` | Added by an import, waiting for its confirmation email. | Yes |
+| `expired` | Never confirmed and the link lapsed. Deleted 7 days after the link expired. | No |
+| `quarantined` | A permanent bounce or a spam complaint on mail to the address. Gets no notices and no queued confirmations. | No |
+
+Only `confirmed` addresses get notices.
+
+### Quarantined addresses
+
+An address is quarantined after a permanent bounce (the mailbox or domain does not exist) or a spam complaint (the person marked the mail as spam) on any mail we send to it. Quarantine takes precedence over every other state, so a confirmed address that bounces shows as `quarantined`. It applies to the address on every status page it is subscribed to, so an address can be quarantined on your page because of mail from another page. The API and the export give the reason as `quarantine_reason` (`bounce` or `complaint`) and the time as `quarantined_at`.
+
+What to do depends on the reason:
+
+- **Bounce.** Usually nothing. If the person fixes their mailbox, they can subscribe again through the page form, or you can add the address again. Either sends a fresh confirmation, and confirming lifts the quarantine (a link sent before the bounce does not). Imports never mail a quarantined address, so re-importing does not help. A bounce quarantine is deleted after 90 days.
+- **Complaint.** Never lifted automatically, and the form, adding the address and imports all send nothing to it. Unsubscribing does not remove the address either, so it stays blocked. If the person asks to hear from you again, remove the address in the **Subscribers** tab. After that it can subscribe again, but only through a fresh confirmation.
+
+## The consent record
+
+Each subscriber keeps a record of how it came to be on your list, and the export includes it:
+
+- **Consent source** (`consent_source`): `public_form` (signed up on the page), `owner_add` (added by you) or `import`.
+- **When**: `subscribed_at` (when the address was submitted) and `confirmed_at` (when the person clicked the link).
+- **Consent version** (`consent_version`): the version of the confirmation wording the person agreed to, a date such as `2026-10-15`.
+- **Choices**: the kinds of update and components the person picked.
+
+No IP address is stored. Addresses that subscribed before consent records were kept have no source or version.
+
+## Remove an address
+
+When someone asks you to delete their data, remove them in the **Subscribers** tab or with `DELETE` (above). Removal works in any state, quarantined included, and nothing more is mailed to the address. Delivery records for mail to subscribers are kept 90 days at most, and are cleared within two days after the address is gone.
 
 ## Best practices
 
-- **Don't auto-subscribe customers.** Always require explicit opt-in. Site Qwality enforces double opt-in via the confirmation email.
+- **Don't auto-subscribe customers.** Always require explicit opt-in. Site Qwality enforces double opt-in with the confirmation email, for imports too.
+- **Set affected components.** Subscribers who follow one component only hear about incidents and maintenance that affect it, or that affect no component in particular.
 - **Send maintenance windows, not flapping checks.** Subscribers expect signal, not noise. Use [maintenance windows](/incident-management/maintenance/overview/) to suppress monitor-driven incidents during planned work; only manually-created incidents should reach subscribers.
 - **Keep messages short and actionable.** "We're investigating elevated 500 errors on the API. Affects: checkout. ETA: 30 minutes." is better than three paragraphs of context.
 
 ## Coming soon
 
 - SMS or webhook subscribers.
-- Per-component subscriptions.
-- Bulk import.
 
 ## See also
 
+<LinkCard title="Status page reference" description="Subscriber fields, states, import results, limits and retention." href="/status-pages/reference/#subscribers" />
 <LinkCard title="Status page quickstart" description="Get your status page set up before subscribers can find it." href="/status-pages/quickstart/" />
 <LinkCard title="Custom domain" description="Subscribe widgets feel more legitimate on your own domain." href="/status-pages/how-to/custom-domain/" />

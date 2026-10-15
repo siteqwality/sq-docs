@@ -1,6 +1,6 @@
 ---
 title: Status page reference
-description: Every field on status pages, components, branding, custom domains, and scheduled maintenance.
+description: Every field on status pages, components, branding, custom domains, scheduled maintenance, and subscribers.
 last_verified: 2026-10-15
 owner: jj
 ---
@@ -156,7 +156,7 @@ Customer-facing planned-downtime entries under `/status_page/{status_page_id}/ma
 | `affected_http_job_ids` | uuid[] | create + update | Which components the maintenance covers. |
 | `status` | enum | update only | `scheduled`, `in_progress`, or `completed`. New entries start as `scheduled`. |
 
-The page shows a `scheduled` entry as in progress once `scheduled_start_at` passes, and drops it after `scheduled_end_at`, so you do not have to move it by hand. Setting `in_progress` starts it early, and `completed` ends it early. Moving the window while sending the status back unchanged gives it the status the new window implies, and subscribers hear about the new start and end. Leave `affected_http_job_ids` empty to cover the whole page. Creating a maintenance emails the page's confirmed subscribers, and so do its start and end. See [Publish a status page maintenance](/status-pages/how-to/publish-maintenance/).
+The page shows a `scheduled` entry as in progress once `scheduled_start_at` passes, and drops it after `scheduled_end_at`, so you do not have to move it by hand. Setting `in_progress` starts it early, and `completed` ends it early. Moving the window while sending the status back unchanged gives it the status the new window implies, and subscribers hear about the new start and end. Leave `affected_http_job_ids` empty to cover the whole page. Creating a maintenance emails the confirmed subscribers who take maintenance notices for the components it covers (everyone who takes them, when it covers the whole page), and so do its start and end. See [Publish a status page maintenance](/status-pages/how-to/publish-maintenance/).
 
 ## Incidents on a page
 
@@ -164,23 +164,108 @@ Incidents published to a page (via `status_page_id` at creation, or `POST /incid
 
 ## Subscribers
 
-The people who signed up for email about a page. A page holds at most 1000 (confirmed and pending together); beyond that the public form and `POST` below answer `409`.
+The people who signed up for email about a page. Subscriptions are email only. A page holds at most 1000; `confirmed`, `pending` and `queued` addresses count, `expired` and `quarantined` ones do not. Beyond that the public form and `POST` below answer `409`. For the walkthrough, see [Manage subscribers](/status-pages/how-to/subscribers/).
 
 | Field | Type | Description |
 |---|---|---|
 | `id` | uuid | Subscriber id, used to remove one. |
 | `email` | string | Lower-cased address. |
-| `state` | enum | `confirmed` gets notices. `pending` has not clicked the link yet. `expired` never did and the link lapsed; a daily job removes it a week later. |
+| `state` | enum | `confirmed`, `pending`, `queued`, `expired` or `quarantined` (below). |
 | `subscribed_at` | rfc3339 | When the address was first submitted. |
-| `confirmed_at` | rfc3339 | Absent until confirmed. |
+| `confirmed_at` | rfc3339 | When the person confirmed. Absent until then. |
+| `component_ids` | uuid[] | The page's checks the subscriber follows. Empty means every component. |
+| `kinds` | string[] | `incident`, `maintenance`, or both. Empty means both. |
+| `consent_source` | enum | How the address came in: `public_form` (signed up on the page), `owner_add` (added by the owner) or `import`. |
+| `consent_version` | string | Version of the confirmation wording the person agreed to, a date such as `2026-10-15`. |
+| `quarantined_at` | rfc3339 | When the address was quarantined. |
+| `quarantine_reason` | enum | `bounce` (a permanent bounce) or `complaint` (a spam complaint). |
 
-`GET /status_page/{id}/subscriber` returns one page, newest first, as `{"data": [...], "total": N, "counts": {"confirmed", "pending", "expired"}, "capacity": 1000}`. `total` is the number matching your filters; `counts` always covers the whole list. Filters: `state`, `q` (part of an address, ignoring case), `limit` (default 50, at most 200) and `offset`.
+Optional fields (`confirmed_at`, `consent_source`, `consent_version`, `quarantined_at`, `quarantine_reason`) are left out when unset. Addresses that subscribed before consent records were kept have no `consent_source` or `consent_version`. No IP address is stored.
 
-`POST /status_page/{id}/subscriber` with `{"email": "you@example.com"}` sends that address a confirmation link. It joins the list as `pending` and receives nothing until the person clicks. The answer is `{"email": "...", "result": "confirmation_sent"}`, or `"nothing_to_send"` when the address already subscribed or a link went out in the last hour. It returns `400` for anything but a plain address, `409` for a full page and `429` after 30 confirmation emails to the page in an hour.
+Subscribers change their choices or unsubscribe on `https://statuspageapi.siteqwality.com/subscribe/preferences?token=...`, a page linked from every notice email (**Manage preferences**) and from the page shown after confirming.
 
-`GET /status_page/{id}/subscriber/export` downloads the whole list as CSV (`email,state,subscribed_at,confirmed_at`), or JSON with `?format=json`. It takes the same `state` and `q` filters.
+### Notice matching
 
-`DELETE /status_page/{id}/subscriber/{subscriber_id}` removes one address, for an erasure request or a mistake. Nothing more is mailed to it, and `404` means no such subscriber on that page.
+A notice goes only to `confirmed` subscribers whose `kinds` are empty or include that kind, and whose `component_ids` are empty or include at least one component the incident or maintenance affects. Incident notices are opened, updated and resolved; maintenance notices are scheduled, started and completed. An incident or maintenance with no affected components goes to everyone who takes that kind. Notices are queued when the incident, update or maintenance is posted and sent in the background in batches of 100. Each subscriber gets each notice once, and a failed send is tried up to 3 times.
+
+### States
+
+| State | Meaning | Gets notices | Counts toward 1000 |
+|---|---|---|---|
+| `confirmed` | Clicked the confirmation link. | Yes | Yes |
+| `pending` | Sent a confirmation link (valid 48 hours), not clicked yet. | No | Yes |
+| `queued` | Added by an import, waiting for its confirmation email. | No | Yes |
+| `expired` | Never confirmed and the link lapsed. Deleted 7 days after the link expired. | No | No |
+| `quarantined` | A permanent bounce or a spam complaint on any mail to the address. Gets no notices and no queued confirmations. | No | No |
+
+`quarantined` takes precedence over the other states and applies to the address on every page it is subscribed to. After a bounce, subscribing again through the page form or adding the address again sends a fresh confirmation, and confirming lifts the quarantine. A link sent before the bounce does not. After a complaint, the form, `POST` and import send nothing to it; only removing the address and a fresh confirmation bring it back.
+
+### List
+
+`GET /status_page/{id}/subscriber` returns one page, newest first, as `{"data": [...], "total": N, "counts": {"confirmed", "pending", "queued", "expired", "quarantined"}, "capacity": 1000}`. `total` is the number matching your filters; `counts` always covers the whole list. Filters: `state` (one of the five states), `q` (part of an address, ignoring case), `limit` (default 50, at most 200) and `offset`.
+
+### Add one
+
+`POST /status_page/{id}/subscriber` with `{"email": "you@example.com"}` sends that address a confirmation link. It joins the list as `pending` and receives nothing until the person clicks. Optional `component_ids` and `kinds` preselect what the person gets; leave both out for everything. Once an address is confirmed, only the subscriber's preferences page changes its choices.
+
+The answer is `{"email": "...", "result": "..."}` with one of:
+
+| `result` | Meaning |
+|---|---|
+| `confirmation_sent` | A confirmation link went out. |
+| `nothing_to_send` | The address is already subscribed, or a link went out to it in the last hour. |
+| `quarantined` | A spam complaint quarantined the address, so nothing was sent. |
+
+It returns `400` for an invalid request (not a plain address, or a component the page does not show), `409` for a full page and `429` when the page (30) or Site Qwality as a whole (300) has reached its hourly confirmation limit.
+
+### Import
+
+`POST /status_page/{id}/subscriber/import` with `{"csv": "<file contents>"}`. Every new address gets a confirmation email; there is no way to import confirmed subscribers. A header row with a column named `email`, `e-mail`, `email address` or `e-mail address` (in any case) picks that column; without one, the first cell in each row that contains `@` is the address. Blank lines are ignored. The CSV from the export below can be imported back. A file with no rows or more than 1000 data rows returns `400`.
+
+The answer is `{"rows": [{"row", "email", "result"}], "counts": {...}, "sends_per_hour": N}`. `row` is the 1-based record number in the file, header included. `counts` has the number of rows for each result, and `sends_per_hour` is the page's import sending rate.
+
+| `result` | Meaning |
+|---|---|
+| `confirmation_sent` | A confirmation email went out during the import. |
+| `queued` | Joined as `queued`; the confirmation goes out when the hourly limits allow, oldest first. |
+| `already_subscribed` | Already confirmed on the page. Nothing changed. |
+| `already_pending` | Already waiting to confirm. Nothing new was sent. |
+| `quarantined` | The address is quarantined. Imports never mail a quarantined address. |
+| `invalid` | Not a plain email address. |
+| `duplicate` | Appears earlier in the same file. |
+| `page_full` | The page reached 1000 subscribers before this row. |
+
+### Export
+
+`GET /status_page/{id}/subscriber/export` downloads the whole list as CSV, or JSON with `?format=json`. It takes the same `state` and `q` filters. The CSV columns are `email`, `state`, `subscribed_at`, `confirmed_at`, `consent_source`, `consent_version`, `quarantined_at`, `quarantine_reason`, `component_ids` and `kinds`; `component_ids` and `kinds` are space-separated lists.
+
+### Remove
+
+`DELETE /status_page/{id}/subscriber/{subscriber_id}` removes one address in any state, quarantined included, for an erasure request or a mistake. Nothing more is mailed to it, and `404` means no such subscriber on that page.
+
+### Limits
+
+| Limit | Value |
+|---|---|
+| Subscribers per page | 1000 (`confirmed`, `pending` and `queued` count) |
+| Data rows per import | 1000 |
+| Confirmation link | Valid for 48 hours |
+| Confirmation emails per page | 30 per hour, of which imports use at most 25 |
+| Confirmation emails across Site Qwality | 300 per hour, of which imports use at most 250 |
+| Import confirmations per account | 100 per hour across all of the account's pages |
+| Notice sending | Batches of 100, up to 3 attempts per subscriber |
+
+The first import confirmations go out during the import; the rest stay `queued` and are sent automatically, oldest first, as room frees up. When several accounts have addresses queued, they take turns. The 5 confirmations an hour that imports cannot use stay free for the public form.
+
+### Retention
+
+| Data | Kept |
+|---|---|
+| `expired` subscriber | Deleted 7 days after its link expired. |
+| `quarantined` after a bounce | Deleted after 90 days. |
+| `quarantined` after a complaint | Until you remove it, even if the address unsubscribes. |
+| `confirmed` subscriber | Until it unsubscribes or you remove it. |
+| Delivery records of subscriber mail | 90 days at most, and cleared within two days after the address is removed. |
 
 ## Endpoints
 
@@ -199,8 +284,9 @@ The people who signed up for email about a page. A page holds at most 1000 (conf
 | `GET` | `/status_page/{id}/browser_check` | List attached browser checks. |
 | `POST` / `PUT` / `DELETE` | `/status_page/{id}/browser_check/{browser_check_id}` | Attach / update / detach a browser check. |
 | `GET` / `POST` | `/status_page/{id}/subscriber` | List / add (by confirmation email) subscribers. |
+| `POST` | `/status_page/{id}/subscriber/import` | Import a CSV of addresses (each gets a confirmation email). |
 | `GET` | `/status_page/{id}/subscriber/export` | Download subscribers as CSV or JSON. |
-| `DELETE` | `/status_page/{id}/subscriber/{subscriber_id}` | Remove a subscriber. |
+| `DELETE` | `/status_page/{id}/subscriber/{subscriber_id}` | Remove a subscriber in any state. |
 | `POST` / `GET` | `/status_page/{id}/incident` | Create / list page incidents. |
 | `POST` / `GET` | `/status_page/{id}/maintenance` | Create / list scheduled maintenance. |
 | `PUT` / `DELETE` | `/status_page/{id}/maintenance/{maintenance_id}` | Update / delete maintenance. |
@@ -219,7 +305,7 @@ The status page front-end reads a public, unauthenticated JSON API. You can use 
 | `GET` | `/status-page/{account_id}/{status_page_id}/live` | A fresh status for each HTTP check, for polling. The page calls it every 60 seconds. Heartbeats and manual components are not in it; read them from the page itself. |
 | `GET` | `/status-page/{account_id}/{status_page_id}/incidents/{incident_id}` | One incident on the page, however old, in the `active_incidents` shape. 404 when the incident is not on the page. |
 | `GET` | `/status-page/{account_id}/{status_page_id}/history` | Every incident on the page, newest first, a page at a time: `{"incidents": [...], "next_before": "..."}`. `?limit=` sets the page size (default 20, at most 50). Pass `next_before` back as `?before=` (an RFC 3339 time) for the next, older page; it is absent on the last one. |
-| `POST` | `/status-page/{account_id}/{status_page_id}/subscribe` | Starts an email subscription with `{"email": "you@example.com"}`. The address gets a confirmation link and receives nothing until it confirms. Returns 400 for an invalid address, 404 for an unknown page, 409 when the page already holds 1000 subscribers and 429 when rate limited. |
+| `POST` | `/status-page/{account_id}/{status_page_id}/subscribe` | Starts an email subscription with `{"email": "you@example.com"}`, plus optional `component_ids` and `kinds` (as in [Subscribers](#subscribers)); leave both out for everything. The address gets a confirmation link and receives nothing until it confirms. A confirmed address's choices do not change here. Returns 400 for an invalid address, or with `Unknown component` for an id the page does not show, 404 for an unknown page, 409 when the page already holds 1000 subscribers and 429 when rate limited. |
 
 Both ids are in the page's address: `https://statuspage.siteqwality.com/<account-id>/<page-id>`. An unknown page returns 404.
 
