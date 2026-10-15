@@ -20,7 +20,22 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 
 Branding, components, incidents, maintenance, and the custom domain are all nested resources (below).
 
-## Components (attached monitors)
+## Components
+
+A page shows four kinds of component:
+
+| Kind | Layout `kind` | Status comes from | Uptime bars |
+|---|---|---|---|
+| HTTP check | `http_job` | The monitor. | Yes, unless `show_uptime` is `false`. |
+| Browser check | `browser_check` | The monitor. | No. |
+| Heartbeat | `cron_job` | A heartbeat monitor: up while its pings arrive on time, down once one is missed. | No. |
+| Manual | `manual` | You. There is no monitor behind it. | No. |
+
+A page shows at most 100 components, all four kinds together. Adding a 101st returns `400` with `A status page can show at most 100 components`. Sending the attach again for a monitor already on the page still works and just updates its `friendly_name`.
+
+Group, order, describe and hide every kind in the dashboard's **Layout** tab or with `PUT /status_page/{id}/layout`, which saves the whole layout at once. See [Group and order status page components](/status-pages/how-to/organize-components/).
+
+### HTTP and browser checks
 
 Attach an HTTP check with `POST /status_page/{status_page_id}/http_job/{http_job_id}` or a browser check with `POST /status_page/{status_page_id}/browser_check/{browser_check_id}`.
 
@@ -29,11 +44,43 @@ Attach an HTTP check with `POST /status_page/{status_page_id}/http_job/{http_job
 | `friendly_name` | string | create + update | Public-facing name shown on the page (independent of the monitor's internal name). |
 | `sla_target_percentage` | number \| null | update only | SLA target shown next to the component, e.g. `99.9`. Send `null` to clear. |
 
-The component's live status is the underlying monitor's status; there is no separate status field to set.
+### Heartbeats
 
-Group, order, describe and hide components in the dashboard's **Layout** tab or with `PUT /status_page/{id}/layout`, which saves the whole layout at once. See [Group and order status page components](/status-pages/how-to/organize-components/).
+Show a heartbeat monitor with `POST /status_page/{status_page_id}/cron_job/{cron_job_id}` and `{"friendly_name": "Nightly backup"}` (required, at most 256 characters). Posting it again renames it, and so does `PUT` on the same path. `DELETE` takes it off the page and leaves the heartbeat monitor running; it answers `200` whether or not it was on the page. A heartbeat monitor that is not in your account returns `404`. Deleting the heartbeat monitor removes it from every page.
 
-A page shows at most 100 monitors, HTTP and browser checks together. Attaching a 101st returns `400` with `A status page can show at most 100 monitors`. Sending the attach again for a monitor already on the page still works and just updates its `friendly_name`.
+The heartbeat shows `operational` while pings arrive on time and `down` once one is missed. A paused heartbeat monitor shows `paused`, one that has never been checked or whose checks stopped shows `unknown`, and a maintenance covering the whole page shows `maintenance`.
+
+### Manual components
+
+A component with no monitor, for something you cannot check from outside (a support desk, a supplier, an internal process). You set its status.
+
+`POST /status_page/{status_page_id}/component` creates one and answers `201` with the component as the layout shows it. It goes last in its group.
+
+| Field | Type | On | Description |
+|---|---|---|---|
+| `friendly_name` | string | create + update | Required on create, at most 256 characters. |
+| `description` | string \| null | create + update | One line under the name, at most 200 characters. Send `null` to clear. |
+| `status` | enum | create + update | `operational` (the default), `degraded`, `down` or `maintenance`. |
+| `group_id` | uuid \| null | create only | A group on this page. Leave it out for the ungrouped list. |
+| `hidden` | bool | create only | `true` keeps it off the public page for now. Change it later in the layout. |
+
+`PATCH /status_page/{status_page_id}/component/{component_id}` changes any of `friendly_name`, `description` and `status`; fields you leave out stay as they are. `DELETE` on the same path removes it and answers `204`. Both return `404` for an id that is not a manual component on this page.
+
+### Status override
+
+Force what the page shows for any component, whatever its monitor says: for example `degraded` while a supplier you depend on is slow, or `operational` while a monitor is misreading.
+
+`PUT /status_page/{status_page_id}/component/{component_id}/override`, where `component_id` is the component's `id` in the layout (the HTTP check, browser check or heartbeat monitor id, or the manual component's own id):
+
+| Field | Type | Description |
+|---|---|---|
+| `status` | enum | `operational`, `degraded`, `down` or `maintenance`. Required. |
+| `note` | string \| null | Shown next to the status on the public page, at most 500 characters, one line. |
+| `expires_at` | rfc3339 \| null | When the override lapses on its own. Must be in the future. Leave it out to keep it until you clear it. |
+
+It answers with the component, including its `status_override`. Setting it again replaces it. `DELETE` on the same path clears it and answers `204`, also when there was none. Both return `404` for a component that is not on this page.
+
+An override wins over the monitor, a pause and any maintenance, and it counts toward the page headline: a component forced to `down` can turn the headline into an outage, and `maintenance` turns it into `under_maintenance`. The public page shows the change within a minute, and again when the override expires.
 
 ## Branding
 
@@ -123,6 +170,11 @@ The people who signed up for email about a page. A page holds at most 1000 (conf
 | `POST` / `GET` | `/status_page` | Create / list pages. |
 | `PUT` / `DELETE` | `/status_page/{status_page_id}` | Rename / delete a page. |
 | `GET` / `PUT` | `/status_page/{id}/layout` | Read / replace the groups, order and per-component settings. |
+| `POST` | `/status_page/{id}/component` | Create a manual component. |
+| `PATCH` / `DELETE` | `/status_page/{id}/component/{component_id}` | Update / delete a manual component. |
+| `PUT` / `DELETE` | `/status_page/{id}/component/{component_id}/override` | Set / clear a status override on any component. |
+| `GET` | `/status_page/{id}/cron_job` | List the page's heartbeats. |
+| `POST` / `PUT` / `DELETE` | `/status_page/{id}/cron_job/{cron_job_id}` | Attach / rename / detach a heartbeat. |
 | `GET` | `/status_page/{id}/http_job` | List attached HTTP checks. |
 | `POST` / `PUT` / `DELETE` | `/status_page/{id}/http_job/{http_job_id}` | Attach / update / detach an HTTP check. |
 | `GET` | `/status_page/{id}/browser_check` | List attached browser checks. |
@@ -145,7 +197,7 @@ The status page front-end reads a public, unauthenticated JSON API. You can use 
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/status-page/{account_id}/{status_page_id}` | The whole page: headline, components, incidents, maintenance, branding. Optional `?limit=` sets how many days of `performance_data` come back for each HTTP check (default 45, at most 100); the status page asks for 90. |
-| `GET` | `/status-page/{account_id}/{status_page_id}/live` | A fresh status for each HTTP check, for polling. The page calls it every 60 seconds. |
+| `GET` | `/status-page/{account_id}/{status_page_id}/live` | A fresh status for each HTTP check, for polling. The page calls it every 60 seconds. Heartbeats and manual components are not in it; read them from the page itself. |
 | `GET` | `/status-page/{account_id}/{status_page_id}/incidents/{incident_id}` | One incident on the page, however old, in the `active_incidents` shape. 404 when the incident is not on the page. |
 | `GET` | `/status-page/{account_id}/{status_page_id}/history` | Every incident on the page, newest first, a page at a time: `{"incidents": [...], "next_before": "..."}`. `?limit=` sets the page size (default 20, at most 50). Pass `next_before` back as `?before=` (an RFC 3339 time) for the next, older page; it is absent on the last one. |
 | `POST` | `/status-page/{account_id}/{status_page_id}/subscribe` | Starts an email subscription with `{"email": "you@example.com"}`. The address gets a confirmation link and receives nothing until it confirms. Returns 400 for an invalid address, 404 for an unknown page, 409 when the page already holds 1000 subscribers and 429 when rate limited. |
@@ -156,17 +208,18 @@ The page response has these fields:
 
 | Field | Type | Description |
 |---|---|---|
-| `global_status` | enum | The headline: `operational`, `unknown`, `degraded_performance`, `partial_outage`, `major_outage` or `under_maintenance`. `unknown` means no monitor has a current reading. |
+| `global_status` | enum | The headline: `operational`, `unknown`, `degraded_performance`, `partial_outage`, `major_outage` or `under_maintenance`. `unknown` means no component has a current reading. Every visible component counts, with any status override applied. |
 | `groups[]` | array | Section headings in page order: `id`, `name`, `description`. A group with nothing to show is left out. |
 | `http_jobs[]` | array | One entry per HTTP check: `http_job_id`, `friendly_name`, `sla_target_percentage` (or `null`), `current_status`, `group_id` (`null` for ungrouped), `description`, `show_uptime`, `order` (rank among the page's components, compare within one group), and `performance_data[]` (empty when `show_uptime` is `false`) with one row for every UTC day of the window, oldest first (`day`, `uptime_percentage`, `avg_response_time_ms`, `p50_response_time_ms`, `p95_response_time_ms`, `p99_response_time_ms`). A day with no checks has `null` for every figure. |
 | `browser_checks[]` | array | One entry per browser check: `browser_check_id`, `friendly_name`, `sla_target_percentage`, `current_status`, and the same `group_id`, `description`, `show_uptime` and `order`. No daily data. |
+| `components[]` | array | Heartbeats and manual components: `id`, `kind` (`heartbeat` or `manual`), `friendly_name`, `current_status`, `status_note`, `group_id`, `description` and `order`. No daily data. |
 | `active_incidents[]` | array | Open incidents with their `updates[]`. |
 | `upcoming_maintenances[]` | array | Maintenance that is scheduled or in progress: `id`, `title`, `body`, `status`, `scheduled_start_at`, `scheduled_end_at`, `affected_http_job_ids`. |
 | `incident_history[]` | array | The latest 30 incidents, same shape as `active_incidents`, with `resolved_at` once closed. Older ones come from `/history`. |
 | `branding` | object \| null | Title, theme, logo, colors, header and footer text, and so on. `null` when none is saved. |
 | `page_url` | string | The page's public address: `https://<your-domain>` when a custom domain is live, otherwise `https://statuspage.siteqwality.com/<account-id>/<page-id>`. Incidents are at `<page_url>/incidents/<incident-id>` and the full history at `<page_url>/history`. |
 
-`current_status` is one of `operational`, `degraded` (failing, not yet confirmed down), `down`, `paused`, `maintenance` or `unknown`. The `/live` response is a list with `http_job_id`, `status` (the same values), `success`, `response_time_ms` and `checked_at` for each HTTP check.
+`current_status` is one of `operational`, `degraded` (failing, not yet confirmed down), `down`, `paused`, `maintenance` or `unknown`. With a status override in force it is the override's status, and every entry in `http_jobs`, `browser_checks` and `components` carries the override's note as `status_note` (`null` otherwise). The `/live` response is a list with `http_job_id`, `status` (the same values), `status_note`, `success`, `response_time_ms` and `checked_at` for each HTTP check.
 
 ## Published files
 

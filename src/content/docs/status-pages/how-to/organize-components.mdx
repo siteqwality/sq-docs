@@ -1,7 +1,7 @@
 ---
 title: Group and order status page components
-description: Put a status page's components into named groups, set their order, add a one-line description, hide one, or show its status without uptime bars.
-last_verified: 2026-10-14
+description: Add heartbeats and manual components to a status page, group and order every component, describe or hide one, and set its status by hand with a note.
+last_verified: 2026-10-15
 owner: jj
 ---
 
@@ -9,7 +9,61 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 
 A status page lists its components in one flat list by default. With a **layout** you can split the list into named groups (for example `Public API`, `Dashboard`, `Third-party`), choose the order, add a line of explanation under a name, hide a component without detaching it, or show a component's status without the uptime history.
 
-In the dashboard, open the status page and use the **Layout** tab: add and rename groups, move components with the arrows, the group menu or drag and drop, then **Save**. The rest of this page does the same through the API.
+Besides HTTP and browser checks, a page can show a **heartbeat** (one of your heartbeat monitors, up while its pings arrive) and a **manual component** (no monitor behind it; you set its status). Any component can also carry a **status override**: a status you set by hand, with an optional note for visitors and an optional end time.
+
+In the dashboard, open the status page and use the **Layout** tab: **Add component** and **Add heartbeat** add the new kinds, each row's menu sets or clears its status override, and you add and rename groups and move components with the arrows, the group menu or drag and drop, then **Save**. New components, heartbeats and overrides go live at once; the layout waits for **Save**. The rest of this page does the same through the API.
+
+## Add a heartbeat
+
+```bash
+curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/cron_job/$CRON_JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "friendly_name": "Nightly backup" }'
+```
+
+The page shows it as operational while its pings arrive on time and down once one is missed, with no uptime bars. `DELETE` on the same path takes it off the page; the heartbeat monitor keeps running.
+
+## Add a manual component
+
+```bash
+curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/component \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "friendly_name": "Support desk", "status": "operational" }'
+```
+
+The response is the new component; keep its `id`. Change its status when things change:
+
+```bash
+curl -X PATCH https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/component/$COMPONENT_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "status": "degraded" }'
+```
+
+The status is `operational`, `degraded`, `down` or `maintenance`, and it stays until you change it.
+
+## Set a status by hand
+
+An override puts a status, and a note if you want one, on any component until you clear it or until the time you give:
+
+```bash
+curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/component/$COMPONENT_ID/override \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "degraded",
+    "note": "Our card processor is slow. Payments still go through.",
+    "expires_at": "2026-10-16T09:00:00Z"
+  }'
+```
+
+`$COMPONENT_ID` is the component's `id` from the layout. Clear the override with `DELETE` on the same path. The page shows the note next to the status, the headline counts the override, and it lapses on its own at `expires_at`.
+
+<Aside type="caution">
+An override wins over what the monitor says, a pause and any maintenance. Forcing `operational` on a component that is really down hides the outage from visitors, and from the headline.
+</Aside>
 
 ## Read the current layout
 
@@ -18,7 +72,7 @@ curl https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/layout \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-The response has `ungrouped` (shown first, with no heading) and `groups`, each with its `components` in page order. Every component has `monitor_id`, `kind` (`http_job` or `browser_check`), `friendly_name`, `description`, `hidden` and `show_uptime`. Hidden components are included here so you can show them again.
+The response has `ungrouped` (shown first, with no heading) and `groups`, each with its `components` in page order. Every component has `id`, `kind` (`http_job`, `browser_check`, `cron_job` for a heartbeat or `manual`), `friendly_name`, `description`, `hidden`, `show_uptime`, `status` (a manual component's status, `null` for the other kinds) and `status_override` (`status`, `note`, `expires_at` and `set_at`, or `null`). Hidden components are included here so you can show them again. `monitor_id` repeats `id` for older clients.
 
 ## Save a layout
 
@@ -30,15 +84,16 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/layout \
   -H "Content-Type: application/json" \
   -d '{
     "ungrouped": [
-      { "monitor_id": "<http-job-id>" }
+      { "id": "<http-job-id>" }
     ],
     "groups": [
       {
         "name": "Public API",
         "description": "Everything customers integrate with.",
         "components": [
-          { "monitor_id": "<http-job-id>", "description": "REST API, all regions" },
-          { "monitor_id": "<browser-check-id>", "show_uptime": false }
+          { "id": "<http-job-id>", "description": "REST API, all regions" },
+          { "id": "<browser-check-id>", "show_uptime": false },
+          { "id": "<manual-component-id>" }
         ]
       }
     ]
@@ -50,10 +105,10 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/layout \
 | `groups[].id` | group | Send the id from a previous read to keep and rename or reorder a group. Leave it out to create one. |
 | `groups[].name` | group | Required, at most 100 characters. |
 | `groups[].description` | group | Optional, at most 500 characters. |
-| `monitor_id` | component | A monitor already attached to this page. |
+| `id` | component | A component already on this page: its `id` from the layout. `monitor_id` is accepted too. |
 | `description` | component | Optional one line under the name, at most 200 characters. |
 | `hidden` | component | `true` leaves the component off the public page and out of the headline. Default `false`. |
-| `show_uptime` | component | `false` shows the status only, with no uptime bars, percentage or SLA badge. Default `true`. Browser checks never show uptime bars, so it changes nothing for them. |
+| `show_uptime` | component | `false` shows the status only, with no uptime bars, percentage or SLA badge. Default `true`. Browser checks, heartbeats and manual components never show uptime bars, so it changes nothing for them. |
 
 Order is the order of the arrays, and a page holds at most 50 groups. The response is the saved layout.
 
@@ -61,17 +116,17 @@ What the request does with what it leaves out:
 
 - A **group** you do not list is deleted. Its components move to the end of the ungrouped list.
 - A **component** you do not list moves to the end of the ungrouped list. It keeps its description, `hidden` and `show_uptime`.
-- A monitor that is not on the page, a group that is not on the page, or a monitor listed twice returns `400` and changes nothing.
+- A component that is not on the page, a group that is not on the page, or a component listed twice returns `400` and changes nothing.
 
 <Aside type="caution">
 A hidden component is not counted in the page headline. If it is down and hidden, the page can read **Operational**. Incidents and maintenance you post still show.
 </Aside>
 
-A monitor you attach later appears at the end of the ungrouped list until you move it.
+A component you add later appears at the end of the ungrouped list (or the group you chose for a manual component) until you move it. A page shows at most 100 components of all kinds together.
 
 ## What visitors see
 
-Ungrouped components come first, then each group in order with its name as the heading. A group whose components are all hidden does not appear. A page with no layout looks as it always did, except that HTTP and browser checks now sort together by name.
+Ungrouped components come first, then each group in order with its name as the heading. A group whose components are all hidden does not appear. A page with no layout looks as it always did, except that every kind now sorts together by name. Heartbeats and manual components show their status with no uptime bars, and a component with an override shows its note under the name.
 
 The [public API](/status-pages/reference/#public-status-page-api) carries the same information, so a page of your own can use it.
 

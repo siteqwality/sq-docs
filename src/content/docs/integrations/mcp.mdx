@@ -253,6 +253,9 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 | `create_incident` | Opens an incident, optionally on a status page. | Write |
 | `post_incident_update` | Adds a timeline update to an incident. It does not email status page subscribers or change the incident's status. | Write |
 | `list_status_pages` | Lists your status pages. | Read |
+| `list_status_page_components` | Lists a status page's components in page order, with any status set by hand. | Read |
+| `set_status_page_component_status` | Sets what a status page shows for one component, with an optional note and end time. | Write |
+| `clear_status_page_component_status` | Clears that status, so the page follows the monitor again. | Write |
 | `search_logs` | Searches your logs. | Read |
 | `list_metric_names`, `query_metrics` | Lists your metrics, or queries one. | Read |
 | `search_traces`, `get_trace` | Searches your traces, or shows one trace's spans. | Read |

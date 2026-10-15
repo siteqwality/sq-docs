@@ -52,7 +52,7 @@ curl -s https://statuspagecdn.siteqwality.com/v1/pages/$ACCOUNT_ID/$PAGE_ID/summ
 | `page` | `id`, `name` (the page title) and `url` (the page's public address, its custom domain when one is live). |
 | `status` | `indicator` is the headline: `operational`, `unknown`, `degraded_performance`, `partial_outage`, `major_outage` or `under_maintenance`. `description` is the wording the page shows. |
 | `groups[]` | Section headings in page order: `id`, `name`, `description`. |
-| `components[]` | In page order: `id`, `name`, `kind` (`http` or `browser`), `status` (`operational`, `degraded`, `down`, `paused`, `maintenance` or `unknown`) and `group_id`. Hidden components are left out. |
+| `components[]` | In page order: `id`, `name`, `kind` (`http`, `browser`, `heartbeat` or `manual`), `status` (`operational`, `degraded`, `down`, `paused`, `maintenance` or `unknown`), `status_note` (the note on a status you set by hand, or `null`) and `group_id`. Hidden components are left out. |
 | `active_incidents[]` | `id`, `title`, `status`, `severity`, `created_at`, `updated_at` (the newest update), `latest_update` (its text) and `url`. |
 | `maintenances[]` | Scheduled and in-progress maintenance: `id`, `title`, `status`, `scheduled_start_at`, `scheduled_end_at`. |
 
