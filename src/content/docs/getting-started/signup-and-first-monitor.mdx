@@ -1,7 +1,7 @@
 ---
 title: Sign up and your first monitor
 description: From zero account to a working HTTP check that pages your phone, in under five minutes.
-last_verified: 2026-10-11
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -11,7 +11,7 @@ By the end of this guide you will have:
 
 1. A Site Qwality account.
 2. An HTTP check running every 10 minutes against `https://mock.codes/200`.
-3. Confirmed an incident open and resolve cleanly, with an email landing in your inbox.
+3. Watched the check fail and recover, with a down and a recovery email landing in your inbox.
 
 Total time: about five minutes.
 
@@ -28,7 +28,7 @@ Total time: about five minutes.
 </Steps>
 
 <Aside type="tip" title="Notifications are already wired up">
-On signup, Site Qwality automatically creates a default notification group with your admin email as the destination. New monitors are attached to it by default, so you can skip notification setup for now and your first incident will email you. To customize (add Slack, change the email, route different monitors to different groups), see [Notifications](/incident-management/notifications/overview/).
+On signup, Site Qwality creates a notification group named **Default** with your sign-up email as the destination and a 3-minute delay. It is your account's default group, so new monitors are attached to it unless you choose otherwise, and you can skip notification setup for now. To customize (add Slack, change the email, route different monitors to different groups), see [who gets notified](/incident-management/notifications/default-routing/).
 </Aside>
 
 ## 2. Create the HTTP check
@@ -76,7 +76,7 @@ curl -X POST https://api.siteqwality.com/http/job \
 
 You'll get back a `201 Created` with the full job object. Save the `id`, since you'll use it to fetch results, update the check, or delete it later.
 
-Omitting `group_notification_ids` attaches the monitor to your account's auto-created default group, so the email lands in your inbox without further setup. To target a specific group, pass its UUID in `group_notification_ids` (`GET /notification_group/list` to enumerate).
+Omitting `group_notification_ids` attaches the monitor to your account's default notification group (the **Default** group created at signup), so the email lands in your inbox without further setup. To target a specific group, pass its UUID in `group_notification_ids` (`GET /notification_group` lists them). An explicit `[]` creates a monitor that notifies no one.
 
 </TabItem>
 </Tabs>
@@ -91,9 +91,9 @@ Omitting `group_notification_ids` attaches the monitor to your account's auto-cr
 
 3. Force a failure: edit the check, change the URL to `https://mock.codes/500`, save.
 
-4. On the next tick the monitor flips to **Failure**, an incident opens, and you should receive an email within ~30 seconds.
+4. On the next tick the monitor flips to **Failure**. The Default group waits 3 minutes, then emails you if the monitor is still down.
 
-5. Flip the URL back to `/200`. The monitor recovers, the incident auto-resolves, and you'll get a recovery email.
+5. Flip the URL back to `/200`. The monitor recovers, and you'll get a recovery email right away.
 
 </Steps>
 
@@ -105,11 +105,11 @@ If the email never arrives, check your spam folder and confirm the channel email
 
 - Your check ran on a schedule from the default check location, `aws-us-east-1` (Virginia, AWS). On a paid plan you can add more [check locations](/uptime-monitoring/overview/#check-locations) to the same monitor.
 - The result was compared against the assertions on the monitor (status code in the success list, no body keyword search).
-- A change in monitor status (success → failure) opened an **incident** automatically.
-- The incident's `notification group` was looked up, fanned out to its `notification channels`, and each channel rendered the alert in its own format.
-- When the URL recovered, the same path ran in reverse, marking the incident resolved and sending a recovery message.
+- A change in monitor status (success → failure) sent a down alert to the monitor's **notification group**, which fanned out to its channels after the group's 3-minute delay. Each channel renders the alert in its own format.
+- When the URL recovered, the group sent a recovery message at once.
+- No incident opened: monitor alerts go straight to notification groups. Incidents open when you link a monitor to a service that creates incidents automatically, or when you open one by hand.
 
-You can wire this up much further: on-call schedules pick *who* gets the page, escalation policies decide what to do if no one acknowledges, and a status page can publish the incident publicly. All of that is in [Incident Management](/incident-management/overview/).
+You can wire this up much further: link the monitor to a service so a failure opens an incident, then on-call schedules pick *who* gets the page, escalation policies decide what to do if no one acknowledges, and a status page can publish the incident publicly. All of that is in [Incident Management](/incident-management/overview/).
 
 ## What's next
 

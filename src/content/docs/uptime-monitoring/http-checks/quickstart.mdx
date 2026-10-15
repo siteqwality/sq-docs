@@ -1,7 +1,7 @@
 ---
 title: HTTP check quickstart
 description: Create your first HTTP check via the dashboard or the API in under 5 minutes.
-last_verified: 2026-05-03
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -60,7 +60,6 @@ The check runs immediately and shows up in your monitors list. The first result 
        "uri": "https://mock.codes/200",
        "timeout_ms": 15000,
        "run_interval_seconds": 600,
-       "group_notification_ids": [],
        "monitor_tls": false,
        "monitor_dns": false
      }'
@@ -70,9 +69,9 @@ The check runs immediately and shows up in your monitors list. The first result 
 
    The API returns a `201 Created` with the full HTTP-job object including its `id`. Save the `id`. You'll use it to fetch results, update settings, or delete the check later.
 
-3. **(Optional) Attach a notification group.**
+3. **(Optional) Choose notification groups.**
 
-   If you already have a notification group, pass its UUID in `group_notification_ids` at create time. Otherwise add it later with `PUT /http/job/{job_id}`.
+   With `group_notification_ids` omitted, the monitor is attached to your account's [default group](/incident-management/notifications/default-routing/#the-default-notification-group). To use other groups, pass their UUIDs at create time or later with `PUT /http/job/{job_id}`. An explicit `[]` creates a monitor that notifies no one.
 
 </Steps>
 

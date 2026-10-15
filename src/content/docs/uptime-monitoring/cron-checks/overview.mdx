@@ -1,7 +1,7 @@
 ---
 title: Cron / heartbeat checks
 description: Receive HTTP pings from your scheduled jobs and alert when one is late or missed entirely.
-last_verified: 2026-08-01
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -45,7 +45,7 @@ Because the evaluation runs at the same cadence as the expected pings, a missed 
 |---|---|---|
 | `friendly_name` | optional | Display name. |
 | `check_interval_seconds` | required | Expected interval between pings, in seconds. Validated against AWS Scheduler rate expressions. |
-| `group_notification_ids` | `[]` | Notification groups to fire on state change. Cap of 10. |
+| `group_notification_ids` | default group | Notification groups to fire on state change. Cap of 10. Omitted on create, your account's [default group](/incident-management/notifications/default-routing/#the-default-notification-group) is attached; `[]` notifies no one. |
 | `state` | `active` | `active` or `paused`. Paused checks don't alert. |
 | `tags` | `[]` | For grouping and matching against [maintenance windows](/incident-management/maintenance/overview/). |
 

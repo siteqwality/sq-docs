@@ -1,7 +1,7 @@
 ---
 title: Require N failed checks before alerting
 description: Use confirmation_threshold to alert only after several consecutive failed checks, and understand how it composes with the location quorum and transport retries.
-last_verified: 2026-08-02
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -108,7 +108,7 @@ For a single-location monitor this is exactly "the last N checks all failed".
 Across several locations it is measured in scheduler ticks: N consecutive ticks whose quorum evaluation failed. Any tick at which the quorum was healthy resets the streak.
 
 <Aside type="tip">
-If the thing you actually want is "do not page me for a blip that clears within a minute", `delay_send_after_minutes` on the [notification group](/incident-management/notifications/overview/#notification-groups) is often the better tool: it delays the page but still opens the incident on the first failure. Use `confirmation_threshold` when you want the monitor to genuinely not consider itself down yet.
+If the thing you actually want is "do not alert me for a blip that clears within a minute", `delay_send_after_minutes` on the [notification group](/incident-management/notifications/overview/#notification-groups) is often the better tool: the group's down alert waits, then sends only if the monitor is still down. It holds back the group alert only; on a monitor linked to a service, the incident still opens on the first failure. Use `confirmation_threshold` when you want the monitor to genuinely not consider itself down yet.
 </Aside>
 
 ## What it does not cover

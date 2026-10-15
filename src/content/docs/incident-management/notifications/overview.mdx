@@ -1,7 +1,7 @@
 ---
 title: Notifications
 description: Channels, groups, contact methods, and rules. The four-layer system for routing alerts to the right person via the right tool.
-last_verified: 2026-08-02
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -53,7 +53,9 @@ A *notification group* is the bag of channels you attach to a monitor. Two extra
 | `delay_send_after_minutes` | Wait this long before sending the first down alert. Clamped 0–60. |
 | `resend_every_minutes` | While the monitor is still down, re-send the down alert every N minutes. Clamped 0–60. |
 
-Both apply to HTTP monitors and browser checks only. Heartbeat (cron), TLS, DNS, page-speed alerts and alert rules ignore them and send at once. New accounts get a Default group with a 3-minute delay.
+Both apply to down alerts from HTTP monitors and browser checks only. Heartbeat (cron), TLS expiry, domain expiry, DNS record and page-speed alerts, and alert rules, ignore them and send at once. Recovery alerts are not delayed.
+
+New accounts get a **Default** group: an email channel to the address you signed up with and a 3-minute delay, so an HTTP or browser down alert waits 3 minutes, then sends if the monitor is still down. The account's default group (`is_default`) is attached to new monitors that are created without groups. See [who gets notified](/incident-management/notifications/default-routing/).
 
 A monitor alert has no acknowledge, so a repeat stops only when the monitor recovers. When a repeat is set, the first down alert also waits for the first scheduled send.
 
@@ -65,21 +67,17 @@ Each user defines how they personally can be reached, in their personal settings
 
 | Type | Detail |
 |---|---|
-| `email` | An email address (auto-populated with sign-up address). |
-| `sms` | A phone number. |
+| `email` | An email address. New users get their sign-in email added for them, already verified. |
+| `sms` | A phone number in any country. It must be verified with a 6-digit code before a rule can use it. |
 | `slack_dm` | A Slack bot token you paste in, and the channel or user ID to message. It does not use the Slack integration. |
 
-There are no phone calls: a `phone_call` contact method is refused when you save it.
+There are no phone calls: a `phone_call` contact method is refused when you save it. Each user can have up to 20 contact methods. See [add and verify contact methods](/incident-management/notifications/how-to/contact-methods/).
 
 Contact methods are *not* attached to monitors. They power escalation paging: when an escalation level targets `target_user_ids`, that user's notification rules determine which contact methods fire.
 
-<Aside type="caution" title="A limit on contact methods">
-**`verified` is not enforced at paging time.** The flag records whether the user confirmed the destination, but escalation paging does not check it before sending. An unverified SMS number will be attempted.
-</Aside>
-
 ## Notification rules (per user)
 
-Personal preferences for "if I'm being paged at urgency X, fire this contact method after this many minutes." Stack multiple rules at increasing delays for personal escalation:
+Personal preferences for "if I'm being paged at urgency X, fire this contact method after this many minutes." A new user starts with two rules on their sign-in email, one `high` and one `low`, both at 0 minutes. Stack multiple rules at increasing delays for personal escalation:
 
 ```json
 [
@@ -99,12 +97,12 @@ That's: SMS me immediately, Slack DM me if I haven't acked in 5 minutes, email m
 
 ## How a page actually fires
 
-There are two separate paths, and they share nothing.
+There are two separate paths, and they share nothing. [Who gets notified](/incident-management/notifications/default-routing/) covers both, plus the default group and monitors that notify no one.
 
 **Monitor alerts** go straight to notification groups, with no incident involved:
 
 1. A monitor goes down or recovers.
-2. For each notification group on the monitor, wait `delay_send_after_minutes` if it applies (HTTP and browser only).
+2. For each notification group on the monitor, wait `delay_send_after_minutes` if it applies (down alerts from HTTP monitors and browser checks only).
 3. Send to every channel in the group whose type supports that alert.
 4. If `resend_every_minutes` is set, repeat the down alert until the monitor recovers.
 
@@ -124,6 +122,8 @@ Email, Slack, webhook, Discord, Teams, Telegram, PagerDuty, Jira Service Managem
 
 <CardGrid>
   <LinkCard title="Channels reference" description="Every channel type with required fields." href="/incident-management/notifications/channels/" />
+  <LinkCard title="Who gets notified" description="The two routing paths and the default group." href="/incident-management/notifications/default-routing/" />
+  <LinkCard title="Add and verify contact methods" description="Email, SMS in any country, and Slack DM." href="/incident-management/notifications/how-to/contact-methods/" />
   <LinkCard title="Set up notification rules" description="Personal delivery preferences for high vs low urgency." href="/incident-management/notifications/how-to/notification-rules/" />
   <LinkCard title="Integrations" description="Connect Slack, Teams, Discord, Telegram, webhooks." href="/integrations/overview/" />
 </CardGrid>

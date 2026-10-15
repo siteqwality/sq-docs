@@ -1,7 +1,7 @@
 ---
 title: Domain expiry quickstart
 description: Turn domain registration monitoring on for an existing HTTP check, read your first result, and set a renewal date by hand when the registry publishes none.
-last_verified: 2026-08-09
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -53,8 +53,7 @@ curl -X POST https://api.siteqwality.com/http/job \
     "monitor_tls": true,
     "monitor_dns": true,
     "timeout_ms": 15000,
-    "run_interval_seconds": 600,
-    "group_notification_ids": []
+    "run_interval_seconds": 600
   }'
 ```
 

@@ -1,7 +1,7 @@
 ---
 title: SSL/TLS check quickstart
 description: Enable TLS monitoring on an HTTP check in two minutes.
-last_verified: 2026-05-03
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -43,8 +43,7 @@ curl -X POST https://api.siteqwality.com/http/job \
     "monitor_tls": true,
     "monitor_dns": false,
     "timeout_ms": 15000,
-    "run_interval_seconds": 600,
-    "group_notification_ids": []
+    "run_interval_seconds": 600
   }'
 
 # Or update an existing check

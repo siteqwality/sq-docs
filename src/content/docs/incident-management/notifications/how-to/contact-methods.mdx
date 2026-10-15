@@ -1,0 +1,189 @@
+---
+title: Add and verify contact methods
+description: Add an email, SMS number or Slack DM that incident pages can reach, verify it with a 6-digit code, and edit it later.
+last_verified: 2026-10-14
+owner: jj
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+A contact method is one way to reach you personally. Incident pages use contact methods, through your [notification rules](/incident-management/notifications/how-to/notification-rules/). Monitor alerts do not: they go to [notification groups](/incident-management/notifications/default-routing/).
+
+## What you start with
+
+A new user (sign-up, accepted invite or SCIM) starts with one contact method: their sign-in email, already verified. It carries two notification rules, one for `high` and one for `low` urgency, both with no delay. So a new teammate added to an escalation policy is paged by email until they set up something else.
+
+## Types
+
+| Type | `details` | Verification |
+|---|---|---|
+| `email` | `{ "email": "alice@example.com" }` | Optional. Your sign-in email is verified when you add it. |
+| `sms` | A phone number and its country (see below) | Required before a rule can use it. |
+| `slack_dm` | `{ "slack_token": "xoxb-...", "channel": "U0123ABCD" }` | Optional. |
+
+A `slack_dm` method takes a Slack bot token and a channel or member ID that you paste in. It does not use the account's Slack integration. The token never reads back in full: it shows as `****` followed by its last four characters.
+
+Phone calls are not delivered, so a `phone_call` method is refused.
+
+Each user can have up to 20 contact methods. A 21st returns `409` with code `contact_method_limit_reached`. You manage your own contact methods, and admins can manage anyone's.
+
+## Add one in the dashboard
+
+<Steps>
+
+1. Open the menu under your name (bottom left), choose **Notifications**, then go to **Contact methods**.
+
+2. Add a contact method and pick its type. For SMS, choose the country, then type the number the way you would dial it locally, for example `07911 123456` for the UK.
+
+3. Save, then verify the method: Site Qwality sends a 6-digit code to it, and you enter the code. An SMS number cannot be used in a rule until you do.
+
+</Steps>
+
+## Add one with the API
+
+Contact methods live under `/user/{user_id}/contact_method`. A create returns `201` with the new method.
+
+```bash
+curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "sms",
+    "details": { "phone_number": "07911 123456", "country": "GB" }
+  }'
+```
+
+```json
+{
+  "data": {
+    "id": "6d0c2f4e-8a7b-4b1e-9c3d-2e5f7a9b1c0d",
+    "user_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "type": "sms",
+    "details": {
+      "phone_number": "7911123456",
+      "country_code": "44",
+      "e164": "+447911123456",
+      "country": "GB"
+    },
+    "verified": false,
+    "created_at": "2026-10-14T09:30:00Z"
+  }
+}
+```
+
+### SMS numbers
+
+SMS works for numbers in any country. Give the country one of these ways:
+
+| Form | Example `details` |
+|---|---|
+| Number and country (ISO 3166-1 alpha-2), what the dashboard sends | `{ "phone_number": "07911 123456", "country": "GB" }` |
+| Number and calling code, as a string or a number | `{ "phone_number": "7911123456", "country_code": "44" }` or `"country_code": 44` |
+| E.164 number | `{ "e164": "+447911123456" }`, `{ "phone_number": "+447911123456" }` or just `"+447911123456"` |
+
+A US number works the same way: `{ "phone_number": "202 555 0123", "country": "US" }`, `"country_code": "1"`, or `"+12025550123"`.
+
+A number with no country (no leading `+`, no `country`, no `country_code`) is rejected with `400`. So is a number that is not valid for its country. Site Qwality never guesses the country.
+
+Older SMS methods may show only `phone_number` and `country_code` in `details`.
+
+### Email and Slack DM
+
+```bash
+curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "type": "email", "details": { "email": "alice@example.com" } }'
+
+curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "type": "slack_dm", "details": { "slack_token": "xoxb-your-bot-token", "channel": "U0123ABCD" } }'
+```
+
+### Rules created for you
+
+When you add a method that a rule can use (any email or Slack DM method, or a verified SMS number), and you have no rule yet for `high` or `low` urgency, Site Qwality creates the missing rule on the new method with no delay. Verifying an SMS number does the same. Rules you already have are never changed.
+
+## Verify a contact method
+
+An email that matches your sign-in email is verified when you add it. Every other method starts unverified. An SMS number must be verified before a notification rule can use it; for email and Slack DM, verifying confirms the destination works.
+
+<Steps>
+
+1. Send a code. Site Qwality sends a 6-digit code by email, SMS or Slack DM, depending on the method.
+
+   ```bash
+   curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method/$METHOD_ID/verification \
+     -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+   ```
+
+   ```json
+   { "data": { "expires_in_seconds": 600, "resend_after_seconds": 60, "code_length": 6 } }
+   ```
+
+2. Confirm it. A correct code returns the method with `"verified": true`.
+
+   ```bash
+   curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method/$METHOD_ID/verification/confirm \
+     -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{ "code": "123456" }'
+   ```
+
+</Steps>
+
+| Limit | Value |
+|---|---|
+| Code length | 6 digits |
+| Code expiry | 10 minutes |
+| Resend | After 60 seconds |
+| Wrong codes | 5, then the code is locked |
+| Sends per method | 5 a day |
+| Sends per account | 20 a day |
+
+A verification SMS needs SMS credits on the account. See [pricing](https://siteqwality.com/pricing/).
+
+### Verification errors
+
+| Status | `code` | Meaning |
+|---|---|---|
+| `400` | `code_invalid` | Wrong code. The message says how many attempts remain. |
+| `409` | `code_locked` | 5 wrong codes were entered. |
+| `409` | `verification_not_pending` | No unexpired code exists: none was sent, or it expired. Send a new one. |
+| `409` | `contact_method_already_verified` | Nothing to do. |
+| `409` | `sms_quota_exhausted` | The account has no SMS credits left. |
+| `429` | `rate_limited` | Another send within 60 seconds, or a daily send limit was reached. |
+| `404` | | No such contact method for this user. |
+
+## Edit a contact method
+
+Change the address or number in place instead of deleting and re-adding the method, so your rules keep pointing at it.
+
+```bash
+curl -X PATCH https://api.siteqwality.com/user/$USER_ID/contact_method/$METHOD_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "details": { "phone_number": "06 12 34 56 78", "country": "FR" } }'
+```
+
+- `details` takes the same shapes as create. For a Slack DM, send the full bot token again.
+- The type cannot change. To switch from email to SMS, add a new method.
+- Changing the email address or phone number marks the method unverified, unless the new email is your sign-in email. Verify it again; an unverified SMS number cannot be added to a rule.
+- Invalid details return `400`; a method that is not this user's returns `404`.
+
+## Delete a contact method
+
+```bash
+curl -X DELETE https://api.siteqwality.com/user/$USER_ID/contact_method/$METHOD_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+<Aside type="caution">
+If you delete the method your rules use, those rules go with it. A user with no rule for an incident's urgency is not paged, so check your [notification rules](/incident-management/notifications/how-to/notification-rules/) afterwards.
+</Aside>
+
+## See also
+
+<LinkCard title="Set up personal notification rules" description="Choose which contact method fires for each urgency, and when." href="/incident-management/notifications/how-to/notification-rules/" />
+<LinkCard title="Who gets notified" description="Monitor alerts and incident pages are routed separately." href="/incident-management/notifications/default-routing/" />

@@ -1,7 +1,7 @@
 ---
 title: Cron check reference
 description: Every field on a cron / heartbeat check, the ping endpoint contract, and how lateness is evaluated.
-last_verified: 2026-08-01
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -15,7 +15,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 |---|---|---|---|
 | `friendly_name` | string | none | Display name shown in the dashboard. 1 to 99 characters. |
 | `check_interval_seconds` | int | required | Expected interval between pings. Must be at least `60` and a multiple of `60`. |
-| `group_notification_ids` | uuid[] | none | Notification groups to fire on state change. Maximum 10, no duplicates, must belong to your account. |
+| `group_notification_ids` | uuid[] | default group | Notification groups to fire on state change. Maximum 10, no duplicates, must belong to your account. On create, omitting it (or sending `null`) attaches your account's [default group](/incident-management/notifications/default-routing/#the-default-notification-group); `[]` notifies no one. |
 | `tags` | string[] | none | Free-form tags. Used for grouping and [maintenance-window](/incident-management/maintenance/overview/) matching. |
 | `state` | enum | `active` | Update only. `active` or `paused`. Paused checks stop evaluating and alerting. |
 

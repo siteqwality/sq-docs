@@ -1,7 +1,7 @@
 ---
 title: Browser check quickstart
 description: Write your first Playwright script and run it on a 15-minute schedule.
-last_verified: 2026-05-03
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -94,8 +94,7 @@ curl -X POST https://api.siteqwality.com/browser_check \
     frequency: "15m",
     timeout_seconds: 90,
     check_regions: ["aws-us-east-1"],
-    min_healthy_regions: 1,
-    group_notification_ids: []
+    min_healthy_regions: 1
   }')"
 ```
 

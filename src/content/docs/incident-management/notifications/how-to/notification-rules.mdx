@@ -1,45 +1,50 @@
 ---
 title: Set up personal notification rules
 description: Stack contact methods at increasing delays so high-urgency pages always reach you, but low-urgency ones don't wake you up.
-last_verified: 2026-10-13
+last_verified: 2026-10-14
 owner: jj
 ---
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
-Notification rules are how each user tells the platform "for high-urgency pages, reach me this way; for low-urgency, this way." They're per-user and decouple personal preference from the team-level routing in notification groups.
+Notification rules are how each user tells Site Qwality "for high-urgency pages, reach me this way; for low-urgency, this way." They are personal, and they apply to incident pages only: an escalation policy pages you, and your rules decide which [contact methods](/incident-management/notifications/how-to/contact-methods/) fire and when. Monitor alerts go to notification groups and never read these rules (see [who gets notified](/incident-management/notifications/default-routing/)).
 
 The mental model: **stack rules at increasing `delay_minutes` for personal escalation**.
 
-## Prerequisites
+## What you start with
 
-You need contact methods first. Add them in your personal settings, under **Notifications → Contact methods** (open the menu under your name, bottom left):
+A new user (sign-up, accepted invite or SCIM) starts with their sign-in email as a verified contact method and two rules on it: one `high` and one `low`, both with `delay_minutes: 0`. So they are paged by email at both urgencies until they change it.
+
+When you add a contact method and have no rule for an urgency (for example, you deleted your `low` rule), Site Qwality creates that rule on the new method with no delay. For an SMS number this happens when you verify it.
+
+In the dashboard, rules are under your personal settings: open the menu under your name (bottom left), choose **Notifications**, then **Paging rules**.
+
+## How a rule works
+
+A rule has an `urgency`, a `contact_method_id`, a `delay_minutes` and a `position`.
+
+- **`urgency`** is `high` or `low`. You do not choose it per incident: `critical` and `major` incidents page at high urgency, `minor` at low.
+- **`delay_minutes`** is how long after you are paged the rule fires, `0` to `1440`, default `0`. When a delayed rule fires, Site Qwality first checks that the incident is still triggered, nobody has acknowledged it, and the rule still exists; otherwise it does not send.
+- **`position`** is sort order within the urgency. It does not stagger anything: every matching rule fires in the same pass, each after its own delay.
+
+A user with no rule for the incident's urgency is not paged.
+
+<Aside type="caution" title="Verify SMS numbers first">
+A rule cannot use an SMS number until it is verified. Creating or updating a rule with an unverified SMS method returns `409` with code `contact_method_unverified`: "Verify this phone number before using it in a notification rule." See [verify a contact method](/incident-management/notifications/how-to/contact-methods/#verify-a-contact-method). Email and Slack DM methods can be used straight away.
+</Aside>
+
+List your contact methods to get their ids:
 
 ```bash
-# SMS
-curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "sms",
-    "details": { "country_code": "1", "phone_number": "5551234567" }
-  }'
-
-# Email
-curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "email",
-    "details": { "email_address": "alice@example.com" }
-  }'
+curl https://api.siteqwality.com/user/$USER_ID/contact_method \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
-
-`type` is one of `email`, `sms` or `slack_dm`. A `slack_dm` contact method takes a Slack bot token and a channel or user ID that you paste in. The token never reads back in full: it shows as `****` followed by its last four characters. There are no phone calls: `phone_call` is refused.
 
 ## Recommended high-urgency stack
 
-Three rules, increasing delays:
+Three rules at increasing delays: SMS at 0 minutes, Slack DM at 5, email at 15. Your starting `high` rule on your sign-in email is the third one; move it to 15 minutes instead of adding another.
+
+Verify the SMS number first, then:
 
 ```bash
 # 0 min: SMS me
@@ -64,37 +69,25 @@ curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
     "position": 1
   }'
 
-# 15 min: email me
-curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
+# 15 min: email me (update the starting high rule)
+curl -X PUT https://api.siteqwality.com/user/$USER_ID/notification_rule/<email-high-rule-id> \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "urgency": "high",
-    "contact_method_id": "<email-id>",
-    "delay_minutes": 15,
-    "position": 2
-  }'
+  -d '{ "delay_minutes": 15, "position": 2 }'
 ```
 
-`position` is sort order within the urgency. Useful for the dashboard, since the firing logic just walks rules by their `delay_minutes`.
+`position` is required on create. On update, every field is optional and only the fields you send change. List your rules with `GET /user/$USER_ID/notification_rule` to find their ids.
 
 ## Recommended low-urgency stack
 
-For low-urgency, send a single delivery to your low-impact channel:
+For low urgency, one delivery to a low-impact method is enough. Your starting `low` rule (email, no delay) already does that.
+
+To stop low-urgency pages entirely, delete the rule. Without a `low` rule you are skipped for low-urgency pages.
 
 ```bash
-curl -X POST https://api.siteqwality.com/user/$USER_ID/notification_rule \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "urgency": "low",
-    "contact_method_id": "<email-id>",
-    "delay_minutes": 0,
-    "position": 0
-  }'
+curl -X DELETE https://api.siteqwality.com/user/$USER_ID/notification_rule/<email-low-rule-id> \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
-
-Or skip the rule entirely. Without a low-urgency rule the user is silently skipped from low-urgency pages.
 
 ## How the stack interacts with escalation
 
@@ -121,6 +114,7 @@ A `slack_dm` contact method is quieter than SMS but more visible than email, a g
 
 ## See also
 
+<LinkCard title="Add and verify contact methods" description="Email, SMS in any country, and Slack DM." href="/incident-management/notifications/how-to/contact-methods/" />
 <LinkCard title="Notifications overview" description="The full four-object model." href="/incident-management/notifications/overview/" />
 <LinkCard title="Channels reference" description="Account-level channels (different from contact methods)." href="/incident-management/notifications/channels/" />
 <LinkCard title="Escalation policies" description="What triggers your personal rules in the first place." href="/incident-management/escalation/overview/" />

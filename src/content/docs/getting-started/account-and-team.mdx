@@ -1,7 +1,7 @@
 ---
 title: Account and team setup
 description: Invite teammates, generate API keys, and set up the things that should exist before anything goes wrong.
-last_verified: 2026-10-11
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -49,17 +49,17 @@ Each user manages their own contact methods in their personal settings, under **
 | Type | What it is |
 |---|---|
 | `email` | An email address. |
-| `sms` | A phone number. There is no verification code, so check the number when you add it. |
+| `sms` | A phone number in any country. Pick the country, then verify the number with a 6-digit code before a rule can use it. |
 | `slack_dm` | A Slack bot token and a channel or user ID that you paste in. It does not use the Slack integration. |
 
-None are created for you, and there are no phone calls.
+A new user starts with their sign-in email as a verified contact method. There are no phone calls. See [add and verify contact methods](/incident-management/notifications/how-to/contact-methods/).
 
-Once contact methods exist, set up **notification rules** to define which method fires for which urgency:
+**Notification rules** define which method fires for which urgency:
 
 - *High* urgency: incidents with severity `critical` or `major`.
 - *Low* urgency: incidents with severity `minor`.
 
-A rule has an urgency, a contact method, and an optional `delay_minutes`. Stack multiple rules at increasing delays for personal escalation: SMS at 0 min, Slack DM at 5 min, email at 15 min. A user with no rule for an incident's urgency is not paged.
+A new user starts with a high and a low rule on their sign-in email, both with no delay, so a new teammate is paged by email from day one. A rule has an urgency, a contact method, and an optional `delay_minutes`. Stack multiple rules at increasing delays for personal escalation: SMS at 0 min, Slack DM at 5 min, email at 15 min. A user with no rule for an incident's urgency is not paged.
 
 See the [Notification rules how-to](/incident-management/notifications/how-to/notification-rules/) for the full setup.
 

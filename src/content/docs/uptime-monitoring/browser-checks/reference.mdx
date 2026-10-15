@@ -1,7 +1,7 @@
 ---
 title: Browser check reference
 description: Settings, the step API, supported assertions, and captured artifacts.
-last_verified: 2026-10-13
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -21,7 +21,7 @@ The full request schema is in the auto-generated [API Reference](/api-reference/
 | `min_healthy_regions` | int | `1` | Required healthy locations for overall status. At least `1`, at most the number of `check_regions`. |
 | `rerun_on_failure` | bool \| null | `null` | Rerun a failed run once from the same location before counting it. See [rerun and confirmation](#rerun-and-confirmation). The dashboard turns it on for new checks. |
 | `confirmation_threshold` | int \| null | `null` | Failed runs in a row needed before the check goes `failed` and alerts, `1` to `10`. `null` or `1` alerts on the first failure. |
-| `group_notification_ids` | uuid[] | `[]` | Notification groups; cap of 10. |
+| `group_notification_ids` | uuid[] | default group | Notification groups; cap of 10. On create, omitting it (or sending `null`) attaches your account's [default group](/incident-management/notifications/default-routing/#the-default-notification-group); `[]` notifies no one. |
 | `state` | enum | `active` | `active` or `paused`. Paused checks don't run. |
 | `tags` | string[] | `[]` | Free-form labels for filtering and maintenance windows. |
 | `service_id` | uuid \| null | `null` | Optional logical service grouping. |

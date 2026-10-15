@@ -1,7 +1,7 @@
 ---
 title: Escalation policy reference
 description: Every field on an escalation policy and its levels, with defaults and constraints.
-last_verified: 2026-08-02
+last_verified: 2026-10-14
 owner: jj
 ---
 
@@ -109,9 +109,9 @@ A level's targets are resolved and de-duplicated, then each user is paged throug
 | `major` | high |
 | `minor` | low |
 
-This mapping is fixed and cannot be overridden per policy. A targeted user with no rule matching that urgency is not paged at all, which is the most common reason a level appears to do nothing.
+This mapping is fixed and cannot be overridden per policy. A targeted user with no rule matching that urgency is not paged at all, which is the most common reason a level appears to do nothing. Every user starts with a high and a low rule on their sign-in email; a user who deleted those rules may have none.
 
-Contact methods are email, SMS and Slack DM; there are no phone calls. A contact method's `verified` flag is not checked before paging. See [notifications](/incident-management/notifications/overview/#contact-methods-per-user).
+Contact methods are email, SMS and Slack DM; there are no phone calls. An SMS number must be verified before a rule can use it. See [notifications](/incident-management/notifications/overview/#contact-methods-per-user).
 
 ## Escalation state values
 
