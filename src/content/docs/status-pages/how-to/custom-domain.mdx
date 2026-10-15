@@ -1,7 +1,7 @@
 ---
 title: Use a custom domain
 description: Point status.yourcompany.com at your Site Qwality status page with an automatically-provisioned TLS certificate.
-last_verified: 2026-05-03
+last_verified: 2026-10-15
 owner: jj
 ---
 
@@ -109,11 +109,17 @@ curl -X DELETE https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/custom_do
 
 Or use the **Remove** button in the dashboard. Removing the custom domain immediately stops serving it; you should also delete the two CNAME records from your DNS to avoid a dangling pointer at Site Qwality's edge.
 
+Deleting the status page removes its custom domain the same way, so delete the two CNAME records then too.
+
 ## Notes
 
 - Only one custom domain per status page.
 - Apex domains (`example.com` with no subdomain) aren't supported because of the CNAME-at-apex restriction in DNS. Use a subdomain like `status` or `health`.
-- The certificate auto-renews. If renewal ever fails, the dashboard surfaces a warning with the failure reason.
+- The certificate auto-renews as long as the validation CNAME stays in place, so keep both records for as long as you use the domain.
+
+## Domain health
+
+Once the domain is live, Site Qwality checks it every 6 hours: that your hostname still points at the `cname_target`, and that the certificate is issued and renewing. The dashboard's **Custom domain** tab shows when it was last checked and when the certificate expires. If something is wrong it shows **Needs attention** with what to fix, such as a CNAME that was removed or now points elsewhere, or a renewal waiting on the validation record. The API returns the same in the custom domain's `health` field.
 
 ## See also
 
