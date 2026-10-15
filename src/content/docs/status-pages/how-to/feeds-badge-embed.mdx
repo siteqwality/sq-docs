@@ -1,0 +1,96 @@
+---
+title: Feeds, badge and embed
+description: Follow a status page by RSS or Atom, read its status as JSON, show a status badge, or put an incident notice on your own site.
+last_verified: 2026-10-15
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Every status page publishes a few public files next to the page itself. They update within a minute of any change on the page, and nothing needs turning on.
+
+All of them live under one address, built from the two ids in your page's URL (`https://statuspage.siteqwality.com/<account-id>/<page-id>`):
+
+```
+https://statuspagecdn.siteqwality.com/v1/pages/<account-id>/<page-id>/
+```
+
+Use the ids in lower case.
+
+| File | What it is |
+|---|---|
+| `incidents.rss` | RSS 2.0 feed of the page's incidents |
+| `incidents.atom` | The same incidents as an Atom feed |
+| `summary.json` | The current status, components, open incidents and maintenance, as JSON |
+| `badge.svg` | A small image with the page's current status |
+
+## Follow incidents in a feed reader
+
+Paste the `incidents.rss` or `incidents.atom` address into any feed reader, Slack's RSS app or a similar tool. The public status page also links both feeds at the bottom, next to the email form, and announces them to browsers and readers that look for feeds.
+
+Each incident is one item, with every update in it, newest first. An incident moves to the top of the feed when it gets a new update or is resolved, so a reader shows it again. The feed holds open incidents and the latest 30.
+
+Links in the feed go to the incident on your page. On a page with a [custom domain](/status-pages/how-to/custom-domain/), they use the domain: `https://status.example.com/incidents/<incident-id>`.
+
+## Read the status as JSON
+
+`summary.json` is the small, stable version of the page for scripts and your own app:
+
+```bash
+curl -s https://statuspagecdn.siteqwality.com/v1/pages/$ACCOUNT_ID/$PAGE_ID/summary.json \
+  | jq '.status'
+```
+
+```json
+{ "indicator": "operational", "description": "All Systems Operational" }
+```
+
+| Field | Description |
+|---|---|
+| `page` | `id`, `name` (the page title) and `url` (the page's public address, its custom domain when one is live). |
+| `status` | `indicator` is the headline: `operational`, `unknown`, `degraded_performance`, `partial_outage`, `major_outage` or `under_maintenance`. `description` is the wording the page shows. |
+| `groups[]` | Section headings in page order: `id`, `name`, `description`. |
+| `components[]` | In page order: `id`, `name`, `kind` (`http` or `browser`), `status` (`operational`, `degraded`, `down`, `paused`, `maintenance` or `unknown`) and `group_id`. Hidden components are left out. |
+| `active_incidents[]` | `id`, `title`, `status`, `severity`, `created_at`, `updated_at` (the newest update), `latest_update` (its text) and `url`. |
+| `maintenances[]` | Scheduled and in-progress maintenance: `id`, `title`, `status`, `scheduled_start_at`, `scheduled_end_at`. |
+
+Any origin may fetch these files, so a browser can read them directly. They are cached for 10 seconds.
+
+## Show a status badge
+
+`badge.svg` reads `status | operational` (or `degraded`, `partial outage`, `major outage`, `maintenance`, `unknown`) in a matching colour. Link it to your page, for example in a README:
+
+```markdown
+[![Status](https://statuspagecdn.siteqwality.com/v1/pages/ACCOUNT_ID/PAGE_ID/badge.svg)](https://statuspage.siteqwality.com/ACCOUNT_ID/PAGE_ID)
+```
+
+Or in HTML:
+
+```html
+<a href="https://statuspage.siteqwality.com/ACCOUNT_ID/PAGE_ID">
+  <img src="https://statuspagecdn.siteqwality.com/v1/pages/ACCOUNT_ID/PAGE_ID/badge.svg" alt="Service status">
+</a>
+```
+
+## Put an incident notice on your site
+
+One script tag shows a small card in a corner of your site while the page has an open incident or maintenance in progress. When all is well it shows nothing.
+
+```html
+<script src="https://statuspagecdn.siteqwality.com/v1/embed.js"
+        data-account="ACCOUNT_ID" data-page="PAGE_ID" async></script>
+```
+
+- The card shows the incident title, its latest update and a link to the incident on your page.
+- Add `data-position="bottom-right"` to move it from the bottom left.
+- A visitor can dismiss it. It comes back when the incident gets a new update, or in a new browser session.
+- It checks again every minute while the tab is visible, follows the visitor's light or dark setting and keeps its styles inside a shadow root, so your site's CSS and the card never affect each other.
+
+<Aside type="note">
+If your site sends a Content Security Policy, allow `https://statuspagecdn.siteqwality.com` in both `script-src` and `connect-src`.
+</Aside>
+
+## See also
+
+<LinkCard title="Status page reference" description="The full page JSON, endpoints and limits." href="/status-pages/reference/" />
+<LinkCard title="Manage subscribers" description="Email updates for visitors who want them." href="/status-pages/how-to/subscribers/" />

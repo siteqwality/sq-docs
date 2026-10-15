@@ -161,8 +161,13 @@ The page response has these fields:
 | `upcoming_maintenances[]` | array | Maintenance that is scheduled or in progress: `id`, `title`, `body`, `status`, `scheduled_start_at`, `scheduled_end_at`, `affected_http_job_ids`. |
 | `incident_history[]` | array | The latest 30 incidents, same shape as `active_incidents`, with `resolved_at` once closed. |
 | `branding` | object \| null | Title, theme, logo, colors, header and footer text, and so on. `null` when none is saved. |
+| `page_url` | string | The page's public address: `https://<your-domain>` when a custom domain is live, otherwise `https://statuspage.siteqwality.com/<account-id>/<page-id>`. Incidents are at `<page_url>/incidents/<incident-id>`. |
 
 `current_status` is one of `operational`, `degraded` (failing, not yet confirmed down), `down`, `paused`, `maintenance` or `unknown`. The `/live` response is a list with `http_job_id`, `status` (the same values), `success`, `response_time_ms` and `checked_at` for each HTTP check.
+
+## Published files
+
+The same page is also published as static files that update within a minute of a change: the page JSON above at `https://statuspagecdn.siteqwality.com/v1/pages/<account-id>/<page-id>.json`, and beside it `summary.json`, `incidents.rss`, `incidents.atom` and `badge.svg`, plus an embed script at `https://statuspagecdn.siteqwality.com/v1/embed.js`. See [Feeds, badge and embed](/status-pages/how-to/feeds-badge-embed/).
 
 ## See also
 
