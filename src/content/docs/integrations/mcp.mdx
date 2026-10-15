@@ -1,7 +1,7 @@
 ---
 title: Connect AI assistants (MCP)
 description: Ask Claude, ChatGPT, Cursor and other AI assistants about your monitors, incidents and telemetry, and let them take everyday actions for you.
-last_verified: 2026-10-14
+last_verified: 2026-10-15
 owner: jj
 ---
 
@@ -214,9 +214,9 @@ Access is granted per area, as `read:<area>` and `write:<area>`. On the consent 
 | Area | Scopes | Covers |
 |---|---|---|
 | Monitors | `read:monitors`, `write:monitors` | HTTP, SSL/TLS, domain expiry, cron and browser checks |
-| Incidents | `read:incidents`, `write:incidents` | Incidents, escalation policies, on-call schedules, maintenance windows |
+| Incidents | `read:incidents`, `write:incidents` | Incidents (including those on status pages), escalation policies, on-call schedules, maintenance windows |
 | Notifications | `read:notifications`, `write:notifications` | Notification channels and groups, and reading integrations |
-| Status Pages | `read:status_pages`, `write:status_pages` | Status pages and their components |
+| Status Pages | `read:status_pages`, `write:status_pages` | Status pages with their monitors, layout, maintenance, subscribers, branding and custom domain |
 | Logs | `read:logs`, `write:logs` | Log search, parsers, saved views |
 | Metrics | `read:metrics`, `write:metrics` | Metric queries and saved views |
 | Traces | `read:traces`, `write:traces` | Trace search and detail |
@@ -251,14 +251,47 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 | `list_incidents`, `get_incident` | Lists incidents, or shows one with its timeline. | Read |
 | `acknowledge_incident`, `resolve_incident` | Acknowledges or resolves an incident. | Write |
 | `create_incident` | Opens an incident, optionally on a status page. | Write |
-| `post_incident_update` | Adds a timeline update to an incident. It does not email status page subscribers or change the incident's status. | Write |
-| `list_status_pages` | Lists your status pages. | Read |
+| `post_incident_update` | Adds an update to an incident's timeline with its new public status; `resolved` resolves it. Name a status page the incident is on to also email that page's confirmed subscribers. | Write |
+| `list_status_pages` | Lists your status pages, each with its public address (`page_url`). | Read |
 | `list_status_page_components` | Lists a status page's components in page order, with any status set by hand. | Read |
 | `set_status_page_component_status` | Sets what a status page shows for one component, with an optional note and end time. | Write |
 | `clear_status_page_component_status` | Clears that status, so the page follows the monitor again. | Write |
 | `search_logs` | Searches your logs. | Read |
 | `list_metric_names`, `query_metrics` | Lists your metrics, or queries one. | Read |
 | `search_traces`, `get_trace` | Searches your traces, or shows one trace's spans. | Read |
+
+### Status pages
+
+These tools manage status pages end to end. They use the Status Pages scopes, except the four incident tools (`list_status_page_incidents`, `publish_incident`, `update_status_page_incident` and `delete_status_page_incident`), which use the Incidents scopes.
+
+| Tool | What it does | Access |
+|---|---|---|
+| `get_status_page` | Shows one page and its public address (`page_url`). | Read |
+| `create_status_page`, `rename_status_page` | Creates or renames a page. | Write |
+| `delete_status_page` | Deletes a page. | Write, asks first |
+| `get_status_page_layout` | Shows the page's groups and the order and settings of its components. | Read |
+| `update_status_page_layout` | Replaces the whole layout. | Write, asks first |
+| `list_status_page_monitors`, `get_status_page_monitor` | Lists the monitors on a page, or shows one with its page name and SLA target. | Read |
+| `add_status_page_monitor`, `update_status_page_monitor` | Adds a monitor to a page, or changes its page name or SLA target. | Write |
+| `remove_status_page_monitor` | Takes a monitor off a page. The monitor keeps running. | Write, asks first |
+| `list_status_page_incidents` | Lists the incidents shown on a page. | Read |
+| `publish_incident` | Shows an existing incident on a page. | Write |
+| `update_status_page_incident` | Changes a page incident's title or severity. Its status changes through `post_incident_update` or `resolve_incident`. | Write |
+| `delete_status_page_incident` | Deletes an incident shown on a page. | Write, asks first |
+| `list_status_page_maintenances`, `get_status_page_maintenance` | Lists a page's maintenance windows, or shows one. | Read |
+| `schedule_status_page_maintenance`, `update_status_page_maintenance` | Schedules or changes a maintenance window. Confirmed subscribers hear about new and rescheduled windows. | Write |
+| `delete_status_page_maintenance` | Deletes a maintenance window. | Write, asks first |
+| `list_status_page_subscribers`, `export_status_page_subscribers` | Lists a page's email subscribers, or exports them all as CSV. | Read |
+| `add_status_page_subscriber` | Sends an address a confirmation link. | Write |
+| `remove_status_page_subscriber` | Removes a subscriber. | Write, asks first |
+| `get_status_page_branding` | Shows a page's branding. | Read |
+| `update_status_page_branding`, `get_status_page_branding_upload_url` | Changes branding, or gets an upload link for a logo, favicon or social image. | Write |
+| `delete_status_page_branding_asset` | Removes a logo, favicon or social image. | Write, asks first |
+| `get_status_page_custom_domain` | Shows a page's custom domain and the DNS records it needs. | Read |
+| `set_status_page_custom_domain` | Serves a page on your own domain. | Write |
+| `remove_status_page_custom_domain` | Stops serving a page on its custom domain. | Write, asks first |
+
+### Everything else
 
 Two more tools reach everything else the [Site Qwality API](/api-reference/) can do:
 
@@ -269,7 +302,7 @@ Two more tools reach everything else the [Site Qwality API](/api-reference/) can
 
 ## Safety
 
-- **Risky actions are marked.** `delete_monitor` and `call_api` are flagged as destructive, so assistants that honor the flag ask you before running them. Read tools are flagged read-only.
+- **Risky actions are marked.** `delete_monitor`, `call_api` and the status page tools that delete, remove or replace something (marked "asks first" above) are flagged as destructive, so assistants that honor the flag ask you before running them. Read tools are flagged read-only.
 - **Your data is data.** Results include text you and your services control, such as monitor names and log lines. The tools tell the assistant to treat that text as data, never as instructions.
 - **Changes are audited.** Every change an assistant makes goes through the same API as the dashboard and shows up in your [audit log](/enterprise/audit-log/#ai-assistants) as the member who approved it, with the assistant's name, "via MCP" and the tool it used. Connecting and disconnecting an assistant are logged too.
 - **Grant the least you need.** Choose read-only when you only want answers. You can reconnect with write access later.

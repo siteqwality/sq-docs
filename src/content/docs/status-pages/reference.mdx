@@ -14,8 +14,9 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | Field | Type | Description |
 |---|---|---|
 | `friendly_name` | string | The page name. The only writable field on the page object itself. |
-| `id` | uuid | Read-only. Page ID, also the default subdomain slug. |
+| `id` | uuid | Read-only. Page ID. |
 | `account_id` | uuid | Read-only. Owning account. |
+| `page_url` | string | Read-only. Where the public page lives: `https://<your-domain>` once a custom domain is active, otherwise `https://statuspage.siteqwality.com/<account-id>/<page-id>`. Create, get and list all return it. |
 | `created_at` | rfc3339 | Read-only. |
 
 Branding, components, incidents, maintenance, and the custom domain are all nested resources (below).
@@ -43,6 +44,8 @@ Attach an HTTP check with `POST /status_page/{status_page_id}/http_job/{http_job
 |---|---|---|---|
 | `friendly_name` | string | create + update | Public-facing name shown on the page (independent of the monitor's internal name). |
 | `sla_target_percentage` | number \| null | update only | SLA target shown next to the component, e.g. `99.9`. Send `null` to clear. |
+
+`GET /status_page/{status_page_id}/http_job/{http_job_id}` (or `/browser_check/{browser_check_id}`) reads one attached monitor with its page settings. It and `PUT` return `404` when the monitor is not on that page.
 
 ### Heartbeats
 
@@ -154,13 +157,15 @@ Customer-facing planned-downtime entries under `/status_page/{status_page_id}/ma
 | `scheduled_start_at` | rfc3339 | create + update | Planned start. |
 | `scheduled_end_at` | rfc3339 | create + update | Planned end. |
 | `affected_http_job_ids` | uuid[] | create + update | Which components the maintenance covers. |
-| `status` | enum | update only | `scheduled`, `in_progress`, or `completed`. New entries start as `scheduled`. |
+| `status` | enum | update only, optional | `scheduled`, `in_progress`, or `completed`. New entries start as `scheduled`. Leave it out to keep the current status. |
 
 The page shows a `scheduled` entry as in progress once `scheduled_start_at` passes, and drops it after `scheduled_end_at`, so you do not have to move it by hand. Setting `in_progress` starts it early, and `completed` ends it early. Moving the window while sending the status back unchanged gives it the status the new window implies, and subscribers hear about the new start and end. Leave `affected_http_job_ids` empty to cover the whole page. Creating a maintenance emails the confirmed subscribers who take maintenance notices for the components it covers (everyone who takes them, when it covers the whole page), and so do its start and end. See [Publish a status page maintenance](/status-pages/how-to/publish-maintenance/).
 
 ## Incidents on a page
 
 Incidents published to a page (via `status_page_id` at creation, or `POST /incident/{id}/publish`) render with their updates. Field-by-field: [Incident reference](/incident-management/incidents/reference/).
+
+The routes under `/status_page/{status_page_id}/incident` only reach incidents shown on that page. Any other incident id answers `404`, even one from the same account. API keys need the `incidents` scopes for them, not `status_pages`. `POST /status_page/{id}/incident/{incident_id}/update` posts an update and emails the page's confirmed subscribers.
 
 ## Subscribers
 
@@ -272,7 +277,7 @@ The first import confirmations go out during the import; the rest stay `queued` 
 | Method | Path | Purpose |
 |---|---|---|
 | `POST` / `GET` | `/status_page` | Create / list pages. |
-| `PUT` / `DELETE` | `/status_page/{status_page_id}` | Rename / delete a page. |
+| `GET` / `PUT` / `DELETE` | `/status_page/{status_page_id}` | Read / rename / delete a page. |
 | `GET` / `PUT` | `/status_page/{id}/layout` | Read / replace the groups, order and per-component settings. |
 | `POST` | `/status_page/{id}/component` | Create a manual component. |
 | `PATCH` / `DELETE` | `/status_page/{id}/component/{component_id}` | Update / delete a manual component. |
@@ -280,16 +285,19 @@ The first import confirmations go out during the import; the rest stay `queued` 
 | `GET` | `/status_page/{id}/cron_job` | List the page's heartbeats. |
 | `POST` / `PUT` / `DELETE` | `/status_page/{id}/cron_job/{cron_job_id}` | Attach / rename / detach a heartbeat. |
 | `GET` | `/status_page/{id}/http_job` | List attached HTTP checks. |
-| `POST` / `PUT` / `DELETE` | `/status_page/{id}/http_job/{http_job_id}` | Attach / update / detach an HTTP check. |
+| `GET` / `POST` / `PUT` / `DELETE` | `/status_page/{id}/http_job/{http_job_id}` | Read / attach / update / detach an HTTP check. |
 | `GET` | `/status_page/{id}/browser_check` | List attached browser checks. |
-| `POST` / `PUT` / `DELETE` | `/status_page/{id}/browser_check/{browser_check_id}` | Attach / update / detach a browser check. |
+| `GET` / `POST` / `PUT` / `DELETE` | `/status_page/{id}/browser_check/{browser_check_id}` | Read / attach / update / detach a browser check. |
 | `GET` / `POST` | `/status_page/{id}/subscriber` | List / add (by confirmation email) subscribers. |
 | `POST` | `/status_page/{id}/subscriber/import` | Import a CSV of addresses (each gets a confirmation email). |
 | `GET` | `/status_page/{id}/subscriber/export` | Download subscribers as CSV or JSON. |
 | `DELETE` | `/status_page/{id}/subscriber/{subscriber_id}` | Remove a subscriber in any state. |
 | `POST` / `GET` | `/status_page/{id}/incident` | Create / list page incidents. |
+| `GET` / `PUT` / `DELETE` | `/status_page/{id}/incident/{incident_id}` | Read / update / delete an incident on the page. |
+| `POST` | `/status_page/{id}/incident/{incident_id}/update` | Post an incident update and email subscribers. |
+| `POST` | `/incident/{incident_id}/publish` | Show an existing incident on a page, with `{"status_page_id": "..."}`. |
 | `POST` / `GET` | `/status_page/{id}/maintenance` | Create / list scheduled maintenance. |
-| `PUT` / `DELETE` | `/status_page/{id}/maintenance/{maintenance_id}` | Update / delete maintenance. |
+| `GET` / `PUT` / `DELETE` | `/status_page/{id}/maintenance/{maintenance_id}` | Read / update / delete maintenance. |
 | `GET` / `PUT` | `/status_page/{id}/branding` | Read / update branding. |
 | `POST` | `/status_page/{id}/branding/upload` | Presigned asset upload. |
 | `DELETE` | `/status_page/{id}/branding/asset/{asset_type}` | Remove an asset. |
