@@ -100,6 +100,8 @@ Open `https://status.example.com` in a fresh browser. You should see:
 - Your branded status page.
 - The default URL (`https://statuspage.siteqwality.com/<account-id>/<page-id>`) still works as a fallback.
 
+On your domain, the page's live updates and the subscribe form call the API at your own hostname, and its feeds, badge and embed script are served there too (see [Feeds, badge and embed](/status-pages/how-to/feeds-badge-embed/)). Only the page and the files described there are served; any other path on your domain answers with a short "Page not found" page that links back to your status page.
+
 ## Removing a custom domain
 
 ```bash

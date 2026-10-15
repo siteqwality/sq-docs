@@ -24,6 +24,8 @@ Use the ids in lower case.
 | `summary.json` | The current status, components, open incidents and maintenance, as JSON |
 | `badge.svg` | A small image with the page's current status |
 
+If the page has a live [custom domain](/status-pages/how-to/custom-domain/), the same files are served on it at the same path, for example `https://status.example.com/v1/pages/<account-id>/<page-id>/incidents.rss`, and the feeds and the page's feed links use that address.
+
 ## Follow incidents in a feed reader
 
 Paste the `incidents.rss` or `incidents.atom` address into any feed reader, Slack's RSS app or a similar tool. The public status page also links both feeds at the bottom, next to the email form, and announces them to browsers and readers that look for feeds.
@@ -87,7 +89,9 @@ One script tag shows a small card in a corner of your site while the page has an
 - It checks again every minute while the tab is visible, follows the visitor's light or dark setting and keeps its styles inside a shadow root, so your site's CSS and the card never affect each other.
 
 <Aside type="note">
-If your site sends a Content Security Policy, allow `https://statuspagecdn.siteqwality.com` in both `script-src` and `connect-src`.
+If your page has a custom domain, load the script from it (`https://status.example.com/v1/embed.js`); it then reads the status from your domain too.
+
+If your site sends a Content Security Policy, allow the host you load the script from (`https://statuspagecdn.siteqwality.com` or your custom domain) in both `script-src` and `connect-src`.
 </Aside>
 
 ## See also
