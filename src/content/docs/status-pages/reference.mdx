@@ -142,6 +142,7 @@ Public responses expose CDN URLs (`logo_url`, `logo_dark_url`, `favicon_url`, `o
 | `acm_validation.name` / `.value` | string | The DNS validation CNAME record to create while `status` is `pending_validation`. |
 | `failure_reason` | string \| null | Populated when `status` is `failed`. |
 | `health` | object | Absent until the first check. Once `active`, the domain is checked every 6 hours: `checked_at`, `problem` (a sentence on what to fix, or absent when all is well) and `certificate_expires_at`. |
+| `sender` | object | Subscriber email from the domain, for a white-labelled page: `status` (`not_started` until the domain is provisioned, then `pending`, `verified` or `failed`), `dkim_record` (`name` and `value` of the CNAME to add) and `from_address`, where the mail comes from once verified. |
 | `created_at` / `updated_at` | rfc3339 | Timestamps. |
 
 Deleting the status page removes its custom domain too, along with the certificate and distribution behind it. See the [custom domain guide](/status-pages/how-to/custom-domain/) for the DNS walkthrough.
