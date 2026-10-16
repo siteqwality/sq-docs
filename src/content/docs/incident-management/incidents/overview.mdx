@@ -9,7 +9,7 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 An **incident** is the durable record of "something is broken." Every page, every escalation, every status-page update hangs off an incident. They're created two ways:
 
-1. **Auto**: when a monitor linked to a [service](/incident-management/services/overview/) in `auto` or `auto_with_confirmation` mode starts failing, Site Qwality opens an incident with `auto_created: true`, or adds the monitor to the service's open incident if one opened within the merge window. Monitors with no service never open incidents.
+1. **Auto**: when a monitor linked to a [service](/incident-management/services/overview/) in `auto` mode starts failing, Site Qwality opens an incident with `auto_created: true`. A service has at most one open auto-created incident, and every other monitor of the service that fails joins it. Monitors with no service never open incidents. See [auto-created incidents](/incident-management/services/overview/#auto-created-incidents).
 2. **Manual**: when you create one in the dashboard or via `POST /incident`. Use this for non-monitor events ("partial Stripe outage breaking webhooks," "a cron job took down the queue").
 
 Either way the lifecycle is the same.
@@ -24,8 +24,12 @@ Either way the lifecycle is the same.
 | `status` | `investigating` → `identified` → `monitoring` → `resolved`. Forward-only in practice; see notes. |
 | `responder_status` | `triggered` (no one's looking), `acknowledged` (someone's on it), or `resolved`. |
 | `acknowledged_at` / `acknowledged_by` | Set when a responder acknowledges. Stops escalation. |
-| `affected_http_job_ids` | Which HTTP monitors this incident is about; drives which status-page components get a banner. |
-| `service_id` | Optionally tag an incident to a service (a logical grouping of monitors). |
+| `monitors[]` | The monitors this incident is about. Each has an `impact`, a `source` (`auto` or `manual`) and `joined_at` / `recovered_at` times, and drives which status-page components show the incident. See [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/). |
+| `affected_http_job_ids` | Deprecated: the HTTP monitors in `monitors[]`. Use `monitors`. |
+| `participants[]` | The people working the incident, each with a role: `lead`, `responder` or `comms`. See [participants](/incident-management/incidents/how-to/participants/). |
+| `merged_into_id` / `resolution_reason` | Set on an incident that was [merged](/incident-management/incidents/how-to/merge-incidents/) into another. It is resolved, with `resolution_reason` set to `merged`. Otherwise both are `null`. |
+| `merged_from[]` | On the incident that others were merged into: each merged incident's `id`, `title`, `created_at` and its own `updates`. |
+| `service_id` | Optionally tag an incident to a service (a logical grouping of monitors). You can [move it to another service](/incident-management/incidents/how-to/manual-incidents/#move-an-incident-to-another-service). |
 | `status_page_ids` | The status pages the incident is published on. |
 | `public_title` | The title those pages show, so an internal title like `db-7 failover` never reaches customers. Empty shows `title`. |
 | `updates[]` | Chronological list of `IncidentUpdate`s, each `public` (on status pages) or `internal` (a note for your team). |
@@ -49,16 +53,20 @@ A status page incident can be `status: monitoring` while still `responder_status
 
 Severity sets the urgency of the page: `critical` and `major` incidents page at **high** urgency, `minor` at **low**, and each responder's [notification rules](/incident-management/notifications/how-to/notification-rules/) decide how each urgency reaches them. It does not choose a different escalation policy: the policy comes from the incident's service.
 
+Raising an incident's severity from `minor` to `major` or `critical` pages the current escalation level again. An acknowledged incident goes back to `triggered`, so an earlier acknowledgement does not silence the new page.
+
 ## Lifecycle: a typical auto-created incident
 
 1. HTTP check `prod-api`, linked to the `API` service in `auto` mode, flips from `success` to `failure` at 03:14:22.
 2. Incident opens automatically with `auto_created: true`, `status: investigating`, `responder_status: triggered`, and the service's default severity.
 3. The service's escalation policy pages the on-call through their notification rules. Separately, the check's notification groups send their usual monitor alert.
 4. The on-call engineer receives an SMS at 03:14:30. They open the dashboard and click **Acknowledge** at 03:15:10.
-5. `responder_status` flips to `acknowledged`. Escalation stops.
+5. `responder_status` flips to `acknowledged`. Escalation stops. With no lead yet, the engineer becomes the incident's `lead`.
 6. They post an incident update at 03:18: `status: identified`, message `"Database failover stuck. Manually promoting standby."`
-7. The fix lands at 03:24. The check goes green on the next tick.
-8. Site Qwality auto-resolves the incident: `status: resolved`, `responder_status: resolved`, `resolved_at` set.
+7. The fix lands at 03:24. The check goes green on the next tick, and `prod-api` records its `recovered_at`.
+8. Every monitor on the incident has recovered, but the incident was acknowledged and the service uses the default [auto-resolve](/incident-management/services/overview/#auto-resolve) setting, `unless_acknowledged`. It stays open for the engineer to resolve at 03:27: `status: resolved`, `responder_status: resolved`, `resolved_at` set.
+
+Had nobody acknowledged it, the incident would have resolved itself at 03:24. If `prod-api` fails again within the service's reopen window after that, the same incident reopens instead of a new one opening.
 
 You can override any of these transitions manually if needed: the auto-resolution will be skipped if you've already moved the incident to `resolved` yourself.
 
@@ -74,11 +82,21 @@ For these, use `POST /incident` (standalone) or `POST /status_page/{id}/incident
 
 Acknowledging an incident is **not** resolving it. Ack stops the page (so escalation won't keep paging), but the incident stays open until someone explicitly resolves it. This is intentional: the responder claims ownership, then has the time to actually fix the thing without their phone going off.
 
+The first person to acknowledge an incident that has no lead becomes its `lead` participant.
+
+## Working an incident with others
+
+- **Participants.** Record who is working the incident and in what role (`lead`, `responder` or `comms`), and page more people from a user, an on-call schedule or an escalation policy. See [participants](/incident-management/incidents/how-to/participants/).
+- **Affected monitors.** An incident lists the monitors it is about, when each joined and recovered, and how badly each is affected. See [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/).
+- **Merging.** Fold duplicate incidents into one. See [merge incidents](/incident-management/incidents/how-to/merge-incidents/).
+- **Moving.** Change an incident's service when it was filed under the wrong one. See [move an incident to another service](/incident-management/incidents/how-to/manual-incidents/#move-an-incident-to-another-service).
+
 ## See also
 
 <CardGrid>
   <LinkCard title="Quickstart" description="Open, update, and resolve an incident." href="/incident-management/incidents/quickstart/" />
   <LinkCard title="Manual incidents" description="When and how to create incidents by hand." href="/incident-management/incidents/how-to/manual-incidents/" />
+  <LinkCard title="Merge incidents" description="Fold duplicates into one incident." href="/incident-management/incidents/how-to/merge-incidents/" />
   <LinkCard title="On-call schedules" description="Decide who gets paged." href="/incident-management/on-call/overview/" />
   <LinkCard title="Escalation policies" description="Decide what happens if no one acks." href="/incident-management/escalation/overview/" />
 </CardGrid>

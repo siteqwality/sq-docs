@@ -1,7 +1,7 @@
 ---
 title: Incidents quickstart
 description: Open, update, acknowledge, and resolve an incident in five minutes, from the dashboard or the API.
-last_verified: 2026-05-03
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -39,7 +39,7 @@ curl -X POST https://api.siteqwality.com/incident \
     "title": "Investigating elevated 5xx errors on the API",
     "severity": "major",
     "message": "Several monitors reported failures starting around 14:30 UTC. We are investigating.",
-    "affected_http_job_ids": ["a3c1f5e0-1234-4abc-9def-aaaaaaaaaaaa"]
+    "monitors": [{ "monitor_id": "a3c1f5e0-1234-4abc-9def-aaaaaaaaaaaa", "monitor_type": "http" }]
   }'
 ```
 
@@ -143,7 +143,7 @@ curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/resolve \
 Both paths set `status: resolved`, `responder_status: resolved`, and `resolved_at`.
 
 <Aside type="tip">
-For monitor-driven incidents, you don't usually call `POST /resolve`, because the monitor's recovery does it for you. Manually resolving an auto-created incident before the monitor recovers won't suppress future re-opens; the monitor and the incident lifecycle are linked but not fused.
+For monitor-driven incidents, you often don't need `POST /resolve`: when every monitor on an auto-created incident has recovered, the incident resolves itself, unless someone acknowledged it and the service keeps the default `unless_acknowledged` [auto-resolve](/incident-management/services/overview/#auto-resolve) setting. Resolving an auto-created incident by hand doesn't stop the next failure from being tracked: a new failure within the service's reopen window (counted from the incident's last alert) reopens the same incident, and a later one opens a new incident.
 </Aside>
 
 ## What's next

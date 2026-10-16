@@ -1,0 +1,93 @@
+---
+title: Track affected monitors and impact
+description: See which monitors an incident covers, when each joined and recovered, and set how badly each one is affected.
+last_verified: 2026-10-16
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+An incident's `monitors` list says which monitors it is about. A monitor joins on its own when it fails on an auto-created incident, or you add it by hand. Each entry also carries an **impact**, which is how a [status page](/status-pages/overview/) describes that part of your service during the incident.
+
+## What each entry holds
+
+| Field | Description |
+|---|---|
+| `monitor_id` | The monitor's id. |
+| `monitor_type` | `http`, `cron` (a heartbeat), `browser`, `tls`, `dns`, `dns_record`, `page_speed` or `alert_rule`. |
+| `name` | The monitor's name, or `null`. |
+| `impact` | `degraded`, `partial_outage`, `major_outage`, or `null` to derive it from the incident's severity. |
+| `source` | `auto` when the monitor joined because it failed, `manual` when someone added it. |
+| `joined_at` | When the monitor joined the incident. |
+| `recovered_at` | When the monitor recovered, or `null` while it has not. |
+
+Every response for a single incident includes the list. `GET /incident` leaves `monitors` empty.
+
+## Auto and manual
+
+On an [auto-created incident](/incident-management/services/overview/#auto-created-incidents), every failing monitor of the service joins the open incident with `source: "auto"`, and the incident's timeline records a `monitor_joined` event. `joined_at` is when it joined and `recovered_at` is when it came back, so the list shows how an outage spread and healed monitor by monitor.
+
+You add monitors by hand with `source: "manual"`, which is how a manual incident names what it affects.
+
+## Impact and status pages
+
+A status page marks the components behind an incident's monitors. Set a monitor's `impact` to choose what its component shows:
+
+| `impact` | What it means |
+|---|---|
+| `degraded` | Working, but worse than normal. |
+| `partial_outage` | Partly down. |
+| `major_outage` | Down. |
+| `null` | Not set. Derived from the incident's severity, which is how status pages behaved before impact existed. |
+
+## Add, change and remove monitors
+
+Add a monitor, with an optional impact. Adding one that is already linked changes nothing and returns `200`:
+
+```bash
+curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/monitors \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "monitor_id": "<monitor-id>", "monitor_type": "http", "impact": "partial_outage" }'
+```
+
+Change the impact (send `null` to go back to deriving it from severity), or remove the monitor:
+
+```bash
+curl -X PUT https://api.siteqwality.com/incident/$INCIDENT_ID/monitors/http/$MONITOR_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "impact": "major_outage" }'
+
+curl -X DELETE https://api.siteqwality.com/incident/$INCIDENT_ID/monitors/http/$MONITOR_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+The add and impact calls return the incident's full monitor list. The delete returns `204`.
+
+You can also name monitors when you create the incident, with `monitors` on `POST /incident`:
+
+```json
+{
+  "monitors": [
+    { "monitor_id": "<monitor-id>", "monitor_type": "http", "impact": "degraded" },
+    { "monitor_id": "<heartbeat-id>", "monitor_type": "cron" }
+  ]
+}
+```
+
+| Status | When |
+|---|---|
+| `400` | On a change or removal, the `monitor_type` in the path is not one of the values above. |
+| `404` | The incident or monitor is not in your account. On a change or removal, the monitor is not linked to the incident. |
+| `409` | `data.conflict` is `merged`: the incident was merged into another. |
+| `422` | `monitor_type` or `impact` in the request body is not one of the values above. |
+
+<Aside type="caution" title="affected_http_job_ids is deprecated">
+Responses still carry `affected_http_job_ids`, now derived from the `http` entries in `monitors`, and create requests still accept it. It stays for one more release, so move to `monitors`. Sending both on create is fine, and naming the same monitor in each is accepted.
+</Aside>
+
+## See also
+
+<LinkCard title="Services" description="How failing monitors join an auto-created incident." href="/incident-management/services/overview/#auto-created-incidents" />
+<LinkCard title="Incident reference" description="The monitor fields and request bodies." href="/incident-management/incidents/reference/#incident-monitor" />

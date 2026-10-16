@@ -29,7 +29,7 @@ Services are the only way a monitor failure becomes an incident, and the only wa
 
 4. Pick an **incident creation mode** (see below) and a **default severity**.
 
-5. Set the **merge window** in minutes. The form starts at `0`, which turns merging off; `5` is a sensible start.
+5. Set how long a resolved incident can reopen (the reopen window, 30 minutes for a new service; `0` never reopens) and when an incident resolves itself (auto-resolve; `unless_acknowledged` by default).
 
 6. Choose the **HTTP monitors** and **cron monitors** (heartbeats) that belong to the service, and save.
 
@@ -45,7 +45,8 @@ curl -X POST https://api.siteqwality.com/service \
     "name": "Checkout API",
     "escalation_policy_id": "<policy-id>",
     "incident_creation_mode": "auto",
-    "incident_merge_window_minutes": 5,
+    "reopen_window_minutes": 30,
+    "auto_resolve": "unless_acknowledged",
     "default_incident_severity": "major"
   }'
 ```
@@ -59,18 +60,37 @@ Scoped API keys, M2M API clients and AI assistants need `read:services` to read 
 | Mode | What a failing linked monitor does |
 |---|---|
 | `manual` (default) | Nothing. You open incidents yourself; one you attach to the service still pages its policy and tells its broadcast targets. |
-| `auto` | Opens an incident, or joins the service's open incident if one opened within the merge window. |
-| `auto_with_confirmation` | Behaves exactly like `auto` today. HTTP monitors already open incidents only after their own confirmation settings pass, and heartbeats and browser checks are always treated as confirmed. |
+| `auto` | Opens the service's auto-created incident, or joins it if one is already open. See [auto-created incidents](#auto-created-incidents). |
 
-An automatic incident is titled `<monitor name> is down`, starts at the service's default severity, and pages the service's escalation policy. It is skipped while a [maintenance window](/incident-management/maintenance/overview/) matching the monitor's tags is active.
+HTTP monitors open incidents only after their own confirmation settings pass, and heartbeats and browser checks are always treated as confirmed. The old `auto_with_confirmation` mode is gone: the API still accepts it on input, treats it as `auto`, and never returns it.
 
-When a linked monitor recovers and every HTTP monitor and heartbeat on the incident is healthy again, the incident resolves itself and the escalation stops.
+## Auto-created incidents
 
-## Merge window
+A service in `auto` mode has **at most one open auto-created incident**. The first linked monitor to fail opens it, titled `<monitor name> is down`. While it is open, every other failing monitor of the service joins it instead of opening a second one. Each join adds a `monitor_joined` event to the timeline, and each monitor records when it joined and when it recovered; see [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/).
 
-While an incident the service opened is still unresolved, another failing monitor joins it instead of opening a second incident, as long as that incident was created less than `incident_merge_window_minutes` ago. The window counts from the incident's creation, not from its latest failure.
+The incident starts at the service's default severity and pages the service's escalation policy as soon as it is recorded. If that is interrupted, a sweep pages it within about a minute. It is skipped while a [maintenance window](/incident-management/maintenance/overview/) matching the monitor's tags is active.
 
-`0` turns merging off, so every failing monitor opens its own incident and its own page. The API defaults to `5`; the dashboard form starts at `0`.
+HTTP, heartbeat and browser checks all count: the incident counts as recovered when every one of its monitors is healthy again.
+
+### Reopen window
+
+When an auto-created incident has resolved, a monitor that fails again within `reopen_window_minutes` of the incident's last alert reopens that incident instead of opening a new one. A later failure opens a new incident.
+
+The window runs from `0` to `1440` minutes. New services start at `30`. `0` never reopens: every failure after a resolve opens a new incident.
+
+### Auto-resolve
+
+When every monitor on the incident has recovered, `auto_resolve` decides whether it resolves itself and stops the escalation:
+
+| Value | What happens |
+|---|---|
+| `always` | The incident resolves itself. |
+| `unless_acknowledged` (default) | It resolves itself unless someone acknowledged it. An acknowledged incident stays open for a person to resolve. |
+| `never` | It stays open until someone resolves it. |
+
+<Aside type="note" title="Retired settings">
+The merge window (`incident_merge_window_minutes`) is deprecated and ignored, and the dashboard form no longer shows it. While an auto-created incident is open, every failing monitor of the service joins it, whatever value is stored.
+</Aside>
 
 ## Link monitors
 
@@ -95,7 +115,9 @@ A broadcast target tells someone outside the escalation chain about the service'
 - **Slack channel:** a Slack bot token and channel that you paste in. It does not use the [Slack integration](/integrations/slack/). The token is write-only and is never shown again.
 - **Webhook:** a public URL. Deliveries use the [webhook envelope](/integrations/webhooks/#payload) with `incident.created` and `incident.resolved` events, but they are not signed.
 
-Targets are told when one of the service's incidents opens, and again when an incident the service opened automatically resolves itself. Acknowledgements, updates and manual resolves send nothing.
+Incident lifecycle events go to the service's broadcast targets: opened, acknowledged, updated (an update posted, or the severity or title changed), resolved, reopened, merged and service changed. Today the Slack, email and webhook targets deliver **opened** and **resolved**. The other events are recorded, and start delivering as each channel's message for them ships.
+
+An incident merged into another sends no resolved message. An update posted as an internal note is marked internal on its event, while status page subscribers only ever get public updates.
 
 Add targets on the service's detail page in the dashboard (it opens from a monitor or incident linked to the service), or through the API. See the [reference](/incident-management/services/reference/#broadcast-targets).
 

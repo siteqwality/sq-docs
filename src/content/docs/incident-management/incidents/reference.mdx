@@ -22,7 +22,12 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | `status_page_id` | uuid \| null | Deprecated: the page it was created on. Use `status_page_ids`. |
 | `public_title` | string \| null | The title status pages show. `null` shows `title`. |
 | `service_id` | uuid \| null | Optional service tag. |
-| `affected_http_job_ids` | uuid[] | HTTP monitors this incident is about. |
+| `monitors` | object[] | The monitors this incident is about (below). Empty in list responses. |
+| `affected_http_job_ids` | uuid[] | Deprecated: the `http` monitors in `monitors`. Kept for one more release. |
+| `participants` | object[] | The people working the incident (below). Empty in list responses. |
+| `merged_into_id` | uuid \| null | Set on an incident that was merged into another. |
+| `resolution_reason` | string \| null | `merged` for an incident that was merged into another, otherwise `null`. |
+| `merged_from` | object[] | The incidents merged into this one: `id`, `title`, `created_at` and their own `updates`. Updates stay on the source incident. Empty in list responses. |
 | `acknowledged_at` | rfc3339 \| null | When a responder acknowledged. |
 | `acknowledged_by` | uuid \| null | Who acknowledged. |
 | `resolved_at` | rfc3339 \| null | When the incident resolved. |
@@ -40,6 +45,32 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | `visibility` | enum | `public` shows on status pages; `internal` shows only in the app. |
 | `author_user_id` | uuid \| null | Who posted it. `null` for the system, API keys and updates from before October 2026. |
 | `created_at` | rfc3339 | When posted. |
+
+### Incident monitor
+
+| Field | Type | Description |
+|---|---|---|
+| `monitor_id` | uuid | The monitor. |
+| `monitor_type` | enum | `http`, `cron`, `browser`, `tls`, `dns`, `dns_record`, `page_speed` or `alert_rule`. |
+| `name` | string \| null | The monitor's name. |
+| `impact` | enum \| null | `degraded`, `partial_outage` or `major_outage`. `null` derives it from the incident's severity. |
+| `source` | enum | `auto` (joined because it failed) or `manual` (added by someone). |
+| `joined_at` | rfc3339 | When the monitor joined the incident. |
+| `recovered_at` | rfc3339 \| null | When the monitor recovered. |
+
+See [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/).
+
+### Incident participant
+
+| Field | Type | Description |
+|---|---|---|
+| `user_id` | uuid | The user. Participants must be users in your account. |
+| `role` | enum | `lead`, `responder` or `comms`. At most one `lead`. |
+| `added_by` | uuid \| null | Who added them. |
+| `added_at` | rfc3339 | When they were added. |
+| `paged_at` | rfc3339 \| null | When they were paged for this incident, or `null`. |
+
+See [participants](/incident-management/incidents/how-to/participants/).
 
 ## Public and internal updates
 
@@ -74,7 +105,8 @@ Resolving a published incident always posts a public `resolved` update, so its p
 | `severity` | enum | yes | `minor` / `major` / `critical`. |
 | `message` | string | yes | Text of the first incident update. |
 | `status_page_id` | uuid | no | Publish to a status page at creation. |
-| `affected_http_job_ids` | uuid[] | no | Affected HTTP monitors. |
+| `monitors` | object[] | no | Affected monitors: `{ "monitor_id", "monitor_type", "impact" }`, with `impact` optional. |
+| `affected_http_job_ids` | uuid[] | no | Deprecated: affected HTTP monitors. Use `monitors`. Sending both is fine, and duplicates are accepted. |
 | `service_id` | uuid | no | Service tag. |
 
 ### Update (`PUT /incident/{incident_id}`)
@@ -84,7 +116,8 @@ Every field is optional. Send only what changes:
 | Field | Type | Description |
 |---|---|---|
 | `title` | string | New title. |
-| `severity` | enum | New severity. |
+| `severity` | enum | New severity. Raising it from `minor` to `major` or `critical` pages the current escalation level again, and an acknowledged incident goes back to `triggered`. |
+| `service_id` | uuid \| null | Move the incident to this service (`404` if it is not in your account). `null` detaches it. Leaving it out keeps the current service. Moving an open incident cancels the old service's escalation and starts the new service's policy at level one, only while the incident is `triggered`. |
 | `status` | enum | Deprecated: post an update, or resolve. `resolved` resolves the incident with a public update; another value sets the status. |
 | `resolved_at` | rfc3339 | Deprecated and ignored: resolving records the time. |
 | `public_title` | string \| null | The title status pages show, up to 512 characters (`400` if longer). `null` or blank clears it. |
@@ -115,6 +148,35 @@ Every field is optional:
 | `post_public_update` | bool | Post that update even when the incident is on no status page. A published incident always gets one. |
 | `notify_subscribers` | bool | Email the subscribers of every page the incident is on. Default `true`. |
 
+### Merge (`POST /incident/{incident_id}/merge`)
+
+`{incident_id}` is the target. See [merge incidents](/incident-management/incidents/how-to/merge-incidents/).
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `source_ids` | uuid[] | yes | The incidents to merge into the target, 1 to 20. |
+
+Returns the target incident. `400` for an empty list or more than 20 ids, and `404` when the target or any source is not in your account. A merge is all or nothing: a `409` changes nothing, and its `data.incident_id` names the incident it refused.
+
+### Participants
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| `GET` | `/incident/{incident_id}/participants` | none | The participant list. |
+| `POST` | `/incident/{incident_id}/participants` | Exactly one of `user_id`, `schedule_id` or `escalation_policy_id`, plus optional `role` (default `responder`) and `page` (default `true`). | The full participant list. |
+| `PUT` | `/incident/{incident_id}/participants/{user_id}` | `{ "role": "lead" \| "responder" \| "comms" }` | The full list. Making someone `lead` demotes the previous lead to `responder`. |
+| `DELETE` | `/incident/{incident_id}/participants/{user_id}` | none | `204`. |
+
+A schedule adds whoever is on call now. A policy adds the users and on-call people at its first level. With `page` true, each added user is paged through their own notification rules. Paging an incident without a service returns `400`, and paging a resolved one returns `409` (`resolved`); send `"page": false` there. A `lead` must be sent as `user_id`. The first user to acknowledge becomes `lead` when there is none.
+
+### Monitors
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| `POST` | `/incident/{incident_id}/monitors` | `{ "monitor_id", "monitor_type", "impact" }`, with `impact` optional. | The full monitor list. Adding one that is already linked changes nothing and returns `200`. |
+| `PUT` | `/incident/{incident_id}/monitors/{monitor_type}/{monitor_id}` | `{ "impact": null \| "degraded" \| "partial_outage" \| "major_outage" }` | The full list. |
+| `DELETE` | `/incident/{incident_id}/monitors/{monitor_type}/{monitor_id}` | none | `204`. |
+
 ### Publish (`POST /incident/{incident_id}/publish`)
 
 | Field | Type | Description |
@@ -142,6 +204,12 @@ Standalone incidents:
 | `POST` | `/incident/{incident_id}/acknowledge` | Acknowledge (stops escalation). |
 | `POST` | `/incident/{incident_id}/resolve` | Resolve. |
 | `POST` | `/incident/{incident_id}/update` | Post an incident update. |
+| `POST` | `/incident/{incident_id}/reopen` | Reopen a resolved incident. |
+| `POST` | `/incident/{incident_id}/merge` | [Merge](/incident-management/incidents/how-to/merge-incidents/) other incidents into this one. |
+| `GET` / `POST` | `/incident/{incident_id}/participants` | List / add [participants](/incident-management/incidents/how-to/participants/). |
+| `PUT` / `DELETE` | `/incident/{incident_id}/participants/{user_id}` | Change a participant's role / remove them. |
+| `POST` | `/incident/{incident_id}/monitors` | Add an [affected monitor](/incident-management/incidents/how-to/affected-monitors/). |
+| `PUT` / `DELETE` | `/incident/{incident_id}/monitors/{monitor_type}/{monitor_id}` | Set a monitor's impact / remove it. |
 | `POST` | `/incident/{incident_id}/publish` | Publish to a status page. |
 | `DELETE` | `/incident/{incident_id}/publish/{status_page_id}` | Unpublish from a status page. |
 | `GET` / `POST` | `/incident/action/{token}` | [Acknowledge or resolve from an email or SMS](/incident-management/incidents/how-to/one-click-actions/). `GET` shows a confirmation page and changes nothing; `POST` (its button) acts. Token-authenticated, no session needed. Each link is made for one paged user, works once, expires after 24 hours, and stops working when the incident changes state. |
@@ -153,6 +221,25 @@ Status-page-scoped incidents (same shapes, scoped to one page):
 | `POST` / `GET` | `/status_page/{status_page_id}/incident` | Create / list. |
 | `GET` / `PUT` / `DELETE` | `/status_page/{status_page_id}/incident/{incident_id}` | Detail / update / delete. |
 | `POST` | `/status_page/{status_page_id}/incident/{incident_id}/update` | Post an update. A public one emails that page's subscribers unless `notify_subscribers` is `false`. |
+
+## Conflicts (`409`)
+
+A `409` from these routes carries a code in `data.conflict`:
+
+| Route | `data.conflict` | Meaning |
+|---|---|---|
+| `POST /incident/{id}/merge` | `same_incident` | A source is the target. |
+| `POST /incident/{id}/merge` | `source_merged` | A source was already merged into another incident. |
+| `POST /incident/{id}/merge` | `source_resolved` | A source is already resolved. |
+| `POST /incident/{id}/merge` | `target_resolved` | The target is resolved. |
+| `POST /incident/{id}/merge` | `target_merged` | The target was merged into another incident. |
+| `POST /incident/{id}/participants` | `merged` | The incident was merged into another. |
+| `POST /incident/{id}/participants` | `resolved` | `page` is `true` on a resolved incident. |
+| `POST /incident/{id}/participants` | `nobody_on_call` | The schedule or policy resolved to no one. |
+| `POST /incident/{id}/monitors` | `merged` | The incident was merged into another. |
+| `PUT /incident/{id}` | `open_auto_incident_exists` | You moved an auto-created incident onto a service that already has an open auto-created incident. |
+| `POST /incident/{id}/reopen` | `open_auto_incident_exists` | Another open auto-created incident already covers that service. |
+| `POST /incident/{id}/reopen` | `merged` | A merged incident cannot reopen. |
 
 ## See also
 

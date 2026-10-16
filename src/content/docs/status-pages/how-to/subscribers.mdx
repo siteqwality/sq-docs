@@ -22,7 +22,7 @@ The back-end emails a page's subscribers when:
 - The incident is resolved by hand, unless `notify_subscribers` is `false`. When its monitors recover and it resolves itself, only pages whose subscribers already heard about it are told.
 - Maintenance is scheduled on the page, when it starts and when it ends.
 
-Nothing is sent for an internal note, an unpublish, a reopen or a maintenance edit.
+Nothing is sent for an internal note, an unpublish, a reopen, a maintenance edit, or an incident that was [merged](/incident-management/incidents/how-to/merge-incidents/) into another. Subscribers only ever get public updates.
 
 ### Who gets which notice
 

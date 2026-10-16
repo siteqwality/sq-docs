@@ -1,0 +1,62 @@
+---
+title: Merge incidents
+description: Fold duplicate incidents into one, what moves, what customers see, and the conflicts that stop a merge.
+last_verified: 2026-10-16
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+An outage can open more than one incident: a teammate files one by hand while a monitor opens another, or two services each open their own. Merging folds the duplicates (the **sources**) into the incident you keep (the **target**), so responders and customers follow one timeline.
+
+## What a merge does
+
+- **Sources resolve as merged.** Each source becomes `resolved` with `resolution_reason: "merged"` and `merged_into_id` set to the target. A merged incident cannot be reopened.
+- **Monitors and participants move.** The sources' [affected monitors](/incident-management/incidents/how-to/affected-monitors/) and [participants](/incident-management/incidents/how-to/participants/) are added to the target.
+- **The highest severity wins.** The target takes the highest severity among itself and its sources.
+- **Updates stay on the source.** The target lists each source under `merged_from`, with the source's `id`, `title`, `created_at` and its own `updates`, so you can read the full history from the target.
+- **Published sources point to the target.** A source that is on a status page gets one public update, "Merged into" followed by the target's title, and the target is added to that page.
+- **Sources are quiet.** A merge sends no resolved notification and no subscriber email for the sources.
+- **Paging carries over.** The sources' escalations stop. If a source was still paging and the target was not, the target's escalation starts.
+- **All or nothing.** If any source cannot be merged, nothing changes.
+
+## Merge through the API
+
+The incident in the path is the target. Send between 1 and 20 source ids:
+
+```bash
+curl -X POST https://api.siteqwality.com/incident/$TARGET_ID/merge \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "source_ids": ["<source-id-1>", "<source-id-2>"] }'
+```
+
+The response is the target incident, with the moved monitors and participants and the sources under `merged_from`.
+
+| Status | Meaning |
+|---|---|
+| `200` | Merged. The body is the target. |
+| `400` | `source_ids` is empty or has more than 20 ids. |
+| `404` | The target, or any source, is not an incident in your account. |
+| `409` | The merge is not allowed. `data.conflict` says why (below). |
+
+## Conflicts
+
+A `409` carries one of these codes in `data.conflict`, and `data.incident_id` names the incident it refused:
+
+| `data.conflict` | Meaning |
+|---|---|
+| `same_incident` | One of the sources is the target itself. |
+| `source_merged` | A source was already merged into another incident. |
+| `source_resolved` | A source is already resolved. |
+| `target_resolved` | The target is resolved. |
+| `target_merged` | The target was itself merged into another incident. Merge into that one instead. |
+
+<Aside type="tip">
+Pick as the target the incident you want people to follow: usually the one that already has the right service, status-page entry and lead. Resolved incidents cannot be merged, so merge duplicates while they are open.
+</Aside>
+
+## See also
+
+<LinkCard title="Incident reference" description="The merge request, the conflict codes and the merged_from field." href="/incident-management/incidents/reference/#merge-post-incidentincident_idmerge" />
+<LinkCard title="Incidents overview" description="Status, responder status and the lifecycle." href="/incident-management/incidents/overview/" />

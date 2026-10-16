@@ -1,7 +1,7 @@
 ---
 title: Webhook integrations
 description: Send a signed JSON POST to your own URL for monitor, alert and RUM events, with retries and a delivery log.
-last_verified: 2026-10-13
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -239,7 +239,7 @@ An unknown event or field name, or an empty list, is refused with a `400` that n
 
 ## Incident webhooks
 
-A service can also send `incident.created` and `incident.resolved` events to a webhook URL as a broadcast target. Those deliveries use the same envelope and retries, but they are not signed and do not appear in an integration's delivery log, because a service target is not a webhook integration. The signature check above cannot verify them.
+A service can also send `incident.created` and `incident.resolved` events to a webhook URL as a broadcast target. Those are the only incident events a webhook target delivers today. Acknowledged, updated, reopened, merged and service-changed events are recorded and not yet delivered. Those deliveries use the same envelope and retries, but they are not signed and do not appear in an integration's delivery log, because a service target is not a webhook integration. The signature check above cannot verify them.
 
 `data` for an incident event:
 

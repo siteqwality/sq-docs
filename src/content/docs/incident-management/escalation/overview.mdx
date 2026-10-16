@@ -94,6 +94,12 @@ Every route into acknowledgement does this, so it does not matter how the respon
 Acknowledging or resolving is the only thing that suppresses those. Waiting for the policy to exhaust is not.
 </Aside>
 
+## When an incident changes while it escalates
+
+- **Severity goes up.** Raising an incident from `minor` to `major` or `critical` pages the current level again, and an acknowledged incident goes back to `triggered`.
+- **It moves to another service.** The old service's escalation is cancelled and the new service's policy starts at level one, but only while the incident is `triggered`. See [move an incident to another service](/incident-management/incidents/how-to/manual-incidents/#move-an-incident-to-another-service).
+- **You add participants.** Adding a user, a schedule or a policy as [participants](/incident-management/incidents/how-to/participants/) pages each person through their own notification rules.
+
 ## Targets vs notification groups
 
 Two different mechanisms with overlapping vibes:

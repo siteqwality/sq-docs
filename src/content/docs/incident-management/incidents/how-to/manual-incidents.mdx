@@ -22,7 +22,7 @@ Set `service_id` on the create request and the incident runs the service's escal
 
 ## When *not* to
 
-- Don't manually create an incident for an outage a monitor will catch in 60 seconds anyway. The auto-incident will be cleaner, since it has fewer race conditions with `responder_status` and `affected_http_job_ids`.
+- Don't manually create an incident for an outage a monitor will catch in 60 seconds anyway. The auto-incident will be cleaner, since it has fewer race conditions with `responder_status` and the monitor list.
 - Don't create an incident as a stand-in for a Slack message. If you don't intend to publish it on a status page or trigger paging, just message the team directly.
 
 ## Two flavors of manual incident
@@ -82,16 +82,18 @@ The page shows the public title and public updates only. On an incident's own pa
 
 ## Linking to affected monitors
 
-Even on manual incidents, set `affected_http_job_ids` if monitors *do* exist for the broken thing. This makes the incident appear as a banner on the matching status-page components, and groups it correctly in dashboards.
+Even on manual incidents, name the `monitors` if monitors *do* exist for the broken thing. This makes the incident appear as a banner on the matching status-page components, and groups it correctly in dashboards. Each entry takes an optional `impact` (`degraded`, `partial_outage` or `major_outage`):
 
 ```json
 {
-  "affected_http_job_ids": [
-    "a3c1f5e0-1234-4abc-9def-aaaaaaaaaaaa",
-    "b7d2e601-5678-4def-9abc-bbbbbbbbbbbb"
+  "monitors": [
+    { "monitor_id": "a3c1f5e0-1234-4abc-9def-aaaaaaaaaaaa", "monitor_type": "http", "impact": "major_outage" },
+    { "monitor_id": "b7d2e601-5678-4def-9abc-bbbbbbbbbbbb", "monitor_type": "http" }
   ]
 }
 ```
+
+The older `affected_http_job_ids` list is deprecated but still accepted. You can add, re-grade and remove monitors after creation too: see [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/).
 
 ## Making it page someone
 
@@ -123,6 +125,21 @@ Three situations produce an incident that quietly pages nobody, and none of them
 If a manual incident did not page, check the service first.
 </Aside>
 
+## Move an incident to another service
+
+Filed it under the wrong service? Send `service_id` on `PUT /incident/{incident_id}`: a service id moves the incident there (`404` if it is not in your account), `null` detaches it from any service, and leaving it out keeps it as it is.
+
+```bash
+curl -X PUT https://api.siteqwality.com/incident/$INCIDENT_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "service_id": "<new-service-id>" }'
+```
+
+Moving an open incident cancels the old service's escalation and starts the new service's [escalation policy](/incident-management/escalation/overview/) at level one. The new policy only starts while the incident is still `triggered`: an acknowledged incident does not start paging again. The move is recorded as a service-changed [broadcast event](/incident-management/services/overview/#broadcast-targets).
+
+An auto-created incident cannot move onto a service that already has an open auto-created incident: the request returns `409` with `data.conflict` set to `open_auto_incident_exists`. Merge the two incidents instead, see [merge incidents](/incident-management/incidents/how-to/merge-incidents/).
+
 ## Severity guidance for manual incidents
 
 | Use case | Severity |
@@ -131,7 +148,7 @@ If a manual incident did not page, check the service first.
 | Login broken for a subset of users | `major` |
 | Full outage, billing affected, security event | `critical` |
 
-Severity drives display order, color, and filters. It also picks the **urgency** used when paging: `critical` and `major` page at high urgency, `minor` at low. Each targeted responder's own [notification rules](/incident-management/notifications/overview/#notification-rules) for that urgency decide which of their contact methods fire, so a `minor` incident can legitimately reach a different set of devices than a `critical` one.
+Severity drives display order, color, and filters. It also picks the **urgency** used when paging: `critical` and `major` page at high urgency, `minor` at low. Each targeted responder's own [notification rules](/incident-management/notifications/overview/#notification-rules) for that urgency decide which of their contact methods fire, so a `minor` incident can legitimately reach a different set of devices than a `critical` one. Raising a `minor` incident to `major` or `critical` pages the current escalation level again.
 
 ## Following up
 

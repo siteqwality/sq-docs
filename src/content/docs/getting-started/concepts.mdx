@@ -1,7 +1,7 @@
 ---
 title: Concepts and glossary
 description: The vocabulary used across the Site Qwality docs and product, defined precisely.
-last_verified: 2026-10-14
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -35,12 +35,13 @@ When a monitor runs in N locations, this knob says "consider the monitor failing
 
 ### Incident
 
-An open record of "something is broken." Incidents are opened by hand (dashboard or API), or automatically when a monitor linked to a [service](#service) in an automatic mode starts failing. Each incident has:
+An open record of "something is broken." Incidents are opened by hand (dashboard or API), or automatically when a monitor linked to a [service](#service) in `auto` mode starts failing. Each incident has:
 
 - **Status:** `investigating` → `identified` → `monitoring` → `resolved`.
 - **Severity:** `minor`, `major`, or `critical`.
 - **Responder status:** `triggered` (no one's looking), `acknowledged` (someone's on it), or `resolved`.
 - **Updates:** a chronological log of status changes, posted internally and (optionally) to the public status page.
+- **Monitors and participants:** the monitors it is about, and the people working it.
 
 Auto-created incidents have `auto_created: true`; manually created ones do not.
 
@@ -51,6 +52,14 @@ A single timeline entry on an incident: a change of status with a written messag
 ### Acknowledgement
 
 When a responder claims an incident, its `responder_status` flips from `triggered` to `acknowledged`. This stops further escalation but doesn't resolve the incident.
+
+### Participant
+
+A person working an incident, with a role of `lead`, `responder` or `comms`. The first person to acknowledge becomes the lead. Participants are users already in your account, so they never use a seat. See [Participants](/incident-management/incidents/how-to/participants/).
+
+### Merged incident
+
+A duplicate incident folded into another. It resolves with `resolution_reason: "merged"`, and its monitors and participants move to the incident it was merged into. See [Merge incidents](/incident-management/incidents/how-to/merge-incidents/).
 
 ## On-call vocabulary
 
@@ -76,11 +85,11 @@ A hard "user X is on call from time A to time B" entry that beats every layer. U
 
 ### Service
 
-A named part of your product, such as `Checkout API`, that ties monitors to incident handling. A service holds the escalation policy to page, an incident creation mode (`manual`, `auto` or `auto_with_confirmation`), a merge window, a default severity for the incidents it opens, and optional broadcast targets. Link HTTP monitors and heartbeats to it from the service, and browser checks through the API. See [Services](/incident-management/services/overview/).
+A named part of your product, such as `Checkout API`, that ties monitors to incident handling. A service holds the escalation policy to page, an incident creation mode (`manual` or `auto`), a reopen window, an auto-resolve setting, a default severity for the incidents it opens, and optional broadcast targets. In `auto` mode it keeps one open incident that every failing monitor joins. Link HTTP monitors and heartbeats to it from the service, and browser checks through the API. See [Services](/incident-management/services/overview/).
 
 ### Broadcast target
 
-An email address, a Slack channel (with a bot token you paste in) or a webhook URL that a service tells when one of its incidents opens, and again when an incident it opened automatically resolves itself. Separate from notification channels.
+An email address, a Slack channel (with a bot token you paste in) or a webhook URL that a service tells about its incidents: today when one opens and when one resolves. Separate from notification channels.
 
 ## Escalation vocabulary
 
