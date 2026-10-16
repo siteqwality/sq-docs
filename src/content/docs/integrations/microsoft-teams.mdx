@@ -68,7 +68,7 @@ The destination is implicit in the integration's webhook URL, so you don't speci
 
 HTTP monitors, browser checks, TLS and domain expiry warnings, page speed alerts, log, metric and trace alert rules, and RUM issues all post to Teams. Heartbeat (cron) monitors and DNS record changes do not post to Teams today, and incidents and escalations do not use Teams. See the [coverage table](/integrations/coverage/#microsoft-teams).
 
-A send is tried up to three times in quick succession. There is no later retry.
+Each attempt waits up to 10 seconds and never follows a redirect. A deleted or refused workflow URL (`400`, `401`, `403`, `404`, `410`) or a redirect is recorded once as rejected and not retried. Other failures are tried up to three times in quick succession. There is no later retry.
 
 ## Multiple channels
 

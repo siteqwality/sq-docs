@@ -33,7 +33,7 @@ Not every alert source reaches every channel type. [Alert coverage](/integration
 
 When an alert is deliberately not sent to a channel, Site Qwality records a receipt with the status `skipped` and a reason code. [Alert coverage](/integrations/coverage/#skipped-deliveries) lists every reason code, what it means and whether it marks the channel degraded.
 
-Skipped receipts appear in a channel's recent deliveries (`health.recent` on `GET /notification/{id}` and on each channel in `GET /notification_group`) and in a monitor's alert history (`GET /monitors/{id}/alert_history`, with the slug in `detail`). A skip by design, such as `heartbeat_channel_unsupported`, is listed but does not change the channel's `health.state`. An `sms_quota` or `sms_platform_limit` skip sets it to `degraded`, because the next alert will likely not arrive either.
+Skipped receipts appear in a channel's recent deliveries (`health.recent` on `GET /notification/{id}` and on each channel in `GET /notification_group`) and in a monitor's alert history (`GET /monitors/{id}/alert_history`, with the slug in `detail`). A skip by design, such as `heartbeat_channel_unsupported`, is listed but does not change the channel's `health.state`. An `sms_quota`, `sms_platform_limit` or `recipient_suppressed` skip sets it to `degraded`, because the next alert will likely not arrive either.
 
 ### Warnings when you save a monitor
 
@@ -262,10 +262,10 @@ Not all channels behave the same when a send fails. This matters when you are ch
 | Channels | On failure |
 |---|---|
 | Webhooks | Up to 6 attempts over 30 minutes. Every attempt is in the endpoint's [delivery log](/integrations/webhooks/#delivery-log-and-replay). While retries are pending the alert's receipt reads `delayed`; when they end it becomes `delivered`, `failed` or `rejected`. |
-| PagerDuty, Opsgenie | 3 attempts. A `4xx` other than `408` or `429` is recorded as rejected. Other failures run the send again up to twice; after that the alert is **dropped with no record**. |
-| Pushover, Pushbullet | 1 attempt. A `4xx` is recorded as rejected. Other failures run the send again up to twice; after that the alert is dropped with no record. |
-| Email, SMS, Slack, Telegram | 1 attempt. A failure runs the send again up to twice; after that the alert is dropped with no record. |
-| Discord, Microsoft Teams, Google Chat, Mattermost | 3 attempts in quick succession, then the failure is recorded and the message is dropped. If the attempts run past the send's time limit, the alert is lost with no record. |
+| PagerDuty, Jira Service Management (Opsgenie) | 3 attempts, each waiting up to 10 seconds. A `4xx` other than `408` or `429` is recorded as rejected. Other failures run the send again up to twice; after that the alert is **dropped with no record**. |
+| Pushover, Pushbullet | 1 attempt. A `4xx` is recorded as rejected. A Pushover `429` means the Pushover account used its monthly message limit, and is recorded as rejected too. Other failures run the send again up to twice; after that the alert is dropped with no record. |
+| Email, SMS, Slack, Telegram | 1 attempt. A refusal is recorded as rejected, and an SMS to a number that opted out is skipped (`recipient_suppressed`). Other failures run the send again up to twice; after that the alert is dropped with no record. |
+| Discord, Microsoft Teams, Google Chat, Mattermost | Up to 3 attempts in quick succession, each waiting up to 10 seconds, with no redirect followed. A `400`, `401`, `403`, `404`, `410` or redirect is recorded once as rejected. A timeout after the request went out is not sent again, since it may have arrived. The attempts stop before the send's time limit, so the failure is always recorded. |
 
 For a page that must arrive, use more than one channel type.
 

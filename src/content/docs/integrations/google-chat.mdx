@@ -63,7 +63,7 @@ Messages render as a Google Chat card with a header and a body section carrying 
 ## Delivery behavior
 
 <Aside type="caution" title="A failed send is not retried later">
-Google Chat rides the shared platform-webhook transport: a send is tried up to 3 times in quick succession, each with a 15 second timeout, and any non-2xx response counts as a failure. After that the alert is not retried. A send that ends with an error response shows as failed in the channel's alert history; a send that runs out of time can be lost with no record.
+Google Chat rides the shared platform-webhook transport. Each attempt waits up to 10 seconds, and a redirect is never followed. An answer no retry can change (`400`, `401`, `403`, `404`, `410` or a redirect) is recorded once as rejected, with the reason, and not retried. Any other error answer, or a connection that could not be made, is tried up to 3 times in quick succession and then recorded as failed. A send that times out after the request went out may have arrived, so it is not sent again: it is recorded as failed with that note. The attempts stop before the send's time limit, so the outcome is always recorded, but nothing is retried later.
 
 If Google Chat is your only alerting path for something that matters, pair it with a second channel.
 </Aside>

@@ -53,7 +53,7 @@ curl -X POST https://api.siteqwality.com/notification \
 ## Notes
 
 - One integration per Discord channel. Create multiple integrations for multiple destinations.
-- A send is tried up to three times in quick succession. Nothing is queued and there is no later retry, so a send that Discord rate-limits can be lost.
+- Each attempt waits up to 10 seconds and never follows a redirect. A deleted webhook (`404`), a refused one (`401`, `403`) or a redirect is recorded once as rejected and not retried. Other failures are tried up to three times in quick succession. Nothing is queued and there is no later retry, so a send that Discord rate-limits can fail.
 - HTTP monitors, browser checks, TLS and domain expiry warnings, page speed alerts, alert rules and RUM issues post to Discord. Heartbeat (cron) monitors and DNS record changes do not post to Discord today. See the [coverage table](/integrations/coverage/#discord).
 - Webhook URLs are secrets, since anyone with the URL can post to the channel. Rotate (delete + recreate) if leaked.
 
