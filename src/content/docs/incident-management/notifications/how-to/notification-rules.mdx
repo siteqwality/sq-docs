@@ -86,7 +86,7 @@ Deleting your `low` rule does not stop low-urgency pages: with no rule, they go 
 
 ## How the stack interacts with escalation
 
-Escalation policy timeouts and personal-rule delays are **independent timers**, and either can fire up to about a minute after its time. If your escalation policy fires a level at minute 0 and you have rules at 0/5/15 min:
+Escalation policy timeouts and personal-rule delays are **independent timers**. An escalation timeout fires within a few seconds of its time; a delayed rule can fire up to about a minute after its delay. If your escalation policy fires a level at minute 0 and you have rules at 0/5/15 min:
 
 | Time | Event |
 |---|---|

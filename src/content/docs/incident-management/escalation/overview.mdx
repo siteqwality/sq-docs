@@ -73,7 +73,7 @@ Incident opens
    repeat or stop (per repeat_count)
 ```
 
-Each level does three things in order: resolve its targets (on-call schedules resolve at firing time, so handoffs work transparently), page each resolved user through their own [notification rules](/incident-management/notifications/overview/#notification-rules-per-user), and schedule a one-shot timeout for `timeout_minutes` after those pages go out. When that timeout fires, the policy advances. It can fire up to about a minute late, so a level waits between `timeout_minutes` and roughly one minute more.
+Each level does three things in order: start a one-shot timeout for `timeout_minutes`, resolve its targets (on-call schedules resolve at firing time, so handoffs work transparently), and page each resolved user through their own [notification rules](/incident-management/notifications/overview/#notification-rules-per-user). The timeout counts from when the level starts, so time spent paging does not lengthen it, and the policy advances within a few seconds of it running out.
 
 A rule whose contact method cannot page (an unverified SMS number, a bounced email address, no SMS left on the account) is skipped. A user no rule can reach is paged at their sign-in email instead. Both are recorded on the incident.
 
@@ -81,7 +81,7 @@ A level with no resolvable targets still schedules its timeout and still advance
 
 ## Acknowledging stops it
 
-Acknowledging or resolving the incident cancels the escalation: its state moves to `acknowledged` and any pending timeout and per-user delay schedules are deleted. The incident itself keeps existing, and the responder works the fix.
+Acknowledging or resolving the incident cancels the escalation: its state moves to `acknowledged`, and neither its pending timeout nor any per-user delayed page will fire. The incident itself keeps existing, and the responder works the fix.
 
 Every route into acknowledgement does this, so it does not matter how the responder answers:
 

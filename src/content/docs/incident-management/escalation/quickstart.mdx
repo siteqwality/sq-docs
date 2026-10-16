@@ -130,7 +130,7 @@ curl https://api.siteqwality.com/escalation_policy/$POLICY_ID/readiness \
 The cleanest test: attach the policy to a [service](/incident-management/services/overview/), open a manual incident on that service, and don't ack it. You should see the page hit the on-call first, escalate at 5 minutes, then 10, then 15.
 
 <Aside type="tip">
-For acceptance testing, use a temporary policy with 1-minute timeouts so you can confirm escalation works end-to-end in a few minutes instead of 30. Each level then waits between 1 and about 2 minutes, so three levels take 3 to 6 minutes.
+For acceptance testing, use a temporary policy with 1-minute timeouts so you can confirm escalation works end-to-end in about 3 minutes instead of 30.
 </Aside>
 
 ## What's next
