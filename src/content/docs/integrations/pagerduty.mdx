@@ -93,7 +93,7 @@ A failed send is retried up to 3 times in quick succession, which is safe becaus
 ## Limitations
 
 - The endpoint is the global `events.pagerduty.com`. The EU service region is not configurable.
-- PagerDuty channels fire for **HTTP monitors, browser checks, heartbeat (cron) monitors, domain expiry warnings, DNS record changes, log, metric and trace alert rules, and RUM issues**. TLS expiry warnings and page speed alerts do not reach PagerDuty today: a PagerDuty channel attached to a group used by those sources is skipped. See the [coverage table](/incident-management/notifications/channels/#which-alerts-reach-which-channels).
+- PagerDuty channels fire for **HTTP monitors, browser checks, heartbeat (cron) monitors, domain expiry warnings, DNS record changes, log, metric and trace alert rules, and RUM issues**. TLS expiry warnings and page speed alerts do not reach PagerDuty today: a PagerDuty channel attached to a group used by those sources is skipped. See the [coverage table](/integrations/coverage/#pagerduty).
 - Incidents and escalation policies do not page through PagerDuty. The integration sends monitor and alert-rule events only.
 
 ## See also
