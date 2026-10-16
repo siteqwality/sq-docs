@@ -312,6 +312,7 @@ export default defineConfig({
 								{ label: 'Overview', slug: 'incident-management/escalation/overview' },
 								{ label: 'Quickstart', slug: 'incident-management/escalation/quickstart' },
 								{ label: 'Reference', slug: 'incident-management/escalation/reference' },
+								{ label: 'Check readiness', slug: 'incident-management/escalation/readiness' },
 							],
 						},
 						{

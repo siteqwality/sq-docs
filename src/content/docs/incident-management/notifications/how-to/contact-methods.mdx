@@ -1,7 +1,7 @@
 ---
 title: Add and verify contact methods
 description: Add an email, SMS number or Slack DM that incident pages can reach, verify it with a 6-digit code, and edit it later.
-last_verified: 2026-10-14
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -38,6 +38,8 @@ Each user can have up to 20 contact methods. A 21st returns `409` with code `con
 3. Save, then verify the method: Site Qwality sends a 6-digit code to it, and you enter the code. An SMS number cannot be used in a rule until you do.
 
 </Steps>
+
+An email address that bounces permanently, or reports a page as spam, stops receiving pages: the rule is skipped and the incident records why. The [readiness check](/incident-management/escalation/readiness/) on each escalation policy shows any method like this.
 
 ## Add one with the API
 
@@ -180,7 +182,7 @@ curl -X DELETE https://api.siteqwality.com/user/$USER_ID/contact_method/$METHOD_
 ```
 
 <Aside type="caution">
-If you delete the method your rules use, those rules go with it. A user with no rule for an incident's urgency is not paged, so check your [notification rules](/incident-management/notifications/how-to/notification-rules/) afterwards.
+If you delete the method your rules use, those rules go with it. A user with no rule for an incident's urgency is paged only at their sign-in email, so check your [notification rules](/incident-management/notifications/how-to/notification-rules/) afterwards.
 </Aside>
 
 ## See also

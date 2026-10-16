@@ -1,7 +1,7 @@
 ---
 title: Escalation quickstart
 description: Build a three-level escalation policy from primary on-call to engineering manager, in under five minutes.
-last_verified: 2026-05-03
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -114,9 +114,20 @@ curl -X PUT https://api.siteqwality.com/escalation_policy/$POLICY_ID/level/reord
   }'
 ```
 
-## 4. Test it
+## 4. Check readiness
 
-The cleanest test: open a manual incident on a monitor wired to a notification group that triggers this policy, and don't ack it. You should see the page hit the on-call first, escalate at 5 minutes, then 10, then 15.
+The policy page's **Readiness** panel says whether every level reaches someone, for critical and major incidents and for minor ones, before the level times out. Fix anything it lists, such as a user whose only rule is an unverified SMS number. With the API:
+
+```bash
+curl https://api.siteqwality.com/escalation_policy/$POLICY_ID/readiness \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+`"ready": true` means every level reaches someone at both urgencies. See [check readiness](/incident-management/escalation/readiness/).
+
+## 5. Test it
+
+The cleanest test: attach the policy to a [service](/incident-management/services/overview/), open a manual incident on that service, and don't ack it. You should see the page hit the on-call first, escalate at 5 minutes, then 10, then 15.
 
 <Aside type="tip">
 For acceptance testing, use a temporary policy with 1-minute timeouts so you can confirm escalation works end-to-end in a few minutes instead of 30. Each level then waits between 1 and about 2 minutes, so three levels take 3 to 6 minutes.

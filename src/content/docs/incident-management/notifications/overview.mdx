@@ -1,7 +1,7 @@
 ---
 title: Notifications
 description: Channels, groups, contact methods, and rules. The four-layer system for routing alerts to the right person via the right tool.
-last_verified: 2026-10-14
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -89,7 +89,7 @@ Personal preferences for "if I'm being paged at urgency X, fire this contact met
 
 That's: SMS me immediately, Slack DM me if I haven't acked in 5 minutes, email me if I haven't acked in 15.
 
-`urgency` is `high` or `low`, and it is derived from the incident's severity rather than chosen: `critical` and `major` page at **high** urgency, `minor` pages at **low**. A user with no rule matching the incident's urgency is simply not paged.
+`urgency` is `high` or `low`, and it is derived from the incident's severity rather than chosen: `critical` and `major` page at **high** urgency, `minor` pages at **low**. A user with no rule matching the incident's urgency, or whose matching rules cannot page, is paged at their sign-in email instead (see [the fallback](/incident-management/escalation/readiness/#the-sign-in-email-fallback)).
 
 `delay_minutes` defaults to `0` and accepts `0` to `1440`. A rule with a delay becomes a scheduled one-shot, and when it fires the system re-checks that the incident is still triggered, the escalation has not been acknowledged, and the rule still exists. Anything that changed in the meantime cancels the send, so a delayed rule cannot page you about an incident you already acked.
 
@@ -111,7 +111,8 @@ There are two separate paths, and they share nothing. [Who gets notified](/incid
 1. An incident opens on a service, either by hand or automatically from a monitor linked to a service.
 2. The service's escalation policy pages the users on its first level:
    - For each user, walk their notification rules for the incident's urgency.
-   - Each rule waits its `delay_minutes`, then fires its contact method.
+   - Each rule waits its `delay_minutes`, then fires its contact method. A rule that cannot page (an unverified SMS number, a bounced address, no SMS left) is skipped.
+   - A user no rule can reach is paged at their sign-in email.
 3. If no one acknowledges within the level's `timeout_minutes`, advance to the next escalation level.
 
 ## Pricing

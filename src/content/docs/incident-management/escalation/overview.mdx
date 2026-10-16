@@ -1,7 +1,7 @@
 ---
 title: Escalation policies
 description: Ordered chains of "page these targets, wait, then escalate", with timeouts, repeat cycles, and on-call schedule integration.
-last_verified: 2026-08-02
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -75,7 +75,9 @@ Incident opens
 
 Each level does three things in order: resolve its targets (on-call schedules resolve at firing time, so handoffs work transparently), page each resolved user through their own [notification rules](/incident-management/notifications/overview/#notification-rules-per-user), and schedule a one-shot timeout for `timeout_minutes` after those pages go out. When that timeout fires, the policy advances. It can fire up to about a minute late, so a level waits between `timeout_minutes` and roughly one minute more.
 
-A level with no resolvable targets still schedules its timeout and still advances. It just pages nobody.
+A rule whose contact method cannot page (an unverified SMS number, a bounced email address, no SMS left on the account) is skipped. A user no rule can reach is paged at their sign-in email instead. Both are recorded on the incident.
+
+A level with no resolvable targets still schedules its timeout and still advances. It just pages nobody. The [readiness check](/incident-management/escalation/readiness/) shows levels like this before an incident does.
 
 ## Acknowledging stops it
 
@@ -136,5 +138,6 @@ Each incident carries one escalation state. The incident API and dashboard do no
 <CardGrid>
   <LinkCard title="Quickstart" description="Build a 3-level escalation in 5 minutes." href="/incident-management/escalation/quickstart/" />
   <LinkCard title="Reference" description="Every escalation step type and field." href="/incident-management/escalation/reference/" />
+  <LinkCard title="Check readiness" description="Whether each level reaches someone, per incident severity." href="/incident-management/escalation/readiness/" />
   <LinkCard title="On-call schedules" description="What 'target_schedule_ids' resolves to." href="/incident-management/on-call/overview/" />
 </CardGrid>

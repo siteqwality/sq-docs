@@ -1,0 +1,202 @@
+---
+title: Check that a policy reaches someone
+description: The readiness check shows, level by level and for every incident severity, whether an escalation policy reaches a person before the level times out.
+last_verified: 2026-10-16
+owner: jj
+---
+
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+
+An escalation policy can look complete and still page nobody: a level with no targets, a schedule with a gap, or a user whose only rule points at an SMS number nobody verified. The readiness check finds these before an incident does. It judges each level as if an incident opened now, once for `high` urgency (`critical` and `major` incidents) and once for `low` (`minor` incidents).
+
+## When a user is reachable
+
+A user is reachable at a level when one of their [notification rules](/incident-management/notifications/how-to/notification-rules/) for the incident's urgency points at a contact method that can page and fires before the level times out. A contact method can page when:
+
+- it is an email, SMS or Slack DM method (phone calls are not delivered);
+- its details are valid;
+- for SMS, the number is verified;
+- for email, the address has never bounced permanently or been reported as spam (Site Qwality's mail provider stops sending to such addresses);
+- for SMS, the account still has SMS left in its monthly quota or purchased credits.
+
+A rule whose `delay_minutes` is as long as the level's `timeout_minutes` or longer does not count: it fires after the level has already moved on.
+
+The escalation engine uses the same definition when it pages. A rule that cannot page is skipped, and the skip is recorded on the incident.
+
+## The sign-in email fallback
+
+A user who is targeted but has no rule that can page for the incident's urgency is not silently skipped. Site Qwality sends the page to the email they sign in with instead, and records an `escalation_fallback_email` event on the incident. This covers a user with no rule for the urgency at all, and a user whose every rule failed the checks above. A user whose rules can page, even after a delay, gets no fallback.
+
+The fallback is a safety net, not a setup. The readiness check reports it as `fallback_email` so you can fix the rules. If the sign-in address has bounced too, nothing goes out and the user is `unreachable`.
+
+## In the dashboard
+
+<Steps>
+
+1. Open **Escalation** and choose a policy. The **Readiness** panel at the top gives a verdict for the whole policy and lists every problem it found, in level order.
+
+2. Each level shows its status for **Critical and major** and for **Minor** incidents, and names the rules that fall short (for example "Ana, minor: SMS: the number is not verified").
+
+3. When you add a level, the form checks the draft as soon as it has a target, before you save it.
+
+</Steps>
+
+The panel checks again after you add, remove or reorder a level. Choose **Check again** after changing someone's rules or contact methods.
+
+## With the API
+
+`GET /escalation_policy/{policy_id}/readiness` checks a saved policy:
+
+```bash
+curl https://api.siteqwality.com/escalation_policy/$POLICY_ID/readiness \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+```json
+{
+  "data": {
+    "policy_id": "0d1f3a5c-7e9b-4c2d-8f6a-1b3c5d7e9f20",
+    "ready": false,
+    "levels": [
+      {
+        "level_id": "4a6c8e0f-2b4d-4f6a-8c0e-2f4a6c8e0b1d",
+        "level_number": 1,
+        "timeout_minutes": 30,
+        "high": "reachable",
+        "low": "fallback_email",
+        "targets": [
+          {
+            "kind": "user",
+            "user_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+            "schedule_id": null,
+            "name": "Ana",
+            "on_call_name": null,
+            "problem": null,
+            "high": {
+              "status": "reachable",
+              "channels": [
+                {
+                  "rule_id": "7b9d1f3a-5c7e-4a9b-8d1f-3a5c7e9b1d2f",
+                  "contact_method_id": "6d0c2f4e-8a7b-4b1e-9c3d-2e5f7a9b1c0d",
+                  "type": "email",
+                  "delay_minutes": 0,
+                  "verified": true,
+                  "unreachable_reason": null,
+                  "after_timeout": false
+                }
+              ]
+            },
+            "low": {
+              "status": "fallback_email",
+              "channels": [
+                {
+                  "rule_id": "9d1f3a5c-7e9b-4b1d-8f3a-5c7e9b1d3f4a",
+                  "contact_method_id": "8f2e4a6c-0b1d-4c3e-9a5b-7d9f1b3d5e6f",
+                  "type": "sms",
+                  "delay_minutes": 0,
+                  "verified": false,
+                  "unreachable_reason": "contact_unverified",
+                  "after_timeout": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "warnings": [
+      {
+        "code": "fallback_only",
+        "level_number": 1,
+        "urgency": "low",
+        "user_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        "schedule_id": null,
+        "message": "Level 1: Ana has no working rule for minor incidents, so only their sign-in email is paged."
+      },
+      {
+        "code": "nobody_reachable",
+        "level_number": 1,
+        "urgency": "low",
+        "user_id": null,
+        "schedule_id": null,
+        "message": "Level 1: nobody reachable for minor incidents, only the sign-in email fallback goes out."
+      }
+    ]
+  }
+}
+```
+
+`POST /escalation_policy/readiness` checks levels that are not saved yet. It takes the same level fields as [adding a level](/incident-management/escalation/reference/#escalation-level), saves nothing, and returns `policy_id` and every `level_id` as `null`. A level without `level_number` is numbered by its place in the list, starting at 1.
+
+```bash
+curl -X POST https://api.siteqwality.com/escalation_policy/readiness \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "levels": [
+      { "timeout_minutes": 5, "target_schedule_ids": ["<primary>"] },
+      { "timeout_minutes": 10, "target_user_ids": ["<eng-manager>"] }
+    ]
+  }'
+```
+
+Both calls only read, so an API key with `read:incidents` and a user with the viewer role can make them.
+
+| Status | When |
+|---|---|
+| `400` | The POST names no levels or more than 20, a level has more than 50 users and schedules, a `timeout_minutes` is outside `1` to `1440`, or a target user or schedule is not in your account. |
+| `401` | Missing or invalid authentication. |
+| `404` | The GET names a policy that is not in your account. |
+
+## Statuses
+
+`high` and `low` on a level are the best status any of its targets reaches. On a target they are that user's own status.
+
+| Status | Meaning |
+|---|---|
+| `reachable` | A rule pages before the level times out. |
+| `delayed` | Rules can page, but each waits as long as the level or longer, so the policy moves on first. |
+| `fallback_email` | No rule can page, so only the sign-in email fallback goes out. |
+| `unreachable` | Nothing goes out: nobody is on call, the user left the account, or their sign-in email has bounced too. |
+
+`ready` is `true` only when every level is `reachable` at both urgencies.
+
+A schedule target reports whoever is on call right now as its user, with their name in `on_call_name`. A target's `problem` is set when nobody can be paged through it at all: `user_removed`, `schedule_removed` or `nobody_on_call`.
+
+## Why a channel cannot page
+
+Each channel lists the rule's contact method. `unreachable_reason` is `null` when it can page.
+
+| `unreachable_reason` | Meaning | Fix |
+|---|---|---|
+| `contact_unverified` | The SMS number is not verified. | [Verify it](/incident-management/notifications/how-to/contact-methods/#verify-a-contact-method). |
+| `recipient_suppressed` | The email address bounced permanently or reported a message as spam. | Point the rule at a working address. Changing the method's address clears this. |
+| `sms_quota` | The account has no SMS left this period and no purchased credits. | Buy SMS credits, or add an email or Slack DM rule. |
+| `contact_method_invalid` | The method's details no longer parse. | Edit the method. |
+| `phone_call_not_delivered` | Phone calls are not delivered. | Use SMS instead. |
+| `channel_unknown` | A method type this version does not know. | Contact support. |
+
+`after_timeout` is `true` for a rule whose delay is as long as the level's timeout or longer.
+
+## Warnings
+
+Every problem comes back once in `warnings`, in level order, with a sentence in `message`.
+
+| `code` | Meaning |
+|---|---|
+| `no_targets` | The level has no users or schedules. |
+| `target_removed` | A target user left the account, or a target schedule was deleted. |
+| `nobody_on_call` | A target schedule has nobody on call right now. |
+| `fallback_only` | A user has no working rule for the urgency, so only their sign-in email is paged. |
+| `user_unreachable` | A user cannot be reached at all for the urgency. |
+| `delayed_past_timeout` | A user's rule, or every rule they have, waits as long as the level or longer. |
+| `nobody_reachable` | No target on the level is reachable for the urgency before the timeout. |
+
+<Aside type="note" title="What the check cannot see">
+It judges the schedule as it stands now, so a rotation gap next week does not show until it starts. A phone number that replied STOP is found only when an SMS is sent to it.
+</Aside>
+
+## See also
+
+<LinkCard title="Escalation reference" description="Every field on a policy and its levels." href="/incident-management/escalation/reference/" />
+<LinkCard title="Set up notification rules" description="Choose which contact method fires for each urgency, and when." href="/incident-management/notifications/how-to/notification-rules/" />

@@ -1,7 +1,7 @@
 ---
 title: Set up personal notification rules
 description: Stack contact methods at increasing delays so high-urgency pages always reach you, but low-urgency ones don't wake you up.
-last_verified: 2026-10-14
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -27,7 +27,7 @@ A rule has an `urgency`, a `contact_method_id`, a `delay_minutes` and a `positio
 - **`delay_minutes`** is how long after you are paged the rule fires, `0` to `1440`, default `0`. When a delayed rule fires, Site Qwality first checks that the incident is still triggered, nobody has acknowledged it, and the rule still exists; otherwise it does not send.
 - **`position`** is sort order within the urgency. It does not stagger anything: every matching rule fires in the same pass, each after its own delay.
 
-A user with no rule for the incident's urgency is not paged.
+A user with no rule for the incident's urgency, or whose rules all fail (an unverified SMS number, an email address that bounced, no SMS left on the account), is paged at their sign-in email instead. The incident records an `escalation_fallback_email` event. See [the sign-in email fallback](/incident-management/escalation/readiness/#the-sign-in-email-fallback).
 
 <Aside type="caution" title="Verify SMS numbers first">
 A rule cannot use an SMS number until it is verified. Creating or updating a rule with an unverified SMS method returns `409` with code `contact_method_unverified`: "Verify this phone number before using it in a notification rule." See [verify a contact method](/incident-management/notifications/how-to/contact-methods/#verify-a-contact-method). Email and Slack DM methods can be used straight away.
@@ -82,12 +82,7 @@ curl -X PUT https://api.siteqwality.com/user/$USER_ID/notification_rule/<email-h
 
 For low urgency, one delivery to a low-impact method is enough. Your starting `low` rule (email, no delay) already does that.
 
-To stop low-urgency pages entirely, delete the rule. Without a `low` rule you are skipped for low-urgency pages.
-
-```bash
-curl -X DELETE https://api.siteqwality.com/user/$USER_ID/notification_rule/<email-low-rule-id> \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
-```
+Deleting your `low` rule does not stop low-urgency pages: with no rule, they go to your sign-in email. To keep them out of the way, point the `low` rule at an email address or Slack DM you check less often.
 
 ## How the stack interacts with escalation
 
