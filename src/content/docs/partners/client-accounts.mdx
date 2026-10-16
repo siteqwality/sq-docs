@@ -112,16 +112,16 @@ Two bundles exist. You pick one; you do not compose packs individually, because 
 | | `client_standard` | `client_pro` |
 |---|---|---|
 | Check executions | 500K/month | 500K/month |
-| Status page on the client's own domain | yes | yes |
-| White-labelled status page | yes | yes |
+| Status page on the client's own domain (1 custom domain) | yes | yes |
+| Fully branded status page (badge optional) | yes | yes |
 | Synthetic browser checks | | 1,000 minutes/month |
 | RUM (Observe) | | 25K sessions/month |
 | RUM (Analyze) | | 1K sessions/month |
 | Session replay | | 1K sessions/month |
 
-`client_pro` is everything in `client_standard` plus the rows below it. A client with no bundle set is on the free tier.
+`client_pro` is everything in `client_standard` plus the rows below it. A client with no bundle set is on the free tier. A client set up while bundles still included White-Label keeps that White-Label unit when you set its bundle again.
 
-The response tells you what changed:
+The response tells you what changed. Moving a client from `client_standard` to `client_pro` grants the four packs Pro adds:
 
 ```json
 {

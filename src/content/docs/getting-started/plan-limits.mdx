@@ -9,15 +9,15 @@ import { Aside } from '@astrojs/starlight/components';
 
 Site Qwality prices each product on its own, and every product has a free tier. Some limits lift once **any** product is on a paid plan, some need a paid plan on a specific product, and a few come from Enterprise or a status page extra. Prices are on the [pricing page](https://siteqwality.com/pricing/).
 
-A **paid plan** here means a paid tier on any product. Add-ons, status page extras and SMS credits on their own do not count.
+A **paid plan** here means a paid tier on any product. Add-ons and status page extras on their own do not count.
 
 ## Monitors and checks
 
 | Limit | Free | Paid plan |
 |---|---|---|
-| HTTP monitors | 100 | Unlimited |
-| Cron monitors | 25 | Unlimited |
-| Browser checks | 100 | Unlimited |
+| Monitors (HTTP, cron and browser combined, paused included) | 100 | Unlimited |
+| Active cron monitors, within those 100 | 25 | Unlimited |
+| Browser checks, within those 100 | 100 | Unlimited |
 | DNS record monitors | 3 | Unlimited |
 | DNS record check interval | 1 hour minimum | 5 minutes minimum |
 
@@ -26,7 +26,7 @@ The check interval and check locations follow the **uptime** plan, not any paid 
 | Limit | Free | Paid uptime plan |
 |---|---|---|
 | Uptime check interval | 5 minutes minimum | 30 seconds minimum |
-| Check locations per monitor | 1 | Any number |
+| HTTP check locations per monitor | 1 | Any number |
 
 ## Team
 
@@ -36,7 +36,7 @@ The check interval and check locations follow the **uptime** plan, not any paid 
 | SAML single sign-on | No | No | Yes |
 | SCIM provisioning | No | No | Yes |
 
-A seat is a member or a pending invite. Over the limit nobody loses access, but new invites return `402` until a seat frees up. Without Enterprise, an existing SSO or SCIM connection stays readable and can be deleted, but not changed.
+A seat is a member or a pending invite. Over the limit nobody loses access, but new invites are refused until a seat frees up: a single invite returns `402`, and a bulk invite lists the refused addresses under `failed`. Without Enterprise, an existing SSO or SCIM connection stays readable and can be deleted, but not changed.
 
 ## Status pages
 
@@ -47,6 +47,8 @@ Every account includes one status page with full branding, and removing the "Pow
 | Additional status page | $10/mo ($100/yr) | 1 status page |
 | Custom domain | $10/mo ($100/yr) | 1 custom domain |
 
+White-Label is no longer sold. Accounts that hold it keep it, and each unit still adds 1 status page and 1 custom domain.
+
 Extras add only their pages and domains: on their own they are not a paid plan, so seats and monitor limits stay at free. Extras sit on the same subscription as your plans and share its billing interval. More units are charged straight away and apply once paid; fewer take effect at the end of the period you paid for. Past the limit, creating a page or adding a domain returns `402` naming the extra to buy.
 
 ## Other features
@@ -55,8 +57,8 @@ Extras add only their pages and domains: on their own they are not a paid plan, 
 |---|---|---|
 | Custom dashboards | No | A paid plan |
 | SMS credit top-ups | No | A paid plan |
-| Session replay | No | A Session Replay plan |
-| Source maps | No | A RUM Analyze plan |
+
+Session replay (100 replays a month on free) and source map uploads work on every plan; a Session Replay plan raises the replay allowance. When a check fails, Site Qwality shows its stored response body for 5 days on free and 30 days with a paid plan.
 
 <Aside>
 Staff can set custom limits for an account. Those override everything on this page.

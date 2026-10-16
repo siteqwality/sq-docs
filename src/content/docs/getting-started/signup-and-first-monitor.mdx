@@ -103,7 +103,7 @@ If the email never arrives, check your spam folder and confirm the channel email
 
 ## What just happened
 
-- Your check ran on a schedule from the default check location, `aws-us-east-1` (Virginia, AWS). On a paid plan a new monitor also runs from a second cloud provider by default, and you can add more [check locations](/uptime-monitoring/overview/#check-locations) to the same monitor.
+- Your check ran on a schedule from the default check location, `aws-us-east-1` (Virginia, AWS). On a paid uptime plan a new monitor also runs from a second cloud provider by default, and you can add more [check locations](/uptime-monitoring/overview/#check-locations) to the same monitor.
 - The result was compared against the assertions on the monitor (status code in the success list, no body keyword search).
 - A change in monitor status (success → failure) sent a down alert to the monitor's **notification group**, which fanned out to its channels after the group's 3-minute delay. Each channel renders the alert in its own format.
 - When the URL recovered, the group sent a recovery message at once.
