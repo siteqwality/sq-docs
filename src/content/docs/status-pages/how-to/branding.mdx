@@ -10,7 +10,7 @@ import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 A status page has a light and a dark theme, and visitors can switch between them. Branding covers both: colours that stay readable in each theme, a logo per theme, header and footer text, and custom CSS. Every field is listed in the [reference](/status-pages/reference/#branding).
 
 <Aside type="note">
-The page title and default theme are free. Every other branding field needs a paid plan, and removing the "Powered by Site Qwality" badge needs the White-Label status page pack.
+Every branding field is free on every plan, including removing the "Powered by Site Qwality" badge.
 </Aside>
 
 ## Colours
@@ -62,7 +62,7 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/branding \
   -d '{ "footer_text": null, "accent_color": null, "logo_dark_s3_key": null }'
 ```
 
-Each field goes back to its default: no footer text, the primary colour as the accent, and the light logo in both themes. Clearing an image key also deletes its file. Fields you leave out keep their values, and blank text clears a field just like `null`. Clearing never needs a paid plan.
+Each field goes back to its default: no footer text, the primary colour as the accent, and the light logo in both themes. Clearing an image key also deletes its file. Fields you leave out keep their values, and blank text clears a field just like `null`.
 
 In the dashboard, empty a text field and save, use **Reset** next to a colour, or **Remove** next to an image. Images save as soon as they upload or are removed; the other fields save with **Save Settings**.
 
@@ -153,5 +153,5 @@ The page draws from CSS custom properties. Set them in `:root` for the light the
 ```
 
 <Aside type="caution">
-Values you set in custom CSS are used exactly as written; only the primary and accent colour fields are adjusted for contrast. Check both themes after a change. The "Powered by Site Qwality" badge has no hook: to remove it, turn on the white-label footer.
+Values you set in custom CSS are used exactly as written; only the primary and accent colour fields are adjusted for contrast. Check both themes after a change. The "Powered by Site Qwality" badge has no hook: to remove it, turn on the white-label footer (free on every plan).
 </Aside>

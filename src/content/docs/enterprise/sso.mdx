@@ -9,7 +9,7 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 
 Single sign-on lets your team sign in with their work account through your identity provider (Okta, Microsoft Entra ID, Google Workspace or any SAML 2.0 provider). When someone types an address at your email domain on the sign-in screen, Site Qwality sends them straight to your identity provider.
 
-SSO is on a paid plan, and only a **Super Admin** can set it up. A `403` on the SSO endpoints means one of the two is missing.
+SSO is included with Enterprise, and only a **Super Admin** can set it up. Creating or changing the connection, and adding or verifying a domain, return `403` without Enterprise. Reading and deleting the connection stay open, so an account whose Enterprise ended can still see or remove it, and members keep signing in through it until you do.
 
 ## Set it up
 

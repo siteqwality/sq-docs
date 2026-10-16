@@ -12,7 +12,7 @@ By default a status page lives at `https://statuspage.siteqwality.com/<account-i
 Site Qwality provisions the TLS certificate via AWS Certificate Manager (ACM) and serves the page from the same edge as the default URL. There's no extra runtime cost or proxy hop.
 
 <Aside type="caution">
-Custom domains require a paid plan. The API returns `403 Forbidden` if you try to add one on the free tier.
+A custom domain is a status page extra: $10/mo ($100/yr) per domain, on any plan, bought on the Billing tab under **Status page extras**. Without a free one, the API returns `402 Payment Required` naming the Custom domain pack. A domain being removed stops counting straight away.
 </Aside>
 
 ## What you'll add to DNS

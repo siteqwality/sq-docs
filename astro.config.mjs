@@ -124,6 +124,7 @@ export default defineConfig({
 						{ label: 'Introduction', slug: 'getting-started/introduction' },
 						{ label: 'Sign up & first monitor', slug: 'getting-started/signup-and-first-monitor' },
 						{ label: 'Account & team setup', slug: 'getting-started/account-and-team' },
+						{ label: 'Plan limits', slug: 'getting-started/plan-limits' },
 						{ label: 'Sign-in & security', slug: 'getting-started/sign-in-and-security' },
 						{ label: 'Concepts & glossary', slug: 'getting-started/concepts' },
 					],

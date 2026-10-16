@@ -1,0 +1,63 @@
+---
+title: Plan limits
+description: What the free plan includes, what a paid plan adds, and what Enterprise and status page extras unlock.
+last_verified: 2026-10-16
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Site Qwality prices each product on its own, and every product has a free tier. Some limits lift once **any** product is on a paid plan, some need a paid plan on a specific product, and a few come from Enterprise or a status page extra. Prices are on the [pricing page](https://siteqwality.com/pricing/).
+
+A **paid plan** here means a paid tier on any product. Add-ons and SMS credits on their own do not count.
+
+## Monitors and checks
+
+| Limit | Free | Paid plan |
+|---|---|---|
+| HTTP monitors | 100 | Unlimited |
+| Cron monitors | 25 | Unlimited |
+| Browser checks | 100 | Unlimited |
+| DNS record monitors | 3 | Unlimited |
+| DNS record check interval | 1 hour minimum | 5 minutes minimum |
+
+The check interval and check locations follow the **uptime** plan, not any paid plan:
+
+| Limit | Free | Paid uptime plan |
+|---|---|---|
+| Uptime check interval | 5 minutes minimum | 30 seconds minimum |
+| Check locations per monitor | 1 | Any number |
+
+## Team
+
+| Limit | Free | Paid plan | Enterprise |
+|---|---|---|---|
+| Seats | 3 | 10 | Unlimited |
+| SAML single sign-on | No | No | Yes |
+| SCIM provisioning | No | No | Yes |
+
+A seat is a member or a pending invite. Over the limit nobody loses access, but new invites return `402` until a seat frees up. Without Enterprise, an existing SSO or SCIM connection stays readable and can be deleted, but not changed.
+
+## Status pages
+
+Every account includes one status page with full branding, and removing the "Powered by Site Qwality" badge is free. Buy more on **Settings → Billing → Status page extras**:
+
+| Extra | Price | Adds |
+|---|---|---|
+| Additional status page | $10/mo ($100/yr) | 1 status page |
+| Custom domain | $10/mo ($100/yr) | 1 custom domain |
+
+Extras sit on the same subscription as your plans and share its billing interval. More units are charged straight away and apply once paid; fewer take effect at the end of the period you paid for. Past the limit, creating a page or adding a domain returns `402` naming the extra to buy.
+
+## Other features
+
+| Feature | Free | Unlocked by |
+|---|---|---|
+| Custom dashboards | No | A paid plan |
+| SMS credit top-ups | No | A paid plan |
+| Session replay | No | A Session Replay plan |
+| Source maps | No | A RUM Analyze plan |
+
+<Aside>
+Staff can set custom limits for an account. Those override everything on this page.
+</Aside>

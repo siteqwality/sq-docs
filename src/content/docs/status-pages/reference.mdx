@@ -99,13 +99,13 @@ An override wins over the monitor, a pause and any maintenance, and it counts to
 | `footer_text` | string | max 500 characters | Line in the footer. | nothing |
 | `meta_description` | string | max 160 characters | Search and link preview description. | a generated one |
 | `custom_css` | string | max 50 KB | Stylesheet loaded after the page's own. See [Brand your status page](/status-pages/how-to/branding/#custom-css). | nothing |
-| `white_label` | bool | White-Label pack to turn on | Removes the "Powered by Site Qwality" badge. | `false` |
+| `white_label` | bool | none | Removes the "Powered by Site Qwality" badge. | `false` |
 | `logo_s3_key` | string | from the upload flow | Header logo. | the title |
 | `logo_dark_s3_key` | string | from the upload flow | Header logo in the dark theme. | `logo_s3_key` |
 | `favicon_s3_key` | string | from the upload flow | Browser tab icon. | Site Qwality icon, none when white-labelled |
 | `og_image_s3_key` | string | from the upload flow | Link preview image. | none |
 
-`page_title` and `default_theme` are free. Setting any other field needs a paid plan (`403` otherwise), and turning `white_label` on needs the White-Label status page pack. Clearing a field is always allowed, so a downgraded account can return to the defaults.
+Every field is free on every plan, `white_label` included. Clearing a field is always allowed.
 
 An `*_s3_key` must be the `s3_key` the upload endpoint returned for that asset type on this page; any other key returns `400`. Sending back the key already stored is accepted. Replacing or clearing a key deletes the old file.
 
