@@ -91,7 +91,7 @@ curl -X DELETE https://api.siteqwality.com/user/$USER_ID/notification_rule/<emai
 
 ## How the stack interacts with escalation
 
-Escalation policy timeouts and personal-rule delays are **independent timers**. If your escalation policy fires a level at minute 0 and you have rules at 0/5/15 min:
+Escalation policy timeouts and personal-rule delays are **independent timers**, and either can fire up to about a minute after its time. If your escalation policy fires a level at minute 0 and you have rules at 0/5/15 min:
 
 | Time | Event |
 |---|---|

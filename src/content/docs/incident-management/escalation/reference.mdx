@@ -23,7 +23,7 @@ Deleting a policy needs an admin or an API key; other roles get `403`.
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `level_number` | int | next-free | Sort order within the policy. Lower runs first. Auto-assigned to `max(existing) + 1` if omitted. |
-| `timeout_minutes` | int | required | How long to wait for any responder ack at this level before advancing. Whole minutes, from `1` to `1440` (one day). |
+| `timeout_minutes` | int | required | How long to wait for any responder ack at this level before advancing, counted from when the level's pages go out. The level can advance up to about a minute after that. Whole minutes, from `1` to `1440` (one day). |
 | `target_user_ids` | uuid[] | `[]` | Page these specific users. Each user's notification rules + contact methods determine the actual delivery. |
 | `target_schedule_ids` | uuid[] | `[]` | Page whoever is on-call in these on-call schedules at firing time. |
 

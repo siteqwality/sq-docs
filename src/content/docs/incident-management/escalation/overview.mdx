@@ -73,7 +73,7 @@ Incident opens
    repeat or stop (per repeat_count)
 ```
 
-Each level does three things in order: resolve its targets (on-call schedules resolve at firing time, so handoffs work transparently), page each resolved user through their own [notification rules](/incident-management/notifications/overview/#notification-rules-per-user), and schedule a one-shot timeout for `timeout_minutes` later. When that timeout fires, the policy advances.
+Each level does three things in order: resolve its targets (on-call schedules resolve at firing time, so handoffs work transparently), page each resolved user through their own [notification rules](/incident-management/notifications/overview/#notification-rules-per-user), and schedule a one-shot timeout for `timeout_minutes` after those pages go out. When that timeout fires, the policy advances. It can fire up to about a minute late, so a level waits between `timeout_minutes` and roughly one minute more.
 
 A level with no resolvable targets still schedules its timeout and still advances. It just pages nobody.
 
