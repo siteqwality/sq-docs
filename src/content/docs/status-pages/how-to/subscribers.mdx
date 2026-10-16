@@ -1,13 +1,13 @@
 ---
 title: Manage subscribers
 description: Let visitors subscribe to status page incidents and maintenance by email, choose what they get, and manage or import the list.
-last_verified: 2026-10-15
+last_verified: 2026-10-16
 owner: jj
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-A *subscriber* is someone who confirmed an email address on your status page. They get an email when you create an incident on the page, post an update to it through the page, or schedule maintenance, limited to the kinds of update and the components they chose. Visitors who prefer a feed reader can follow the page's [RSS or Atom feed](/status-pages/how-to/feeds-badge-embed/) instead, with no sign-up. Subscriptions are email only: SMS and webhook subscribers are not available.
+A *subscriber* is someone who confirmed an email address on your status page. They get an email when an incident goes on the page, when a public update is posted to it or it resolves, and when you schedule maintenance, limited to the kinds of update and the components they chose. Visitors who prefer a feed reader can follow the page's [RSS or Atom feed](/status-pages/how-to/feeds-badge-embed/) instead, with no sign-up. Subscriptions are email only: SMS and webhook subscribers are not available.
 
 <Aside type="caution">
 Every address confirms from a link we send before it gets any notice, whether the visitor used the public form, you added it, or it came in through an import. There is no way to add or import confirmed subscribers.
@@ -15,13 +15,14 @@ Every address confirms from a link we send before it gets any notice, whether th
 
 ## When subscribers get email
 
-The back-end emails a page's subscribers in three cases:
+The back-end emails a page's subscribers when:
 
-- An incident is created on the status page (`POST /status_page/{status_page_id}/incident`).
-- An update is posted through the page (`POST /status_page/{status_page_id}/incident/{incident_id}/update`), including the update that resolves it.
+- An incident goes on the page: it is created there (`POST /status_page/{status_page_id}/incident`), you publish it (`POST /incident/{incident_id}/publish`, unless `notify_subscribers` is `false`), or a [service publishes it automatically](/incident-management/services/overview/#publish-incidents-to-a-status-page). Each page is told once per incident, and never about one that is already resolved.
+- A public update is posted through the page (`POST /status_page/{status_page_id}/incident/{incident_id}/update`, unless `notify_subscribers` is `false`), or through `POST /incident/{incident_id}/update` with `notify_subscribers: true`, which emails every page the incident is on.
+- The incident is resolved by hand, unless `notify_subscribers` is `false`. When its monitors recover and it resolves itself, only pages whose subscribers already heard about it are told.
 - Maintenance is scheduled on the page, when it starts and when it ends.
 
-Nothing is sent when you publish an existing incident to a page, post an update through `POST /incident/{incident_id}/update`, resolve an incident by editing it, edit maintenance, or when a service publishes an incident automatically. If subscribers should hear about a change, post it as an update through the page.
+Nothing is sent for an internal note, an unpublish, a reopen or a maintenance edit.
 
 ### Who gets which notice
 

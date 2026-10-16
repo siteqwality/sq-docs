@@ -1,7 +1,7 @@
 ---
 title: Services reference
 description: Service fields, broadcast target types and every /service endpoint.
-last_verified: 2026-10-13
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -18,7 +18,8 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 | `incident_creation_mode` | `manual`, `auto`, `auto_with_confirmation` | `manual` | `auto_with_confirmation` behaves like `auto` today. |
 | `incident_merge_window_minutes` | integer | `5` (the dashboard form sends `0`) | `0` turns merging off. Counts from the open incident's creation. |
 | `default_incident_severity` | `minor`, `major`, `critical` | `minor` | Severity of incidents the service opens automatically. |
-| `auto_publish_to_status_page_id` | UUID | none | API only. Puts automatic incidents on this status page without emailing its subscribers. `null` on update clears it. |
+| `auto_publish_to_status_page_id` | UUID | none | Puts automatic incidents on this status page and emails its subscribers. `null` on update clears it. |
+| `public_incident_template` | object | none | `{ "title", "message", "resolved_message" }`, each optional: the public title, first public update and resolved update for this service's incidents on a status page. Values are trimmed and blank ones dropped. The title is at most 512 characters and each message 5,000 (`400` otherwise). Leaving it out keeps it; `null` clears it. Omitted from responses when empty. |
 | `monitor_count` | integer | | Read-only. Linked HTTP monitors and heartbeats; browser checks are not counted. |
 | `created_at` | RFC 3339 | | Read-only. |
 

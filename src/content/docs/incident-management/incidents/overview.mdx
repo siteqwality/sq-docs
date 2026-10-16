@@ -1,7 +1,7 @@
 ---
 title: Incidents
 description: The record-and-timeline object that tracks an outage from "we noticed something" to "we're done."
-last_verified: 2026-08-01
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -26,14 +26,15 @@ Either way the lifecycle is the same.
 | `acknowledged_at` / `acknowledged_by` | Set when a responder acknowledges. Stops escalation. |
 | `affected_http_job_ids` | Which HTTP monitors this incident is about; drives which status-page components get a banner. |
 | `service_id` | Optionally tag an incident to a service (a logical grouping of monitors). |
-| `status_page_id` | If set, the incident is published to that status page. |
-| `updates[]` | Chronological list of `IncidentUpdate`s: status transitions with a written message. |
+| `status_page_ids` | The status pages the incident is published on. |
+| `public_title` | The title those pages show, so an internal title like `db-7 failover` never reaches customers. Empty shows `title`. |
+| `updates[]` | Chronological list of `IncidentUpdate`s, each `public` (on status pages) or `internal` (a note for your team). |
 
 ## Status vs responder_status
 
 Two parallel state machines that often confuse new users:
 
-- **`status`** is the *external* / *customer-facing* progress: "we're still investigating," "we know the cause," "fix is rolled out, we're watching." It's what shows on the status page.
+- **`status`** is the *external* / *customer-facing* progress: "we're still investigating," "we know the cause," "fix is rolled out, we're watching." It's what shows on the status page, and only public updates and resolving move it.
 - **`responder_status`** is the *internal* / *responder* state: "no one's on this," "someone has it," "we're done." It's what drives escalation and ack tracking.
 
 A status page incident can be `status: monitoring` while still `responder_status: acknowledged`, meaning the customer-facing message is "we're keeping an eye on it" but a human is still actively babysitting.

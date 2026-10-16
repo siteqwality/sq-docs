@@ -1,7 +1,7 @@
 ---
 title: Status pages
 description: Branded, custom-domain public status pages with components, scheduled maintenance, and email subscribers.
-last_verified: 2026-10-14
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -27,7 +27,7 @@ A status page is composed of three layers:
 
 1. **Status page object**: the container, with branding (logo, colors, theme), a custom domain (optional), and a default theme.
 2. **Components**: what the page reports on. Most are links to monitors: an HTTP check or a browser check with a public-facing `friendly_name` and optional `sla_target_percentage`, or a heartbeat monitor. Their status is the monitor's live status. A manual component has no monitor, and you set its status. Any component can carry a status override with a public note.
-3. **Incidents and maintenance**: published events. You post incidents and their updates yourself. A [service](/incident-management/services/overview/) can also publish the incidents it opens automatically, and those resolve when their monitors recover. Scheduled maintenance shows future planned downtime.
+3. **Incidents and maintenance**: published events. You publish incidents and post their public updates yourself; internal notes never reach the page. A [service](/incident-management/services/overview/) can also publish the incidents it opens automatically, in the words of its public template, and those resolve when their monitors recover. Scheduled maintenance shows future planned downtime.
 
 When a visitor loads the page, the [public status page API](/status-pages/reference/#public-status-page-api) reads the latest status of every component, joins in any open incident or active maintenance, and renders the result via the public Next.js front-end.
 
@@ -43,7 +43,7 @@ The status page back-end is a separate Lambda (`status-page-api`) reading the sa
 | **Branding** | logo and dark theme logo, favicon, OG image, primary/accent color (`#hex`, kept readable in both themes), header & footer text, custom CSS (50KB max), white-label toggle |
 | **Custom domain** | bring your own subdomain (e.g. `status.example.com`). Site Qwality provisions an ACM cert and gives you the CNAME to add |
 | **Components** | attach any HTTP check, browser check or heartbeat monitor, add manual components, override a public name or status, set an SLA target, group and order them |
-| **Incidents** | manually open / update / resolve, or have a service publish the incidents it opens automatically (set through the API) |
+| **Incidents** | manually open, publish, update, resolve or unpublish, or have a service publish the incidents it opens automatically |
 | **Maintenance** | publish scheduled windows ahead of planned work |
 | **Subscribers** | visitors subscribe by email, confirm through a link, and choose incidents, maintenance or both, for every component or only some; you can import a list, and each address still confirms |
 

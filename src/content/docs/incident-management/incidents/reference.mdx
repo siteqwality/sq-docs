@@ -1,7 +1,7 @@
 ---
 title: Incident reference
 description: Every field on an incident and its updates, with status enums and the full endpoint list.
-last_verified: 2026-08-02
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -18,7 +18,9 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | `severity` | enum | `minor`, `major`, or `critical`. |
 | `status` | enum | Customer-facing progress. See [status enum](#status-enum). |
 | `responder_status` | enum | Internal responder state. See [responder status](#responder-status-enum). |
-| `status_page_id` | uuid \| null | Set when the incident is published to a status page. |
+| `status_page_ids` | uuid[] | Every status page the incident is published on. |
+| `status_page_id` | uuid \| null | Deprecated: the page it was created on. Use `status_page_ids`. |
+| `public_title` | string \| null | The title status pages show. `null` shows `title`. |
 | `service_id` | uuid \| null | Optional service tag. |
 | `affected_http_job_ids` | uuid[] | HTTP monitors this incident is about. |
 | `acknowledged_at` | rfc3339 \| null | When a responder acknowledged. |
@@ -33,9 +35,17 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | Field | Type | Description |
 |---|---|---|
 | `id` | uuid | Update ID. |
-| `status` | enum | The status this update moved the incident to. |
+| `status` | enum | The public status when it was posted. |
 | `message` | string | Written update text. |
+| `visibility` | enum | `public` shows on status pages; `internal` shows only in the app. |
+| `author_user_id` | uuid \| null | Who posted it. `null` for the system, API keys and updates from before October 2026. |
 | `created_at` | rfc3339 | When posted. |
+
+## Public and internal updates
+
+A **public** update shows on every status page the incident is published on and can move its `status`. An **internal** note stays in the app: it never reaches a status page or its subscribers, and it never changes `status`. Status pages show the `public_title` (or `title` when it is empty) and public updates only.
+
+Resolving a published incident always posts a public `resolved` update, so its page never shows an incident as open after you resolved it. The text is the one you give, else the service's [public template](/incident-management/services/overview/#publish-incidents-to-a-status-page), else "This incident has been resolved."
 
 ## Status enum
 
@@ -69,21 +79,25 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 
 ### Update (`PUT /incident/{incident_id}`)
 
-A full replace of the mutable fields, all required except `resolved_at`:
+Every field is optional. Send only what changes:
 
 | Field | Type | Description |
 |---|---|---|
 | `title` | string | New title. |
 | `severity` | enum | New severity. |
-| `status` | enum | New status. |
-| `resolved_at` | rfc3339 | Optional explicit resolution time. |
+| `status` | enum | Deprecated: post an update, or resolve. `resolved` resolves the incident with a public update; another value sets the status. |
+| `resolved_at` | rfc3339 | Deprecated and ignored: resolving records the time. |
+| `public_title` | string \| null | The title status pages show, up to 512 characters (`400` if longer). `null` or blank clears it. |
 
 ### Post an update (`POST /incident/{incident_id}/update`)
 
 | Field | Type | Description |
 |---|---|---|
-| `status` | enum | Status to transition to. |
 | `message` | string | Update text. |
+| `visibility` | enum | `public` (default) or `internal`. |
+| `status` | enum | Optional, public updates only. The new status; leaving it out keeps the current one. `resolved` resolves the incident, and a status earlier than the current one returns `409` unless `force` is `true`. On an internal note it is ignored, and `resolved` returns `400`. |
+| `force` | bool | Allow a public update to move the status backward. |
+| `notify_subscribers` | bool | Email the subscribers of every status page the incident is on about a public update. Default `false` here, and `true` on `POST /status_page/{status_page_id}/incident/{incident_id}/update`, which emails only that page. |
 
 ### Acknowledge (`POST /incident/{incident_id}/acknowledge`)
 
@@ -91,11 +105,30 @@ A full replace of the mutable fields, all required except `resolved_at`:
 |---|---|---|
 | `acknowledged_by` | uuid | Optional when authenticated as a user (defaults to you). Required when calling with an API key. |
 
+### Resolve (`POST /incident/{incident_id}/resolve`)
+
+Every field is optional:
+
+| Field | Type | Description |
+|---|---|---|
+| `message` | string | Text of the public `resolved` update. |
+| `post_public_update` | bool | Post that update even when the incident is on no status page. A published incident always gets one. |
+| `notify_subscribers` | bool | Email the subscribers of every page the incident is on. Default `true`. |
+
 ### Publish (`POST /incident/{incident_id}/publish`)
 
 | Field | Type | Description |
 |---|---|---|
-| `status_page_id` | uuid | The status page to publish this incident to. |
+| `status_page_id` | uuid | The status page to publish this incident to. A page that is not in your account returns `404`. |
+| `title` | string | Optional. Sets `public_title`. Otherwise the page keeps the current public title, then uses the service template's title. An incident a monitor opened shows "Service disruption" rather than its monitor's name. |
+| `message` | string | Optional. A public update to post with it. When the incident has no public update yet, one is always posted: this text, else the service template's message, else "We are investigating this issue." |
+| `notify_subscribers` | bool | Email the page's subscribers that the incident opened. Default `true`. Never sent for a resolved incident, and at most once per page. |
+
+Publishing to a page the incident is already on changes nothing unless you send a `title` or `message`.
+
+### Unpublish (`DELETE /incident/{incident_id}/publish/{status_page_id}`)
+
+Takes the incident off that page. The incident and its updates are kept, and nobody is emailed. Returns the incident, or `404` when it is not on that page.
 
 ## Endpoints
 
@@ -110,6 +143,7 @@ Standalone incidents:
 | `POST` | `/incident/{incident_id}/resolve` | Resolve. |
 | `POST` | `/incident/{incident_id}/update` | Post an incident update. |
 | `POST` | `/incident/{incident_id}/publish` | Publish to a status page. |
+| `DELETE` | `/incident/{incident_id}/publish/{status_page_id}` | Unpublish from a status page. |
 | `GET` / `POST` | `/incident/action/{token}` | [Acknowledge or resolve from an email or SMS](/incident-management/incidents/how-to/one-click-actions/). `GET` shows a confirmation page and changes nothing; `POST` (its button) acts. Token-authenticated, no session needed. Each link is made for one paged user, works once, expires after 24 hours, and stops working when the incident changes state. |
 
 Status-page-scoped incidents (same shapes, scoped to one page):
@@ -118,7 +152,7 @@ Status-page-scoped incidents (same shapes, scoped to one page):
 |---|---|---|
 | `POST` / `GET` | `/status_page/{status_page_id}/incident` | Create / list. |
 | `GET` / `PUT` / `DELETE` | `/status_page/{status_page_id}/incident/{incident_id}` | Detail / update / delete. |
-| `POST` | `/status_page/{status_page_id}/incident/{incident_id}/update` | Post an update. |
+| `POST` | `/status_page/{status_page_id}/incident/{incident_id}/update` | Post an update. A public one emails that page's subscribers unless `notify_subscribers` is `false`. |
 
 ## See also
 

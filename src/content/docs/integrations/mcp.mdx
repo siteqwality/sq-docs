@@ -1,7 +1,7 @@
 ---
 title: Connect AI assistants (MCP)
 description: Ask Claude, ChatGPT, Cursor and other AI assistants about your monitors, incidents and telemetry, and let them take everyday actions for you.
-last_verified: 2026-10-15
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -251,7 +251,9 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 | `list_incidents`, `get_incident` | Lists incidents, or shows one with its timeline. | Read |
 | `acknowledge_incident`, `resolve_incident` | Acknowledges or resolves an incident. | Write |
 | `create_incident` | Opens an incident, optionally on a status page. | Write |
-| `post_incident_update` | Adds an update to an incident's timeline with its new public status; `resolved` resolves it. Name a status page the incident is on to also email that page's confirmed subscribers. | Write |
+| `post_incident_update` | Adds an update to an incident. A public update (the default) shows on its status pages and can change its status: `resolved` resolves it. It emails subscribers when posted through a named page the incident is on, or with `notify_subscribers`. An internal note stays in the app. | Write |
+| `publish_incident` | Puts an incident on a status page with a public title and first update, and emails the page's subscribers unless told not to. | Write |
+| `unpublish_incident` | Takes an incident off a status page. Nothing is emailed and the incident is kept. | Write, asks first |
 | `list_status_pages` | Lists your status pages, each with its public address (`page_url`). | Read |
 | `list_status_page_components` | Lists a status page's components in page order (monitors, heartbeats and manual components), with any status set by hand. | Read |
 | `set_status_page_component_status` | Sets what a status page shows for one component, with an optional note and end time. | Write |

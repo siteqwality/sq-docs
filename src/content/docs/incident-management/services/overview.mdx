@@ -1,7 +1,7 @@
 ---
 title: Services
 description: Group monitors into a service, choose who gets paged, and decide whether failures open incidents on their own.
-last_verified: 2026-10-12
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -101,7 +101,15 @@ Add targets on the service's detail page in the dashboard (it opens from a monit
 
 ## Publish incidents to a status page
 
-`auto_publish_to_status_page_id` puts every incident the service opens automatically on that [status page](/status-pages/overview/). It can only be set through the API, and publishing this way does not email the page's subscribers.
+**Auto-publish to Status Page** (`auto_publish_to_status_page_id`) puts every incident the service opens automatically on that [status page](/status-pages/overview/) and emails the page's [subscribers](/status-pages/how-to/subscribers/) that it opened.
+
+The **public incident template** (`public_incident_template`) words what customers read, so a monitor's name or an internal hostname never reaches the page:
+
+- **Public incident title**: the title the page shows. Without one, an automatic incident shows "Service disruption".
+- **First public update**: posted when the incident is published. Without one: "We are investigating this issue."
+- **Resolved update**: posted when it resolves. Without one: "This incident has been resolved."
+
+The template also prefills **Publish** for the service's manual incidents. Set both on the service form in the dashboard, or through the API.
 
 ## Deleting a service
 

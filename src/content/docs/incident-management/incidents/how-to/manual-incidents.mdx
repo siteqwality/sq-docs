@@ -1,7 +1,7 @@
 ---
 title: Create manual incidents
 description: When to open an incident by hand, how to do it cleanly, and how to make it page your on-call.
-last_verified: 2026-08-02
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -60,6 +60,25 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident \
 ```
 
 The incident appears immediately on the public page.
+
+## Publish later, and keep notes internal
+
+An incident you started without a page can go on one later. In the dashboard, open it and click **Publish to Status Page**: pick the page, check the public title and the first public update customers will read, and choose whether to email the page's subscribers. The same panel lists the pages it is on, each with **Unpublish**. Through the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/publish \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status_page_id": "<status-page-id>",
+    "title": "Webhook deliveries delayed",
+    "message": "Some webhooks are arriving late. We are working with our delivery provider."
+  }'
+```
+
+`DELETE /incident/$INCIDENT_ID/publish/<status-page-id>` takes it off the page again.
+
+The page shows the public title and public updates only. On an incident's own page in the dashboard, updates are **internal notes** unless you switch the composer to **Public update**, so "failing over db-7" stays with your team. An update posted through the API is public unless you send `"visibility": "internal"`. See [public and internal updates](/incident-management/incidents/reference/#public-and-internal-updates).
 
 ## Linking to affected monitors
 
