@@ -110,7 +110,29 @@ Whichever you use, every change either one makes is recorded in the [audit log](
 
 </Steps>
 
-Usage is shown in account settings. Logs and traces have independent decimal-GB allowances; metrics use active hourly series averaged over the month. Telemetry sends receive a hard 429 with Retry-After at the 110% grace boundary. There is no silent success-and-drop or automatic overage bill. See [telemetry billing and retention](/observability/billing/) for prices and units.
+Usage is shown in account settings. Plan limits are enforced at the API layer, so a request that would go over one gets a `402 Payment Required`. Logs and traces have independent decimal-GB allowances; metrics use active hourly series averaged over the month. Telemetry sends receive a hard 429 with Retry-After at the 110% grace boundary. There is no silent success-and-drop or automatic overage bill. See [telemetry billing and retention](/observability/billing/) for prices and units.
+
+### When a plan ends
+
+A paid plan ends when you cancel and the period runs out, when you downgrade a product to free, or when a payment stays unpaid (see below). Nothing is paused: every monitor keeps running, at free settings.
+
+- Checks that ran more often than every 5 minutes move to every 5 minutes, and DNS record checks to every hour.
+- A monitor with several check locations keeps its first one.
+- Monitors above a free limit keep running, but you can't add new ones until you are under it.
+- A new usage period starts that day with the free allowance. If your monitors would use it up before the month ends, the email says when they stop and when they start again.
+
+Upgrade any time and the settings Site Qwality changed come back, except on monitors you edited since. See [Plan limits](/getting-started/plan-limits/) for the free settings.
+
+### When a payment fails
+
+Stripe retries a failed payment. Before the last try, Site Qwality emails the date it will try again; after a hard decline, it asks for a new card. Billing emails go to the account owner and every Billing Admin.
+
+If the last try fails, the subscription is **unpaid**: the paid plan stops and your monitors run at free settings, as above. The Billing tab offers two ways back, and shows the amount before you confirm:
+
+- **Restart** starts a new billing period today and charges it to your default card. Once that payment goes through, the paid plan comes back and the older unpaid invoices are voided.
+- **Choose a different plan** ends the unpaid subscription and starts a new one.
+
+After 30 days unpaid, Site Qwality cancels the subscription and voids its outstanding invoices. The account stays on the free plan.
 
 ## Set up integrations early
 
