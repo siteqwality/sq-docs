@@ -1,7 +1,7 @@
 ---
 title: Publish a status page maintenance
 description: Tell visitors about planned work, show it on your status page, and email your subscribers when it is scheduled, starts and ends.
-last_verified: 2026-10-15
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -28,7 +28,7 @@ A [maintenance window](/incident-management/maintenance/overview/) is a differen
 
 4. Set **Scheduled Start** and **Scheduled End**. The end must be after the start.
 
-5. Under **Affected Monitors**, pick the checks that will be affected. Leave it empty to cover the whole page.
+5. Under **Scope**, pick **Whole page**, or **Specific monitors** and choose the affected checks. There is no default.
 
 6. Save. Confirmed subscribers get an email, unless they chose not to hear about maintenance or about these checks.
 
@@ -50,13 +50,15 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/maintenance
   }'
 ```
 
+Name the scope in every create and update: list at least one monitor in `affected_http_job_ids`, or send `"whole_page": true` with no ids. Sending both, or neither, returns `400`. The response includes `whole_page`.
+
 </TabItem>
 </Tabs>
 
 ## What visitors see
 
 - Before the start time, the maintenance is listed as **scheduled**.
-- When the start time passes, the page shows it as **in progress** and the components it covers show **Maintenance** instead of an outage. If you leave `affected_http_job_ids` empty, the whole page shows **Under Maintenance**.
+- When the start time passes, the page shows it as **in progress** and the components it covers show **Maintenance** instead of an outage. A maintenance for the whole page (`whole_page: true`) shows the whole page as **Under Maintenance**.
 - When the end time passes, it drops off the page.
 
 You do not have to move it by hand. To start early, set the status to `in_progress`. To finish early, set it to `completed`.
@@ -73,6 +75,6 @@ A subscriber who chose specific components gets these emails only when the maint
 
 ## Change or cancel it
 
-Edit it from the **Maintenance** tab, or with `PUT /status_page/{id}/maintenance/{maintenance_id}` (send the full body, including `status`). Delete it with `DELETE` on the same path.
+Edit it from the **Maintenance** tab, or with `PUT /status_page/{id}/maintenance/{maintenance_id}` (send the full body, including `status` and the scope: `whole_page` or `affected_http_job_ids`). Delete it with `DELETE` on the same path.
 
 <LinkCard title="Status page reference" description="Every maintenance field and the public API." href="/status-pages/reference/" />

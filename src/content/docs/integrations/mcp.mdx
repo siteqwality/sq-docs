@@ -282,7 +282,7 @@ These tools manage status pages end to end. They use the Status Pages scopes, ex
 | `update_status_page_incident` | Changes a page incident's title or severity. Its status changes through `post_incident_update` or `resolve_incident`. | Write |
 | `delete_status_page_incident` | Deletes an incident shown on a page. | Write, asks first |
 | `list_status_page_maintenances`, `get_status_page_maintenance` | Lists a page's maintenance windows, or shows one. | Read |
-| `schedule_status_page_maintenance`, `update_status_page_maintenance` | Schedules or changes a maintenance window. Confirmed subscribers hear about new and rescheduled windows. | Write |
+| `schedule_status_page_maintenance`, `update_status_page_maintenance` | Schedules or changes a maintenance window. Each call names what it covers: `whole_page: true`, or the monitors in `affected_http_job_ids`, never both. Confirmed subscribers hear about new and rescheduled windows. | Write |
 | `delete_status_page_maintenance` | Deletes a maintenance window. | Write, asks first |
 | `list_status_page_subscribers`, `export_status_page_subscribers` | Lists a page's email subscribers, or exports them all as CSV. | Read |
 | `add_status_page_subscriber` | Sends an address a confirmation link, optionally for only some components or only incidents or maintenance. | Write |

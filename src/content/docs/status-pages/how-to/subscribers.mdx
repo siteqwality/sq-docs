@@ -33,7 +33,7 @@ Each subscriber chooses the kinds of update (incidents, maintenance, or both) an
 | Incident opened, updated or resolved | take incidents, and chose every component or at least one component the incident affects. |
 | Maintenance scheduled, started or completed | take maintenance, and chose every component or at least one component the maintenance covers. |
 
-An incident with no affected components goes to everyone who takes incidents. A maintenance with no affected components covers the whole page, so it goes to everyone who takes maintenance. Set the affected components when you post, and people who follow one part of your service hear only about that part.
+An incident with no affected components goes to everyone who takes incidents. A maintenance for the whole page goes to everyone who takes maintenance. Set the affected components on an incident, and pick specific monitors for a maintenance that touches only part of your service, so people who follow one part hear only about that part.
 
 ### How notices go out
 
@@ -176,7 +176,7 @@ When someone asks you to delete their data, remove them in the **Subscribers** t
 ## Best practices
 
 - **Don't auto-subscribe customers.** Always require explicit opt-in. Site Qwality enforces double opt-in with the confirmation email, for imports too.
-- **Set affected components.** Subscribers who follow one component only hear about incidents and maintenance that affect it, or that affect no component in particular.
+- **Set affected components.** Subscribers who follow one component only hear about incidents and maintenance that affect it, plus incidents that affect no component in particular and maintenance for the whole page.
 - **Send maintenance windows, not flapping checks.** Subscribers expect signal, not noise. Use [maintenance windows](/incident-management/maintenance/overview/) to suppress monitor-driven incidents during planned work; only manually-created incidents should reach subscribers.
 - **Keep messages short and actionable.** "We're investigating elevated 500 errors on the API. Affects: checkout. ETA: 30 minutes." is better than three paragraphs of context.
 
