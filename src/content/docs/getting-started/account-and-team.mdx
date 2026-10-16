@@ -40,6 +40,12 @@ Pending invites count toward your plan's seat limit immediately, not on acceptan
 
 Directory-managed teams should map IdP groups to the exact role IDs in [SCIM role mapping](/enterprise/scim/). Unknown names become Member. The account's original user cannot be deprovisioned.
 
+### Removing someone who is on call
+
+Removing a user from **Settings → Users** also takes them out of every on-call rotation and escalation level they are in. The people after them in a rotation move up a place. If they are in any, the dialog lists each rotation and level first and asks you to confirm with **Remove anyway**. Through the API, `DELETE /account/delete_user/{user_id}` answers `409` with code `user_has_paging_references` and the list in `data`; send it again with `?confirm=true` to go ahead.
+
+Check that each listed rotation and level still pages someone afterwards. The [readiness check](/incident-management/escalation/readiness/) shows any level that would page nobody.
+
 ## Set up your contact methods
 
 A *contact method* is **how you personally** can be reached, whether that's your email, your phone for SMS, or a Slack DM. Distinct from a notification *channel*, which is account-level.

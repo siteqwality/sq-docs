@@ -1,7 +1,7 @@
 ---
 title: SCIM role mapping
 description: Exact Site Qwality role strings for SCIM, what happens to unknown names, and who cannot be removed.
-last_verified: 2026-08-14
+last_verified: 2026-10-16
 owner: jj
 ---
 
@@ -68,6 +68,8 @@ Two people are protected. The IdP cannot take the account down by deleting them.
 |---|---|---|
 | The account's original user (the primary user) | Cannot be deleted or demoted | The delete is ignored. They stay a Super Admin. |
 | The last Super Admin | Cannot be deleted or demoted | Do not remove their Super Admin group in the IdP until someone else holds `super_admin`. |
+
+Everyone else is removed when the directory deletes them, even if they are on call. They are taken out of every rotation and escalation level in the same step, the people after them in a rotation move up a place, the removal is recorded in the [audit log](/enterprise/audit-log/), and if they were in any, every Super Admin gets an email listing them. Check that each of those still pages someone.
 
 Always keep at least two Super Admins if you manage roles from the directory. Map a break-glass group to `super_admin` so a directory outage does not lock you out of billing and SCIM.
 

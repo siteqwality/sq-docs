@@ -22,23 +22,24 @@ Deleting a policy needs an admin or an API key; other roles get `403`.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `level_number` | int | next-free | Sort order within the policy. Lower runs first. Auto-assigned to `max(existing) + 1` if omitted. |
+| `level_number` | int | last | Position within the policy, from `1`. Lower runs first. Omit it to add the level last. A position inside the list inserts the level there and moves the levels at and below it down one. A position past the end (more than `N + 1` for `N` levels) or below `1` is a `400`. |
 | `timeout_minutes` | int | required | How long to wait for any responder ack at this level before advancing, counted from when the level starts. The level advances within a few seconds of it. Whole minutes, from `1` to `1440` (one day). |
 | `target_user_ids` | uuid[] | `[]` | Page these specific users. Each user's notification rules + contact methods determine the actual delivery. |
 | `target_schedule_ids` | uuid[] | `[]` | Page whoever is on-call in these on-call schedules at firing time. |
 
 A level with no resolvable targets pages nobody, but it still waits out its timeout and still advances.
 
-## Level numbering rules
+## Levels are positions
 
-The engine starts at the level numbered exactly `1` and then looks for `2`, `3`, and so on. Two failure modes follow, and neither reports an error:
+A policy's levels are always numbered `1` to `N` with no gaps and no duplicates. Every change keeps it that way:
 
-- **No level `1`.** The policy never pages at all.
-- **A gap** (levels `1` and `3`, say). Level 1 pages, then the policy looks for level `2`, finds nothing, and stalls. No further timeout is scheduled.
+- **Adding** a level puts it at its `level_number` (last by default) and moves the levels at and below it down one.
+- **Deleting** a level moves every level below it up one.
+- **Reordering** rewrites every number in one go. See the [reorder endpoint](#reorder-endpoint).
 
-Omitting `level_number` on create auto-assigns `max + 1`, which is always safe. If you have set numbers by hand, use the [reorder endpoint](#reorder-endpoint) to renumber to a clean `1..N`.
+An open incident follows its level, not the number. After a reorder it keeps waiting on the same level and moves on from that level's place in the new order.
 
-Duplicate `level_number` values are accepted, but only the first matching level is ever paged.
+Deleting the level an open incident is waiting on pages nobody straight away. When that level's timeout ends, the escalation continues at the level that took its place, and the incident records an `escalation_level_removed` event. If the deleted level was the last one, its timeout ends the pass: the next repeat starts at level 1, or the escalation is `exhausted` when no repeats remain.
 
 ## Step types: practical recipes
 
@@ -91,13 +92,13 @@ Reserve for `critical` incidents that have already burned through 30+ minutes wi
 
 ## Reorder endpoint
 
-`PUT /escalation_policy/{policy_id}/level/reorder` accepts a `level_ids` array in desired order and rewrites every level's `level_number` to match.
+`PUT /escalation_policy/{policy_id}/level/reorder` accepts a `level_ids` array in the order you want and rewrites every level's `level_number` to match, in one transaction.
 
 ```json
 { "level_ids": ["<id-1>", "<id-2>", "<id-3>"] }
 ```
 
-The array must contain exactly the existing levels: no adds, no removes. It rewrites every `level_number` to a contiguous `1..N`, which is the safe way to repair a policy with gaps.
+The array must name every level of the policy exactly once. A missing level, an extra or unknown id, or a repeated id is a `400` and changes nothing, so a list built before someone else added or deleted a level is refused rather than applied. Fetch the levels again and resend. A policy in another account is a `404`.
 
 ## How targets are paged
 

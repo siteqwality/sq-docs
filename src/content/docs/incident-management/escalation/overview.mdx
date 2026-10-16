@@ -15,10 +15,8 @@ An escalation runs when an incident that has a `service_id` opens, and that [ser
 
 This applies equally to incidents a monitor opened automatically and to incidents you [created by hand](/incident-management/incidents/how-to/manual-incidents/). An incident with no `service_id`, or whose service has no policy, never escalates.
 
-<Aside type="caution" title="Levels must start at 1 and have no gaps">
-The engine looks for the level numbered exactly `1` to start, then walks `2`, `3`, and so on. A policy whose lowest level is `2` never pages anyone, and a policy with levels `1` and `3` pages level 1 and then stalls: nothing matches level `2`, so no further timeout is scheduled.
-
-Adding levels through the API without an explicit `level_number` auto-assigns `max + 1`, which is always safe. If you have edited numbers by hand, `PUT /escalation_policy/{policy_id}/level/reorder` renumbers everything to a clean `1..N`.
+<Aside type="note" title="Levels are positions">
+Levels are always numbered `1` to `N`. Adding a level in the middle moves the ones below it down, deleting one moves the ones below it up, and `PUT /escalation_policy/{policy_id}/level/reorder` rewrites the order in one go. An open incident follows its level through a reorder. See [levels are positions](/incident-management/escalation/reference/#levels-are-positions).
 </Aside>
 
 ## Anatomy
@@ -33,7 +31,7 @@ Each level:
 
 | Field | What it is |
 |---|---|
-| `level_number` | Sort order. Auto-assigned to the next integer if omitted. |
+| `level_number` | Position, from `1`. Added last if omitted. |
 | `timeout_minutes` | How long to wait for an ack before moving on. |
 | `target_user_ids` | Page these specific users (their notification rules + contact methods kick in). |
 | `target_schedule_ids` | Page whoever's on-call in these schedules right now. |
