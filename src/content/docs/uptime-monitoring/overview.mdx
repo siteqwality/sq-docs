@@ -34,6 +34,7 @@ HTTP checks can run from **24 check locations across 18 countries and territorie
 - **Default.** A monitor with `check_regions` unset or empty runs from `aws-us-east-1` (Virginia, AWS).
 - **Plans.** The free plan allows one location per monitor. Paid plans can select any number. Selecting more than one without a paid uptime plan returns `403` with `multi_region_requires_paid_plan`, on HTTP and browser checks.
 - **Billing.** Each location a check runs from counts as one check toward your monthly check volume. A monitor checked from three locations every minute uses three checks a minute.
+- **Default.** A new HTTP monitor runs from `aws-us-east-1` unless you choose. On a paid uptime plan it starts on two locations on different cloud providers and alerts only when both fail, as long as the account's projected checks stay within half of its monthly quota. The form shows the choice and the checks it uses; see [default locations](/uptime-monitoring/http-checks/reference/#default-locations).
 - **Other check types.** Browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1` only. Location selection applies to HTTP checks.
 
 Start with a location near your users. Add another cloud provider when you want to compare network paths, and choose locations on other continents to cover a global audience. The dashboard groups locations by continent and lets you search by city, country code, provider or location id. Adding locations to the available list does not change an existing monitor: only its selected locations run.

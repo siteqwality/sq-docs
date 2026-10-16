@@ -25,7 +25,7 @@ How often a monitor's checks fire. Free plan minimum is 5 minutes (300 seconds);
 
 ### Check location
 
-A place Site Qwality runs checks from, on AWS, Google Cloud or Microsoft Azure. Each has a stable id of the form `<provider>-<region>`, such as `aws-us-east-1`, and the API field that holds them is `check_regions`. The default is `aws-us-east-1` (Virginia, AWS). The free plan allows one location per monitor; paid plans allow any number. HTTP checks can use any live location; browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1`. The live list is on the [locations page](https://siteqwality.com/locations/). See [check locations](/uptime-monitoring/overview/#check-locations).
+A place Site Qwality runs checks from, on AWS, Google Cloud or Microsoft Azure. Each has a stable id of the form `<provider>-<region>`, such as `aws-us-east-1`, and the API field that holds them is `check_regions`. The default is `aws-us-east-1` (Virginia, AWS). The free plan allows one location per monitor; paid plans allow any number, and a new monitor on a paid uptime plan starts on two locations on different providers while the account's projected checks stay within half of its quota. HTTP checks can use any live location; browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1`. The live list is on the [locations page](https://siteqwality.com/locations/). See [check locations](/uptime-monitoring/overview/#check-locations).
 
 ### Min healthy regions
 

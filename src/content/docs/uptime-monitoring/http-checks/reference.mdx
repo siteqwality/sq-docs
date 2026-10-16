@@ -19,7 +19,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `run_interval_seconds` | int | required | Seconds between checks. Must be at least `60` and a multiple of `60`. |
 | `run_interval_thirty_seconds` | bool | `false` | Run every 30 seconds instead. Only valid together with `run_interval_seconds: 60`. |
 | `timeout_ms` | int | required | Per-request timeout in milliseconds. Maximum `60000`. |
-| `check_regions` | string[] | `["aws-us-east-1"]` | Location ids the check runs from. Omitted or empty falls back to the default. More than one requires a paid uptime plan. See [check locations](#check-locations). |
+| `check_regions` | string[] | see [default locations](#default-locations) | Location ids the check runs from. Omitted or empty on create uses the [default locations](#default-locations). More than one requires a paid uptime plan. See [check locations](#check-locations). |
 | `min_healthy_regions` | int | `1` | Minimum locations that must pass for the check to count as healthy. At least `1`, at most the number of `check_regions`. In a run where some locations return no result, it is capped at the number that did. |
 | `confirmation_threshold` | int | `1` | Consecutive failed checks required before the monitor transitions to `failed` and alerts. `1` to `10`. See [requiring N failed checks](/uptime-monitoring/http-checks/how-to/confirmation-threshold/). |
 | `recovery_period_runs` | int | `2` | Consecutive healthy checks before the all clear is sent and the incident resolves. `1` to `10`; `1` is immediate. Monitors created before this field existed have `1`. See [recovery and flapping](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/). |
@@ -136,6 +136,32 @@ How `check_regions` is validated on create and update:
 
 On every scheduled run, each selected location makes the request and returns its own result, recorded with that location's id in `check_region`. Each result counts as one check toward your monthly check volume. A location that cannot return a result in a run (its provider is unreachable, for example) is left out of that run: nothing is recorded for it, it is not billed, and the quorum is evaluated over the locations that did report. If a monitor has exactly one location and it cannot report, the executor attempts the default location when it is different and enough execution time remains. A returned result is recorded under the default's id. If no location returns a result, the monitor's status stays unchanged. With two or more locations, a run where only one answered and it failed is [inconclusive](/uptime-monitoring/http-checks/how-to/confirmation-threshold/#2-location-quorum): the status changes only if the next run is inconclusive too.
 
+### Default locations
+
+A create that leaves out `check_regions` (or sends `[]`) runs from `aws-us-east-1`. On a paid uptime plan it runs from two locations instead: `aws-us-east-1` plus a healthy location on another cloud provider in the same country (the same city first), with `min_healthy_regions: 1`, so you are alerted only when both fail. Nothing is stored as a preference: each create picks again, and an existing monitor never changes. A retention add-on on its own is not an uptime plan.
+
+The pair is the default only while it fits: the account's projected monthly checks, the new monitor included, must stay within half of its monthly uptime check quota (the free allowance plus the uptime plan). Otherwise the default is one location. Choosing locations yourself is never refused by this rule.
+
+`GET /check-locations/default` returns what a create would get, and the projection behind it. Pass the new monitor's `run_interval_seconds` (60 to 86400), and optionally `run_interval_thirty_seconds`, `monitor_tls` and `monitor_dns` (both default to `true`). An invalid interval returns `400`. API keys need `read:monitors`.
+
+```json
+{
+  "check_regions": ["aws-us-east-1", "gcp-us-east4"],
+  "min_healthy_regions": 1,
+  "single_location_reason": null,
+  "projection": {
+    "checks_per_location_per_month": 43200,
+    "paired_checks_per_month": 60,
+    "monitor_checks_per_month": 86460,
+    "account_checks_per_month": 120000,
+    "quota": 600000,
+    "pair_quota_percent": 50
+  }
+}
+```
+
+`single_location_reason` is `null` for the pair, or says why the default is one location: `plan` (no paid uptime plan), `quota` (the pair would pass half the quota) or `no_healthy_pair` (no healthy location on another provider in the default's country right now). The projection counts a 30-day month: one check per location per run, a 30-second monitor runs twice a minute, and the TLS and domain expiry checks paired with an HTTP monitor run daily (30 a month each). `account_checks_per_month` covers the account's active HTTP monitors on the locations each one runs from.
+
 Outages list each failing location: `GET /http/job/{job_id}/events` returns `failed_locations`, `total_locations` and `degraded_quorum` on each outage, and `held_reason: "flap"` with `held_released_at` when its alert was held for flapping.
 
 Checks do not come from fixed IP addresses. See [allowlisting our checks](/uptime-monitoring/http-checks/allowlisting/).
@@ -173,6 +199,7 @@ The negotiated version actually observed on each run is recorded on the check re
 | `GET` | `/http/job/{job_id}/recent` | Recent check runs. |
 | `GET` | `/http/job/{job_id}/recent-checks` | Recent check results per location. |
 | `GET` | `/check-locations` | Every check location, with its status and capabilities. |
+| `GET` | `/check-locations/default` | The [default locations](#default-locations) for a new monitor, with the check projection. |
 | `GET` | `/http/job/{job_id}/events` | Status-transition events. |
 | `GET` | `/monitors/{monitor_id}/events` | [Monitor events](#monitor-events): quota skips, missing schedules, TLS checks that cannot connect. |
 | `GET` | `/http/job/{job_id}/uptime_percentage` | Uptime percentage and incident count for a date range. |
