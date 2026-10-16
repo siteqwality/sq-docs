@@ -2629,6 +2629,19 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "idempotency_key",
+            "in": "query",
+            "description": "Client-generated, stable across retries of one removal.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -2650,6 +2663,9 @@
           },
           "403": {
             "description": "Caller is not a super admin"
+          },
+          "409": {
+            "description": "Money is outstanding, or the plan bundles this add-on"
           },
           "500": {
             "description": "Internal server error"
@@ -2815,7 +2831,7 @@
         "tags": [
           "Billing"
         ],
-        "summary": "Preview the cost and consequences of a plan change.",
+        "summary": "Preview the cost and consequences of a plan or add-on change.",
         "operationId": "preview_change_plan",
         "requestBody": {
           "content": {
@@ -2829,7 +2845,7 @@
         },
         "responses": {
           "200": {
-            "description": "Proration preview and downgrade warnings",
+            "description": "Stripe's quote for the change, and what it takes away",
             "content": {
               "application/json": {
                 "schema": {
@@ -2839,7 +2855,7 @@
             }
           },
           "400": {
-            "description": "Unknown pack, inactive pack, or an add-on pack"
+            "description": "Unknown or inactive pack, a pack of another product, or a bad quantity"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -2847,8 +2863,14 @@
           "403": {
             "description": "Caller is not a super admin"
           },
+          "409": {
+            "description": "Billing changed while quoting; refresh"
+          },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "Stripe is busy; try again"
           }
         },
         "security": [
@@ -3280,6 +3302,89 @@
             "description": "Internal server error"
           }
         }
+      }
+    },
+    "/billing/purchase/cancel": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Drop the purchase waiting on a payment. Nothing was charged, and nothing will be.",
+        "operationId": "cancel_purchase",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelPurchaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Waiting purchases dropped",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelPurchaseResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller has no billing role"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/billing/purchase/complete": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "The payment-sheet secrets for the purchase waiting on a payment.",
+        "operationId": "complete_purchase",
+        "responses": {
+          "200": {
+            "description": "The open invoice's client secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletePurchaseResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Caller has no billing role"
+          },
+          "409": {
+            "description": "No purchase is waiting on a payment"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
       }
     },
     "/billing/sms-credits": {
@@ -6536,6 +6641,51 @@
         ]
       }
     },
+    "/escalation_policy/readiness": {
+      "post": {
+        "tags": [
+          "Escalation Policies"
+        ],
+        "summary": "Check levels before they are saved, such as a level being added in the dashboard.",
+        "operationId": "check_escalation_readiness",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EscalationReadinessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Readiness of every level",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EscalationReadinessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body, or a target user or schedule is not in this account"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/escalation_policy/{policy_id}": {
       "get": {
         "tags": [
@@ -6871,6 +7021,54 @@
           },
           "404": {
             "description": "Level not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/escalation_policy/{policy_id}/readiness": {
+      "get": {
+        "tags": [
+          "Escalation Policies"
+        ],
+        "summary": "Whether each level of a saved escalation policy reaches someone, per urgency.",
+        "description": "Pages are judged as if sent now: on-call schedules resolve to whoever is on call, and a\nrule delayed as long as its level's timeout does not count.",
+        "operationId": "get_escalation_policy_readiness",
+        "parameters": [
+          {
+            "name": "policy_id",
+            "in": "path",
+            "description": "Escalation policy identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Readiness of every level",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EscalationReadinessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Policy not found"
           },
           "500": {
             "description": "Internal server error"
@@ -8091,6 +8289,7 @@
           "Incidents"
         ],
         "summary": "Update a standalone (non-status-page) incident.",
+        "description": "PATCH semantics: absent fields are unchanged. `status` and `resolved_at`\nare deprecated (a `Deprecation` header says so): `resolved` resolves the\nincident with a public update, other values set the public status, and\n`resolved_at` is ignored.",
         "operationId": "update_standalone_incident",
         "parameters": [
           {
@@ -8125,11 +8324,17 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid request body"
+          },
           "401": {
             "description": "Missing or invalid authentication"
           },
           "404": {
             "description": "Incident not found"
+          },
+          "409": {
+            "description": "The status cannot change on a resolved incident; data holds its current state"
           },
           "500": {
             "description": "Internal server error"
@@ -8229,6 +8434,9 @@
           "404": {
             "description": "Incident not found"
           },
+          "409": {
+            "description": "Incident is not triggered; data holds its current state"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -8246,7 +8454,7 @@
           "Incidents"
         ],
         "summary": "Publish an incident to a status page.",
-        "description": "Links the incident to the status page so it renders publicly. Publishing the\nsame incident to the same page twice is a no-op rather than an error.",
+        "description": "Links the incident to the page with a public title and, when it has no public update yet,\na first public update (both default to the service's public template). Internal updates\nnever show on the page. The page's subscribers are told it opened unless\n`notify_subscribers` is false. Publishing to the same page again is not an error.",
         "operationId": "publish_incident",
         "parameters": [
           {
@@ -8281,11 +8489,143 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid request body, or a public title that is too long"
+          },
           "401": {
             "description": "Missing or invalid authentication"
           },
           "404": {
             "description": "Incident or status page not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/incident/{incident_id}/publish/{status_page_id}": {
+      "delete": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Take an incident off a status page.",
+        "description": "The page stops showing it at once; its updates are kept, and subscribers are not emailed.",
+        "operationId": "unpublish_incident",
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "description": "Incident identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incident unpublished",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Incident not found, or not published on that status page"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/incident/{incident_id}/reopen": {
+      "post": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Reopen a resolved incident.",
+        "description": "The incident goes back to triggered and investigating, a published one\ngets a public \"Reopened\" update, and escalation starts again at level 1.",
+        "operationId": "reopen_incident",
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "description": "Incident identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Optional",
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ReopenIncidentRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Incident reopened",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Incident not found"
+          },
+          "409": {
+            "description": "Incident is not resolved; data holds its current state"
           },
           "500": {
             "description": "Internal server error"
@@ -8304,6 +8644,7 @@
           "Incidents"
         ],
         "summary": "Mark an incident as resolved.",
+        "description": "A published incident always gets a public \"Resolved\" update, and its\nsubscribers are emailed unless `notify_subscribers` is false.",
         "operationId": "resolve_incident",
         "parameters": [
           {
@@ -8317,6 +8658,23 @@
             }
           }
         ],
+        "requestBody": {
+          "description": "Optional",
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ResolveIncidentRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Incident resolved",
@@ -8328,11 +8686,17 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid request body"
+          },
           "401": {
             "description": "Missing or invalid authentication"
           },
           "404": {
             "description": "Incident not found"
+          },
+          "409": {
+            "description": "Incident is already resolved; data holds its current state"
           },
           "500": {
             "description": "Internal server error"
@@ -8350,7 +8714,8 @@
         "tags": [
           "Incidents"
         ],
-        "summary": "Add an incident-update message to a standalone incident.",
+        "summary": "Add an update to an incident.",
+        "description": "Public by default: it sets the public status (omitted keeps it), `resolved` resolves,\nand moving backwards returns 409 unless `force` is set. With `notify_subscribers` the\nsubscribers of every page it is published on are emailed. An `internal` update shows\nonly in the app and never changes the public status.",
         "operationId": "create_standalone_incident_update",
         "parameters": [
           {
@@ -8375,7 +8740,7 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Incident update added",
             "content": {
               "application/json": {
@@ -8385,11 +8750,17 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid request body, or an internal update with status resolved"
+          },
           "401": {
             "description": "Missing or invalid authentication"
           },
           "404": {
             "description": "Incident not found"
+          },
+          "409": {
+            "description": "The status would move backwards, or the incident is resolved; data holds its current state"
           },
           "500": {
             "description": "Internal server error"
@@ -8630,7 +9001,7 @@
         "tags": [
           "Integrations"
         ],
-        "summary": "Add an OpsGenie integration (Alerts API key).",
+        "summary": "Add a Jira Service Management (Opsgenie) integration (API integration key and endpoint).",
         "operationId": "add_opsgenie_integration",
         "requestBody": {
           "content": {
@@ -8644,7 +9015,7 @@
         },
         "responses": {
           "201": {
-            "description": "OpsGenie integration added"
+            "description": "Jira Service Management (Opsgenie) integration added"
           },
           "400": {
             "description": "Invalid request body"
@@ -8656,7 +9027,7 @@
             "description": "Not an admin, or the key lacks integrations:manage"
           },
           "422": {
-            "description": "Name or credential missing, or name over 256 characters"
+            "description": "Name or credential missing, name over 256 characters, or an unknown endpoint"
           },
           "500": {
             "description": "Internal server error"
@@ -8674,7 +9045,7 @@
         "tags": [
           "Integrations"
         ],
-        "summary": "Add a PagerDuty integration (Events API v2 routing key).",
+        "summary": "Add a PagerDuty integration (Events API v2 routing key, US or EU service region).",
         "operationId": "add_pagerduty_integration",
         "requestBody": {
           "content": {
@@ -8700,7 +9071,7 @@
             "description": "Not an admin, or the key lacks integrations:manage"
           },
           "422": {
-            "description": "Name or credential missing, or name over 256 characters"
+            "description": "Name or credential missing, name over 256 characters, or an unknown region"
           },
           "500": {
             "description": "Internal server error"
@@ -11312,6 +11683,66 @@
         ]
       }
     },
+    "/monitors/silent": {
+      "get": {
+        "tags": [
+          "Monitors Overview"
+        ],
+        "summary": "Active monitors whose outage would reach no one: no attached notification group has a\nchannel, and no linked service opens incidents automatically with someone to page.",
+        "operationId": "get_silent_monitors",
+        "responses": {
+          "200": {
+            "description": "Up to 100 silent active monitors by name, the full count and the banner state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SilentMonitors"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/monitors/silent/dismiss": {
+      "post": {
+        "tags": [
+          "Monitors Overview"
+        ],
+        "summary": "Hide the silent-monitors banner for the whole account, for good.",
+        "operationId": "dismiss_silent_monitors_banner",
+        "responses": {
+          "204": {
+            "description": "Banner dismissed for the account"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Read-only roles cannot dismiss it"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/monitors/sla": {
       "get": {
         "tags": [
@@ -11559,10 +11990,16 @@
             "description": "Notification created"
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid request body, or the group is not in this account"
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "The caller's email address is not verified"
+          },
+          "409": {
+            "description": "The group or the account holds the most channels allowed"
           },
           "422": {
             "description": "The integration is not in this account, or is another type"
@@ -18106,6 +18543,7 @@
           "Status Pages"
         ],
         "summary": "Update branding configuration for a status page.",
+        "description": "A field left out keeps its value and `null` clears it. Saving publishes\nthe page again (the status page publish layer runs on every write here).",
         "operationId": "update_status_page_branding",
         "parameters": [
           {
@@ -18168,7 +18606,7 @@
         "tags": [
           "Status Pages"
         ],
-        "summary": "Delete a branding asset (logo, favicon, or og-image) from a status page.",
+        "summary": "Delete a branding asset (logo, dark logo, favicon or OG image) from a status page.",
         "operationId": "delete_status_page_branding_asset",
         "parameters": [
           {
@@ -18184,7 +18622,7 @@
           {
             "name": "asset_type",
             "in": "path",
-            "description": "Asset type: logo, favicon, or og_image",
+            "description": "Asset type: logo, logo_dark, favicon or og_image",
             "required": true,
             "schema": {
               "type": "string"
@@ -18217,7 +18655,7 @@
         "tags": [
           "Status Pages"
         ],
-        "summary": "Generate a pre-signed S3 URL for uploading a branding asset (logo, favicon, og-image).",
+        "summary": "Generate a pre-signed S3 URL for uploading a branding asset (logo, dark logo, favicon, OG image).",
         "operationId": "get_branding_upload_url",
         "parameters": [
           {
@@ -18333,6 +18771,54 @@
       }
     },
     "/status_page/{status_page_id}/browser_check/{browser_check_id}": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Get one browser monitor's entry on a status page.",
+        "operationId": "get_status_page_browser_check",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "browser_check_id",
+            "in": "path",
+            "description": "Browser check identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The check's display name and SLA target on the page, with the check in `browser_check`"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found, or the check is not on it"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
       "put": {
         "tags": [
           "Status Pages"
@@ -18379,7 +18865,7 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Mapping not found"
+            "description": "Status page not found, or the check is not on it"
           },
           "500": {
             "description": "Internal server error"
@@ -18432,6 +18918,9 @@
         "responses": {
           "200": {
             "description": "Mapping created"
+          },
+          "400": {
+            "description": "Invalid request body, or the page already shows 100 components"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -18486,6 +18975,586 @@
           },
           "404": {
             "description": "Mapping not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/component": {
+      "post": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Add a manual component: one with no monitor, whose status the owner sets. It goes last in its group.",
+        "operationId": "create_status_page_component",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateManualComponent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The new component",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayoutComponent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body, a group that is not on this page, or the page already shows 100 components"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/component/{component_id}": {
+      "delete": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Delete a manual component. Monitors and heartbeats leave a page through their own routes.",
+        "operationId": "delete_status_page_component",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "component_id",
+            "in": "path",
+            "description": "Manual component identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Component deleted"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found, or no manual component with this id on it"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Rename a manual component, change its description, or set its status. Its place, group and\nvisibility are part of the layout.",
+        "operationId": "update_status_page_component",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "component_id",
+            "in": "path",
+            "description": "Manual component identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateManualComponent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The updated component",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayoutComponent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found, or no manual component with this id on it"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/component/{component_id}/override": {
+      "put": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Force the public status of any component on the page, with an optional note and expiry.",
+        "description": "The override wins over the monitor's own state, pauses and maintenance, and counts toward the\npage's headline. Setting it again replaces it.",
+        "operationId": "set_status_page_component_override",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "component_id",
+            "in": "path",
+            "description": "The component's `id` from the page layout",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetStatusOverride"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The component with its override",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayoutComponent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body, a note that is too long, or an expiry in the past"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found, or the component is not on it"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Clear a component's status override, so the page shows what its monitor says again.",
+        "operationId": "clear_status_page_component_override",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "component_id",
+            "in": "path",
+            "description": "The component's `id` from the page layout",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No override is set, whether or not one was"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found, or the component is not on it"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/cron_job": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "List the cron jobs shown on a status page as heartbeats, ordered by display name.",
+        "operationId": "list_status_page_cron_jobs",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size. Defaults to 10, clamped to 1..=100",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Row offset into the whole list",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of heartbeats in `data`, plus `total`: the number of heartbeats on the status page"
+          },
+          "400": {
+            "description": "Invalid pagination parameters"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/cron_job/{cron_job_id}": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Get one heartbeat on a status page: the name the page shows and its cron job.",
+        "operationId": "get_status_page_cron_job",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cron_job_id",
+            "in": "path",
+            "description": "Cron job identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The heartbeat"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found, or the cron job is not on it"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Rename a heartbeat component on a status page.",
+        "operationId": "update_status_page_cron_job",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cron_job_id",
+            "in": "path",
+            "description": "Cron job identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusPageCronJobInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Heartbeat renamed"
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found, or the cron job is not on it"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Show a cron job on a status page as a heartbeat component. Attaching one already there renames it.",
+        "operationId": "create_status_page_cron_job",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cron_job_id",
+            "in": "path",
+            "description": "Cron job identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusPageCronJobInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The cron job is on the page"
+          },
+          "400": {
+            "description": "Invalid request body, or the page already shows 100 components"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page or cron job not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Take a heartbeat component off a status page. The cron job itself is kept.",
+        "operationId": "delete_status_page_cron_job",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cron_job_id",
+            "in": "path",
+            "description": "Cron job identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The cron job is off the page, whether or not it was on it"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
           },
           "500": {
             "description": "Internal server error"
@@ -18708,6 +19777,54 @@
       }
     },
     "/status_page/{status_page_id}/http_job/{http_job_id}": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Get one HTTP monitor's entry on a status page.",
+        "operationId": "get_status_page_http_job",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "http_job_id",
+            "in": "path",
+            "description": "HTTP monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The monitor's display name and SLA target on the page, with the monitor in `http_job`"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found, or the monitor is not on it"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
       "put": {
         "tags": [
           "Status Pages"
@@ -18757,7 +19874,7 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Mapping not found"
+            "description": "Status page not found, or the monitor is not on it"
           },
           "500": {
             "description": "Internal server error"
@@ -18812,7 +19929,7 @@
             "description": "Status page HTTP-job mapping created"
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid request body, or the page already shows 100 components"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -18925,6 +20042,68 @@
           "401": {
             "description": "Missing or invalid authentication"
           },
+          "404": {
+            "description": "Status page not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Create an incident on the status page in the path.",
+        "description": "The same as `POST /incident` with this page as `status_page_id`. A body\n`status_page_id` that names another page is a 400.",
+        "operationId": "create_status_page_incident",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIncidentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Incident created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page, service or affected monitor not found"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -18980,7 +20159,7 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Incident not found"
+            "description": "Status page or incident not found, or the incident is not on that page"
           },
           "500": {
             "description": "Internal server error"
@@ -18997,6 +20176,7 @@
           "Incidents"
         ],
         "summary": "Update an incident scoped to a status page.",
+        "description": "PATCH semantics: absent fields are unchanged. `status` and `resolved_at`\nare deprecated (a `Deprecation` header says so): `resolved` resolves the\nincident with a public update, other values set the public status, and\n`resolved_at` is ignored.",
         "operationId": "update_incident",
         "parameters": [
           {
@@ -19041,11 +20221,17 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid request body"
+          },
           "401": {
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Incident not found"
+            "description": "Status page or incident not found, or the incident is not on that page"
+          },
+          "409": {
+            "description": "The status cannot change on a resolved incident; data holds its current state"
           },
           "500": {
             "description": "Internal server error"
@@ -19093,7 +20279,7 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Incident not found"
+            "description": "Status page or incident not found, or the incident is not on that page"
           },
           "500": {
             "description": "Internal server error"
@@ -19111,7 +20297,8 @@
         "tags": [
           "Incidents"
         ],
-        "summary": "Add an incident-update message to an existing incident.",
+        "summary": "Post an update to an incident on a status page.",
+        "description": "Public by default: it sets the incident's public status (omitted keeps it), and\n`resolved` resolves it. Moving the status backwards returns 409 unless `force` is set.\nThe path page's subscribers are emailed unless `notify_subscribers` is false. An\n`internal` update shows only in the app.",
         "operationId": "create_incident_update",
         "parameters": [
           {
@@ -19146,7 +20333,7 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Incident update added",
             "content": {
               "application/json": {
@@ -19156,11 +20343,123 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid request body, or an internal update with status resolved"
+          },
           "401": {
             "description": "Missing or invalid authentication"
           },
           "404": {
             "description": "Status page or incident not found, or the incident is not on that page"
+          },
+          "409": {
+            "description": "The status would move backwards, or the incident is resolved; data holds its current state"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/layout": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "How the page's components are grouped and ordered.",
+        "operationId": "get_status_page_layout",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The page layout, hidden components included",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageLayout"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Replace the page layout: the groups, their order, and which components sit in each.",
+        "description": "The whole layout is saved at once. Groups left out are removed. A component left out goes to\nthe end of the ungrouped list and keeps its description, hidden and uptime settings.",
+        "operationId": "update_status_page_layout",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStatusPageLayout"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The saved layout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageLayout"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A component or group is not on this page, appears twice, or a text is too long"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
           },
           "500": {
             "description": "Internal server error"
@@ -19286,6 +20585,61 @@
       }
     },
     "/status_page/{status_page_id}/maintenance/{maintenance_id}": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Get one maintenance window on a status page.",
+        "operationId": "get_status_page_maintenance",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "maintenance_id",
+            "in": "path",
+            "description": "Maintenance window identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The maintenance window",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageMaintenanceResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found, or the window is not on it"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
       "put": {
         "tags": [
           "Status Pages"
@@ -19388,6 +20742,341 @@
           },
           "404": {
             "description": "Maintenance window not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/subscriber": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "List the people subscribed to a status page, newest first.",
+        "operationId": "list_status_page_subscribers",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "confirmed, pending, queued, expired or quarantined. Omit for all",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Part of an email address, ignoring case",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size. Defaults to 50, clamped to 1..=200",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Row offset into the filtered list",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of subscribers in `data`, `total` for the filter, `counts` for the whole list and the page's `capacity`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriberPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Ask an address to subscribe. It stays pending until its owner clicks the emailed link.",
+        "operationId": "add_status_page_subscriber",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddStatusPageSubscriber"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Confirmation sent, or nothing to send",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddStatusPageSubscriberResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a plain email address, or a component not on this page"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "409": {
+            "description": "The page already holds 1000 subscribers"
+          },
+          "429": {
+            "description": "Too many confirmation emails this hour"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/subscriber/export": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Download every subscriber of a status page as CSV (default) or JSON.",
+        "operationId": "export_status_page_subscribers",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "csv (default) or json",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "confirmed, pending, queued, expired or quarantined. Omit for all",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Part of an email address, ignoring case",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A CSV file with the columns email, state, subscribed_at, confirmed_at, consent_source, consent_version, quarantined_at, quarantine_reason, component_ids and kinds (space-separated, empty for all), or a JSON list of subscribers"
+          },
+          "400": {
+            "description": "Invalid format or filter"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/subscriber/import": {
+      "post": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Import addresses from a CSV file. Each new one gets a confirmation email and receives nothing\nuntil it confirms. Confirmations beyond the hourly limit are queued and go out later.",
+        "operationId": "import_status_page_subscribers",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportStatusPageSubscribers"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "What each row came to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportStatusPageSubscribersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No addresses, or more than 1000 rows"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "429": {
+            "description": "Another import or sign-up is in progress"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/subscriber/{subscriber_id}": {
+      "delete": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Remove a subscriber, for an erasure request or a mistaken address. Nothing more is mailed to it.",
+        "operationId": "delete_status_page_subscriber",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "subscriber_id",
+            "in": "path",
+            "description": "Subscriber identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscriber removed"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page or subscriber not found"
           },
           "500": {
             "description": "Internal server error"
@@ -19845,7 +21534,7 @@
         },
         "responses": {
           "201": {
-            "description": "Contact method created",
+            "description": "Contact method created. The user's sign-in email is created verified; anything else starts unverified. Default high and low rules are added for urgencies the user has none for when the method can be used in a rule.",
             "content": {
               "application/json": {
                 "schema": {
@@ -19855,7 +21544,7 @@
             }
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid request body, or a phone number without a country or invalid for its country"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -19865,6 +21554,9 @@
           },
           "404": {
             "description": "User not found"
+          },
+          "409": {
+            "description": "The user already has 20 contact methods (`contact_method_limit_reached`)"
           },
           "500": {
             "description": "Internal server error"
@@ -19918,6 +21610,225 @@
           },
           "404": {
             "description": "Contact method not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "User Contact Methods"
+        ],
+        "summary": "Change a contact method's address or number. A new value must be verified again.",
+        "operationId": "update_user_contact_method",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "User identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "contact_method_id",
+            "in": "path",
+            "description": "Contact method identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserContactMethodRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Contact method updated. A changed address or number is unverified, unless it is the user's sign-in email.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserContactMethodResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid details, or a phone number without a country or invalid for its country"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Only the user or an admin may change a user's contact methods"
+          },
+          "404": {
+            "description": "Contact method not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/user/{user_id}/contact_method/{contact_method_id}/verification": {
+      "post": {
+        "tags": [
+          "User Contact Methods"
+        ],
+        "summary": "Send a 6-digit code to a contact method so its owner can prove it reaches them.",
+        "operationId": "send_contact_method_verification",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "User identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "contact_method_id",
+            "in": "path",
+            "description": "Contact method identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Code sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactMethodVerificationSent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "This type of contact method cannot be verified"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Only the user or an admin may change a user's contact methods"
+          },
+          "404": {
+            "description": "Contact method not found"
+          },
+          "409": {
+            "description": "Already verified (`contact_method_already_verified`), or no SMS left this period (`sms_quota_exhausted`)"
+          },
+          "429": {
+            "description": "Sent less than a minute ago, or the daily limit is reached (`rate_limited`)"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "The code could not be sent"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/user/{user_id}/contact_method/{contact_method_id}/verification/confirm": {
+      "post": {
+        "tags": [
+          "User Contact Methods"
+        ],
+        "summary": "Confirm a contact method with the code sent to it.",
+        "operationId": "confirm_contact_method_verification",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "User identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "contact_method_id",
+            "in": "path",
+            "description": "Contact method identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmContactMethodVerificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Verified. Default high and low rules are added for urgencies the user has none for.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserContactMethodResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Wrong code (`code_invalid`)"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Only the user or an admin may change a user's contact methods"
+          },
+          "404": {
+            "description": "Contact method not found"
+          },
+          "409": {
+            "description": "Too many wrong codes (`code_locked`), or no unexpired code was sent (`verification_not_pending`)"
           },
           "500": {
             "description": "Internal server error"
@@ -20020,6 +21931,9 @@
           "404": {
             "description": "User not found"
           },
+          "409": {
+            "description": "The SMS number is not verified yet (`contact_method_unverified`)"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -20092,6 +22006,9 @@
           },
           "404": {
             "description": "Rule not found"
+          },
+          "409": {
+            "description": "The SMS number is not verified yet (`contact_method_unverified`)"
           },
           "500": {
             "description": "Internal server error"
@@ -20556,7 +22473,15 @@
           },
           "api_key": {
             "type": "string",
-            "description": "Alerts API key of the OpsGenie API integration."
+            "description": "API key of the API integration in Jira Service Management or Opsgenie."
+          },
+          "endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where alerts go: `jsm` (Jira Service Management), `opsgenie_us` or `opsgenie_eu`.\nOmitted means `opsgenie_us`, so Jira Service Management customers send `\"jsm\"`.",
+            "example": "jsm"
           }
         }
       },
@@ -20573,6 +22498,14 @@
           "routing_key": {
             "type": "string",
             "description": "Events API v2 routing key (integration key) of the PagerDuty service."
+          },
+          "region": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The PagerDuty service region: `us` (the default) or `eu`.",
+            "example": "us"
           }
         }
       },
@@ -20646,6 +22579,55 @@
           }
         }
       },
+      "AddStatusPageSubscriber": {
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "component_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Components (their layout `id`) whose notices the address gets. Absent or empty means all."
+          },
+          "kinds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpdateKind"
+            },
+            "description": "Kinds of update it gets. Absent, empty or both means all."
+          }
+        }
+      },
+      "AddStatusPageSubscriberResponse": {
+        "type": "object",
+        "required": [
+          "email",
+          "result"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/AddSubscriberResult"
+          }
+        }
+      },
+      "AddSubscriberResult": {
+        "type": "string",
+        "enum": [
+          "confirmation_sent",
+          "nothing_to_send",
+          "quarantined"
+        ]
+      },
       "AddTelegramIntegrationRequest": {
         "type": "object",
         "required": [
@@ -20696,6 +22678,26 @@
             "type": "string",
             "format": "uuid",
             "description": "Client-generated, stable across retries of ONE confirm attempt.\n\nThis is what makes a double-click safe: the same value twice is one\nStripe mutation. A client that omits it gets no protection, which is\nwhy it is required rather than optional here (unlike `change-plan`,\nwhich has to keep accepting bodies from already-cached bundles)."
+          },
+          "quantity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Units of the add-on (per status page, for example), 1 to 100. Absent keeps what the account holds.",
+            "minimum": 0
+          },
+          "proration_date": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/i64",
+                "description": "From the quote. Required for a purchase or upgrade on a live plan."
+              }
+            ]
           }
         }
       },
@@ -20733,6 +22735,13 @@
             ],
             "format": "date-time",
             "description": "For `scheduled`: when the change takes effect."
+          },
+          "customer_session_client_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For `requires_payment`: lets the payment sheet offer the saved cards."
           }
         }
       },
@@ -21300,6 +23309,28 @@
         ],
         "description": "`details` on a read, per type. A URL keeps its scheme and host, a key or token at most\nits last 4 characters; the full value is never returned after create."
       },
+      "ApiIntegrationExternalRef": {
+        "type": "object",
+        "description": "The non-secret routing of an integration.",
+        "properties": {
+          "region": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "PagerDuty service region: `us` or `eu`.",
+            "example": "eu"
+          },
+          "endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "JSM/Opsgenie endpoint: `jsm`, `opsgenie_us` or `opsgenie_eu`.",
+            "example": "jsm"
+          }
+        }
+      },
       "ApiKeyStatus": {
         "type": "string",
         "description": "Lifecycle state of a key, derived rather than stored so it can never\ndisagree with the timestamps.",
@@ -21813,6 +23844,7 @@
         "type": "string",
         "enum": [
           "logo",
+          "logo_dark",
           "favicon",
           "og_image"
         ]
@@ -21890,6 +23922,33 @@
           "failed",
           "pending_failure"
         ]
+      },
+      "CancelPurchaseRequest": {
+        "type": "object",
+        "required": [
+          "idempotency_key"
+        ],
+        "properties": {
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Client-generated, stable across retries of one cancel."
+          }
+        }
+      },
+      "CancelPurchaseResponse": {
+        "type": "object",
+        "required": [
+          "cancelled"
+        ],
+        "properties": {
+          "cancelled": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many waiting purchases were dropped (0 when a retry finds none left).",
+            "minimum": 0
+          }
+        }
       },
       "CancelRequest": {
         "type": "object",
@@ -22007,6 +24066,26 @@
             ],
             "format": "uuid",
             "description": "Client-generated, stable across retries of ONE confirm attempt, so a\ndouble-click is one Stripe mutation.\n\nOptional purely for backwards compatibility: a cached frontend bundle\npredating this field must keep working. A request without one gets no\nreplay protection beyond the per-account advisory lock, which serializes\nconcurrent requests but cannot recognise a client retry after a timeout."
+          },
+          "quantity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Units of the pack, 1 to 100. Absent keeps what the account holds (1 for a new plan).",
+            "minimum": 0
+          },
+          "proration_date": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/i64",
+                "description": "From the quote. Required for an upgrade, so the charge is the one quoted."
+              }
+            ]
           }
         }
       },
@@ -22044,6 +24123,13 @@
             ],
             "format": "date-time",
             "description": "For `scheduled`: when the change takes effect (the end of the current\nbilling period)."
+          },
+          "customer_session_client_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For `requires_payment`: lets the payment sheet offer the saved cards."
           }
         }
       },
@@ -22090,6 +24176,48 @@
               "$ref": "#/components/schemas/ChannelDelivery"
             },
             "description": "Newest first, at most [`CHANNEL_HEALTH_RECENT`]."
+          }
+        }
+      },
+      "ChannelReadiness": {
+        "type": "object",
+        "required": [
+          "rule_id",
+          "contact_method_id",
+          "type",
+          "delay_minutes",
+          "verified",
+          "after_timeout"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contact_method_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ContactMethodType"
+          },
+          "delay_minutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "unreachable_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why this channel cannot page, or null when it can: `phone_call_not_delivered`,\n`channel_unknown`, `contact_method_invalid`, `contact_unverified`,\n`recipient_suppressed` or `sms_quota`."
+          },
+          "after_timeout": {
+            "type": "boolean",
+            "description": "The rule waits as long as the level or longer, so it fires after the level moved on."
           }
         }
       },
@@ -22362,6 +24490,34 @@
           "lte"
         ]
       },
+      "CompletePurchaseResponse": {
+        "type": "object",
+        "required": [
+          "kind",
+          "stripe_subscription_id",
+          "client_secret"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "`new` or `upgrade`, as in the overview's `pending_purchase`."
+          },
+          "stripe_subscription_id": {
+            "type": "string"
+          },
+          "client_secret": {
+            "type": "string",
+            "description": "Confirms the open invoice's payment in the payment sheet."
+          },
+          "customer_session_client_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Lets the payment sheet offer the saved cards."
+          }
+        }
+      },
       "ComplimentarySummary": {
         "type": "object",
         "description": "The account's active complimentary plan, for the billing page.",
@@ -22388,6 +24544,27 @@
             ],
             "format": "date-time",
             "description": "Null means no end date."
+          }
+        }
+      },
+      "ComponentStatus": {
+        "type": "string",
+        "description": "What the owner says a component is doing: a manual component's status, or an override on any\ncomponent. Stored as text (`status_page_components.manual_status`, `*.override_status`).",
+        "enum": [
+          "operational",
+          "degraded",
+          "down",
+          "maintenance"
+        ]
+      },
+      "ConfirmContactMethodVerificationRequest": {
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
           }
         }
       },
@@ -22546,6 +24723,15 @@
           }
         }
       },
+      "ConsentSource": {
+        "type": "string",
+        "description": "How an address came onto the list.",
+        "enum": [
+          "public_form",
+          "owner_add",
+          "import"
+        ]
+      },
       "ConsoleEvent": {
         "type": "object",
         "required": [
@@ -22642,6 +24828,32 @@
           "phone_call",
           "slack_dm"
         ]
+      },
+      "ContactMethodVerificationSent": {
+        "type": "object",
+        "description": "A verification code is on its way.",
+        "required": [
+          "expires_in_seconds",
+          "resend_after_seconds",
+          "code_length"
+        ],
+        "properties": {
+          "expires_in_seconds": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "resend_after_seconds": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "code_length": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
       },
       "ContactTopic": {
         "type": "string",
@@ -22859,7 +25071,8 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "Notification groups to alert. Left out or null: the account's default group. `[]`: notify no one."
           },
           "service_id": {
             "type": [
@@ -22918,7 +25131,8 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "Notification groups to alert. Left out or null: the account's default group. `[]`: notify no one."
           },
           "tags": {
             "type": [
@@ -23029,7 +25243,8 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "Notification groups to alert. Left out or null: the account's default group. `[]`: notify no one."
           }
         }
       },
@@ -23286,7 +25501,8 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "Notification groups to alert. Left out or null: the account's default group. `[]`: notify no one."
           },
           "monitor_tls": {
             "type": [
@@ -23355,6 +25571,21 @@
             ],
             "format": "int32",
             "description": "Port the TLS check connects to, 1 to 65535. Omitted keeps the stored\nport (443 for a new TLS check). Needs `monitor_tls`."
+          },
+          "recovery_period_runs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Healthy runs in a row (1-10) before a recovery is notified. Defaults to 2."
+          },
+          "flap_hold": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Hold alerts while the monitor flaps. Defaults to true."
           }
         }
       },
@@ -23404,15 +25635,44 @@
       "CreateIncidentUpdateRequest": {
         "type": "object",
         "required": [
-          "status",
           "message"
         ],
         "properties": {
           "status": {
-            "$ref": "#/components/schemas/IncidentStatus"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IncidentStatus",
+                "description": "The new public status for a public update; omitted keeps it. An internal update never\nchanges it, and `resolved` there is a 400 (use resolve)."
+              }
+            ]
           },
           "message": {
             "type": "string"
+          },
+          "visibility": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IncidentUpdateVisibility",
+                "description": "`public` (default) or `internal`. Only public updates reach status pages and their\nsubscribers; the app's own composer sends `internal` unless asked to publish."
+              }
+            ]
+          },
+          "notify_subscribers": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Email status page subscribers about a public update. Default true on the status page\nroute (that page only), false on `/incident/{id}/update` (true there emails every page)."
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Post even when this moves the status backwards (otherwise 409)."
           }
         }
       },
@@ -23534,6 +25794,41 @@
           "recurrence": {}
         }
       },
+      "CreateManualComponent": {
+        "type": "object",
+        "required": [
+          "friendly_name"
+        ],
+        "properties": {
+          "friendly_name": {
+            "type": "string",
+            "description": "Up to 256 characters."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "One line under the name. Up to 200 characters."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ComponentStatus",
+            "description": "Defaults to `operational`."
+          },
+          "group_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "A group on this page. Leave out for the ungrouped list."
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "Keep it off the public page for now."
+          }
+        }
+      },
       "CreateMetricSavedView": {
         "type": "object",
         "required": [
@@ -23575,6 +25870,13 @@
               "null"
             ],
             "format": "int32"
+          },
+          "is_default": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Make this the account's default group (the previous default loses the flag)."
           }
         }
       },
@@ -23974,6 +26276,16 @@
                 "$ref": "#/components/schemas/IncidentSeverity"
               }
             ]
+          },
+          "public_incident_template": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicIncidentTemplate"
+              }
+            ]
           }
         }
       },
@@ -24052,7 +26364,12 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The monitors under maintenance. Required unless `whole_page` is true."
+          },
+          "whole_page": {
+            "type": "boolean",
+            "description": "The whole page is under maintenance. Leave `affected_http_job_ids` empty."
           }
         }
       },
@@ -24067,7 +26384,9 @@
             "$ref": "#/components/schemas/ContactMethodType",
             "description": "`method_type` is the field the dashboard used to send. Accept both so\na stale client still creates a row the engine can page."
           },
-          "details": {}
+          "details": {
+            "description": "Email `{email}`, Slack DM `{slack_token, channel}`, SMS `{phone_number, country}`\n(ISO 3166-1 alpha-2), `{phone_number, country_code}`, `{e164}` or a `+` number."
+          }
         }
       },
       "CreateUserNotificationRuleRequest": {
@@ -24149,6 +26468,57 @@
           "shared",
           "off"
         ]
+      },
+      "CustomDomainHealth": {
+        "type": "object",
+        "description": "Whether a live domain still points at its page and its certificate will renew. Checked every 6 hours.",
+        "required": [
+          "checked_at"
+        ],
+        "properties": {
+          "checked_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "problem": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What to fix, as a sentence. Absent when nothing is wrong."
+          },
+          "certificate_expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the certificate expires. It renews by itself while the validation record stays in DNS."
+          }
+        }
+      },
+      "CustomDomainSender": {
+        "type": "object",
+        "description": "Sending a white-labelled page's subscriber email from the domain. Optional for the owner.",
+        "required": [
+          "status",
+          "dkim_record",
+          "from_address"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "\"not_started\" until the domain is provisioned, then \"pending\", \"verified\" or \"failed\"."
+          },
+          "dkim_record": {
+            "$ref": "#/components/schemas/DnsCname",
+            "description": "The CNAME to add. Email is signed for the domain once it resolves."
+          },
+          "from_address": {
+            "type": "string",
+            "description": "Where the mail comes from once verified."
+          }
+        }
       },
       "CustomEvent": {
         "type": "object",
@@ -25118,6 +27488,21 @@
         },
         "additionalProperties": false
       },
+      "DnsCname": {
+        "type": "object",
+        "required": [
+          "name",
+          "value"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
       "DnsJob": {
         "type": "object",
         "required": [
@@ -26032,6 +28417,57 @@
           }
         }
       },
+      "EscalationReadinessRequest": {
+        "type": "object",
+        "description": "Levels to check before they are saved, in order.",
+        "required": [
+          "levels"
+        ],
+        "properties": {
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateEscalationPolicyLevelRequest"
+            }
+          }
+        }
+      },
+      "EscalationReadinessResponse": {
+        "type": "object",
+        "description": "Whether every level of a policy reaches someone, per urgency.",
+        "required": [
+          "ready",
+          "levels",
+          "warnings"
+        ],
+        "properties": {
+          "policy_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The saved policy, or null for levels checked before they are saved."
+          },
+          "ready": {
+            "type": "boolean",
+            "description": "True when every level reaches someone before its timeout at both urgencies."
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelReadiness"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadinessWarning"
+            },
+            "description": "Every problem found, in level order."
+          }
+        }
+      },
       "EscalationStateStatus": {
         "type": "string",
         "enum": [
@@ -26798,6 +29234,54 @@
           }
         }
       },
+      "ImportCounts": {
+        "type": "object",
+        "description": "How many rows came to each result.",
+        "required": [
+          "confirmation_sent",
+          "queued",
+          "already_subscribed",
+          "already_pending",
+          "quarantined",
+          "invalid",
+          "duplicate",
+          "page_full"
+        ],
+        "properties": {
+          "confirmation_sent": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "queued": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "already_subscribed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "already_pending": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quarantined": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "invalid": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "duplicate": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "page_full": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
       "ImportHttpJobsRequest": {
         "type": "object",
         "required": [
@@ -26825,6 +29309,78 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "ImportResult": {
+        "type": "string",
+        "description": "What one address in an import came to.",
+        "enum": [
+          "confirmation_sent",
+          "queued",
+          "already_subscribed",
+          "already_pending",
+          "quarantined",
+          "invalid",
+          "duplicate",
+          "page_full"
+        ]
+      },
+      "ImportStatusPageSubscribers": {
+        "type": "object",
+        "required": [
+          "csv"
+        ],
+        "properties": {
+          "csv": {
+            "type": "string",
+            "description": "CSV text. A header row naming an `email` column picks that column; without one, each row's\nfirst cell holding an `@` is the address. One address per line works too."
+          }
+        }
+      },
+      "ImportStatusPageSubscribersResponse": {
+        "type": "object",
+        "required": [
+          "rows",
+          "counts",
+          "sends_per_hour"
+        ],
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportedSubscriberRow"
+            },
+            "description": "Every data row, in file order."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ImportCounts"
+          },
+          "sends_per_hour": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The most confirmation emails an import sends for one page in an hour."
+          }
+        }
+      },
+      "ImportedSubscriberRow": {
+        "type": "object",
+        "required": [
+          "row",
+          "email",
+          "result"
+        ],
+        "properties": {
+          "row": {
+            "type": "integer",
+            "description": "The row's record number, counting a header row as 1: the row a spreadsheet shows, which\ndiffers from the file line once a quoted cell holds a line break.",
+            "minimum": 0
+          },
+          "email": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ImportResult"
           }
         }
       },
@@ -26981,6 +29537,7 @@
         "type": "object",
         "required": [
           "id",
+          "status_page_ids",
           "title",
           "severity",
           "status",
@@ -27000,10 +29557,26 @@
               "string",
               "null"
             ],
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Deprecated: the first page it was created on. `status_page_ids` lists every page."
+          },
+          "status_page_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Every status page the incident is published on."
           },
           "title": {
             "type": "string"
+          },
+          "public_title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The title status pages show; null shows `title`."
           },
           "severity": {
             "$ref": "#/components/schemas/IncidentSeverity"
@@ -27045,6 +29618,14 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "resolved_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Who resolved it; null for automatic and API-key resolves."
           },
           "auto_created": {
             "type": "boolean",
@@ -27095,7 +29676,8 @@
           "id",
           "status",
           "message",
-          "created_at"
+          "created_at",
+          "visibility"
         ],
         "properties": {
           "id": {
@@ -27103,7 +29685,8 @@
             "format": "uuid"
           },
           "status": {
-            "$ref": "#/components/schemas/IncidentStatus"
+            "$ref": "#/components/schemas/IncidentStatus",
+            "description": "The public status when it was posted."
           },
           "message": {
             "type": "string"
@@ -27111,8 +29694,28 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/IncidentUpdateVisibility",
+            "description": "`public` updates show on status pages; `internal` ones only here."
+          },
+          "author_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Who posted it; null for the system, API keys and older updates."
           }
         }
+      },
+      "IncidentUpdateVisibility": {
+        "type": "string",
+        "description": "Who sees an update: `public` on every page the incident is published on, `internal` only in the app.",
+        "enum": [
+          "public",
+          "internal"
+        ]
       },
       "IncidentsData": {
         "type": "object",
@@ -27329,6 +29932,17 @@
           "details": {
             "$ref": "#/components/schemas/ApiIntegrationDetails",
             "description": "The stored details with every credential masked by\n[`crate::credential_mask::integration_rules`]."
+          },
+          "external_ref": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ApiIntegrationExternalRef",
+                "description": "Where a PagerDuty or JSM/Opsgenie integration sends. `null` on every other type."
+              }
+            ]
           },
           "created_at": {
             "type": "string",
@@ -27819,6 +30433,171 @@
           }
         }
       },
+      "LayoutComponent": {
+        "type": "object",
+        "description": "A component on the page, as the page shows it.",
+        "required": [
+          "id",
+          "monitor_id",
+          "kind",
+          "friendly_name",
+          "hidden",
+          "show_uptime"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "What the layout and the component routes call it: the HTTP job, browser check or cron job\nid, or the manual component's own id."
+          },
+          "monitor_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The same value as `id`, kept for clients that predate manual components."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LayoutComponentKind"
+          },
+          "friendly_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "One line shown under the name, or null."
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "A hidden component stays on the page's list but is left off the public page."
+          },
+          "show_uptime": {
+            "type": "boolean",
+            "description": "False shows the status only, with no uptime bars or percentage. Heartbeats and manual\ncomponents never show uptime."
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComponentStatus",
+                "description": "The status the owner set on a manual component; null for every other kind."
+              }
+            ]
+          },
+          "status_override": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StatusOverride",
+                "description": "The override in force, or null. One past its expiry reads as null."
+              }
+            ]
+          }
+        }
+      },
+      "LayoutComponentInput": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A component already on this page (its `id` from the layout). `monitor_id` is accepted too."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Up to 200 characters, one line."
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "show_uptime": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LayoutComponentKind": {
+        "type": "string",
+        "enum": [
+          "http_job",
+          "browser_check",
+          "cron_job",
+          "manual"
+        ]
+      },
+      "LayoutGroup": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "components"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutComponent"
+            },
+            "description": "In the order the page shows them."
+          }
+        }
+      },
+      "LayoutGroupInput": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "An existing group to keep and rename or reorder. Leave out to create one."
+          },
+          "name": {
+            "type": "string",
+            "description": "Up to 100 characters."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Up to 500 characters."
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutComponentInput"
+            }
+          }
+        }
+      },
       "LcpAttribution": {
         "type": "object",
         "properties": {
@@ -27890,6 +30669,48 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "LevelReadiness": {
+        "type": "object",
+        "required": [
+          "level_number",
+          "timeout_minutes",
+          "high",
+          "low",
+          "targets"
+        ],
+        "properties": {
+          "level_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Null for a level that is not saved yet."
+          },
+          "level_number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "timeout_minutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "high": {
+            "$ref": "#/components/schemas/ReachStatus",
+            "description": "The best any target reaches for critical and major incidents."
+          },
+          "low": {
+            "$ref": "#/components/schemas/ReachStatus",
+            "description": "The best any target reaches for minor incidents."
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TargetReadiness"
+            }
           }
         }
       },
@@ -29281,7 +32102,7 @@
           },
           "kind": {
             "type": "string",
-            "description": "`quota_not_checked`, `schedule_missing` or `tls_unknown`. New kinds may be added."
+            "description": "`quota_not_checked`, `schedule_missing`, `tls_unknown`, `inconclusive_run`, `degraded_quorum`,\n`partial_failure`, `recovery_pending`, `recovery_reset`, `recovery_confirmed`, `flap_started`,\n`flap_break_through` or `flap_ended`. New kinds may be added."
           },
           "data": {
             "type": "object",
@@ -29989,6 +32810,10 @@
             ],
             "format": "int32"
           },
+          "is_default": {
+            "type": "boolean",
+            "description": "The group monitors get when they are created without `group_notification_ids`."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -30387,7 +33212,8 @@
       "OverviewResponse": {
         "type": "object",
         "required": [
-          "cancel_at_period_end"
+          "cancel_at_period_end",
+          "resumable"
         ],
         "properties": {
           "status": {
@@ -30406,7 +33232,11 @@
               "null"
             ],
             "format": "int64",
-            "description": "Unix seconds. Set when a cancellation is scheduled."
+            "description": "Unix seconds. Set when a cancellation is scheduled, by whichever\nmechanism (the flag, `cancel_at`, or the schedule)."
+          },
+          "resumable": {
+            "type": "boolean",
+            "description": "The plan is set to end and Resume would keep it (never for a complimentary plan)."
           },
           "current_period_end": {
             "type": [
@@ -30426,6 +33256,24 @@
                 "description": "What Stripe charges: the subscription's default, else the customer's. Any type, not only cards."
               }
             ]
+          },
+          "pending_purchase": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PendingPurchase",
+                "description": "A purchase waiting on its payment, if any."
+              }
+            ]
+          },
+          "money_outstanding": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Set while money is outstanding: only Pay now, Update card and Cancel\nare offered, and this says why (SM7)."
           }
         }
       },
@@ -30978,6 +33826,13 @@
               "null"
             ],
             "description": "Present only with `requires_action`. Feed it to the Payment Element."
+          },
+          "customer_session_client_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "With `requires_action`: lets the Payment Element offer the saved cards."
           }
         }
       },
@@ -30990,7 +33845,8 @@
           "brand",
           "last4",
           "is_default",
-          "is_expired"
+          "is_expired",
+          "expires_soon"
         ],
         "properties": {
           "id": {
@@ -31033,6 +33889,10 @@
           "is_expired": {
             "type": "boolean",
             "description": "True once the card's expiry month has passed. Surfaced so the list can\nflag it before a renewal fails rather than after."
+          },
+          "expires_soon": {
+            "type": "boolean",
+            "description": "True in the 30 days before the card expires, so it can be replaced\nbefore a renewal fails."
           }
         }
       },
@@ -31047,6 +33907,40 @@
             "items": {
               "$ref": "#/components/schemas/PaymentMethodResponse"
             }
+          }
+        }
+      },
+      "PendingPurchase": {
+        "type": "object",
+        "description": "A purchase the customer started and has not paid for: \"Complete payment\"\nor \"Cancel purchase\".",
+        "required": [
+          "kind",
+          "stripe_subscription_id",
+          "amount_due_cents",
+          "currency"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "`new` or `upgrade`. See [`pending_purchase_kind`]."
+          },
+          "stripe_subscription_id": {
+            "type": "string"
+          },
+          "amount_due_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Unix seconds after which Stripe drops it on its own."
           }
         }
       },
@@ -31202,10 +34096,20 @@
           },
           "pack_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "A plan tier or an add-on pack."
           },
           "billing_interval": {
             "type": "string"
+          },
+          "quantity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Units of the pack, 1 to 100. Absent keeps what the account holds (1 for a new item).",
+            "minimum": 0
           }
         }
       },
@@ -31217,12 +34121,13 @@
           "next_invoice_total_cents",
           "currency",
           "lines",
-          "warnings"
+          "warnings",
+          "quantity"
         ],
         "properties": {
           "change_type": {
             "type": "string",
-            "description": "One of `new`, `upgrade`, `downgrade`, `cancel_scheduled_change`,\n`none`, `blocked`. See [`change_type`]."
+            "description": "One of `new`, `upgrade`, `downgrade`, `cancel_scheduled_change`,\n`resume`, `none`, `blocked`. See [`change_type`]."
           },
           "effective_at": {
             "type": [
@@ -31240,7 +34145,7 @@
           "next_invoice_total_cents": {
             "type": "integer",
             "format": "int64",
-            "description": "For an upgrade or a first purchase: the total of the invoice raised\ntoday. For a downgrade: what this product costs per billing period\nfrom `effective_at` (zero when moving to free, or when a complimentary\nplan covers it)."
+            "description": "For an upgrade or a first purchase: the total of the invoice raised\ntoday. For a downgrade: Stripe's total for the first invoice after\n`effective_at` (zero when nothing more will be billed)."
           },
           "currency": {
             "type": "string"
@@ -31262,13 +34167,37 @@
               "string",
               "null"
             ],
-            "description": "Why a `blocked` change cannot be made yet."
+            "description": "Why a `blocked` change cannot be made yet, or what `resume` does."
+          },
+          "proration_date": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/i64",
+                "description": "For an upgrade: send this back on the confirm, so the charge is the one quoted."
+              }
+            ]
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The quantity this quote is for.",
+            "minimum": 0
+          },
+          "moves_to_interval": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Set when the whole subscription moves to this interval (`month` or `year`)."
           }
         }
       },
       "PreviewWarning": {
         "type": "object",
-        "description": "Something the customer loses by making this change.",
+        "description": "Something the customer loses by making this change, or should know about it.",
         "required": [
           "kind",
           "message"
@@ -31410,6 +34339,33 @@
           }
         }
       },
+      "PublicIncidentTemplate": {
+        "type": "object",
+        "description": "What a service's incidents say on a status page (`services.public_incident_template`).",
+        "properties": {
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The public title; auto-published incidents never show the monitor's name."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The first public update when the incident is published."
+          },
+          "resolved_message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The public \"Resolved\" update."
+          }
+        }
+      },
       "PublicQueryRequest": {
         "type": "object",
         "required": [
@@ -31476,6 +34432,13 @@
               "null"
             ],
             "description": "CDN URL, never an S3 key"
+          },
+          "logo_dark_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The logo for the dark theme. Absent: the page shows `logo_url` in both."
           },
           "favicon_url": {
             "type": [
@@ -31559,6 +34522,27 @@
           "status_page_id": {
             "type": "string",
             "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The title the page shows. Defaults to the current public title, then the service's\ntemplate; an auto-created incident never shows its monitor name."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The first public update. Defaults to the service's template message when the incident\nhas no public update yet; otherwise nothing is posted."
+          },
+          "notify_subscribers": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Email the page's subscribers that the incident opened (default true; never for a\nresolved incident, and at most once per page)."
           }
         }
       },
@@ -31587,6 +34571,14 @@
           }
         },
         "additionalProperties": false
+      },
+      "QuarantineReason": {
+        "type": "string",
+        "description": "Why an address gets nothing. A complaint is never lifted automatically.",
+        "enum": [
+          "bounce",
+          "complaint"
+        ]
       },
       "Query": {
         "type": "object",
@@ -31777,6 +34769,70 @@
           }
         }
       },
+      "ReachStatus": {
+        "type": "string",
+        "description": "How well a page at one urgency reaches a target, best first.",
+        "enum": [
+          "reachable",
+          "delayed",
+          "fallback_email",
+          "unreachable"
+        ]
+      },
+      "ReadinessTargetKind": {
+        "type": "string",
+        "enum": [
+          "user",
+          "schedule"
+        ]
+      },
+      "ReadinessWarning": {
+        "type": "object",
+        "required": [
+          "code",
+          "level_number",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "`no_targets`, `nobody_reachable`, `target_removed`, `nobody_on_call`,\n`user_unreachable`, `fallback_only` or `delayed_past_timeout`."
+          },
+          "level_number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "urgency": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Urgency",
+                "description": "Set when the warning is about one urgency."
+              }
+            ]
+          },
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "schedule_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "message": {
+            "type": "string",
+            "description": "One sentence for the dashboard."
+          }
+        }
+      },
       "RecentChecksBatchRequest": {
         "type": "object",
         "description": "Request body for the batched sparkline endpoint.",
@@ -31867,6 +34923,19 @@
               "null"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "ReopenIncidentRequest": {
+        "type": "object",
+        "description": "Optional body of `POST /incident/{id}/reopen`.",
+        "properties": {
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Text of the public \"Reopened\" update a published incident gets."
           }
         }
       },
@@ -32186,6 +35255,33 @@
             "items": {
               "$ref": "#/components/schemas/ReplayPageLoad"
             }
+          }
+        }
+      },
+      "ResolveIncidentRequest": {
+        "type": "object",
+        "description": "Optional body of `POST /incident/{id}/resolve`.",
+        "properties": {
+          "post_public_update": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Post a public \"Resolved\" update even when the incident is not on a\nstatus page. A published incident always gets one."
+          },
+          "notify_subscribers": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Email the status page subscribers (default true when published)."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Text of the public \"Resolved\" update."
           }
         }
       },
@@ -37590,6 +40686,17 @@
           "monitor_count": {
             "type": "integer",
             "format": "int64"
+          },
+          "public_incident_template": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicIncidentTemplate",
+                "description": "Prefills Publish and words auto-published incidents."
+              }
+            ]
           }
         }
       },
@@ -37681,6 +40788,33 @@
         "properties": {
           "password": {
             "type": "string"
+          }
+        }
+      },
+      "SetStatusOverride": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ComponentStatus",
+            "description": "What the public page shows for this component, whatever its monitor says."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Shown next to the status on the public page. Up to 500 characters, one line."
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the override lapses on its own. Must be in the future. Leave out to keep it until cleared."
           }
         }
       },
@@ -37821,6 +40955,60 @@
           }
         }
       },
+      "SilentMonitor": {
+        "type": "object",
+        "description": "An active monitor whose outage would reach no one.",
+        "required": [
+          "id",
+          "monitor_type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "monitor_type": {
+            "type": "string",
+            "description": "`http`, `cron`, `browser` or `dns_record`."
+          },
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SilentMonitors": {
+        "type": "object",
+        "description": "The account's silent monitors (first 100 by name) and the one-time banner state.",
+        "required": [
+          "monitors",
+          "total",
+          "banner_dismissed",
+          "has_default_group"
+        ],
+        "properties": {
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SilentMonitor"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Every silent active monitor, not just the ones listed."
+          },
+          "banner_dismissed": {
+            "type": "boolean"
+          },
+          "has_default_group": {
+            "type": "boolean",
+            "description": "Whether new monitors get a default group when created without group ids."
+          }
+        }
+      },
       "SlaMonth": {
         "type": "object",
         "description": "Attainment of one calendar month against the monitor's target.",
@@ -37947,6 +41135,13 @@
           "client_secret": {
             "type": "string",
             "description": "Hand this to Stripe's Payment Element to collect and confirm the card.\nThe credits land when `payment_intent.succeeded` arrives, never here."
+          },
+          "customer_session_client_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Lets the Payment Element offer the saved cards, so a top-up does not ask for the card again."
           }
         }
       },
@@ -38377,13 +41572,47 @@
           }
         }
       },
+      "StatusOverride": {
+        "type": "object",
+        "description": "A status the owner forced on a component. The public page shows it, and the note, instead\nof what the monitor says.",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ComponentStatus"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it lapses on its own, or null to keep it until cleared."
+          },
+          "set_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "StatusPage": {
         "type": "object",
         "required": [
           "id",
           "account_id",
           "friendly_name",
-          "created_at"
+          "created_at",
+          "page_url"
         ],
         "properties": {
           "id": {
@@ -38398,6 +41627,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "page_url": {
+            "type": "string",
+            "description": "Where the public page lives: the custom domain once it is active,\notherwise the page's address on statuspage.siteqwality.com."
           }
         }
       },
@@ -38427,6 +41660,12 @@
               "null"
             ]
           },
+          "logo_dark_s3_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "favicon_s3_key": {
             "type": [
               "string",
@@ -38434,6 +41673,31 @@
             ]
           },
           "og_image_s3_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "logo_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CDN URLs of the assets above, for previews."
+          },
+          "logo_dark_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "favicon_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "og_image_url": {
             "type": [
               "string",
               "null"
@@ -38477,6 +41741,18 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "StatusPageCronJobInput": {
+        "type": "object",
+        "required": [
+          "friendly_name"
+        ],
+        "properties": {
+          "friendly_name": {
+            "type": "string",
+            "description": "The name the page shows. Up to 256 characters."
           }
         }
       },
@@ -38524,6 +41800,51 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "health": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CustomDomainHealth",
+                "description": "The last check of a live domain; absent until the first one, a few minutes after it goes live."
+              }
+            ]
+          },
+          "sender": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CustomDomainSender",
+                "description": "Absent for our own hostnames, which always mail from the default sender."
+              }
+            ]
+          }
+        }
+      },
+      "StatusPageLayout": {
+        "type": "object",
+        "required": [
+          "ungrouped",
+          "groups"
+        ],
+        "properties": {
+          "ungrouped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutComponent"
+            },
+            "description": "Shown first, above the groups."
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutGroup"
+            },
+            "description": "In the order the page shows them."
           }
         }
       },
@@ -38537,6 +41858,7 @@
           "scheduled_start_at",
           "scheduled_end_at",
           "affected_http_job_ids",
+          "whole_page",
           "created_at"
         ],
         "properties": {
@@ -38575,6 +41897,10 @@
               "format": "uuid"
             }
           },
+          "whole_page": {
+            "type": "boolean",
+            "description": "Covers the whole page; `affected_http_job_ids` is then empty."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -38588,6 +41914,90 @@
           "in_progress",
           "completed"
         ]
+      },
+      "StatusPageSubscriber": {
+        "type": "object",
+        "description": "Someone who asked for email about a status page.",
+        "required": [
+          "id",
+          "email",
+          "state",
+          "subscribed_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SubscriberState",
+            "description": "`confirmed` receives notices. `pending` has not clicked the link yet. `queued` was\nimported and waits for its confirmation email. `expired` never clicked, and the link\nlapsed. `quarantined` bounced or complained and gets nothing."
+          },
+          "subscribed_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the address was first submitted."
+          },
+          "confirmed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "component_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Components (monitor ids) whose notices it gets. Empty means every component."
+          },
+          "kinds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpdateKind"
+            },
+            "description": "Kinds of update it gets. Empty means both."
+          },
+          "consent_source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConsentSource",
+                "description": "How the address was added. Absent on subscribers from before it was recorded."
+              }
+            ]
+          },
+          "consent_version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The version of the confirm page wording it agreed to, set when it confirms."
+          },
+          "quarantined_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "quarantine_reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/QuarantineReason"
+              }
+            ]
+          }
+        }
       },
       "StepUpAction": {
         "type": "string",
@@ -38660,6 +42070,83 @@
           }
         }
       },
+      "SubscriberCounts": {
+        "type": "object",
+        "required": [
+          "confirmed",
+          "pending",
+          "queued",
+          "expired",
+          "quarantined"
+        ],
+        "properties": {
+          "confirmed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pending": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "queued": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Imported addresses waiting for their confirmation email."
+          },
+          "expired": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "quarantined": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Bounced or complained. They get no mail and hold no place."
+          }
+        }
+      },
+      "SubscriberPage": {
+        "type": "object",
+        "description": "One page of subscribers. `data` stays the bare array like every other list;\nthe rest rides beside it.",
+        "required": [
+          "data",
+          "total",
+          "counts",
+          "capacity"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusPageSubscriber"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Subscribers matching the filters, not the length of `data`."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/SubscriberCounts",
+            "description": "The whole list by state, whatever the filters."
+          },
+          "capacity": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The most subscribers a page can hold (confirmed, pending and queued together)."
+          }
+        }
+      },
+      "SubscriberState": {
+        "type": "string",
+        "description": "Where a subscription stands. `Expired` is a sign-up whose link lapsed unconfirmed; a daily job purges it.\n`Queued` waits for its confirmation email. `Quarantined` bounced or complained and gets nothing.",
+        "enum": [
+          "confirmed",
+          "pending",
+          "queued",
+          "expired",
+          "quarantined"
+        ]
+      },
       "SubscriptionResponse": {
         "type": "object",
         "required": [
@@ -38717,6 +42204,14 @@
                 "description": "A downgrade (or removal) Stripe will apply at the end of the current\nbilling period, or `null` when nothing is scheduled."
               }
             ]
+          },
+          "billed_cents": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "What Stripe bills for a legacy plan row (its legacy price on one row, 0 on the rows it\nincludes). `null` for other rows, which bill their pack's price."
           }
         }
       },
@@ -38932,6 +42427,61 @@
           },
           "cursor": {
             "type": "string"
+          }
+        }
+      },
+      "TargetReadiness": {
+        "type": "object",
+        "required": [
+          "kind",
+          "high",
+          "low"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ReadinessTargetKind"
+          },
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The user paged: the target user, or whoever is on call now for a schedule."
+          },
+          "schedule_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The user's name (or email), or the schedule's name."
+          },
+          "on_call_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a schedule, the on-call user's name (or email)."
+          },
+          "problem": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why nobody can be paged at all: `user_removed`, `schedule_removed` or `nobody_on_call`."
+          },
+          "high": {
+            "$ref": "#/components/schemas/UrgencyReadiness"
+          },
+          "low": {
+            "$ref": "#/components/schemas/UrgencyReadiness"
           }
         }
       },
@@ -40468,6 +44018,10 @@
               "type": "string"
             }
           },
+          "notifies_no_one": {
+            "type": "boolean",
+            "description": "True when an outage would reach no one: no attached notification group has a\nchannel, and no linked service opens incidents automatically with someone to page."
+          },
           "last_run_at": {
             "type": [
               "string",
@@ -41324,32 +44878,70 @@
             ],
             "format": "int32",
             "description": "Port the TLS check connects to, 1 to 65535. Omitted keeps the stored\nport (443 for a new TLS check). Needs `monitor_tls`."
+          },
+          "recovery_period_runs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Healthy runs in a row (1-10) before a recovery is notified."
+          },
+          "flap_hold": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Hold alerts while the monitor flaps."
           }
         }
       },
       "UpdateIncidentRequest": {
         "type": "object",
-        "required": [
-          "title",
-          "severity",
-          "status"
-        ],
+        "description": "PATCH semantics: an absent field is left unchanged.",
         "properties": {
           "title": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "severity": {
-            "$ref": "#/components/schemas/IncidentSeverity"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IncidentSeverity"
+              }
+            ]
           },
           "status": {
-            "$ref": "#/components/schemas/IncidentStatus"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IncidentStatus",
+                "description": "Deprecated: post an update, or call resolve or reopen. `resolved`\nresolves (with a public update); other values set the public status."
+              }
+            ]
           },
           "resolved_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Deprecated and ignored: resolving stamps the time.",
+            "deprecated": true
+          },
+          "public_title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The title status pages show; `null` clears it so they show `title`."
           }
         }
       },
@@ -41363,6 +44955,14 @@
             "type": "string"
           }
         }
+      },
+      "UpdateKind": {
+        "type": "string",
+        "description": "The kinds of update a subscriber can choose between.",
+        "enum": [
+          "incident",
+          "maintenance"
+        ]
       },
       "UpdateLogParser": {
         "type": "object",
@@ -41462,6 +45062,36 @@
           "recurrence": {}
         }
       },
+      "UpdateManualComponent": {
+        "type": "object",
+        "description": "Fields left out keep their values.",
+        "properties": {
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Up to 256 characters."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Up to 200 characters. `null` clears it."
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComponentStatus"
+              }
+            ]
+          }
+        }
+      },
       "UpdateMetricSavedView": {
         "type": "object",
         "properties": {
@@ -41482,6 +45112,7 @@
       },
       "UpdateNotificationGroupRequest": {
         "type": "object",
+        "description": "PATCH-style: a field left out keeps its stored value, and `null` or 0 clears it.",
         "properties": {
           "friendly_name": {
             "type": [
@@ -41502,6 +45133,13 @@
               "null"
             ],
             "format": "int32"
+          },
+          "is_default": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`true` makes this the account's default group; `false` on the default leaves the account without one."
           }
         }
       },
@@ -41794,6 +45432,17 @@
                 "$ref": "#/components/schemas/IncidentSeverity"
               }
             ]
+          },
+          "public_incident_template": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicIncidentTemplate",
+                "description": "`null` clears it; each field is optional and blank fields are dropped."
+              }
+            ]
           }
         }
       },
@@ -41847,24 +45496,35 @@
       },
       "UpdateStatusPageBrandingRequest": {
         "type": "object",
+        "description": "A field left out keeps its value and `null` clears it: `default_theme` goes\nback to `system`, `white_label` to false, and every other field to unset.\nAn empty or blank text field clears it too.",
         "properties": {
           "page_title": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "At most 100 characters."
           },
           "default_theme": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "`light`, `dark` or `system`."
           },
           "logo_s3_key": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The `s3_key` an upload of type `logo` returned."
+          },
+          "logo_dark_s3_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The `s3_key` an upload of type `logo_dark` returned: the logo the page\nshows in its dark theme. Without it the page shows the logo in both."
           },
           "favicon_s3_key": {
             "type": [
@@ -41882,43 +45542,50 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "`#rrggbb`. Colours the page title (without a logo) and headings."
           },
           "accent_color": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "`#rrggbb`. Colours the subscribe button, links, focus ring and chart\nline; falls back to `primary_color`. The page adjusts both colours per\ntheme where needed to keep text and controls readable."
           },
           "header_text": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "At most 500 characters."
           },
           "footer_text": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "At most 500 characters."
           },
           "white_label": {
             "type": [
               "boolean",
               "null"
-            ]
+            ],
+            "description": "Hides the \"Powered by Site Qwality\" badge. `true` needs the White-Label pack."
           },
           "meta_description": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "At most 160 characters."
           },
           "custom_css": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "At most 50 KB."
           }
         }
       },
@@ -41940,11 +45607,27 @@
           }
         }
       },
+      "UpdateStatusPageLayout": {
+        "type": "object",
+        "properties": {
+          "ungrouped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutComponentInput"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutGroupInput"
+            }
+          }
+        }
+      },
       "UpdateStatusPageMaintenanceRequest": {
         "type": "object",
         "required": [
           "title",
-          "status",
           "scheduled_start_at",
           "scheduled_end_at"
         ],
@@ -41959,7 +45642,15 @@
             ]
           },
           "status": {
-            "$ref": "#/components/schemas/StatusPageMaintenanceStatus"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StatusPageMaintenanceStatus",
+                "description": "Leave out to keep the stored status, or to let a moved window decide it."
+              }
+            ]
           },
           "scheduled_start_at": {
             "type": "string",
@@ -41977,7 +45668,24 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The monitors under maintenance. Required unless `whole_page` is true."
+          },
+          "whole_page": {
+            "type": "boolean",
+            "description": "The whole page is under maintenance. Leave `affected_http_job_ids` empty."
+          }
+        }
+      },
+      "UpdateUserContactMethodRequest": {
+        "type": "object",
+        "description": "The type is fixed; send a new method to change it.",
+        "required": [
+          "details"
+        ],
+        "properties": {
+          "details": {
+            "description": "Same shapes as create. SMS takes `{phone_number, country}` (ISO 3166-1 alpha-2),\n`{phone_number, country_code}`, `{e164}` or a `+` number."
           }
         }
       },
@@ -42220,6 +45928,25 @@
           "high",
           "low"
         ]
+      },
+      "UrgencyReadiness": {
+        "type": "object",
+        "required": [
+          "status",
+          "channels"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ReachStatus"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelReadiness"
+            },
+            "description": "The user's rules for this urgency, in paging order."
+          }
+        }
       },
       "UrlOp": {
         "type": "string",
@@ -43447,6 +47174,10 @@
             "type": "boolean"
           }
         }
+      },
+      "i64": {
+        "type": "integer",
+        "format": "int64"
       }
     },
     "securitySchemes": {
