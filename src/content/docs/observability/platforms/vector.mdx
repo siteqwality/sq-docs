@@ -1,0 +1,66 @@
+---
+title: Vector
+description: Send telemetry from Vector to Site Qwality with scoped ingest authentication.
+last_verified: 2026-10-18
+owner: jj
+---
+
+This guide configures logs. Start with an admitted Site Qwality account and an ingest key from [API keys](https://app.siteqwality.com/account?tab=api-keys). Replace YOUR_INGEST_KEY on your server. Never use a real key in a public example.
+
+## 1. Save vector.yaml
+
+For Docker stdout, replace the file source with type: docker_logs and grant access to the runtime socket only after reviewing its host privileges. For multiline stacks, configure a source multiline start pattern before shipping.
+
+```yaml
+data_dir: /var/lib/vector
+sources:
+  app:
+    type: file
+    include: ["/var/log/my-app/*.log"]
+    read_from: end
+sinks:
+  siteqwality:
+    type: http
+    inputs: [app]
+    uri: https://otlp.siteqwality.com/ingest
+    method: post
+    encoding: {codec: json}
+    framing: {method: newline_delimited}
+    request:
+      headers:
+        Authorization: "Bearer YOUR_INGEST_KEY"
+        Content-Type: application/x-ndjson
+        X-Service: "my-service"
+        X-Env: "production"
+    batch: {max_bytes: 1000000, timeout_secs: 1}
+    buffer: {type: disk, max_size: 268435488, when_full: block}
+```
+
+## 2. Validate, then start
+
+Persist data_dir for the disk buffer. Check the sink delivery counters and rejected JSON records. To preserve JSON object fields, parse the message with a remap transform before the sink.
+
+```bash
+vector validate vector.yaml
+vector --config vector.yaml
+```
+
+## Confirm readable data
+
+Open [Add data](https://app.siteqwality.com/add-data?platform=vector), select the signal and choose **Check again**. This reads retained data permitted for your account and member. A permission error is not proof that collection failed. Open the explorer, select your service/environment and a recent window.
+
+- Create an ingest key for this account and only the signals you send. Read-only keys cannot ingest; ingest keys cannot query. Use a separate read-only API key or your signed-in session for exploration.
+- A successful OTLP HTTP response is 200 with an ExportResponse. Inspect partialSuccess for rejected records. JSON /ingest and /metrics return 200 with accepted, rejected and errors. Remote-write returns 204 on full acceptance; platform adapters use their own acknowledgement formats.
+- Accepted data has been written to storage or durable spill. It can appear later during replay. Acceptance does not mean every record passed validation or that it is already searchable. Retry transient 429/5xx failures with backoff and honor Retry-After; do not blindly resend an entire partially accepted batch.
+- Requests allow 4,000,000 wire bytes, up to 40,000,000 inflated bytes for logs/traces or 16,000,000 for metrics, and at most 100:1 inflation. Use gzip or supported deflate on HTTP; Prometheus uses Snappy. Split oversized requests instead of retrying unchanged.
+- 401/403: check key, account, signal scope and collection access. 413: reduce batch bytes. 415: check protocol and content type. 429: check quota/cardinality/rate and wait for Retry-After. Persistent 5xx: retain your local buffer and contact support with request time, never the key.
+
+## Production checklist
+
+Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
+
+- [Ingest routes and limits](/observability/ingest/)
+- [Pricing and retention](/observability/billing/)
+- [Pipelines, access and privacy](/observability/privacy/)
+- [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
+- [Upstream Vector documentation](https://vector.dev/docs/reference/configuration/sinks/http/)

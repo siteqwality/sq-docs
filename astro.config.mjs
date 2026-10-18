@@ -197,6 +197,15 @@ export default defineConfig({
 					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'observability/overview' },
+                        { label: 'Platform setup guides', autogenerate: { directory: 'observability/platforms' } },
+                        { label: 'Ingest routes and limits', slug: 'observability/ingest' },
+                        { label: 'Query language', slug: 'observability/query' },
+                        { label: 'Billing and retention', slug: 'observability/billing' },
+                        { label: 'Processing pipelines', slug: 'observability/pipelines' },
+                        { label: 'Services', slug: 'observability/services' },
+                        { label: 'Errors', slug: 'observability/errors' },
+                        { label: 'Telemetry alerts and SLOs', slug: 'observability/alerts' },
+                        { label: 'Access, exports and erasure', slug: 'observability/privacy' },
 						{
 							label: 'Metrics',
 							collapsed: true,

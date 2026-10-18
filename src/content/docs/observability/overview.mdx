@@ -1,83 +1,33 @@
 ---
 title: Observability
-description: Five pillars (metrics, logs, traces, RUM, and session replay) in one product, with logs, metrics and traces billed as one pooled monthly data allowance.
-last_verified: 2026-10-08
+description: Collect, explore and correlate logs, metrics, traces, browser events and replays.
+last_verified: 2026-10-18
 owner: jj
 ---
 
-import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+Site Qwality connects server telemetry with browser experience and monitoring. Start in [Add data](https://app.siteqwality.com/add-data), choose a platform, configure a scoped ingest key and verify retained data. See the [platform guides](/observability/platforms/overview/) for install commands and working configurations.
 
-Site Qwality's observability suite has five pillars. Each has its own explorer in the dashboard. Logs, metrics and RUM can drive threshold alerts that go to your notification groups, and logs, metrics, traces and RUM can be charted next to your monitors and incidents on [dashboards](/dashboards/overview/).
-
-| Pillar | Stores | Best for |
-|---|---|---|
-| [Metrics](/observability/metrics/overview/) | Numeric time-series with tags | Counters, gauges, histograms, anything chart-able |
-| [Logs](/observability/logs/overview/) | Structured + unstructured events | Error context, audit trails, full-text search |
-| [Traces](/observability/traces/overview/) | Span trees following one request | Why a request was slow, what services it touched |
-| [RUM](/observability/rum/overview/) | Browser-side telemetry from real users | Web vitals, JS errors, user actions |
-| [Replay](/observability/replay/overview/) | Pixel playback of user sessions | "What did the user actually do?" debugging |
-
-## How they relate
-
-```
-       (numeric ↑↓)              (events)              (request shape)
-        Metrics    ←────→         Logs       ←────→        Traces
-         "what?"               "why?"                  "where?"
-
-                                    │
-                                    │ correlates via trace_id
-                                    │
-                                    ▼
-                                  RUM            ←────→     Replay
-                                "from the user's side"
-```
-
-- A **trace** can pull in **logs** for any of its spans, when your log entries carry a `trace_id` (see [correlate traces with logs](/observability/traces/how-to/correlate-logs/)).
-- **RUM** can add a `traceparent` header to fetch/XHR requests whose URLs you list in the application's [`trace_urls`](/observability/rum/how-to/remote-config/) setting, so a user's request can open the back-end trace.
-- **Metrics** are the numbers you send. Nothing is derived from your logs or traces automatically, so emit a metric for anything you want to chart or alert on as a number.
-
-## When to reach for which
-
-| Question | Tool |
+| Area | Use it for |
 |---|---|
-| "How many errors in the last hour?" | **Metrics**, if you emit an error counter. Alertable, fast, cheap. |
-| "What was the error message at 14:32?" | **Logs**. The full payload is there. |
-| "Why was that one request slow?" | **Traces**. See the call graph. |
-| "What was the LCP for users on Safari?" | **RUM**. Filter by browser, OS, device, country or page; see [dimensions](/observability/rum/how-to/dimensions/). |
-| "What did the user click before the error?" | **Replay**. Watch them. |
+| [Logs](/observability/logs/overview/) | Search events, extract fields, analyze volume and follow a request's context. |
+| [Metrics](/observability/metrics/overview/) | Query gauges, counters and distributions, compare periods and evaluate formulas. |
+| [Traces](/observability/traces/overview/) | Follow a request through services, inspect spans and find correlated logs. |
+| [Services](/observability/services/) | Service and endpoint RED, versions, deployment markers and dependencies. |
+| [Errors](/observability/errors/) | Group backend exceptions and browser issues with lifecycle and ownership. |
+| [Alerts and SLOs](/observability/alerts/) | Evaluate thresholds, ratios, distributions and error budgets with explicit missing-data states. |
+| [RUM](/observability/rum/overview/) | Browser performance, resources and JavaScript errors. |
+| [Session replay](/observability/replay/overview/) | Inspect recorded user interactions subject to consent, sampling and access. |
 
-If you find yourself reaching for **logs** to answer "how many", that's a metric. Emit one. If you reach for **metrics** to answer "what was the actual value", that's a log. Cross-emit.
+## Send, verify, explore
 
-## Ingestion
+The OTLP/HTTP origin is `https://otlp.siteqwality.com`, with `/v1/logs`, `/v1/traces` and `/v1/metrics`. JSON, remote-write and platform adapters have their own [routes and contracts](/observability/ingest/). A successful send means accepted records reached storage or durable spill. Confirm readable data separately; replay, processing, access and time filters can affect visibility.
 
-| Pillar | Endpoint | Auth |
-|---|---|---|
-| Metrics | `POST https://metrics.siteqwality.com/metrics` | API key |
-| Logs | `POST https://logs.siteqwality.com/ingest` | API key |
-| Traces | `POST https://traces.siteqwality.com/v1/traces` (OTLP-compatible) | API key |
-| RUM | Auto via SDK | Client token (per-app, public) |
-| Replay | Auto via SDK | Client token (per-app, public) |
+Use stable `service.name`, `deployment.environment.name` and `service.version`. Resource identity joins related signals. Logs need actual trace/span IDs to link to a request. Metric exemplars link only to recorded trace IDs, and sampling or retention can make the target unavailable. [Correlation](/observability/traces/how-to/correlate-logs/) explains browser opt-in and CORS.
 
-Backends:
+## Control data and cost
 
-- Postgres for transactional data (configs, accounts, dashboards).
-- ClickHouse for time-series storage (metrics, logs, traces, RUM events).
-- S3 for blobs (HAR files, video, replay segments).
+Logs and traces have independent decimal-GB allowances. Metrics use active hourly distinct series averaged over the month. Free allowances, paid packs, retention and hard-limit behavior are in [billing and retention](/observability/billing/). RUM, replay, uptime and incident plans keep their separate units.
 
-## Pricing
+Configure [processing pipelines](/observability/pipelines/) before expanding collection. Review [access, exports and erasure](/observability/privacy/) and keep ingest keys on servers. Telemetry read restrictions apply across explorers, saved views, exports and correlation.
 
-Logs, metrics and traces share one **telemetry** allowance, measured in GB per month and pooled across the three signals: 1 GB with 3-day retention on the free tier, then paid packs of 50 GB (15 days), 200 GB (30 days) and 1 TB (30 days). Telemetry has no per-seat charge. RUM and session replay are priced separately, per session and per replay. See [pricing](https://siteqwality.com/pricing/).
-
-<Aside type="caution" title="What happens at the limit">
-You get usage emails at 80% and 100% of your telemetry allowance, as for other products. Usage can then run 10% past the allowance. After that, logs, metrics and traces sent for the rest of the billing period are still accepted with a success response, but they are not stored. The **Usage** tab of your account settings shows where you stand.
-</Aside>
-
-## See also
-
-<CardGrid>
-  <LinkCard title="Metrics" description="Counters, gauges, histograms, queries, alerts." href="/observability/metrics/overview/" />
-  <LinkCard title="Logs" description="Search, parsers, saved views, insights." href="/observability/logs/overview/" />
-  <LinkCard title="Traces" description="Distributed tracing with service-map and span detail." href="/observability/traces/overview/" />
-  <LinkCard title="RUM" description="Real-browser telemetry via the JS SDK." href="/observability/rum/overview/" />
-  <LinkCard title="Session Replay" description="Pixel playback of user sessions, sampled by filter." href="/observability/replay/overview/" />
-</CardGrid>
+**Telemetry notification delivery:** rule evaluation and state history are implemented. External telemetry notification/incident dispatch remains held. Do not rely on a telemetry rule for paging until that dispatch is explicitly enabled. Existing uptime and incident notifications have their own behavior.

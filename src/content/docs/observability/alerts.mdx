@@ -1,0 +1,35 @@
+---
+title: Telemetry alerts and SLOs
+description: Configure typed evaluation, preview state transitions and understand the delivery hold.
+last_verified: 2026-10-18
+owner: jj
+---
+
+**Delivery status:** typed rule evaluation, instances, state history and SLO summaries are implemented. External telemetry notification and incident dispatch remains held. Saving, previewing or seeing a firing state does not confirm an email, webhook, on-call page, incident or status-page update. Use an independently working monitoring path for production paging until dispatch is enabled.
+
+## Threshold rules
+
+Use the existing telemetry Alerts editor. Choose an event query or a metric query output, time window, evaluation interval and threshold direction. Configure critical, optional warning and recovery thresholds, required breach duration, keep-firing duration, no-data timeout and missing-data policy. Preview on a bounded window before enabling. Set a stable service, severity, runbook and group dimensions rather than creating a rule per dynamic request ID.
+
+An event query can evaluate supported count/ratio/percentile analytics. A metric query refers to a named query/formula output. The preview validates the exact typed query and returns observed values/state without sending notifications. Maximum instances bound group expansion. Late-data recomputation is bounded and must not be interpreted as a replay of old notifications.
+
+States distinguish healthy, pending, warning/firing, no data and evaluation error. Missing data is not zero: choose keep, no_data, alert or ok deliberately. Quota exhaustion can produce no_data with a quota reason. Partial/unfinished derived data can pause or qualify evaluation. Inspect the history reason before changing thresholds.
+
+## SLOs
+
+Choose a ratio SLI (good and total with compatible units) or a distribution SLI (query/output, latency threshold and unit), target and period. A distribution SLO needs actual distributions; a percentile scalar is not a count of good events. Error-budget and burn calculations use the selected input and its quality. The standard paired burn windows include long/short windows; configure both so a short spike alone does not imply sustained burn.
+
+Pause stops evaluation, mute changes notification eligibility, and neither proves dispatch is active. Edits use revision-aware updates; refresh after a conflict instead of overwriting another change. Rule queries carry a creator restriction snapshot so a shared rule cannot expose broader samples than the creator could read.
+
+| Endpoint family | Operations |
+|---|---|
+| `/alert-rules/v2` | GET list, POST create. |
+| `/alert-rules/v2/{id}` | GET detail, PUT update, DELETE remove. |
+| `/alert-rules/preview` | POST typed preview. |
+| `/alert-rules/v2/{id}/instances`, `/history` | GET instances and evaluations. |
+| `/alert-rules/v2/{id}/pause`, `/resume`, `/mute` | POST actions; DELETE mute to unmute. |
+| `/slos`, `/slos/{id}` | List/create/detail/update/remove. |
+| `/slos/{id}/history`, `/summary` | GET SLO history and summary. |
+| `/slos/{id}/pause`, `/resume`, `/mute` | Evaluation and mute actions. |
+
+Use the current editor or generated API schemas for complete rule bodies and expected revisions. Notification groups and incident settings are routing configuration only while the telemetry dispatch hold remains. Uptime/incident alerting is a separate product path and is not disabled by this hold.

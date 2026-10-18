@@ -1,0 +1,56 @@
+---
+title: Syslog over TLS
+description: Send telemetry from Syslog over TLS to Site Qwality with scoped ingest authentication.
+last_verified: 2026-10-18
+owner: jj
+---
+
+**Availability:** Requires an enabled syslog TLS endpoint. Obtain the endpoint hostname and structured-data PEN from support before starting. Public UDP syslog is unavailable.
+
+This guide configures logs. Start with an admitted Site Qwality account and an ingest key from [API keys](https://app.siteqwality.com/account?tab=api-keys). Replace YOUR_INGEST_KEY on your server. Never use a real key in a public example.
+
+## 1. Configure rsyslog TLS forwarding
+
+Requires the rsyslog TLS module and a writable workDirectory for the queue. Replace both hostname occurrences and the PEN. The RFC 5424 structured-data element supplies the key; the edge strips it. Include it on the first record of every new connection. Do not disable certificate verification.
+
+```text
+global(workDirectory="/var/spool/rsyslog" DefaultNetstreamDriver="gtls" DefaultNetstreamDriverCAFile="/etc/ssl/certs/ca-certificates.crt")
+module(load="imfile")
+template(name="sq5424" type="string" string="<%PRI%>1 %TIMESTAMP:::date-rfc3339% %HOSTNAME% app %PROCID% - [sq@YOUR_ASSIGNED_PEN key=\"YOUR_INGEST_KEY\"] %msg%\n")
+input(type="imfile" File="/var/log/my-app/app.log" Tag="app" ruleset="siteqwality")
+ruleset(name="siteqwality") {
+  action(type="omfwd" target="YOUR_ENABLED_SYSLOG_HOST" port="6514" protocol="tcp"
+    StreamDriver="gtls" StreamDriverMode="1" StreamDriverAuthMode="x509/name"
+    StreamDriverPermittedPeers="YOUR_ENABLED_SYSLOG_HOST"
+    TCP_Framing="octet-counted" template="sq5424"
+    queue.type="LinkedList" queue.filename="siteqwality" queue.saveOnShutdown="on" action.resumeRetryCount="-1")
+}
+```
+
+## 2. Validate the configuration
+
+Restart using your service manager and append a line to the configured file. TLS/TCP syslog has no per-record durable application acknowledgement. Watch your local queue and confirm readable logs.
+
+```bash
+rsyslogd -N1
+```
+
+## Confirm readable data
+
+Open [Add data](https://app.siteqwality.com/add-data?platform=syslog), select the signal and choose **Check again**. This reads retained data permitted for your account and member. A permission error is not proof that collection failed. Open the explorer, select your service/environment and a recent window.
+
+- Create an ingest key for this account and only the signals you send. Read-only keys cannot ingest; ingest keys cannot query. Use a separate read-only API key or your signed-in session for exploration.
+- A successful OTLP HTTP response is 200 with an ExportResponse. Inspect partialSuccess for rejected records. JSON /ingest and /metrics return 200 with accepted, rejected and errors. Remote-write returns 204 on full acceptance; platform adapters use their own acknowledgement formats.
+- Accepted data has been written to storage or durable spill. It can appear later during replay. Acceptance does not mean every record passed validation or that it is already searchable. Retry transient 429/5xx failures with backoff and honor Retry-After; do not blindly resend an entire partially accepted batch.
+- Requests allow 4,000,000 wire bytes, up to 40,000,000 inflated bytes for logs/traces or 16,000,000 for metrics, and at most 100:1 inflation. Use gzip or supported deflate on HTTP; Prometheus uses Snappy. Split oversized requests instead of retrying unchanged.
+- 401/403: check key, account, signal scope and collection access. 413: reduce batch bytes. 415: check protocol and content type. 429: check quota/cardinality/rate and wait for Retry-After. Persistent 5xx: retain your local buffer and contact support with request time, never the key.
+
+## Production checklist
+
+Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
+
+- [Ingest routes and limits](/observability/ingest/)
+- [Pricing and retention](/observability/billing/)
+- [Pipelines, access and privacy](/observability/privacy/)
+- [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
+- [Upstream Syslog over TLS documentation](https://www.rsyslog.com/doc/configuration/modules/omfwd.html)

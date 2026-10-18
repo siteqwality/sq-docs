@@ -1,131 +1,18 @@
 ---
 title: Logs
-description: Structured + unstructured log ingestion with full-text search, parsers, saved views, patterns, and insights.
-last_verified: 2026-10-08
+description: Search and analyze structured events with trace context.
+last_verified: 2026-10-18
 owner: jj
 ---
 
-import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+Start with the [logs quickstart](/observability/logs/quickstart/) or select your [platform](/observability/platforms/overview/). Use the current explorer at [Site Qwality](https://app.siteqwality.com/logs) and choose a recent time range, service and environment.
 
-A **log** is a discrete event with a timestamp, level, message, and arbitrary structured metadata. Site Qwality stores them in ClickHouse, where you can search the message text and filter on the structured fields.
+Search text and typed fields, inspect event context and correlated traces, then use analytics, patterns or saved views.
 
-## When to use logs
+Results carry retention, partial-data and quality metadata. Sampling, missing predecessors or unfinished derived work can affect interpretation. A missing bucket or retained trace is not evidence of a healthy zero.
 
-- For **discrete events** with rich context: what happened, who triggered it, what state the system was in.
-- For the audit trail of "what happened at 14:32:17.345?"
-- When you need to grep through error context to find a pattern.
-
-## When NOT to use logs
-
-- For "how many?", emit a [metric](/observability/metrics/overview/). Counting logs is slow; counting metrics is the point.
-- For "why was this request slow?", use [traces](/observability/traces/overview/). Logs alone don't show causality.
-
-## Ingest
-
-```bash
-curl -X POST https://logs.siteqwality.com/ingest \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "timestamp": "2026-05-03T14:32:17.345Z",
-    "level": "error",
-    "message": "Failed to charge card",
-    "source": "billing",
-    "env": "prod",
-    "host": "api-7d4f9-xkz3l",
-    "tags": { "endpoint": "/api/charge" },
-    "metadata": {
-      "user_id": "usr_abc123",
-      "amount_cents": 9900,
-      "stripe_error": "card_declined"
-    }
-  }'
-```
-
-Three accepted body shapes:
-
-- **Single JSON object**: one log entry.
-- **JSON array**: multiple log entries in one request.
-- **NDJSON** (`Content-Type: application/x-ndjson`): one JSON entry per line. Best for shipping pipelines.
-
-Optional header:
-
-- `X-Log-Source: <name>` sets the `source` field on every log in the request that does not carry its own `source`. Plain-text lines never carry one, so send this header with them.
-
-A `202 Accepted` means the logs were queued. They become searchable about a minute later: ingestion runs in batches that wait up to 60 seconds to fill.
-
-Only the fields in the table below are kept. Anything else at the top level of an entry, such as `service`, `msg` or `user_id`, is dropped, so put your own fields under `metadata` (or `tags` for values you filter on). Many logging libraries and forwarders use different names (`msg`, `log`, `levelname`, `time`): rename them to `message`, `level` and `timestamp` before sending.
-
-One entry may encode to at most 1,023,948 bytes (about 1,000 KiB). Each entry carries its line twice internally, so a single line of about 500 KB already reaches that. A request with an entry over the limit gets `413` and none of it is stored. Keep requests to about 1,000 lines.
-
-## Anatomy of a log entry
-
-| Field | Description |
-|---|---|
-| `timestamp` | RFC 3339 string, for example `2026-05-03T14:32:17.345Z`. Numbers (epoch seconds or milliseconds) are not read: the entry gets the ingest time instead, which can be up to a minute late. Ingest time is also used when the field is missing. |
-| `level` | `trace`, `debug`, `info`, `warn`, `error`, `fatal`. Defaults to `info`. Stored as sent; filters, insights and alerts match it in any case, and `error` also matches `err`, `fatal` and `critical`, and `warn` also matches `warning`. |
-| `message` | Human-readable summary. Searched by the `search` parameter (case-insensitive substring). |
-| `source` | Logical source name (`billing-api`, `worker-fleet`): the service that produced the line. Avoid high-cardinality values. |
-| `host` | Pod/container/VM identity. |
-| `env` | `prod`, `staging`, `dev`. |
-| `version` | App version. Useful for "did the latest deploy regress?" |
-| `device` | For client logs (browser logs from the SDK). |
-| `tags` | `string → string` map for filtering. Non-string values are stored as text. |
-| `metadata` | Arbitrary structured object. Searchable via the `metadata_search` query param. |
-| `trace_id` | Optional. 32 lowercase hex characters. Links the line to a [trace](/observability/traces/how-to/correlate-logs/). |
-
-## Querying
-
-Logs are queried via `GET /logs/query` with these params:
-
-- `start_time`, `end_time`: RFC 3339 window (defaults to last 1h).
-- `level`: comma-separated levels (`error,warn`), in any case. `error` also matches `err`, `fatal` and `critical`, and `warn` also matches `warning`.
-- `source`, `env`, `host`: exact filters; comma-separate several values.
-- `search`: case-insensitive substring match on `message`.
-- `metadata_search`: a JSON object such as `{"user_id":"usr_abc123"}`. Each value is matched as a case-insensitive substring anywhere in the entry's metadata; the key is not checked. Input that is not a JSON object is ignored.
-- `tags`: JSON-encoded `{key: value}` filter (exact match).
-- `excluded`: JSON object mapping `level`, `source`, `env` or `host` to an array of values to leave out, for example `{"level":["debug"]}`.
-- `sort_field` (`timestamp`), `sort_order` (`asc|desc`), `limit`, `offset`.
-
-These endpoints are on `api.siteqwality.com` and need a full-access API key; an ingest key gets `403`. Responses are wrapped in a `data` object.
-
-The dashboard's **Logs Explorer** is the friendliest interface; it composes these params for you. For programmatic access (CI, scripts), call the API directly.
-
-## Tail
-
-For follow-mode (`tail -f`-style):
-
-```bash
-GET /logs/tail/poll?since=<cursor>&...
-```
-
-Returns logs since the cursor, plus a new cursor to use on the next poll. Poll every few seconds. The dashboard's live tail polls every 3 seconds, and lines appear there about a minute after they are sent.
-
-## Insights
-
-`GET /logs/insights` returns heuristic insights, computed when you request them. They do not send notifications; create a log alert in the dashboard for that.
-
-- **Error spike**: sudden increase in error-level lines (`error`, `err`, `fatal` or `critical`, in any case) vs baseline.
-- **New error**: a never-seen-before error message.
-- **Silent source**: a normally-chatty source has gone quiet.
-- **Top errors**: most frequent error messages in the window.
-
-Each insight comes with severity (`info`, `medium`, `high`) and a pre-built filter you can click into the Logs Explorer to investigate.
-
-## Pricing
-
-Logs count toward your telemetry allowance, which is measured in GB per month and pooled with metrics and traces. Retention follows the pack: 3 days free, 15 days on the 50 GB pack, 30 days on the 200 GB and 1 TB packs. The **Usage** tab of your account settings shows month-to-date usage. See the [observability overview](/observability/overview/#pricing).
-
-<Aside type="tip">
-The cheapest log is the one you don't send. Set log levels appropriately in production (`info` and above). Use [metrics](/observability/metrics/overview/) for "how many" counters instead of logging every event.
-</Aside>
-
-## See also
-
-<CardGrid>
-  <LinkCard title="Quickstart" description="Send your first log, find it in the explorer." href="/observability/logs/quickstart/" />
-  <LinkCard title="Patterns and analytics" description="Cluster noisy lines into templates and read volume, sources and error rates." href="/observability/logs/how-to/patterns/" />
-  <LinkCard title="Parsers" description="Extract structured fields from unstructured log lines." href="/observability/logs/how-to/parsers/" />
-  <LinkCard title="Saved views" description="Pre-saved filters to share with the team." href="/observability/logs/how-to/saved-views/" />
-  <LinkCard title="Reference" description="Ingestion details, query parameters and endpoints." href="/observability/logs/reference/" />
-</CardGrid>
+- [Reference](/observability/logs/reference/)
+- [Query language](/observability/query/)
+- [Ingest and acknowledgement contracts](/observability/ingest/)
+- [Pricing and retention](/observability/billing/)
+- [Access, export and erasure](/observability/privacy/)

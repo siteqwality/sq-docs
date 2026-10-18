@@ -1,0 +1,25 @@
+---
+title: Errors and issue workflow
+description: Find backend exceptions and browser errors, inspect samples and manage issue lifecycle.
+last_verified: 2026-10-18
+owner: jj
+---
+
+Errors unifies browser issues and backend exception groups while keeping each source explicit. Use source, service, environment, time and status filters. Backend groups come from supported exception events, stack traces and log patterns in received telemetry. An error-level line without a parseable exception is still searchable in Logs and need not create a stack-based issue.
+
+Open an issue to inspect its fingerprint, title, culprit, event samples, affected versions and activity. Grouping normalizes supported language stacks; unrelated exception families should not be merged solely because their messages match. Samples may be absent after retention or under your access restrictions. A count does not imply every original stack remains available.
+
+Use the existing workflow to assign, resolve, ignore or reopen issues. Backend bulk actions and merges operate on explicit selected identities. Check the selected service/environment and fingerprint before a merge; it changes future grouping/workflow semantics. Browser issue actions keep their existing RUM workflow and access policy. Source maps and replay require their own uploaded artifacts and permissions.
+
+| API path | Purpose |
+|---|---|
+| `GET /errors` | Unified scoped issue list. |
+| `GET /errors/backend/{service}/{fingerprint}` | Backend issue detail. |
+| `GET /errors/backend/{service}/{fingerprint}/events` | Bounded event samples. |
+| `PATCH /errors/backend/{service}/{fingerprint}` | Supported lifecycle/ownership changes. |
+| `POST /errors/backend/bulk` | Explicit bulk action. |
+| `POST /errors/backend/merge` | Merge selected backend identities. |
+
+Use the API schema for each mutation body and URL-encode service/fingerprint values. Read restrictions also protect previews and correlation. Pipeline redaction runs before exception extraction; test stacks with representative safe samples in [Processing pipelines](/observability/pipelines/).
+
+Telemetry alert evaluation can identify exception-related changes, but **external telemetry alert dispatch remains held**. Do not rely on this workflow as proof that a page, incident or status update was sent.

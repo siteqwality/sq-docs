@@ -1,0 +1,100 @@
+---
+title: Docker
+description: Send telemetry from Docker to Site Qwality with scoped ingest authentication.
+last_verified: 2026-10-18
+owner: jj
+---
+
+This guide configures logs, traces, metrics. Start with an admitted Site Qwality account and an ingest key from [API keys](https://app.siteqwality.com/account?tab=api-keys). Replace YOUR_INGEST_KEY on your server. Never use a real key in a public example.
+
+## 1. Save collector.yaml
+
+The container network can reach this receiver. Publish it only on loopback if host applications need access. To ingest container stdout, add the Collector filelog receiver with read-only mounts for your runtime log files, or use the Vector docker_logs source below.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+    spike_limit_mib: 64
+  resource:
+    attributes:
+      - {key: service.name, value: "my-service", action: upsert}
+      - {key: deployment.environment.name, value: "production", action: upsert}
+  batch:
+    send_batch_size: 256
+    send_batch_max_size: 512
+    timeout: 1s
+exporters:
+  otlphttp/siteqwality:
+    endpoint: https://otlp.siteqwality.com
+    headers:
+      Authorization: "Bearer YOUR_INGEST_KEY"
+    compression: gzip
+    sending_queue: {enabled: true, queue_size: 1000}
+    retry_on_failure: {enabled: true, initial_interval: 1s, max_interval: 30s, max_elapsed_time: 300s}
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/siteqwality]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/siteqwality]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/siteqwality]
+```
+
+## 2. Save compose.yaml
+
+Choose a released Collector version and pin its image digest for production. Keep collector.yaml private because it contains the key. Applications in this Compose network use http://collector:4318, not the cloud key.
+
+```yaml
+services:
+  collector:
+    image: otel/opentelemetry-collector-contrib:${COLLECTOR_VERSION:?set a released version}
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes: ["./collector.yaml:/etc/otelcol-contrib/config.yaml:ro"]
+    ports: ["127.0.0.1:4318:4318"]
+    restart: unless-stopped
+```
+
+## 3. Start and inspect
+
+Enable SDK instrumentation in your app, send a request and inspect the selected explorer. Container stdout is separate from OTLP until you configure its log source.
+
+```bash
+export COLLECTOR_VERSION=YOUR_RELEASED_COLLECTOR_VERSION
+docker compose config
+docker compose up -d
+docker compose logs --tail=50 collector
+```
+
+## Confirm readable data
+
+Open [Add data](https://app.siteqwality.com/add-data?platform=docker), select the signal and choose **Check again**. This reads retained data permitted for your account and member. A permission error is not proof that collection failed. Open the explorer, select your service/environment and a recent window.
+
+- Create an ingest key for this account and only the signals you send. Read-only keys cannot ingest; ingest keys cannot query. Use a separate read-only API key or your signed-in session for exploration.
+- A successful OTLP HTTP response is 200 with an ExportResponse. Inspect partialSuccess for rejected records. JSON /ingest and /metrics return 200 with accepted, rejected and errors. Remote-write returns 204 on full acceptance; platform adapters use their own acknowledgement formats.
+- Accepted data has been written to storage or durable spill. It can appear later during replay. Acceptance does not mean every record passed validation or that it is already searchable. Retry transient 429/5xx failures with backoff and honor Retry-After; do not blindly resend an entire partially accepted batch.
+- Requests allow 4,000,000 wire bytes, up to 40,000,000 inflated bytes for logs/traces or 16,000,000 for metrics, and at most 100:1 inflation. Use gzip or supported deflate on HTTP; Prometheus uses Snappy. Split oversized requests instead of retrying unchanged.
+- 401/403: check key, account, signal scope and collection access. 413: reduce batch bytes. 415: check protocol and content type. 429: check quota/cardinality/rate and wait for Retry-After. Persistent 5xx: retain your local buffer and contact support with request time, never the key.
+
+## Production checklist
+
+Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
+
+- [Ingest routes and limits](/observability/ingest/)
+- [Pricing and retention](/observability/billing/)
+- [Pipelines, access and privacy](/observability/privacy/)
+- [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
+- [Upstream Docker documentation](https://opentelemetry.io/docs/collector/installation/)

@@ -1,190 +1,36 @@
 ---
 title: Traces reference
-description: Ingest endpoint, span attribute conventions, and search/detail endpoints.
-last_verified: 2026-10-08
+description: OTLP spans, trace search, detail, RED, waterfall and correlation contracts.
+last_verified: 2026-10-18
 owner: jj
 ---
 
-## Ingest
+## Ingest and identity
 
-```
-POST https://traces.siteqwality.com/v1/traces
-Authorization: Bearer <api-key>
-Content-Type: application/x-protobuf | application/json
-```
+Use OTLP HTTP protobuf or JSON at `https://otlp.siteqwality.com/v1/traces`. Set service/environment/version resource attributes. Trace IDs are 32 hexadecimal characters and span IDs 16, and all-zero IDs are invalid. Parent IDs, span kind, start/end time, events and links describe the actual recorded graph. The receiver does not infer missing spans.
 
-Body: standard OTLP `ExportTraceServiceRequest`. Most OTel SDK exporters handle the format for you. `application/protobuf` is accepted as well. gzip and deflate request compression are accepted; zstd is rejected with `415`.
+[gRPC requires an enabled edge endpoint](/observability/ingest/). Prefer HTTP/protobuf for a setup that does not depend on it. [Platform guides](/observability/platforms/overview/) include SDK setup and exporter flushing.
 
-Responses:
+## API reference
 
-| Status | When |
-|---|---|
-| `200` | Accepted. The body is an empty `ExportTraceServiceResponse` in the request's encoding: an empty protobuf body, or `{}` for JSON. An export with no spans also gets `200`. |
-| `400` | The payload cannot be decoded as OTLP (bad protobuf, invalid or blank JSON). Retrying will not help. |
-| `401` / `403` | Missing key / unknown, revoked or expired key. |
-| `413` | One span, with its resource attributes, encodes to more than the per-span limit (see [batch sizing](/observability/traces/how-to/otlp-protobuf/#batch-sizing)). Nothing from the request is stored. |
-
-See [OTLP over HTTP/protobuf](/observability/traces/how-to/otlp-protobuf/) for exporter settings and what is not supported.
-
-## Span attribute conventions
-
-Attributes are stored and shown exactly as sent; nothing in Site Qwality depends on particular attribute names today. Sticking to the OTel semantic conventions keeps names consistent across your services. Current OTel instrumentation emits the stable names in brackets; older instrumentation emits the names in the first column. Both are stored as sent, so filter on the name your instrumentation actually uses:
-
-### HTTP
-
-| Attribute | Description |
-|---|---|
-| `http.method` (`http.request.method`) | `GET`, `POST`, ... |
-| `http.url` (`url.full`) | Full URL including query. |
-| `http.target` (`url.path`, `url.query`) | Path + query (e.g. `/api/users?id=123`). |
-| `http.route` | Route template (e.g. `/api/users/:id`). |
-| `http.host` (`server.address`) | Host header. |
-| `http.status_code` (`http.response.status_code`) | Numeric. |
-| `http.user_agent` (`user_agent.original`) | UA string. |
-| `http.request_content_length` | Bytes. |
-| `http.response_content_length` | Bytes. |
-
-### DB
-
-| Attribute | Description |
-|---|---|
-| `db.system` | `postgresql`, `mysql`, `redis`, `mongodb`. |
-| `db.statement` (`db.query.text`) | The SQL/query (consider scrubbing PII). |
-| `db.operation` (`db.operation.name`) | `SELECT`, `INSERT`, `UPDATE`. |
-| `db.name` (`db.namespace`) | Database name. |
-| `db.user` | Connection user. |
-
-### Messaging
-
-| Attribute | Description |
-|---|---|
-| `messaging.system` | `kafka`, `sqs`, `rabbitmq`. |
-| `messaging.destination` | Topic / queue. |
-| `messaging.operation` | `send`, `receive`, `process`. |
-
-### Resource attributes (per-service)
-
-These should be set once on the OTel SDK init (`Resource.create({...})`) and apply to every span:
-
-| Attribute | Description |
-|---|---|
-| `service.name` | Required. Logical service name. |
-| `service.version` | App version. |
-| `service.instance.id` | Pod / VM identity. |
-| `deployment.environment` (`deployment.environment.name`) | `prod`, `staging`. |
-| `host.name` | Hostname. |
-| `cloud.region` | `us-east-1`. |
-
-## Span fields stored
-
-| Field | Description |
-|---|---|
-| `trace_id` | 32-char hex; identifies the trace. |
-| `span_id` | 16-char hex; identifies the span. |
-| `parent_span_id` | Empty for root spans. |
-| `operation_name` | Span name. |
-| `service_name` | From resource attributes. |
-| `span_kind` | `SERVER`, `CLIENT`, `PRODUCER`, `CONSUMER`, `INTERNAL`, or `UNSPECIFIED`. |
-| `start_time`, `end_time` | RFC 3339. |
-| `duration_ms` | Computed. |
-| `status_code` | `UNSET`, `OK` or `ERROR`. |
-| `status_message` | Optional error message. |
-| `attributes` | All custom + standard span attributes, as strings. |
-| `resource_attributes` | All resource attributes, as strings. |
-| `events[]` | Timestamped log-like events, as received over OTLP. |
-| `links[]` | Cross-trace span references, as received over OTLP. |
-
-Instrumentation scope name and version are not stored.
-
-## Search: `GET /traces/search`
-
-The search and detail endpoints are on `https://api.siteqwality.com` and need a full-access API key; an ingest key gets `403`. Search reads the stored spans and groups them by trace.
-
-| Param | Description |
-|---|---|
-| `start_time`, `end_time` | RFC 3339 window. |
-| `service_name` | Exact match. |
-| `operation_name` | Exact match. |
-| `min_duration_ms`, `max_duration_ms` | Range filter. |
-| `status` | `error`, `ok` or `unset`, in any case. Matches traces with at least one span in that status. Any other value gets `400`. |
-| `search` | Case-insensitive text search in operation names, status messages, and span and resource attribute values. |
-| `tags` | URL-encoded JSON object of span-attribute filters. See [tag filters](#tag-filters). |
-| `limit` (default 50, max 200), `offset` | Pagination. |
-| `sort_field`, `sort_order` | Order. |
-
-Response:
-
-```json
-{
-  "data": {
-    "total": 1234,
-    "traces": [
-      {
-        "trace_id": "...",
-        "root_service": "api",
-        "root_operation": "POST /checkout",
-        "services": ["api", "billing", "db"],
-        "span_count": 14,
-        "duration_ms": 482.3,
-        "error_count": 0,
-        "start_time": "..."
-      }
-    ]
-  }
-}
-```
-
-Each summary is built from the spans that matched your filters, not from the whole trace. With a filter such as `service_name` or `status`, `root_service`, `span_count` and `duration_ms` can describe only part of the trace; open it with `GET /traces/{trace_id}` for the full picture.
-
-## Tag filters
-
-`tags` filters on **span attributes**. It takes a single URL-encoded JSON object, not repeated `key=value` pairs:
-
-```bash
-curl -G https://api.siteqwality.com/traces/search \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  --data-urlencode 'tags={"http.method":"GET","peer.service":"payments-db"}'
-```
-
-In the dashboard this is the **Tag Filters** input on the **Traces** page: type `http.method:GET` and press Enter to add a filter pill.
-
-Semantics, all of which matter:
-
-- **Multiple keys are ANDed.** Every pair must match.
-- **Exact, case-sensitive string equality.** No wildcards, no negation, no ranges.
-- **Values must be JSON strings.** `{"http.status_code": 200}` filters nothing; write `{"http.status_code": "200"}`. Array attributes are stored as OTLP JSON text and cannot be matched this way.
-- **Malformed JSON is ignored rather than rejected.** A typo returns unfiltered results instead of an error, so if a filter appears to do nothing, check the JSON first.
-- **Span attributes only.** Resource attributes, including `service.name`, are not reachable this way. Use the dedicated `service_name` parameter for those.
-
-`tags` is accepted by both `GET /traces/search` and `GET /traces/timeline`.
-
-## Timeline percentiles
-
-`GET /traces/timeline` returns, per bucket: `time`, `total`, `error`, and the trace-duration percentiles `p50_ms`, `p95_ms` and `p99_ms`. The dashboard charts these as **Latency percentiles**.
-
-Read them precisely:
-
-- They measure **whole-trace duration** (earliest span start to latest span end), not individual span duration.
-- A trace is attributed to the bucket containing its **earliest span start**.
-- A trace counts as errored if **any** span in it has an error status.
-- They are approximate. The underlying quantile is sampled, which is right for charts and wrong for contractual reporting.
-- Empty buckets return zeros, so a flat zero line means no traces, not fast traces.
-
-Bucket width is derived from the time range and cannot be overridden.
-
-## Adjacent endpoints
-
-| Method | Path | Purpose |
+| API-relative path | Method | Purpose |
 |---|---|---|
-| `GET` | `/traces/services` | Distinct services seen in window. |
-| `GET` | `/traces/operations` | Distinct operations (optionally filtered by service). |
-| `GET` | `/traces/timeline` | Bucketed counts (total + errors) and trace-duration percentiles for charting. |
-| `GET` | `/traces/{trace_id}` | Full span tree. |
-| `GET` | `/traces/{trace_id}/logs` | Logs tagged with this trace_id. `span_id` filter, `limit` default 100 / max 500. See [correlating logs](/observability/traces/how-to/correlate-logs/). |
-| `GET` | `/traces/service-map` | Nodes + edges for the dependency graph. Edges exist only between instrumented services; node numbers cover every span of the service. |
+| `/traces/v2/search` | POST / GET | Span/trace search with a versioned query. |
+| `/traces/v2/detail` | POST | Detail for trace ID and bounded range. |
+| `/traces/v2/{trace_id}` | GET | Retained spans and trace summary. |
+| `/traces/v2/{trace_id}/spans/{span_id}` | GET | Span detail, events, links and attributes. |
+| `/traces/v2/{trace_id}/logs` | GET | Recorded log correlation. |
+| `/traces/v2/timeseries` | GET | RED series for selected scope. |
+| `/traces/v2/top` | GET | Endpoint/service ranking. |
+| `/traces/v2/heatmap` | GET | Duration distribution. |
+| `/traces/v2/compare` | POST | Bounded period comparison. |
 
-## See also
+Use `https://api.siteqwality.com` and read credentials. Preserve service/environment/time restrictions when following a link. A span query uses `signal: "spans"`; a supported trace summary query uses `"traces"`. Use [typed query examples](/observability/query/).
 
-- [Traces overview](/observability/traces/overview/) covers the concepts.
-- [Sampling](/observability/traces/how-to/sampling/) compares head and tail sampling.
-- [API Reference](/api-reference/) has the wire-level shapes.
+## Explorer interpretation
+
+Open a trace for waterfall, flame graph, critical path, span events/links and correlated data. Timing offsets and durations are nanosecond strings; converting them to a floating point Number too early loses precision. The critical path describes recorded timing and does not prove causality for an unrecorded dependency. Incomplete/skeleton/truncated traces are labeled; do not assume they represent every operation in the request.
+
+Service and endpoint RED uses weighted received spans and reports estimated/quality state. An upstream head sampler has already removed some requests. Customer pipeline sampling/exclusion and RED derivation have distinct ordering. Percentiles are approximate and histogram/layout constraints still apply. Use the [sampling guide](/observability/traces/how-to/sampling/) and [Services](/observability/services/).
+
+Traces have an independent decimal-GB plan with 5 GB/7 days free and paid 30-day retention. Logs need matching actual trace IDs to correlate. Browser propagation is opt-in and requires controlled URLs/CORS. See [correlation](/observability/traces/how-to/correlate-logs/) and [access/exports](/observability/privacy/).

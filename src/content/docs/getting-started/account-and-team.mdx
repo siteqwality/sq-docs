@@ -1,7 +1,7 @@
 ---
 title: Account and team setup
 description: Invite teammates, generate API keys, and set up the things that should exist before anything goes wrong.
-last_verified: 2026-10-16
+last_verified: 2026-10-18
 owner: jj
 ---
 
@@ -110,7 +110,7 @@ Whichever you use, every change either one makes is recorded in the [audit log](
 
 </Steps>
 
-Usage-relevant counters (monitor count, ingested logs/metrics/traces volume, RUM session count) live under **Settings → Usage**. Hard limits are enforced at the API layer, so you'll get a `403 Forbidden` if a request would push you over. Telemetry is the exception: past the allowance and its 10% grace buffer, the ingest endpoints still answer with a success status, but logs, metrics and traces are not stored.
+Usage is shown in account settings. Logs and traces have independent decimal-GB allowances; metrics use active hourly series averaged over the month. Telemetry sends receive a hard 429 with Retry-After at the 110% grace boundary. There is no silent success-and-drop or automatic overage bill. See [telemetry billing and retention](/observability/billing/) for prices and units.
 
 ## Set up integrations early
 

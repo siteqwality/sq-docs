@@ -1,102 +1,12 @@
 ---
-title: Send OTLP over HTTP/protobuf
-description: Point an OpenTelemetry SDK at Site Qwality using the protobuf encoding most exporters default to.
-last_verified: 2026-10-08
+title: Configure OTLP HTTP protobuf
+description: Use signal-specific HTTP exporter endpoints and inspect partial-success responses.
+last_verified: 2026-10-18
 owner: jj
 ---
 
-import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+Select your [language guide](/observability/platforms/overview/) to install its exporter and instrumentation. Configure `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf`, the full `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=https://otlp.siteqwality.com/v1/traces` and `OTEL_EXPORTER_OTLP_TRACES_HEADERS=Authorization=YOUR_INGEST_KEY`. A bare key avoids spaces in the environment header representation; Bearer is also accepted when correctly encoded by your SDK.
 
-The traces endpoint accepts OTLP in **both** protobuf and JSON over HTTP. Most OpenTelemetry SDKs default to protobuf, so in practice you point the exporter at the endpoint, set the auth header, and you are done.
+The generic `OTEL_EXPORTER_OTLP_ENDPOINT` is an origin to which SDKs append signal paths. Signal-specific endpoint variables are full URLs. Do not append `/v1/traces` twice or use `/ingest` for an OTLP envelope. Enable only exporters you actually configure. Logs need a logger bridge and metrics need instruments; setting an endpoint does not create data.
 
-```
-POST https://traces.siteqwality.com/v1/traces
-Authorization: Bearer <api-key>
-Content-Type: application/x-protobuf
-```
-
-A successful export returns `200` with an empty `ExportTraceServiceResponse` in the request's encoding: an empty protobuf body, or `{}` for JSON. That is what OTLP exporters and the Collector expect, so they report the export as sent.
-
-## Configure your SDK
-
-Most SDKs read standard environment variables, so no code change is needed.
-
-<Tabs syncKey="otel-endpoint">
-<TabItem label="Signal-specific">
-
-```bash
-export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="https://traces.siteqwality.com/v1/traces"
-export OTEL_EXPORTER_OTLP_TRACES_PROTOCOL="http/protobuf"
-export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer $SITEQWALITY_API_KEY"
-export OTEL_SERVICE_NAME="billing-api"
-export OTEL_METRICS_EXPORTER="none"
-export OTEL_LOGS_EXPORTER="none"
-```
-
-The signal-specific variable is used **verbatim**, so it must include the full `/v1/traces` path.
-
-</TabItem>
-<TabItem label="Base endpoint">
-
-```bash
-export OTEL_EXPORTER_OTLP_ENDPOINT="https://traces.siteqwality.com"
-export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
-export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer $SITEQWALITY_API_KEY"
-export OTEL_SERVICE_NAME="billing-api"
-export OTEL_METRICS_EXPORTER="none"
-export OTEL_LOGS_EXPORTER="none"
-```
-
-With the base variable the SDK appends `/v1/traces` itself. Do not include the path here or you will export to `/v1/traces/v1/traces`. It would also send metrics and logs to `/v1/metrics` and `/v1/logs`, which do not exist, so the two `none` variables are required with this form.
-
-</TabItem>
-</Tabs>
-
-## Content types
-
-| Header | Handling |
-|---|---|
-| `application/x-protobuf` | Protobuf. What most exporters send. |
-| `application/protobuf` | Protobuf, the other common spelling. Also accepted. |
-| `application/json` | OTLP JSON. |
-
-All produce identical stored spans. Parameters after a semicolon are ignored, so `application/x-protobuf; charset=utf-8` is fine. The response uses the same encoding as the request.
-
-## What is not supported
-
-Getting these wrong produces confusing failures, so they are worth stating plainly.
-
-- **gRPC is not supported.** This is an HTTP endpoint only. `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` will not work; use `http/protobuf`.
-- **Only traces.** There is no OTLP endpoint for logs or metrics. Set `OTEL_METRICS_EXPORTER=none` and `OTEL_LOGS_EXPORTER=none`, because most SDKs turn those exporters on by default, and use the [logs](/observability/logs/reference/#ingest) and [metrics](/observability/metrics/reference/#ingest-endpoint) ingest APIs instead.
-- **gzip is fine, zstd is not.** `OTEL_EXPORTER_OTLP_COMPRESSION=gzip` (the Collector's default) works and makes exports several times smaller. A `zstd`-compressed body is rejected with `415`.
-- **Payloads that cannot be decoded get `400`.** Invalid protobuf, invalid or blank JSON, or JSON without `resourceSpans` is a permanent error, so exporters do not retry it. An export that decodes but holds no spans gets `200` and stores nothing.
-- **Instrumentation scope name and version are discarded.** Put anything you need to query on into span or resource attributes.
-
-## Batch sizing
-
-The default OpenTelemetry batch of 512 spans works, and there is nothing to tune. Site Qwality re-encodes each export as JSON and splits a service's spans across as many internal messages as it needs.
-
-The one limit is per span: a span, together with its resource attributes, must encode to under **1,023,948 bytes** of JSON (about 1,000 KiB). A larger span gets `413`, the response names the span and its size, and nothing from that request is stored. Only a span carrying a very large attribute, such as a whole request body, comes near it.
-
-## Verify it worked
-
-Send some traffic, then look for the service:
-
-```bash
-curl -G https://api.siteqwality.com/traces/services \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  --data-urlencode "start_time=2026-08-02T00:00:00Z" \
-  --data-urlencode "end_time=2026-08-02T23:59:59Z"
-```
-
-Your `OTEL_SERVICE_NAME` should appear. If it does not, check that the exporter is not using gRPC and that the `Authorization` header actually reached the endpoint.
-
-<Aside type="note">
-Auth decisions are cached at the edge for up to 5 minutes, so a newly created or newly revoked API key can take that long to take effect on ingest.
-</Aside>
-
-## See also
-
-<LinkCard title="Traces reference" description="Span fields, attribute conventions, and search parameters." href="/observability/traces/reference/" />
-<LinkCard title="Correlate traces with logs" description="Jump from a span to the log lines it produced." href="/observability/traces/how-to/correlate-logs/" />
-<LinkCard title="Sampling" description="Reduce volume without losing signal." href="/observability/traces/how-to/sampling/" />
+Allow batch processors to flush at shutdown, especially in scripts or serverless functions. Keep batches below [wire/inflated limits](/observability/ingest/). Protobuf payload bytes are not forwarded through a legacy JSON queue. A 200 ExportResponse can contain partial-success rejections. Check exporter errors and then confirm retained data with Add data. gRPC requires separate edge endpoint enablement.

@@ -1,0 +1,75 @@
+---
+title: Ingest routes and limits
+description: Exact telemetry request paths, authentication, supported formats and acknowledgement semantics.
+last_verified: 2026-10-18
+owner: jj
+---
+
+## Endpoints and authentication
+
+All paths below use `https://otlp.siteqwality.com`. Prefer this origin for new integrations. Existing `logs.siteqwality.com/ingest`, `metrics.siteqwality.com/metrics` and `traces.siteqwality.com/v1/traces` are compatibility addresses whose domain cutover must preserve the same request contracts.
+
+| POST path | Format | Credential |
+|---|---|---|
+| `/v1/logs`, `/v1/traces`, `/v1/metrics` | OTLP HTTP JSON or binary protobuf | `Authorization: Bearer YOUR_INGEST_KEY` |
+| `/ingest` | JSON object/array, NDJSON or text lines | Authorization header |
+| `/metrics` | Custom metric JSON, including v2 resource/points | Authorization header |
+| `/api/v1/write` | Prometheus remote-write 1.x or 2.0, Snappy protobuf | Authorization header |
+| `/v1/heroku` | `application/logplex-1`, octet-counted frames | Basic auth, key as password |
+| `/v1/vercel` | Vercel log JSON/NDJSON | Authorization plus `x-vercel-signature` |
+| `/v1/cloudflare` | Supported Logpush dataset JSON/NDJSON, optional gzip | Authorization header |
+| `/v1/firehose` | Firehose protocol 1.0 envelope | `X-Amz-Firehose-Access-Key`, raw key |
+
+The Authorization routes accept Bearer, a bare key or Basic with the key as password. Keys are exactly 96 hexadecimal characters. Use an **ingest key** for this account. Its `ingest_signals` list selects `logs`, `traces` and/or `metrics`; an empty list allows all three. Ingest keys must have an empty API `scopes` list. For a scoped full API key, only the exact `write:logs`, `write:traces` and `write:metrics` scopes grant the corresponding ingest permissions. Read-only keys cannot ingest. Ingest keys cannot call query APIs. Use a separate read-only key with the needed `read:logs`, `read:traces`, `read:metrics` scopes for queries, or your signed-in session. A full API key with an empty scopes list has full access. Do not distribute that credential to exporters.
+
+Only platforms unable to set an Authorization header should use the matching `/k/...` route with one `api_key` query parameter, for example `/k/v1/logs?api_key=YOUR_INGEST_KEY`. This is a **credential-bearing URL** and can leak through access logs, shell history, dashboards and screenshots. Protect and rotate it. Do not use it in a browser or public documentation. Never send credentials in two locations: Authorization plus `api_key`, duplicate keys and conflicting headers are refused. Firehose has no `/k` route.
+
+**gRPC and syslog:** gRPC on 443/4317 and syslog TLS on 6514 require the edge endpoint to be enabled. Obtain the enabled hostname and configuration before use. OTLP/HTTP works independently. There is no public UDP StatsD or UDP syslog port. Send StatsD to your own Collector, which exports OTLP/HTTP.
+
+## Content types and compression
+
+- OTLP protobuf: `Content-Type: application/x-protobuf`. OTLP JSON: `application/json`. Do not send an arbitrary JSON log to `/v1/logs`; use its OTLP `resourceLogs` envelope or `/ingest`.
+- JSON logs: `application/json`, `application/x-ndjson` or `application/ndjson`. Raw lines: `text/plain`. The adapter recognizes common Docker/Kubernetes wrappers and retains custom structured fields.
+- Custom metrics: `application/json`. Remote-write: Snappy-compressed protobuf with the matching remote-write content type/version; never Prometheus text exposition.
+- HTTP supports identity, gzip and supported deflate encoding. Set `Content-Encoding` to the actual encoding. The receiver enforces limits before and during inflation. Do not compress twice.
+
+| Bound | Value |
+|---|---|
+| Request bytes on the wire | 4,000,000 bytes |
+| Inflated logs/traces body | 40,000,000 bytes |
+| Inflated metrics body | 16,000,000 bytes |
+| Maximum inflation ratio | 100:1 |
+| Log body | 256 KiB, excess truncated and flagged |
+| Attributes per record | 256 |
+| Attribute key / typical string value | 256 characters / 16 KiB |
+| Exception stack and database statement text | 32 KiB |
+| Span name / events / links | 1,024 characters / 128 / 128 |
+
+SDK batch record counts do not bound byte size. Split large payloads and monitor truncation/rejection counts. An invalid request can fail as a whole. Valid envelopes can partially reject individual records.
+
+## Timestamps and identity
+
+Use current timestamps. Logs accept up to the smaller of seven days or retention minus one hour in the past and two hours in the future; out-of-window times are clamped and the original retained as metadata. Spans in the same trace/request shift together. Metric points older than 24 hours or more than ten minutes in the future are rejected. Long-term backfill is not an ingest capability.
+
+Prefer OTel resource fields `service.name`, `deployment.environment.name`, `service.version` and `host.name`. JSON aliases and `X-Service`/`X-Env` headers supply fallbacks. A key's defaults apply when the record has no identity. Set stable identity before relying on services or correlation.
+
+## What a success means
+
+OTLP/HTTP returns **200** with an ExportResponse. Inspect `partialSuccess` and rejected record/point/span counters even when HTTP succeeded. JSON `/ingest` and `/metrics` return **200** with `accepted`, `rejected` and bounded `errors`. Platform log adapters return **200** using their platform contract. Firehose echoes the request ID and timestamp after delivery and fails a batch with rejected records. Remote-write returns **204** for full acceptance; 2.0 also returns written-sample/histogram/exemplar headers. Rejected remote-write records produce a failure response.
+
+Accepted records were written to ClickHouse or durable spill before acknowledgement. Durable spill can delay query visibility until replay. This is not an exactly-once promise across new requests, a promise that every record was retained, or a latency SLA. Exclusion/sampling rules and rejection counters matter. Retrying an ambiguous failure can duplicate records; retain sender identity where supported. TCP syslog and UDP StatsD have no per-record durable application acknowledgement.
+
+## Failure handling
+
+| Status | Action |
+|---|---|
+| 400 | Correct malformed envelopes, values, IDs or protocol headers. Inspect bounded errors. |
+| 401 / 403 | Check key, account admission, selected signal, revocation and access. Do not retry indefinitely. |
+| 413 | Split the request by bytes. An unchanged retry will fail again. |
+| 415 | Correct Content-Type, Content-Encoding or protocol. |
+| 429 | Honor `Retry-After`; inspect rate, series or per-signal quota. Use backoff with jitter and a local queue. |
+| 5xx | Retain buffered data and retry with bounded backoff. Contact support with time, signal and request ID, never the key. |
+
+A 100% usage email is not the hard stop. The 110% grace boundary triggers hard 429 for that signal; no silent success-and-drop and no automatic overage bill. See [billing](/observability/billing/).
+
+Confirm first retained data with `GET https://api.siteqwality.com/telemetry/first-data/logs` (or `traces`, `metrics`) using read credentials, or **Check again** in Add data. Results are permission-scoped. A read denial is distinct from an ingest refusal.

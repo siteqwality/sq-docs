@@ -1,0 +1,61 @@
+---
+title: Telemetry query language
+description: Event filters, metric formulas, result quality, pagination and API request examples.
+last_verified: 2026-10-18
+owner: jj
+---
+
+## Event search
+
+Logs and traces use a versioned event query, not SQL. Text and explicit predicates are combined with AND. Field/operator/value predicates include `service:eq:checkout`, `env:eq:production`, `level:gte:error`, `status:eq:error` and `duration:gt:100ms`. Use `@key` for record attributes and `resource.key` for resource attributes. Operators depend on the field type; the server returns a typed QueryError for an unsupported combination.
+
+Text supports terms, quoted phrases, field predicates, parentheses and boolean operators. Example:
+
+```text
+service:checkout AND ("database timeout" OR level:>=error)
+```
+
+For API clients, use explicit filter parameters to avoid text-escaping ambiguity:
+
+```bash
+curl --fail-with-body https://api.siteqwality.com/logs/v2/search \
+  -H 'Authorization: Bearer YOUR_READ_KEY' \
+  -H 'Content-Type: application/json' \
+  --data-binary '{"query":{"v":1,"signal":"logs","range":{"from":"now-1h","to":"now"},"text":"timeout","filters":["service:eq:checkout","level:gte:error"]},"limit":50}'
+```
+
+For spans, use `/traces/v2/search` and `signal: "spans"`. Trace-summary queries use `signal: "traces"` where that endpoint supports them. Logs cannot use span-only fields. Numeric and duration comparisons preserve their type. ID filters require valid nonzero hexadecimal trace/span IDs.
+
+Relative bounds are `now` and `now-Ns`, `now-Nm`, `now-Nh`, `now-Nd`, `now-Nw`, with at most 400 days of relative lookback. Absolute RFC 3339 and epoch-millisecond bounds are accepted. Intervals are `10s`, `1m`, `5m`, `15m`, `1h`, `6h`, `1d` or auto where supported. Auto targets at most 300 buckets.
+
+## Metric query workspace
+
+Metrics accepts up to ten named queries and ten formulas, with up to three group-by fields. A query first aggregates **over time within each series**, then **across series**. Defaults respect metric type and temporality. For counters, rate/increase detect resets and use predecessor carry when available. A missing predecessor is a quality condition, not an implied zero.
+
+```json
+{
+  "v": 1,
+  "range": {"from": "now-1h", "to": "now"},
+  "interval": "1m",
+  "queries": [
+    {"id": "a", "metric": "http.requests", "filters": ["service:eq:checkout"], "time_agg": "rate", "space_agg": "sum", "group_by": []},
+    {"id": "b", "metric": "http.errors", "filters": ["service:eq:checkout"], "time_agg": "rate", "space_agg": "sum", "group_by": []}
+  ],
+  "formulas": [{"id": "error_pct", "expr": "100 * b / a", "alias": "Error percent"}],
+  "show": ["error_pct"]
+}
+```
+
+POST this object to `https://api.siteqwality.com/metrics/v2/query` with a read key and JSON content type. Query/formula IDs start with a lower-case letter, use lower-case letters, digits and underscores, are at most 32 characters and cannot use reserved function names. Formulas align compatible groups and units; division by missing/zero data must not be treated as a healthy zero.
+
+The editor exposes `merge`, `avg`, `min`, `max`, `sum`, `count`, `last`, `rate`, `increase` and supported percentile operations as appropriate. Histograms need distribution merge before percentile reduction. A mean or sum is unavailable when `no_sum` is set. A heatmap shows the distribution rather than a single percentile. Compare to a previous period in the workspace; inspect the returned source and precision before interpreting a comparison across retention tiers.
+
+## Results, errors and paging
+
+`meta` includes resolved `from`/`to`, `partial`, retention `clamped_from` and `slow_terms`. Metric responses add source, precision, step, quality flags and truncation state. A missing sample stays a gap. Sample-weighted RED can be estimated; distributions retain approximation bounds rather than exact percentile promises.
+
+Use `next_cursor` with the **same query, actor restrictions and absolute window**. Changing a filter, time bound or account invalidates the cursor. UInt64 event and series identifiers are decimal strings; do not round them through a JavaScript Number. The UI pages 50 rows at a time and caps the loaded set at 1,000. Narrow the query or use an export for a larger result.
+
+400 gives a typed error with code, path and sometimes source positions. 403 is restricted access. 429 is a read limit. 503 can mean a busy or paused reader or an unfinished derived replacement. 504 asks for a smaller window or more selective filters. Partial data is not a complete result and pending data is not zero.
+
+See [logs reference](/observability/logs/reference/), [metrics reference](/observability/metrics/reference/), [traces reference](/observability/traces/reference/) and [exports](/observability/privacy/#exports).

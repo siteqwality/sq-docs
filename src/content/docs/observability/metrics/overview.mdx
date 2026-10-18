@@ -1,120 +1,18 @@
 ---
 title: Metrics
-description: Counters, gauges, and histograms with tags. Charted, summarised, and alertable from the metrics explorer.
-last_verified: 2026-10-08
+description: Explore gauges, counters, distributions, formulas and exemplars.
+last_verified: 2026-10-18
 owner: jj
 ---
 
-import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+Start with the [metrics quickstart](/observability/metrics/quickstart/) or select your [platform](/observability/platforms/overview/). Use the current explorer at [Site Qwality](https://app.siteqwality.com/metrics) and choose a recent time range, service and environment.
 
-A **metric** is a numeric time-series made of a value, a timestamp, and a set of tags. Use metrics for anything you'd put on a chart: request counts, error rates, latencies, queue depths, business KPIs.
+Use the metric catalog to inspect types, units, labels and cardinality. Query raw samples or use the workspace for multi-query formulas, grouping, previous-period comparisons and distributions.
 
-## When to use metrics
+Results carry retention, partial-data and quality metadata. Sampling, missing predecessors or unfinished derived work can affect interpretation. A missing bucket or retained trace is not evidence of a healthy zero.
 
-- You want to alert on a numeric threshold (`queue_depth > 1000`, `error_count > 50`). Alerts compare one aggregated value with a number; ratios between two metrics are not supported.
-- You want a chart over time, optionally split by a tag (`requests by region`).
-- You're sending data with high cardinality you can't afford to log every event of (e.g. 10K req/s).
-
-## When NOT to use metrics
-
-- For one-off events with rich context. That's a [log](/observability/logs/overview/).
-- For arbitrary, high-cardinality data (per-user IDs, full URLs). Tag explosion will hurt query performance and your bill.
-
-## Three metric types
-
-### `gauge`
-
-Current value of something. The value goes up and down independently.
-
-```json
-{
-  "type": "gauge",
-  "name": "queue.depth",
-  "value": 42,
-  "tags": { "queue": "orders" }
-}
-```
-
-Examples: queue depth, connection pool size, in-flight requests, memory usage.
-
-### `counter`
-
-A count of events. Values are stored as sent; Site Qwality does not track resets or compute deltas for you.
-
-```json
-{
-  "type": "counter",
-  "name": "http.requests.total",
-  "value": 37,
-  "timestamp": "2026-05-03T14:32:00Z",
-  "tags": { "method": "GET", "status": "200" }
-}
-```
-
-Report the number of events since your last report (here, 37 requests in the last interval) with a timestamp, and chart it with `sum`. Avoid sending one point per event: points of the same series that share a timestamp are stored once, and points sent without a timestamp in the same request get the same timestamp, so increments are lost.
-
-Examples: requests served, errors, jobs processed.
-
-### `histogram`
-
-Distribution of values bucketed by an upper bound (`le`), in Prometheus's cumulative bucket layout. Send the observations of one reporting interval in each point. See [histograms](/observability/metrics/how-to/histograms/).
-
-```json
-{
-  "type": "histogram",
-  "name": "http.request.duration_ms",
-  "buckets": [
-    { "le": "10",   "count": 0 },
-    { "le": "50",   "count": 5 },
-    { "le": "100",  "count": 12 },
-    { "le": "500",  "count": 18 },
-    { "le": "+Inf", "count": 20 }
-  ],
-  "sum": 4250,
-  "count": 20,
-  "tags": { "endpoint": "/api/checkout" }
-}
-```
-
-Examples: request latency, request body size, computation time. Charted as p50/p90/p95/p99 lines or a heatmap.
-
-## Tag conventions
-
-Tags are arbitrary key/value strings. Use them consistently:
-
-| Tag | Convention |
-|---|---|
-| `service` | Logical service name. `service:api`, `service:billing`. |
-| `env` | `env:prod`, `env:staging`, `env:dev`. |
-| `region` | `region:us-east-1`. |
-| `endpoint` | The route. `endpoint:/api/checkout`. |
-| `status_class` | `status_class:2xx` rather than per-status-code (which explodes cardinality). |
-
-**Avoid high-cardinality tags** like user IDs, request IDs, or full URLs. The rule of thumb: if it's unique per request, it's a log field, not a metric tag.
-
-## Aggregations
-
-When querying gauges and counters with `GET /metrics/query`:
-
-- `avg`, `min`, `max`, `sum` aggregate the raw points in each time bucket, across every series that matches your filters.
-- `p50`, `p75`, `p90`, `p95`, `p99` are percentiles of those raw point values.
-- `rate` takes the bucket average, subtracts the previous bucket's average, divides by the bucket width in seconds and floors at zero. It only makes sense for a single series whose value is a running total; for counters reported as per-interval counts (as above), use `sum`.
-
-Histograms are read with `GET /metrics/histogram`, which returns per-bucket counts and p50/p90/p95/p99. See [histograms](/observability/metrics/how-to/histograms/).
-
-Group by one tag key to split the series. Filter by any number of tags to scope.
-
-## Pricing notes
-
-Metrics count toward your telemetry allowance, which is measured in GB per month and pooled with logs and traces; it is not priced per data point. Each point is metered by the size of its encoded form, name and tags included, so long names and many tags cost more than short ones. See the [observability overview](/observability/overview/#pricing).
-
-An ingest request accepts up to 1,000 metrics. See the [reference](/observability/metrics/reference/#limits) for the size limits.
-
-## See also
-
-<CardGrid>
-  <LinkCard title="Quickstart" description="Send your first metric via curl, see it on a chart." href="/observability/metrics/quickstart/" />
-  <LinkCard title="Reference" description="Ingestion endpoint, query params, naming rules." href="/observability/metrics/reference/" />
-  <LinkCard title="Logs" description="The other half of observability for non-numeric context." href="/observability/logs/overview/" />
-  <LinkCard title="Dashboards" description="Chart metrics next to uptime, incidents, RUM, logs and traces." href="/dashboards/overview/" />
-</CardGrid>
+- [Reference](/observability/metrics/reference/)
+- [Query language](/observability/query/)
+- [Ingest and acknowledgement contracts](/observability/ingest/)
+- [Pricing and retention](/observability/billing/)
+- [Access, export and erasure](/observability/privacy/)

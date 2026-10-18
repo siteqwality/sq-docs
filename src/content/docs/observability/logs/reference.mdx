@@ -1,130 +1,42 @@
 ---
 title: Logs reference
-description: Ingest endpoint, query parameters, parser types, and the saved-view shape.
-last_verified: 2026-10-08
+description: Current log query, analytics, tail, context and export contracts.
+last_verified: 2026-10-18
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
 ## Ingest
 
-```
-POST https://logs.siteqwality.com/ingest
-Authorization: Bearer <api-key>
-Content-Type: application/json | application/x-ndjson | text/plain
-```
+Send OTLP to `/v1/logs` or custom JSON/NDJSON/text to `/ingest` at `https://otlp.siteqwality.com`. See [ingest routes](/observability/ingest/) and [Fluent Bit](/observability/platforms/fluent-bit/), [Vector](/observability/platforms/vector/) or [Collector](/observability/platforms/collector/) for concrete configs.
 
-Three body shapes:
+Common body aliases include `message`, `msg`, `body` and wrapper `log`; severity accepts supported textual/numeric conventions. Service/environment/resource fields have explicit identity precedence. Structured custom attributes are retained and typed subject to truncation limits; they are not restricted to an old metadata-only field list. Logs can carry valid `trace_id` and `span_id` to open recorded trace context. Invalid IDs do not create a trace link.
 
-| Content-Type | Body |
-|---|---|
-| `application/json` | Single JSON object **or** array of objects. |
-| `application/x-ndjson` | One JSON object per newline. |
-| `text/plain` | Raw text, one entry per line. Each line runs through your enabled [parsers](/observability/logs/how-to/parsers/) in priority order; the first one whose `source_filter` and `detect_pattern` match and that parses the line is applied. |
+## Explore and query
 
-Optional header:
-
-- `X-Log-Source: <name>` applies `source` to every entry in this request that does not carry its own. Plain-text lines never do, so send it with them.
-
-A `202 Accepted` means the entries were queued; they are searchable about a minute later. One entry may encode to at most 1,023,948 bytes (about 1,000 KiB). Each entry carries its line twice internally, so a single line of about 500 KB already reaches that. A request with an entry over the limit gets `413` and none of it is stored. Keep requests to about 1,000 lines. Top-level fields not listed below are dropped: put your own fields under `metadata` or `tags`.
-
-## Log entry fields
-
-| Field | Type | Description |
+| Path | Method | Purpose |
 |---|---|---|
-| `timestamp` | RFC 3339 string | Defaults to ingest time. Numeric (epoch) values are ignored and get ingest time too. |
-| `level` | string | `trace`, `debug`, `info`, `warn`, `error`, `fatal`. Defaults to `info`. Stored as sent, matched in any case. |
-| `message` | string | Searched as a case-insensitive substring. |
-| `host` | string | Pod/container/VM identity. |
-| `env` | string | `prod`, `staging`, etc. |
-| `source` | string | Logical source. |
-| `version` | string | App version. |
-| `device` | string | Browser/device for client-side logs. |
-| `tags` | `{string: string}` | Filterable map. |
-| `metadata` | object | Arbitrary structured. Searchable via `metadata_search`. |
-| `trace_id` | string | Optional. 32 lowercase hex characters. Also read from `metadata.trace_id`. |
+| `/logs/v2/search` | POST / GET | Cursor-paged event search. |
+| `/logs/v2/count` | POST / GET | Matching count. |
+| `/logs/v2/histogram` | POST / GET | Time buckets. |
+| `/logs/v2/facets` | POST / GET | Scoped field values. |
+| `/logs/v2/fields` | GET | Field catalog. |
+| `/logs/v2/patterns` | GET | Bounded grouped message templates. |
+| `/logs/v2/tail` | GET | Cursor-based live polling. |
+| `/logs/v2/analytics` | POST | Count, numeric/distribution operations and groups. |
+| `/logs/v2/events/{event_id}` | GET | Event detail. |
+| `/logs/v2/events/{event_id}/context` | GET | Neighboring retained events. |
+| `/logs/v2/insights` | GET | Bounded exploratory insights. |
 
-## Query: `GET /logs/query`
+These paths are relative to `https://api.siteqwality.com` and require read access. POST search wraps the versioned event query in `query` and supports `limit` and `cursor`; [query reference](/observability/query/) has a complete curl request. Use the same pinned range and query for cursor paging.
 
-The query endpoints are on `https://api.siteqwality.com` and need a full-access API key; an ingest key gets `403`.
+Live tail polls at its configured interval and keeps a bounded client buffer. It can pause or fall behind; inspect dropped/backlog indicators. It is not an SSE stream or a guarantee of subsecond end-to-end ingest latency. Analytics and patterns describe the selected window and restrictions. Insights are exploratory output, not delivered alerts.
 
-| Param | Description |
-|---|---|
-| `start_time`, `end_time` | RFC 3339 window; default last 1h. |
-| `level` | Comma-separated levels (`error,warn`), in any case. `error` also matches `err`, `fatal` and `critical`, and `warn` also matches `warning`. |
-| `source`, `env`, `host` | Exact-match filters; comma-separate several values. |
-| `search` | Case-insensitive substring in `message`. |
-| `metadata_search` | JSON object, e.g. `{"user_id":"usr_abc"}`. Each value is matched as a case-insensitive substring anywhere in the metadata; keys are not checked. Non-JSON input is ignored. |
-| `tags` | JSON-encoded `{key: value}` to require (exact match). |
-| `excluded` | JSON object mapping `level`, `source`, `env` or `host` to an array of values to exclude, e.g. `{"level":["debug"]}`. |
-| `limit` (default 100), `offset` | Pagination. |
-| `sort_field` (`timestamp`), `sort_order` (`asc|desc`) | Ordering. |
+The UI exposes typed field predicates, event details, context, analysis and saved views. Structured fields and numeric fields remain distinct. A `body_clipped` list item is a preview; inspect detail before assuming the full body is visible. Retention can clamp a query and partial results require attention.
 
-Response:
+## Saved views, processing and exports
 
-```json
-{
-  "data": {
-    "logs": [
-      {
-        "timestamp": "...",
-        "level": "error",
-        "message": "...",
-        "host": "...",
-        "env": "...",
-        "source": "...",
-        "version": "...",
-        "device": "...",
-        "tags": { "endpoint": "/api/charge" },
-        "metadata": { "user_id": "usr_abc" }
-      }
-    ],
-    "total": 1234
-  }
-}
-```
+Saved views use `/telemetry/views`, scoped to page `logs`, with a versioned query and display settings. Shared views preserve access restrictions; sharing does not grant more data. Use the existing UI for ownership and revision behavior.
 
-The response does not include `trace_id`. To find the logs of one trace, use [`GET /traces/{trace_id}/logs`](/observability/traces/how-to/correlate-logs/).
+Use [Processing pipelines](/observability/pipelines/) for new parsing/redaction rules. Legacy `/log_parsers` is not the pipeline API and migration status is not inferred from source existence. Use [bounded exports](/observability/privacy/#exports) from the explorer; inline download allows 10,000 rows and 4 MiB compressed.
 
-## Adjacent endpoints
-
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/logs/facets` | Per-field value counts for narrowing filters. |
-| `GET` | `/logs/fields` | Discoverable field names + types. |
-| `GET` | `/logs/sources` | Distinct `source` values seen. |
-| `GET` | `/logs/stats` | Counts by level + source for the time window. |
-| `GET` | `/logs/timeline` | Bucketed counts by level for charting. |
-| `GET` | `/logs/insights` | Heuristic insights (error spikes, new errors, silent sources), computed on request. They do not notify. |
-| `GET` | `/logs/patterns` | Message templates clustered from the matching lines. See [patterns](/observability/logs/how-to/patterns/). |
-| `GET` | `/logs/analytics` | Volume, top sources and error-rate aggregations. |
-| `GET` | `/logs/tail/poll` | Polling tail; pass returned `cursor` on next call. |
-| `GET` | `/logs/export` | CSV export of matching lines, up to 10,000. |
-
-## Parsers
-
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/log_parsers` | List. |
-| `POST` | `/log_parsers` | Create. |
-| `POST` | `/log_parsers/test` | Test a sample against a parser config. |
-| `GET` / `PUT` / `DELETE` | `/log_parsers/{parser_id}` | Detail/update/delete. |
-
-`parse_type` values: `json`, `regex`, `apache_combined`, `nginx`, `syslog`, `csv`, `kv`. Parsers only apply to plain-text lines.
-
-## Saved views
-
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/log_saved_views` | List (yours + shared). |
-| `POST` | `/log_saved_views` | Create. |
-| `GET` / `PUT` / `DELETE` | `/log_saved_views/{view_id}` | Detail/update/delete. |
-
-`filters` is a free-form JSON object holding the dashboard's filter state. Only the user who created a view can update or delete it, and a view created with an API key cannot be updated or deleted at all. See [saved views](/observability/logs/how-to/saved-views/).
-
-## See also
-
-- [Logs overview](/observability/logs/overview/) for concepts.
-- [Parsers](/observability/logs/how-to/parsers/) to extract structure from raw text.
-- [API Reference](/api-reference/) for wire-level shapes.
+Logs have their own [decimal-GB allowance and retention](/observability/billing/). A metric derived from a log has metric-series semantics as well; it is not free unlimited cardinality.

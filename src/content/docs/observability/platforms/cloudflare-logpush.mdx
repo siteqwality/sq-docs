@@ -1,0 +1,50 @@
+---
+title: Cloudflare Logpush
+description: Send telemetry from Cloudflare Logpush to Site Qwality with scoped ingest authentication.
+last_verified: 2026-10-18
+owner: jj
+---
+
+This guide configures logs. Start with an admitted Site Qwality account and an ingest key from [API keys](https://app.siteqwality.com/account?tab=api-keys). Replace YOUR_INGEST_KEY on your server. Never use a real key in a public example.
+
+## 1. Create a Logpush HTTP destination
+
+Use this body in Cloudflare Logpush job creation for your account. http_requests is also supported with its corresponding fields. Cloudflare encodes custom headers in destination_conf, so that configuration URL contains a credential and must be protected. The header_* parameters are consumed by Cloudflare, not used as receiver query authentication.
+
+```json
+{
+  "name": "siteqwality",
+  "dataset": "workers_trace_events",
+  "enabled": true,
+  "destination_conf": "https://otlp.siteqwality.com/v1/cloudflare?header_Authorization=Bearer%20YOUR_INGEST_KEY",
+  "max_upload_records": 1000
+}
+```
+
+## 2. Verify the dataset and validation
+
+Workers logs map ScriptName and EventTimestamp; HTTP requests map RayID and EdgeStartTimestamp. The receiver requires gzip bounds and accepts only the implemented datasets. Cloudflare minimum batch settings can exceed the receiver wire limit for large records; use a splitting bridge when batches cannot stay below 4,000,000 compressed bytes and 40,000,000 inflated bytes.
+
+```text
+Allow the ownership validation request containing the content=test validation object. Enable the job, generate a Worker request and inspect Logpush delivery errors and Logs.
+```
+
+## Confirm readable data
+
+Open [Add data](https://app.siteqwality.com/add-data?platform=cloudflare-logpush), select the signal and choose **Check again**. This reads retained data permitted for your account and member. A permission error is not proof that collection failed. Open the explorer, select your service/environment and a recent window.
+
+- Create an ingest key for this account and only the signals you send. Read-only keys cannot ingest; ingest keys cannot query. Use a separate read-only API key or your signed-in session for exploration.
+- A successful OTLP HTTP response is 200 with an ExportResponse. Inspect partialSuccess for rejected records. JSON /ingest and /metrics return 200 with accepted, rejected and errors. Remote-write returns 204 on full acceptance; platform adapters use their own acknowledgement formats.
+- Accepted data has been written to storage or durable spill. It can appear later during replay. Acceptance does not mean every record passed validation or that it is already searchable. Retry transient 429/5xx failures with backoff and honor Retry-After; do not blindly resend an entire partially accepted batch.
+- Requests allow 4,000,000 wire bytes, up to 40,000,000 inflated bytes for logs/traces or 16,000,000 for metrics, and at most 100:1 inflation. Use gzip or supported deflate on HTTP; Prometheus uses Snappy. Split oversized requests instead of retrying unchanged.
+- 401/403: check key, account, signal scope and collection access. 413: reduce batch bytes. 415: check protocol and content type. 429: check quota/cardinality/rate and wait for Retry-After. Persistent 5xx: retain your local buffer and contact support with request time, never the key.
+
+## Production checklist
+
+Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
+
+- [Ingest routes and limits](/observability/ingest/)
+- [Pricing and retention](/observability/billing/)
+- [Pipelines, access and privacy](/observability/privacy/)
+- [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
+- [Upstream Cloudflare Logpush documentation](https://developers.cloudflare.com/logs/logpush/logpush-job/enable-destinations/http/)

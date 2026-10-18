@@ -1,7 +1,7 @@
 ---
 title: SDK overview
 description: The @siteqwality/rum JavaScript SDK for RUM, replay, errors, and user actions from the browser.
-last_verified: 2026-10-10
+last_verified: 2026-10-18
 owner: jj
 ---
 
@@ -9,7 +9,7 @@ import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
 The Site Qwality client SDK is a single browser-side package: **`@siteqwality/rum`**. It collects [Real User Monitoring](/observability/rum/overview/) data and, when a recording rule activates it, [session replay](/observability/replay/overview/). Every option and behaviour is in the [SDK reference](/sdk/v2/). SDK 1.x is retired and no longer accepts data; install SDK 2.
 
-It is **not** a back-end ingestion library, and there are no Site Qwality logging or metrics libraries for back-end languages. Send back-end traces with an OpenTelemetry SDK over OTLP/HTTP, and send logs and metrics as JSON over HTTPS to their ingest endpoints. See [Observability](/observability/overview/).
+It is **not** a back-end ingestion library, and there are no Site Qwality logging or metrics libraries for back-end languages. Send backend logs, traces and metrics through standard OpenTelemetry SDKs over OTLP/HTTP or the supported JSON/remote-write adapters. Follow the [platform guides](/observability/platforms/overview/) and keep server ingest credentials separate from the public RUM client token.
 
 ## What it does
 
