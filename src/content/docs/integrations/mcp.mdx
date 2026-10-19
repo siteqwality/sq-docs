@@ -1,7 +1,7 @@
 ---
 title: Connect AI assistants (MCP)
 description: Ask Claude, ChatGPT, Cursor and other AI assistants about your monitors, incidents and telemetry, and let them take everyday actions for you.
-last_verified: 2026-10-16
+last_verified: 2026-10-18
 owner: jj
 ---
 
@@ -249,9 +249,12 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 | `delete_monitor` | Deletes a monitor. | Write, asks first |
 | `run_browser_check` | Runs a browser check now. | Write |
 | `list_incidents`, `get_incident` | Lists incidents, or shows one with its timeline. | Read |
-| `acknowledge_incident`, `resolve_incident` | Acknowledges or resolves an incident. | Write |
-| `create_incident` | Opens an incident, optionally on a status page. | Write |
-| `post_incident_update` | Adds an update to an incident. A public update (the default) shows on its status pages and can change its status: `resolved` resolves it. It emails subscribers when posted through a named page the incident is on, or with `notify_subscribers`. An internal note stays in the app. | Write |
+| `incident_metrics` | Counts incidents created in a time window and returns mean, p50 and p90 acknowledgement/resolution durations in seconds. Supports service and severity filters; merged incidents are excluded. | Read |
+| `acknowledge_incident`, `resolve_incident` | Acknowledges or resolves an incident. API-key and M2M acknowledgement needs `acknowledged_by`; sessions act as their own member. Resolve accepts a message and `notify_subscribers`. | Write |
+| `create_incident` | Opens an incident, optionally linked to a service and published on a status page. A service's configured policy pages responders. | Write |
+| `update_incident` | Changes title, severity or service. Omitted fields stay unchanged; `service_id: null` detaches the service. Moving service or increasing severity can start paging. | Write |
+| `reopen_incident` | Reopens a resolved incident, restarting its escalation and posting a public reopening on linked pages. Open and merged incidents return `409`. | Write |
+| `post_incident_update` | Adds an update to an incident. A public update (the default) shows on its status pages and can change its status: `resolved` resolves it. It emails subscribers when posted through a named page the incident is on, or with `notify_subscribers`. An internal note stays in the app. Moving public status backwards needs `force: true`. | Write |
 | `publish_incident` | Puts an incident on a status page with a public title and first update, and emails the page's subscribers unless told not to. | Write |
 | `unpublish_incident` | Takes an incident off a status page. Nothing is emailed and the incident is kept. | Write, asks first |
 | `list_status_pages` | Lists your status pages, each with its public address (`page_url`). | Read |

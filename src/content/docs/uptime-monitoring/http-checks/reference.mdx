@@ -14,6 +14,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `friendly_name` | string | none | Display name shown in the dashboard. 1 to 99 characters. |
+| `service_id` | uuid \| null | none | Create only: assign the monitor to a service in your account. Unknown or foreign service IDs return `404`. Change an existing assignment from Services. |
 | `uri` | string | required | Target URL. Must parse as an absolute URI with a host. `https` is required unless `monitor_tls` is explicitly `false`. |
 | `method` | string | required | Any valid HTTP method token (`GET`, `POST`, `HEAD`, ...). |
 | `run_interval_seconds` | int | required | Seconds between checks. Must be at least `60` and a multiple of `60`. |
@@ -64,10 +65,11 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `dns_job_id` | uuid \| null | Paired domain expiry check, if `monitor_dns` is on and the domain is registrable. |
 | `page_speed_job_id` | uuid \| null | Paired page-speed check, if `monitor_page_speed` is on. |
 | `group_notifications` | object[] \| null | Full notification-group objects resolved from `group_notification_ids`. |
-| `service_id` | uuid \| null | Service this check belongs to, set via the [service endpoints](/api-reference/). |
 | `tls_port` | int | Fetch one check only, when TLS monitoring is on. The port the TLS check uses. |
 | `partial_failure` | object \| absent | Present while runs pass the quorum but some locations fail: `failed_locations` (location ids), `total_locations` and `since` (rfc3339). Never paged. |
 | `not_checked_reason` | string \| null | Set only while an active check is not being run. `quota`: the account's uptime quota for this period is used up. See [not checked](#not-checked). |
+
+The response also returns `service_id` as a UUID or `null`.
 
 ## Status enum
 

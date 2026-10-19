@@ -96,15 +96,15 @@ The merge window (`incident_merge_window_minutes`) is deprecated and ignored, an
 
 | Monitor type | How to link it |
 |---|---|
-| HTTP monitors | On the service form, or `PUT /service/{id}/monitors`. |
+| HTTP monitors | Choose **Service** when creating the monitor, send `service_id` on `POST /http/job`, or use the service form and `PUT /service/{id}/monitors`. |
 | Heartbeat (cron) monitors | On the service form, or `PUT /service/{id}/monitors`. |
 | Browser checks | Set `service_id` when you create or update the browser check through the API. They do not appear in the service's monitor list or count. |
 | DNS, TLS, domain, page speed, RUM and alert rules | Cannot be linked. They never open incidents. |
 
 A monitor belongs to at most one service. Linking it to a second service moves it without warning.
 
-<Aside type="caution">
-The **Service** field on the new HTTP monitor form does not save today, and the edit form shows the service read-only. Link HTTP monitors from the service instead.
+<Aside type="note">
+The HTTP monitor edit form shows its service read-only. Change an existing monitor's assignment from the service form.
 </Aside>
 
 ## Broadcast targets

@@ -48,7 +48,7 @@ Scoped API keys, M2M API clients and AI assistants need `read:services` for the 
 
 `PUT /service/{id}/monitors` unlinks every HTTP monitor and heartbeat currently on the service, then links the IDs you send. To add one monitor, send the full list including the ones already linked. An ID that is not a monitor in your account returns `404`, and nothing changes.
 
-Browser checks link through their own `service_id` field on `POST /browser_check` and `PUT /browser_check/{id}`. HTTP monitors cannot be linked through `/http/job`: the field is ignored there.
+Browser checks link through their own `service_id` field on `POST /browser_check` and `PUT /browser_check/{id}`. New HTTP monitors accept an optional `service_id` on `POST /http/job`; an unknown or foreign service ID returns `404` before a monitor is created. Change an existing HTTP monitor's assignment through the service form or `PUT /service/{id}/monitors`.
 
 ## Broadcast targets
 

@@ -116,11 +116,12 @@ From there it behaves exactly like a monitor-opened incident: level 1 of the ser
 The service's broadcast targets, if it has any, are also notified.
 
 <Aside type="caution" title="Silent no-paging is the common mistake">
-Three situations produce an incident that quietly pages nobody, and none of them return an error:
+Two situations produce an incident that pages nobody:
 
 - **No `service_id`.** The incident is created and nothing else happens.
 - **The service has no escalation policy.** Broadcast targets still fire, but nobody is paged.
-- **The `service_id` belongs to a different account.** It is accepted at write time and then never resolves.
+
+A service ID from another account is refused with `404`.
 
 If a manual incident did not page, check the service first.
 </Aside>

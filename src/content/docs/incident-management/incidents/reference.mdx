@@ -76,6 +76,10 @@ See [participants](/incident-management/incidents/how-to/participants/).
 
 A **public** update shows on every status page the incident is published on and can move its `status`. An **internal** note stays in the app: it never reaches a status page or its subscribers, and it never changes `status`. Status pages show the `public_title` (or `title` when it is empty) and public updates only.
 
+Account members with incident write access can edit or delete an internal note from its timeline entry, including after resolution. Public updates stay in the timeline; post a correction instead. Notes on merged source incidents are read-only.
+
+`PUT /incident/{incident_id}/update/{update_id}` accepts only `{ "message": "Updated note" }` and returns the note. It preserves the original author and posting time. Empty messages return `400`. `DELETE` at the same path returns `204` with no body. Either route returns `404` for a missing, foreign or public update, `403` without incident write access, and `409` for a merged incident. These actions do not change incident status or notify subscribers. The timeline event records who edited or deleted the note.
+
 Resolving a published incident always posts a public `resolved` update, so its page never shows an incident as open after you resolved it. The text is the one you give, else the service's [public template](/incident-management/services/overview/#publish-incidents-to-a-status-page), else "This incident has been resolved."
 
 ## Status enum
@@ -192,6 +196,25 @@ Publishing to a page the incident is already on changes nothing unless you send 
 
 Takes the incident off that page. The incident and its updates are kept, and nobody is emailed. Returns the incident, or `404` when it is not on that page.
 
+## Incident metrics
+
+`GET /incident/metrics` returns counts and acknowledgement/resolution durations for incidents **created** in a time window. It requires `read:incidents`. The MCP tool is `incident_metrics`.
+
+| Query | Meaning |
+|---|---|
+| `from` | Inclusive creation time, RFC 3339. Defaults to 30 days before `to`. |
+| `to` | Exclusive creation time, RFC 3339. Defaults to now. The maximum window is 366 days. |
+| `service_id` | Only incidents currently associated with this account-owned service. A missing or foreign service returns `404`. |
+| `severity` | Current severity: `minor`, `major` or `critical`. |
+
+The response contains `total_incidents`, `open_incidents`, `resolved_incidents` and `acknowledged_incidents`, plus `mtta` and `mttr`. Each duration summary has `samples`, `mean_seconds`, `p50_seconds` and `p90_seconds`. Percentiles use continuous interpolation. With no samples the durations are null, not zero.
+
+MTTA runs from creation to the first acknowledgement event. MTTR runs from creation to the latest resolution event for incidents currently resolved. Earlier incidents without those events use their stored acknowledgement and resolution times. Unresolved incidents contribute no MTTR sample. Negative durations are excluded. Merged source incidents contribute to neither counts nor durations.
+
+The time window selects creation times; lifecycle state and duration values are current when queried. A resolution after `to` can therefore contribute, and later service or severity edits can change filtered results. `acknowledged_incidents` counts incidents with an acknowledgement time, including resolved incidents and incidents triggered again after reopening.
+
+Full incident detail and lifecycle responses can also include `first_paged_at`, the first responder page accepted by its provider, and `mitigated_at`, the first public status transition to `monitoring`. Email and carrier delivery updates are tracked separately. These fields are omitted when no matching event exists and on list responses. Earlier pages are not backfilled, and resolution alone does not set a mitigation time.
+
 ## Endpoints
 
 Standalone incidents:
@@ -200,6 +223,7 @@ Standalone incidents:
 |---|---|---|
 | `POST` | `/incident` | Create. |
 | `GET` | `/incident` | List, with `limit` / `offset` pagination. |
+| `GET` | `/incident/metrics` | Creation-cohort counts and MTTA/MTTR summaries. |
 | `GET` / `PUT` / `DELETE` | `/incident/{incident_id}` | Detail / update / delete. |
 | `POST` | `/incident/{incident_id}/acknowledge` | Acknowledge (stops escalation). |
 | `POST` | `/incident/{incident_id}/resolve` | Resolve. |

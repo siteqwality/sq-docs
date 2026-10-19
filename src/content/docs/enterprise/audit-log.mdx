@@ -1,7 +1,7 @@
 ---
 title: Customer audit log
 description: Every change made through the dashboard, the API or an AI assistant, with who made it, readable for the last 90 days.
-last_verified: 2026-10-04
+last_verified: 2026-10-18
 owner: jj
 ---
 
@@ -20,7 +20,7 @@ Click any row to open its full details: who acted and with which credential, the
 **Not recorded:**
 
 - **Reads.** `GET` requests are not logged, so the log tells you who changed something, not who *looked* at it. The one exception is session replay: every view is recorded as `rum.replay.viewed` (see [who watched](/observability/replay/reference/#who-watched)). A handful of read endpoints that use `POST` purely to carry a request body (the dashboard's batch monitor lookup, the log-parser test preview, the consent page loading what an AI assistant is asking for) are treated as reads and excluded too.
-- **Unauthenticated requests**, including ones whose credentials were rejected.
+- **Unauthenticated requests**, including ones whose credentials were rejected. Successful, verified incident actions are an exception: responder action links and accepted Slack actions identify the member and incident, so they are recorded.
 - **Site Qwality staff actions**, which live in a separate internal audit log. Staff acting *as* one of your users through impersonation do appear here, marked as such.
 
 A request that identifies its caller and is then denied **is** recorded, with the resulting status. That covers validation failures and permission denials alike: a viewer-role user attempting a delete, an API key used outside its scopes, or a write attempted while the account is suspended all appear with their `403`. A rejected attempt is worth seeing.
@@ -29,7 +29,7 @@ A request that identifies its caller and is then denied **is** recorded, with th
 
 | Actor type | Meaning |
 |---|---|
-| `session` | A logged-in team member. `actor_user_id` identifies them. |
+| `session` | A team member using a session or a verified incident action. `actor_user_id` identifies them. |
 | `m2m` | An [M2M API client](/enterprise/api-clients/). `actor_m2m_client_id` identifies it. |
 | `api_key` | A static API key. `actor_api_key_id` identifies which one, and `actor_api_key_name` carries its display name. Entries from before 2026-08-06 predate the column and have neither. |
 | `impersonated_staff` | A Site Qwality staff member acting as one of your users. `impersonated_by` records which staff member. |
@@ -46,12 +46,13 @@ Each entry carries:
 | `occurred_at` | When, in UTC. |
 | `actor_type`, `actor_user_id`, `actor_user_email`, `actor_api_key_id`, `actor_api_key_name`, `actor_m2m_client_id`, `impersonated_by` | Who. `actor_user_email` is the person behind a session, an AI assistant or a partner action. |
 | `connected_app` | `{ client_id, name }` of the AI assistant involved: the one that acted, or the one connected or disconnected. `name` is what the app registered itself as. |
-| `via`, `mcp_tool` | `via` is `mcp` when the change came through the [MCP server](/integrations/mcp/), whichever credential it used, and `mcp_tool` names the tool that made it. |
+| `via`, `mcp_tool` | `via` is `mcp` for the [MCP server](/integrations/mcp/), `action_link` for a responder action link, or `slack` for an accepted Slack incident action. `mcp_tool` names the MCP tool when applicable. |
 | `consent_granted`, `scopes` | On an `oauth.authorize` entry: whether the member allowed the assistant, and the scopes they granted. |
 | `action` | The path with UUIDs (and free-form segments like RUM release versions) removed, dot-joined. |
 | `target_kind`, `target_id` | The resource type and, when the path had one, its ID. |
 | `http_method`, `http_path`, `http_status` | The raw request and its outcome. |
 | `request_ip`, `user_agent` | Where from. The IP is the connection our API gateway actually saw, not a client-supplied header, so it cannot be spoofed by the caller. |
+| `configuration_change` | Optional observed `before` and `after` snapshots for successful policy, on-call schedule and service changes. |
 
 `action` is derived from the path, so it groups related calls without the verb. Some real examples:
 
@@ -66,6 +67,22 @@ Each entry carries:
 | `GET /rum/{app_id}/sessions/{session_id}/replay` (watching a replay, at most once per viewer per 30 minutes) | `rum.replay.viewed` |
 
 The verb lives in `http_method`, so filter on both when you want "who deleted a monitor" rather than "who touched monitors".
+
+## Configuration comparisons
+
+Open a successful escalation policy, on-call schedule or service change to see **Observed configuration**. The comparison shows settings that differ between snapshots taken before and after the request. It covers child changes too, including policy levels and their order, schedule layers and overrides, and service monitor and notification-target links.
+
+The API exposes these snapshots as `configuration_change.before` and `configuration_change.after`. Each snapshot has a `kind` (`escalation_policy`, `on_call_schedule` or `service`) and `settings`. A creation has a null `before`; a deletion has a null `after`. The dashboard CSV export includes both snapshots.
+
+Policy targets and schedule participants retain their order and repeated entries. Service links include the resource IDs and types. Monitor URLs, notification destinations and credentials are excluded from the snapshots.
+
+These are observed snapshots, read separately from the change. Concurrent edits can affect the comparison. Snapshot capture is best-effort: an unavailable snapshot leaves the ordinary audit entry without a comparison. Earlier entries and rejected requests do not gain snapshots retroactively.
+
+## Incident actions
+
+A successful responder link writes `incident.acknowledge` or `incident.resolve` with `via: "action_link"`, the member and the incident. Its recorded path is `/incident/action/[redacted]`; the action token is never stored in the audit entry. Opening the confirmation page does not write a successful action, and replaying a used link does not add another one.
+
+An accepted, verified Slack action uses `via: "slack"`. Both action sources use `actor_type: "session"` to identify the member, even when no browser session was needed. Their `request_ip` and `user_agent` are absent.
 
 ## Query it
 

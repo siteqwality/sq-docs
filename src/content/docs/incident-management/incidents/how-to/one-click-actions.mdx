@@ -1,7 +1,7 @@
 ---
 title: Acknowledge from the alert itself
 description: Single-use acknowledge and resolve links in email and SMS, made for the person being paged. Shared channels get a link to the incident.
-last_verified: 2026-10-12
+last_verified: 2026-10-18
 owner: jj
 ---
 
@@ -48,6 +48,8 @@ The extra tap is deliberate. Email security scanners (Outlook Safe Links, Mimeca
 | Link retired | The link came from an alert sent before 12 October 2026, in a format that no longer works. Nothing was changed. |
 
 Every page links to the incident in Site Qwality, so you can act there instead.
+
+A successful action appears in the [customer audit log](/enterprise/audit-log/#incident-actions) with your member identity, the incident and the source **Action link**. The token is redacted. Opening the confirmation page or replaying a used link does not add a successful action entry.
 
 <Aside type="tip">
 Treat the link like a password. It acts in your name, once, without a login, so forwarding it lets someone else acknowledge as you. To hand an incident to a colleague, share the incident page instead.
