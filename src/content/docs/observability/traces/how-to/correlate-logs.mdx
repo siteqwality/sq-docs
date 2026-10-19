@@ -13,7 +13,7 @@ Open a recorded trace and its correlated Logs, Errors, metrics or browser contex
 
 ## Browser opt-in
 
-The RUM client token is public and separate from a server ingest key. Enable distributed trace propagation only for URLs you control. Set the appropriate trace URL/prefix settings in the existing RUM and telemetry collection settings. Never propagate server Authorization or a Site Qwality ingest key into a browser request.
+The RUM client token is public and separate from a server ingest key. Enable distributed trace propagation only for URLs you control. Set the appropriate trace URL/prefix settings in the RUM and telemetry collection settings. Never propagate server Authorization or a Site Qwality ingest key into a browser request.
 
 For cross-origin requests, allow the intended frontend origin and the `traceparent` and `tracestate` request headers in your backend CORS configuration. Handle OPTIONS correctly. Permit credentials only when your application needs them and avoid a wildcard origin with credentials. Limit URL prefixes so third-party hosts do not receive trace context.
 

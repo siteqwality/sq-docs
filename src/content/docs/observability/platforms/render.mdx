@@ -5,7 +5,7 @@ last_verified: 2026-10-18
 owner: jj
 ---
 
-This guide configures logs, traces, metrics. Start with an admitted Site Qwality account and an ingest key from [API keys](https://app.siteqwality.com/account?tab=api-keys). Replace YOUR_INGEST_KEY on your server. Never use a real key in a public example.
+This guide configures logs, traces, metrics. You need a Site Qwality account with early access to telemetry (email [hello@siteqwality.com](mailto:hello@siteqwality.com) to request it) and an ingest key from [API keys](https://app.siteqwality.com/account?tab=api-keys). Replace YOUR_INGEST_KEY on your server. Never use a real key in a public example.
 
 ## 1. Set server environment variables
 
@@ -28,7 +28,7 @@ export OTEL_METRICS_EXPORTER=otlp
 
 ## 2. Configure your Render service
 
-Direct OTLP/HTTP from your application works independently of Render log streams. For platform stdout, Render native streams require a compatible syslog or HTTPS reporting format. Do not assume a Render token is the RFC 5424 sq structured-data key. Use a private forwarding bridge to translate Render records, or confirm an enabled endpoint and format with support.
+Direct OTLP/HTTP from your application works independently of Render log streams. Render's native log streams send syslog, and [syslog over TLS](/observability/platforms/syslog/) is not available yet. For platform stdout, run a forwarder of your own (for example the [OpenTelemetry Collector](/observability/platforms/collector/) or [Vector](/observability/platforms/vector/)) that receives Render's stream and exports OTLP/HTTP.
 
 ```text
 Open the service Environment settings and add the selected OTEL variables as secret values. Use your language guide to install and start instrumentation, then save and redeploy.
@@ -36,7 +36,7 @@ Open the service Environment settings and add the selected OTEL variables as sec
 
 ## 3. Use a Node.js start command
 
-Install packages from the Node.js guide first, or use the start command from your language guide. Generate a request and log record. Native syslog streaming remains conditional on endpoint enablement and the sender authentication format.
+Install packages from the Node.js guide first, or use the start command from your language guide. Generate a request and log record. Render native log streams cannot send to Site Qwality directly until syslog over TLS is available.
 
 ```bash
 node --require @opentelemetry/auto-instrumentations-node/register app.js

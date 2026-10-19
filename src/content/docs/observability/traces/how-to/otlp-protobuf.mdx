@@ -9,4 +9,4 @@ Select your [language guide](/observability/platforms/overview/) to install its 
 
 The generic `OTEL_EXPORTER_OTLP_ENDPOINT` is an origin to which SDKs append signal paths. Signal-specific endpoint variables are full URLs. Do not append `/v1/traces` twice or use `/ingest` for an OTLP envelope. Enable only exporters you actually configure. Logs need a logger bridge and metrics need instruments; setting an endpoint does not create data.
 
-Allow batch processors to flush at shutdown, especially in scripts or serverless functions. Keep batches below [wire/inflated limits](/observability/ingest/). Protobuf payload bytes are not forwarded through a legacy JSON queue. A 200 ExportResponse can contain partial-success rejections. Check exporter errors and then confirm retained data with Add data. gRPC requires separate edge endpoint enablement.
+Allow batch processors to flush at shutdown, especially in scripts or serverless functions. Keep batches below [wire/inflated limits](/observability/ingest/). A 200 ExportResponse can contain partial-success rejections. Check exporter errors and then confirm retained data with Add data. OTLP over gRPC is not available yet.

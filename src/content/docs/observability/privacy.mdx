@@ -13,7 +13,7 @@ A saved view does not grant additional data access. A link to a restricted servi
 
 ## Exports
 
-Use the existing explorer Download/Export controls. Inline exports are bounded to **10,000 rows and 4 MiB compressed**. An oversized export returns `export_too_large`; narrow the range/filter or choose a supported asynchronous export. Asynchronous exports page through at most 10,000,000 rows and report truncation at the cap. Work is bounded by a 900-second runtime budget; a stale or failed job is not a completed artifact. Large exports are not an unbounded API dump.
+Use the explorer Download/Export controls. Inline exports are bounded to **10,000 rows and 4 MiB compressed**. An oversized export returns `export_too_large`; narrow the range/filter or choose a supported asynchronous export. Asynchronous exports page through at most 10,000,000 rows and report truncation at the cap. Work is bounded by a 900-second runtime budget; a stale or failed job is not a completed artifact. Large exports are not an unbounded API dump.
 
 `POST /telemetry/exports` creates supported export work. `GET /telemetry/exports` lists your jobs and `GET /telemetry/exports/{id}` reports state. Keep the returned ID after a timeout rather than creating duplicates. Completed artifacts expire after 24 hours. Download only when the job is ready and a nonexpired URL is returned. Download URLs are credentials; do not publish them. Access is rechecked and erasure can invalidate a job or artifact. An export is scoped to the creator's allowed data and is not a way around retention, read limits or restrictions. Use the exact format and source selector offered by the current explorer.
 
@@ -28,7 +28,7 @@ GET /telemetry/deletion-requests/{id}
 
 The create body contains `id`, `kind`, optional `signals`, `service`, `env`, `attribute_key`, `attribute_value`, `trace_ids`, `from` and `to`, as appropriate for the selected kind. Account erasure and account closure coordinate collection and readers. Do not recreate deleted data by replaying an old sender buffer.
 
-A request is asynchronous. The API returns `status`, `step`, target/due times, `completed_at`, backup retention and a bounded `blocked_reason` when needed. The operational target is 24 hours with a seven-day due limit; these are not proof of completion. **Only a completed status confirms the applicable deletion work finished.** Pending ClickHouse mutations, spill cleanup, missing series identity or remaining exports can keep a request blocked. Escalate overdue work to support with the request ID.
+A request is asynchronous. The API returns `status`, `step`, target/due times, `completed_at`, backup retention and a bounded `blocked_reason` when needed. The operational target is 24 hours with a seven-day due limit; these are not proof of completion. **Only a completed status confirms the applicable deletion work finished.** Pending storage deletions, spill cleanup, missing series identity or remaining exports can keep a request blocked. Escalate overdue work to support with the request ID.
 
 The executor covers applicable roots, dependent series/points, issue metadata, exports and spill within the selected scope. Aggregates without personal values, audit records and already counted billing totals can remain. Backups follow their separate **35-day retention**; this API does not promise immediate backup removal. Downloaded customer copies are outside server-side deletion. See [retention](/observability/billing/) and [pipeline redaction](/observability/pipelines/) to reduce future collection.
 

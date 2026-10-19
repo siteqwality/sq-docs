@@ -5,9 +5,15 @@ last_verified: 2026-10-18
 owner: jj
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="note" title="Early access">
+Logs, traces and metrics are in early access. To enable them for your account, email [hello@siteqwality.com](mailto:hello@siteqwality.com). Until then, telemetry sent from the account is refused.
+</Aside>
+
 ## Independent signal plans
 
-Logs and traces each have their own pack. One signal exhausting its allowance does not consume or stop another signal. A GB means **1,000,000,000 bytes**. There is no pooled new telemetry pack, per-seat telemetry charge or automatic overage billing.
+Logs and traces each have their own pack. One signal exhausting its allowance does not consume or stop another signal. A GB means **1,000,000,000 bytes**. There is no pooled telemetry pack, per-seat telemetry charge or automatic overage billing.
 
 | Logs or traces, each | Monthly price | Retention |
 |---|---|---|
@@ -45,4 +51,4 @@ A rollup is an aggregate, not an archived raw event. Query responses identify so
 
 Usage emails are sent at **80%, 100% and 110%**. The 10% grace buffer ends at the hard 110% boundary, where the affected signal receives **429 with Retry-After**. Rate limits, processed-input ceilings and cardinality guards can refuse requests before a monthly allowance is exhausted. Queue data locally and honor retry guidance; upgrade deliberately rather than assuming overflow will be stored or billed.
 
-Automatic overage and a spend-cap product are not approved. Paid telemetry packs here are monthly. Annual pricing is not implied by these prices. [Account billing](https://app.siteqwality.com/account?tab=billing) shows the actual purchasable packs. RUM, replay, monitors, status pages and incident pricing remain separate.
+There is no automatic overage billing and no separate spending cap. Telemetry packs cost the same per month on monthly or annual billing; annual billing has no discount. Accounts with early access can buy paid packs in [Account billing](https://app.siteqwality.com/account?tab=billing); other accounts get an error asking them to contact support. RUM, replay, monitors, status pages and incident pricing remain separate.

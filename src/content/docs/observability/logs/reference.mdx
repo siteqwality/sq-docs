@@ -35,8 +35,8 @@ The UI exposes typed field predicates, event details, context, analysis and save
 
 ## Saved views, processing and exports
 
-Saved views use `/telemetry/views`, scoped to page `logs`, with a versioned query and display settings. Shared views preserve access restrictions; sharing does not grant more data. Use the existing UI for ownership and revision behavior.
+Saved views use `/telemetry/views`, scoped to page `logs`, with a versioned query and display settings. Shared views preserve access restrictions; sharing does not grant more data. Use the UI for ownership and revision behavior.
 
-Use [Processing pipelines](/observability/pipelines/) for new parsing/redaction rules. Legacy `/log_parsers` is not the pipeline API and migration status is not inferred from source existence. Use [bounded exports](/observability/privacy/#exports) from the explorer; inline download allows 10,000 rows and 4 MiB compressed.
+Use [Processing pipelines](/observability/pipelines/) for new parsing/redaction rules. Legacy `/log_parsers` is not the pipeline API, and parsers created there are not converted to pipelines automatically. Use [bounded exports](/observability/privacy/#exports) from the explorer; inline download allows 10,000 rows and 4 MiB compressed.
 
 Logs have their own [decimal-GB allowance and retention](/observability/billing/). A metric derived from a log has metric-series semantics as well; it is not free unlimited cardinality.

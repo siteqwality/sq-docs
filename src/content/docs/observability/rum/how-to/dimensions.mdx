@@ -37,7 +37,7 @@ Unknown values are stored as an **empty string**, not the literal text `unknown`
 <Aside type="caution" title="There is no backfill">
 Browser, OS and device were not recorded before they shipped, and country was left empty until the IP lookup shipped. Those historical rows are **permanently empty** and nothing re-processes them.
 
-Comparing a breakdown across a cutover will show a large `(unknown)` block for the earlier period. That is missing data, not a change in your traffic. Pick time ranges that start after the change when you want a clean picture.
+Comparing a breakdown across the date a dimension started being recorded will show a large `(unknown)` block for the earlier period. That is missing data, not a change in your traffic. Pick time ranges that start after the change when you want a clean picture.
 </Aside>
 
 ## Filtering and breaking down

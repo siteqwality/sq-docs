@@ -5,7 +5,7 @@ last_verified: 2026-10-18
 owner: jj
 ---
 
-Open [Usage and settings](https://app.siteqwality.com/account/telemetry) and the existing **Processing pipelines** editor. An admin can create an ordered pipeline for logs, traces or metrics, choose a filter, edit its typed processors and preview sample or recent stored data before saving. There are at most 50 pipelines per signal and 20 processors per pipeline. Changes affect new input after configuration publication; they do not reparse historical records.
+Open [Usage and settings](https://app.siteqwality.com/account/telemetry) and the **Processing pipelines** editor. An admin can create an ordered pipeline for logs, traces or metrics, choose a filter, edit its typed processors and preview sample or recent stored data before saving. There are at most 50 pipelines per signal and 20 processors per pipeline. Changes affect new input after configuration publication; they do not reparse historical records.
 
 ## Safe workflow
 
@@ -29,4 +29,4 @@ A configuration contains `signal`, `name`, `enabled`, nonnegative `position`, a 
 
 Supported parser choices include JSON, regex with named captures, grok, common access-log templates, syslog, CSV and key/value formats where offered by the editor. Processors can also set/rename/delete attributes, remap severity or service, parse time, redact, exclude/sample, set supported trace-retention policies and derive supported log metrics. A restrictive retention or exclusion rule is a data-loss decision. Test before enabling it and keep an export when required.
 
-Legacy `/log_parsers` is not a new pipeline endpoint. Existing parser migration is an operator-controlled cutover; do not POST a legacy rule to the new API or assume its import completed. Use [current pipelines](https://app.siteqwality.com/account/telemetry) for new rules.
+Legacy `/log_parsers` is not a pipeline endpoint, and parsers created there are not converted to pipelines automatically. Recreate each one in the [pipelines editor](https://app.siteqwality.com/account/telemetry), and do not POST a legacy rule body to `/telemetry/pipelines`.

@@ -5,9 +5,15 @@ last_verified: 2026-10-18
 owner: jj
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="note" title="Early access">
+Logs, traces and metrics are in early access. To enable them for your account, email [hello@siteqwality.com](mailto:hello@siteqwality.com). Until then, telemetry sent from the account is refused.
+</Aside>
+
 ## Endpoints and authentication
 
-All paths below use `https://otlp.siteqwality.com`. Prefer this origin for new integrations. Existing `logs.siteqwality.com/ingest`, `metrics.siteqwality.com/metrics` and `traces.siteqwality.com/v1/traces` are compatibility addresses whose domain cutover must preserve the same request contracts.
+All paths below use `https://otlp.siteqwality.com`. Prefer this origin for new integrations. The older hostnames `logs.siteqwality.com`, `metrics.siteqwality.com` and `traces.siteqwality.com` are also accepted. They reach the same receiver with the same paths and authentication.
 
 | POST path | Format | Credential |
 |---|---|---|
@@ -16,7 +22,7 @@ All paths below use `https://otlp.siteqwality.com`. Prefer this origin for new i
 | `/metrics` | Custom metric JSON, including v2 resource/points | Authorization header |
 | `/api/v1/write` | Prometheus remote-write 1.x or 2.0, Snappy protobuf | Authorization header |
 | `/v1/heroku` | `application/logplex-1`, octet-counted frames | Basic auth, key as password |
-| `/v1/vercel` | Vercel log JSON/NDJSON | Authorization plus `x-vercel-signature` |
+| `/v1/vercel` | Vercel log JSON/NDJSON (**not available yet**) | Authorization plus `x-vercel-signature` |
 | `/v1/cloudflare` | Supported Logpush dataset JSON/NDJSON, optional gzip | Authorization header |
 | `/v1/firehose` | Firehose protocol 1.0 envelope | `X-Amz-Firehose-Access-Key`, raw key |
 
@@ -24,7 +30,7 @@ The Authorization routes accept Bearer, a bare key or Basic with the key as pass
 
 Only platforms unable to set an Authorization header should use the matching `/k/...` route with one `api_key` query parameter, for example `/k/v1/logs?api_key=YOUR_INGEST_KEY`. This is a **credential-bearing URL** and can leak through access logs, shell history, dashboards and screenshots. Protect and rotate it. Do not use it in a browser or public documentation. Never send credentials in two locations: Authorization plus `api_key`, duplicate keys and conflicting headers are refused. Firehose has no `/k` route.
 
-**gRPC and syslog:** gRPC on 443/4317 and syslog TLS on 6514 require the edge endpoint to be enabled. Obtain the enabled hostname and configuration before use. OTLP/HTTP works independently. There is no public UDP StatsD or UDP syslog port. Send StatsD to your own Collector, which exports OTLP/HTTP.
+**gRPC and syslog:** OTLP over gRPC (ports 443 and 4317) and syslog over TLS (port 6514) are not available yet. Use OTLP/HTTP. There is no public UDP StatsD or UDP syslog port. Send StatsD to your own Collector, which exports OTLP/HTTP.
 
 ## Content types and compression
 
@@ -57,14 +63,14 @@ Prefer OTel resource fields `service.name`, `deployment.environment.name`, `serv
 
 OTLP/HTTP returns **200** with an ExportResponse. Inspect `partialSuccess` and rejected record/point/span counters even when HTTP succeeded. JSON `/ingest` and `/metrics` return **200** with `accepted`, `rejected` and bounded `errors`. Platform log adapters return **200** using their platform contract. Firehose echoes the request ID and timestamp after delivery and fails a batch with rejected records. Remote-write returns **204** for full acceptance; 2.0 also returns written-sample/histogram/exemplar headers. Rejected remote-write records produce a failure response.
 
-Accepted records were written to ClickHouse or durable spill before acknowledgement. Durable spill can delay query visibility until replay. This is not an exactly-once promise across new requests, a promise that every record was retained, or a latency SLA. Exclusion/sampling rules and rejection counters matter. Retrying an ambiguous failure can duplicate records; retain sender identity where supported. TCP syslog and UDP StatsD have no per-record durable application acknowledgement.
+Accepted records were written to storage or durable spill before acknowledgement. Durable spill can delay query visibility until replay. This is not an exactly-once promise across new requests, a promise that every record was retained, or a latency SLA. Exclusion/sampling rules and rejection counters matter. Retrying an ambiguous failure can duplicate records; retain sender identity where supported. StatsD over UDP to your Collector has no per-record durable application acknowledgement.
 
 ## Failure handling
 
 | Status | Action |
 |---|---|
 | 400 | Correct malformed envelopes, values, IDs or protocol headers. Inspect bounded errors. |
-| 401 / 403 | Check key, account admission, selected signal, revocation and access. Do not retry indefinitely. |
+| 401 / 403 | Check the key, that the account has early access, the selected signal, revocation and access. Do not retry indefinitely. |
 | 413 | Split the request by bytes. An unchanged retry will fail again. |
 | 415 | Correct Content-Type, Content-Encoding or protocol. |
 | 429 | Honor `Retry-After`; inspect rate, series or per-signal quota. Use backoff with jitter and a local queue. |

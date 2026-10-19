@@ -5,11 +5,17 @@ last_verified: 2026-10-18
 owner: jj
 ---
 
-This guide configures logs, traces. Start with an admitted Site Qwality account and an ingest key from [API keys](https://app.siteqwality.com/account?tab=api-keys). Replace YOUR_INGEST_KEY on your server. Never use a real key in a public example.
+import { Aside } from '@astrojs/starlight/components';
 
-## 1. Create a signed Logs drain
+<Aside type="caution" title="Log drains not available yet">
+Vercel log drains (`/v1/vercel`) are not available during early access, so step 1 does not work today. A Vercel traces drain (step 2) sends to the standard OTLP traces endpoint.
+</Aside>
 
-In Vercel Team Settings, Drains, add a Logs drain and select projects/environments. Copy its signature verification secret into Usage and settings, Collection, Vercel signing secret. Site Qwality requires x-vercel-signature using HMAC-SHA1 over the exact request bytes, even though Vercel calls signing optional. Save the secret before testing the drain.
+This guide configures traces, and logs once log drains are available. You need a Site Qwality account with early access to telemetry (email [hello@siteqwality.com](mailto:hello@siteqwality.com) to request it) and an ingest key from [API keys](https://app.siteqwality.com/account?tab=api-keys). Replace YOUR_INGEST_KEY on your server. Never use a real key in a public example.
+
+## 1. Create a signed Logs drain (not available yet)
+
+Once log drains are available, add a Logs drain in Vercel Team Settings, Drains, and select projects/environments. Copy its signature verification secret into Usage and settings, Collection, Vercel signing secret. Site Qwality requires x-vercel-signature using HMAC-SHA1 over the exact request bytes, even though Vercel calls signing optional. Save the secret before testing the drain.
 
 ```text
 Destination: https://otlp.siteqwality.com/v1/vercel

@@ -5,13 +5,17 @@ last_verified: 2026-10-18
 owner: jj
 ---
 
-**Availability:** Requires an enabled syslog TLS endpoint. Obtain the endpoint hostname and structured-data PEN from support before starting. Public UDP syslog is unavailable.
+import { Aside } from '@astrojs/starlight/components';
 
-This guide configures logs. Start with an admitted Site Qwality account and an ingest key from [API keys](https://app.siteqwality.com/account?tab=api-keys). Replace YOUR_INGEST_KEY on your server. Never use a real key in a public example.
+<Aside type="caution" title="Not available yet">
+Syslog over TLS (port 6514) is not available during early access, so this configuration does not connect today. Send logs over OTLP/HTTP instead, for example with the [OpenTelemetry Collector](/observability/platforms/collector/), [Fluent Bit](/observability/platforms/fluent-bit/) or [Vector](/observability/platforms/vector/). There is no public UDP syslog port.
+</Aside>
+
+This guide configures logs once syslog over TLS is available. You need a Site Qwality account with early access to telemetry (email [hello@siteqwality.com](mailto:hello@siteqwality.com) to request it) and an ingest key from [API keys](https://app.siteqwality.com/account?tab=api-keys). Replace YOUR_INGEST_KEY on your server. Never use a real key in a public example.
 
 ## 1. Configure rsyslog TLS forwarding
 
-Requires the rsyslog TLS module and a writable workDirectory for the queue. Replace both hostname occurrences and the PEN. The RFC 5424 structured-data element supplies the key; the edge strips it. Include it on the first record of every new connection. Do not disable certificate verification.
+Requires the rsyslog TLS module and a writable workDirectory for the queue. Replace both hostname occurrences and the PEN. The RFC 5424 structured-data element supplies the key, and Site Qwality strips it before storage. Include it on the first record of every new connection. Do not disable certificate verification.
 
 ```text
 global(workDirectory="/var/spool/rsyslog" DefaultNetstreamDriver="gtls" DefaultNetstreamDriverCAFile="/etc/ssl/certs/ca-certificates.crt")

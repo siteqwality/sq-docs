@@ -9,7 +9,7 @@ Errors unifies browser issues and backend exception groups while keeping each so
 
 Open an issue to inspect its fingerprint, title, culprit, event samples, affected versions and activity. Grouping normalizes supported language stacks; unrelated exception families should not be merged solely because their messages match. Samples may be absent after retention or under your access restrictions. A count does not imply every original stack remains available.
 
-Use the existing workflow to assign, resolve, ignore or reopen issues. Backend bulk actions and merges operate on explicit selected identities. Check the selected service/environment and fingerprint before a merge; it changes future grouping/workflow semantics. Browser issue actions keep their existing RUM workflow and access policy. Source maps and replay require their own uploaded artifacts and permissions.
+Use the issue workflow to assign, resolve, ignore or reopen issues. Backend bulk actions and merges operate on explicit selected identities. Check the selected service/environment and fingerprint before a merge; it changes future grouping/workflow semantics. Browser issue actions follow the RUM workflow and access policy. Source maps and replay require their own uploaded artifacts and permissions.
 
 | API path | Purpose |
 |---|---|
@@ -22,4 +22,4 @@ Use the existing workflow to assign, resolve, ignore or reopen issues. Backend b
 
 Use the API schema for each mutation body and URL-encode service/fingerprint values. Read restrictions also protect previews and correlation. Pipeline redaction runs before exception extraction; test stacks with representative safe samples in [Processing pipelines](/observability/pipelines/).
 
-Telemetry alert evaluation can identify exception-related changes, but **external telemetry alert dispatch remains held**. Do not rely on this workflow as proof that a page, incident or status update was sent.
+Telemetry alert evaluation can identify exception-related changes, but **telemetry alerts do not send notifications yet**. This workflow does not send a page, open an incident or post a status update.

@@ -9,7 +9,7 @@ owner: jj
 
 Use OTLP HTTP protobuf or JSON at `https://otlp.siteqwality.com/v1/traces`. Set service/environment/version resource attributes. Trace IDs are 32 hexadecimal characters and span IDs 16, and all-zero IDs are invalid. Parent IDs, span kind, start/end time, events and links describe the actual recorded graph. The receiver does not infer missing spans.
 
-[gRPC requires an enabled edge endpoint](/observability/ingest/). Prefer HTTP/protobuf for a setup that does not depend on it. [Platform guides](/observability/platforms/overview/) include SDK setup and exporter flushing.
+OTLP over gRPC is [not available yet](/observability/ingest/#endpoints-and-authentication). Use HTTP/protobuf or HTTP/JSON. [Platform guides](/observability/platforms/overview/) include SDK setup and exporter flushing.
 
 ## API reference
 
