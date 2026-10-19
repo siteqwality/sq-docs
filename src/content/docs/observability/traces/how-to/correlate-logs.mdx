@@ -17,6 +17,6 @@ The RUM client token is public and separate from a server ingest key. Enable dis
 
 For cross-origin requests, allow the intended frontend origin and the `traceparent` and `tracestate` request headers in your backend CORS configuration. Handle OPTIONS correctly. Permit credentials only when your application needs them and avoid a wildcard origin with credentials. Limit URL prefixes so third-party hosts do not receive trace context.
 
-Existing stable CDN examples remain on the published SDK version. The new SDK 2.3.0 correlation work must be published and CDN-verified before changing stable install instructions to 2.3.0. Until that release, do not infer the newer correlation behavior merely because a setting is saved. See the [RUM quickstart](/observability/rum/quickstart/) for the published install path.
+The trace sample rate setting (`capture.network.trace_sample_rate`) needs RUM SDK 2.3.0 or later. Earlier versions mark every propagated request as sampled. See the [RUM quickstart](/observability/rum/quickstart/) for the install path.
 
 Replay links also require a retained replay, consent/sampling eligibility and replay access. Correlation does not enable recording or grant another user's data access. Synthetic checks and browser checks use their own configured propagation behavior.
