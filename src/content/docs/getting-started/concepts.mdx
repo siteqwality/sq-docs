@@ -1,7 +1,7 @@
 ---
 title: Concepts and glossary
 description: The vocabulary used across the Site Qwality docs and product, defined precisely.
-last_verified: 2026-10-19
+last_verified: 2026-10-20
 owner: jj
 ---
 
@@ -99,7 +99,7 @@ An email address, a Slack channel (with a bot token you paste in) or a webhook U
 
 ### Escalation policy
 
-A named pipeline of "who to page if no one acknowledges." Has an ordered list of **levels** and an optional `repeat_count` for what to do after exhausting the list.
+A named pipeline of "who to page if no one acknowledges." Has an ordered list of **levels**, a `repeat_count` (how many more passes after the first, default `0`) and an `on_exhausted` for when nobody acknowledges: email the account owners and admins (the default), stop, or run one other policy once. A level that can reach nobody is skipped at once.
 
 ### Escalation level
 

@@ -1,7 +1,7 @@
 ---
 title: Check that a policy reaches someone
 description: The readiness check shows, level by level and for every incident severity, whether an escalation policy reaches a person before the level times out.
-last_verified: 2026-10-16
+last_verified: 2026-10-20
 owner: jj
 ---
 
@@ -160,6 +160,8 @@ Both calls only read, so an API key with `read:incidents` and a user with the vi
 | `unreachable` | Nothing goes out: nobody is on call, the user left the account, or their sign-in email has bounced too. |
 
 `ready` is `true` only when every level is `reachable` at both urgencies.
+
+A level that is `unreachable` at an incident's urgency when it starts is [skipped at once](/incident-management/escalation/overview/#a-level-that-reaches-nobody-is-skipped), and a policy whose every level is `unreachable` runs out straight away, so its [`on_exhausted`](/incident-management/escalation/overview/#when-nobody-acknowledges) applies. A `delayed` or `fallback_email` level still pages and waits out its timeout.
 
 A schedule target reports whoever is on call right now as its user, with their name in `on_call_name`. A target's `problem` is set when nobody can be paged through it at all: `user_removed`, `schedule_removed` or `nobody_on_call`.
 

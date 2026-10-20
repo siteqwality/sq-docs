@@ -1,7 +1,7 @@
 ---
 title: Escalation policies
 description: Ordered chains of "page these targets, wait, then escalate", with timeouts, repeat cycles, and on-call schedule integration.
-last_verified: 2026-10-19
+last_verified: 2026-10-20
 owner: jj
 ---
 
@@ -24,7 +24,9 @@ Levels are always numbered `1` to `N`. Adding a level in the middle moves the on
 | Field | What it is |
 |---|---|
 | `name` | Human label. `"Primary on-call escalation"`. |
-| `repeat_count` | How many more passes through the levels to run after the first. `0` to `20`, default `3`. |
+| `repeat_count` | How many more passes through the levels to run after the first. `0` to `20`, default `0`: every level is paged once. |
+| `on_exhausted` | What happens when nobody acknowledges: `notify_owners` (default), `stop` or `escalate_to_policy`. See [when nobody acknowledges](#when-nobody-acknowledges). |
+| `escalate_to_policy_id` | The policy `escalate_to_policy` runs once. Null otherwise. |
 | `levels[]` | Ordered list of `EscalationLevel`s. |
 
 Each level:
@@ -68,14 +70,40 @@ Incident opens
    no ack within 15 min
          │
          ▼
-   repeat or stop (per repeat_count)
+   repeat (per repeat_count), then on_exhausted
 ```
 
 Each level does three things in order: start a one-shot timeout for `timeout_minutes`, resolve its targets (on-call schedules resolve at firing time, so handoffs work transparently), and page each resolved user through their own [notification rules](/incident-management/notifications/overview/#notification-rules-per-user). The timeout counts from when the level starts, so time spent paging does not lengthen it, and the policy advances within a few seconds of it running out.
 
 A rule whose contact method cannot page (an unverified SMS number, a bounced email address, no SMS left on the account) is skipped. A user no rule can reach is paged at their sign-in email instead. Both are recorded on the incident.
 
-A level with no resolvable targets still schedules its timeout and still advances. It just pages nobody. The [readiness check](/incident-management/escalation/readiness/) shows levels like this before an incident does.
+## A level that reaches nobody is skipped
+
+When a level starts, its targets are judged with the same definition the [readiness check](/incident-management/escalation/readiness/) uses. If nothing would go out to any of them (no targets, nobody on call, every target left the account, or every address bounced including the sign-in email), the level is skipped at once instead of waiting out its timeout, and the incident records an `escalation_unreachable` event naming the level and why each target was out of reach. The next level starts straight away.
+
+A level counts as reaching someone when at least one target gets anything: a working rule, a rule delayed past the timeout, or the sign-in email fallback. Only a level that reaches nobody at all is skipped.
+
+If a whole round of levels reaches nobody, the policy runs out at once and [`on_exhausted`](#when-nobody-acknowledges) applies, so a policy that can reach no one never pages nobody in silence. A policy with no levels runs out the same way.
+
+## What a page says
+
+Every page names the incident, its service and the monitors in it, and why this person is being paged: the level and pass, the policy, and the on-call schedule that put them there. For example, an email reads "You are paged by level 2 of 3 of the escalation policy "Platform", pass 2 of 3, as on call for Primary on-call." SMS carries a short form such as `L2/3 via Primary on-call`, and Slack adds the line under the incident fields.
+
+## When nobody acknowledges
+
+A policy runs out when its last level times out on the last pass, or as soon as no level reaches anyone. What happens then is the policy's `on_exhausted`:
+
+| `on_exhausted` | What happens |
+|---|---|
+| `notify_owners` (default) | Every owner and admin of the account gets one email saying the policy ran out and nobody owns the incident. |
+| `stop` | Nothing is sent. |
+| `escalate_to_policy` | The policy named in `escalate_to_policy_id` runs once, from its first level. When it runs out too, the owners and admins get the email, whatever that policy's own `on_exhausted` says. |
+
+In every case the escalation becomes `exhausted`, the incident records an `escalation_exhausted` event with the reason (`repeats_used`, `nobody_reachable` or `no_levels`) and who was emailed, and the incident's `unassigned_after_exhaustion` flag turns on, which the dashboard shows as a banner on the incident until someone acknowledges it. An owner whose address bounced is recorded with a `page_skipped` event instead.
+
+`escalate_to_policy` follows one hop only. The fallback never hands over again, so two policies that fall back to each other cannot loop, and a policy cannot name itself (`400`). A handover records an `escalation_policy_handoff` event. Reopening the incident starts over on the service's own policy.
+
+A policy that another policy falls back to cannot be deleted: the API returns `409` listing those policies. Give them another fallback first.
 
 ## Acknowledging stops it
 
@@ -112,26 +140,28 @@ The two paths are separate. A monitor's alert always goes to its notification gr
 
 ## Repeat cycles
 
-`repeat_count` is **how many more times the policy runs through its levels after the first pass**. It accepts `0` to `20` and defaults to `3` in the API.
+`repeat_count` is **how many more times the policy runs through its levels after the first pass**. It accepts `0` to `20` and defaults to `0`, in the API and in the dashboard alike.
 
-Walking the last level's timeout takes the policy back to level 1 for another pass. When the repeats are used up, the escalation becomes `exhausted` and stops paging.
+Walking the last level's timeout takes the policy back to level 1 for another pass. When the repeats are used up, the escalation becomes `exhausted` and [`on_exhausted`](#when-nobody-acknowledges) applies.
 
 | `repeat_count` | Behavior |
 |---|---|
-| `0` | One pass through every level, then stop. |
-| `1` | Two passes, then stop. |
-| `3` (API default) | Four passes, then stop. |
+| `0` (default) | One pass through every level, then `on_exhausted`. |
+| `1` | Two passes, then `on_exhausted`. |
+| `3` | Four passes, then `on_exhausted`. |
 | `20` | The maximum: 21 passes. |
+
+Policies created through the API before 2026-10-20 without a `repeat_count` got `3`; they keep it.
 
 ## Escalation state
 
-Each incident carries one escalation state. The incident API and dashboard do not show it today.
+Each incident carries one escalation state. The incident API does not return it, but an incident's detail response has `unassigned_after_exhaustion`, true while the state is `exhausted` and nobody has acknowledged.
 
 | State | Meaning |
 |---|---|
 | `active` | Cycling through levels. |
 | `acknowledged` | Someone acked or resolved. Paging stopped, pending schedules deleted. |
-| `exhausted` | Ran out of repeat cycles without an acknowledgement. Level cycling has stopped. |
+| `exhausted` | The policy ran out without an acknowledgement and `on_exhausted` has applied. Level cycling has stopped. |
 
 ## When to use multiple policies
 

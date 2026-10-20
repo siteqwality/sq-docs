@@ -31,6 +31,7 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | `acknowledged_at` | rfc3339 \| null | When a responder acknowledged. |
 | `acknowledged_by` | uuid \| null | Who acknowledged. |
 | `resolved_at` | rfc3339 \| null | When the incident resolved. |
+| `unassigned_after_exhaustion` | bool | `true` while nobody has acknowledged and the service's escalation policy [ran out](/incident-management/escalation/overview/#when-nobody-acknowledges), so nobody owns the incident. Always `false` in list responses. |
 | `auto_created` | bool | `true` when a monitor state change opened the incident; `false` for manual ones. |
 | `created_at` | rfc3339 | When the incident opened. |
 | `updates` | object[] | Chronological incident updates (below). |
