@@ -31,15 +31,15 @@ jobs:
       matrix:
         example: [node, python, java, dotnet, php, go, rust, ruby, collector, curl]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: examples/verify.sh ${{ matrix.example }}
 
   stale-guides:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - run: node scripts/stale-guides.mjs
