@@ -1,0 +1,46 @@
+---
+title: Manage incidents from the CLI
+description: List, acknowledge, resolve and edit incidents in runbooks and terminal workflows.
+last_verified: 2026-10-18
+owner: jj
+---
+
+Use `@siteqwality/cli` version 0.1.2 or later with Node.js 22 or later. Incident commands use the account API and do not need a RUM application ID.
+
+```sh
+npm install --save-dev @siteqwality/cli@0.1.2
+export SITEQWALITY_API_KEY='your-incident-api-key'
+npx siteqwality incidents list --status active --limit 50 --offset 0
+npx siteqwality incidents ack "$INCIDENT_ID" --by "$MEMBER_ID"
+npx siteqwality incidents resolve "$INCIDENT_ID" --message 'Service recovered'
+npx siteqwality incidents update "$INCIDENT_ID" --title 'Checkout unavailable' --severity critical
+```
+
+Keep the API key in your shell or CI secret store. Listing requires `read:incidents`; changes require `write:incidents`. The key is never a command-line flag. JSON results go to stdout, and errors return exit code 1 on stderr.
+
+## List and page
+
+`list` defaults to `active`. Use `--status resolved` or `--status all` for the other views. The response is `{ data, total }`; `data` contains one page and `total` is the number matching the filter. `--limit` accepts 1 to 100. Increase `--offset` to fetch later pages.
+
+## Acknowledge and resolve
+
+API keys do not identify a member, so acknowledgement requires `--by` with a member UUID in the account. Acknowledgement stops escalation. A resolved incident cannot be acknowledged, and repeating acknowledgement returns `409`.
+
+Resolving a published incident always posts a public resolution and emails its status-page subscribers by default. Add `--no-notify-subscribers` to suppress that email. `--message` supplies the public resolution text.
+
+## Change service or metadata
+
+`update` changes only the title, severity and service fields you supply. It does not set lifecycle status. Severity is `minor`, `major` or `critical`.
+
+```sh
+npx siteqwality incidents update "$INCIDENT_ID" --service "$SERVICE_ID"
+npx siteqwality incidents update "$INCIDENT_ID" --clear-service
+```
+
+Moving an incident to a service can start its escalation policy. `--clear-service` detaches it. Choose either flag, not both.
+
+## Failed requests
+
+All commands accept `--api-url`, `--timeout` and `--retries`. Reads retry transient failures within the configured budget. Incident mutations make one request even with `--retries`, so an ambiguous timeout cannot automatically repeat paging or a public update. Inspect the incident before retrying a failed mutation.
+
+The CLI does not follow redirects, accepts HTTPS (or loopback HTTP for local tests), and keeps API keys and response bodies out of error messages. The API enforces ownership, scopes, validation and lifecycle conflicts.
