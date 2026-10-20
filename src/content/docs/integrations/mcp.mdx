@@ -1,7 +1,7 @@
 ---
 title: Connect AI assistants (MCP)
 description: Ask Claude, ChatGPT, Cursor and other AI assistants about your monitors, incidents and telemetry, and let them take everyday actions for you.
-last_verified: 2026-10-19
+last_verified: 2026-10-20
 owner: jj
 ---
 
@@ -258,6 +258,11 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 | `post_incident_update` | Adds an update to an incident. A public update (the default) shows on its status pages and can change its status: `resolved` resolves it. It emails subscribers when posted through a named page the incident is on, or with `notify_subscribers`. An internal note stays in the app. Moving public status backwards needs `force: true`. | Write |
 | `publish_incident` | Puts an incident on a status page with a public title and first update, and emails the page's subscribers unless told not to. | Write |
 | `unpublish_incident` | Takes an incident off a status page. Nothing is emailed and the incident is kept. | Write, asks first |
+| `get_incident_postmortem` | Shows an incident's postmortem: its Markdown body, review status and owner. | Read |
+| `start_incident_postmortem` | Starts an incident's postmortem as a draft, prefilled from its timeline unless a body is given. | Write |
+| `update_incident_postmortem` | Edits a postmortem's body or owner, or moves it to `in_review` or `published`. Publishing needs a resolved incident. | Write |
+| `list_follow_ups` | Lists action items across incidents, soonest due first, each with its incident. Open items by default; filters for owner and overdue. | Read |
+| `add_action_item`, `update_action_item` | Adds a follow-up to an incident with an optional owner, due date and issue link, or edits, closes or reopens one. See [postmortems and follow-ups](/incident-management/incidents/how-to/postmortems/). | Write |
 | `list_status_pages` | Lists your status pages, each with its public address (`page_url`). | Read |
 | `list_status_page_components` | Lists a status page's components in page order (monitors, heartbeats and manual components), with any status set by hand. | Read |
 | `set_status_page_component_status` | Sets what a status page shows for one component, with an optional note and end time. | Write |

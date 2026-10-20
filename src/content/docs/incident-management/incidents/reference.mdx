@@ -1,7 +1,7 @@
 ---
 title: Incident reference
 description: Every field on an incident and its updates, with status enums and the full endpoint list.
-last_verified: 2026-10-16
+last_verified: 2026-10-20
 owner: jj
 ---
 
@@ -71,6 +71,39 @@ See [affected monitors and impact](/incident-management/incidents/how-to/affecte
 | `paged_at` | rfc3339 \| null | When they were paged for this incident, or `null`. |
 
 See [participants](/incident-management/incidents/how-to/participants/).
+
+### Postmortem
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | uuid | Postmortem ID. |
+| `incident_id` | uuid | The incident. An incident has at most one postmortem. |
+| `status` | enum | `draft`, `in_review` or `published`. Publishing needs a resolved incident. |
+| `body` | string | Markdown, up to 100,000 characters. Drafted from the timeline when started without one. |
+| `owner_user_id` | uuid \| null | The user who drives it. |
+| `created_by_user_id` | uuid \| null | Who started it. |
+| `created_at` / `updated_at` | rfc3339 | When it was started and last changed. |
+| `published_at` | rfc3339 \| null | When it was last moved to `published`. |
+
+### Action item
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | uuid | Action item ID. |
+| `incident_id` | uuid | The incident it follows up. |
+| `title` | string | Up to 300 characters. |
+| `status` | enum | `open`, `done` or `wont_do`. |
+| `owner_user_id` | uuid \| null | The user who owns it. |
+| `due_date` | date \| null | `YYYY-MM-DD`. |
+| `external_url` | string \| null | An `http` or `https` link to the tracking issue. |
+| `created_by_user_id` | uuid \| null | Who added it. |
+| `created_at` / `updated_at` | rfc3339 | When it was added and last changed. |
+| `completed_at` | rfc3339 \| null | When it left `open`; cleared when reopened. |
+| `overdue` | bool | `true` for an open item past its due date in the organization's timezone. |
+| `reminded_at` | rfc3339 \| null | When the owner was emailed that it is overdue. |
+| `incident` | object | On the follow-up list only: the incident's `id`, `title`, `severity` and `responder_status`. |
+
+See [postmortems and follow-ups](/incident-management/incidents/how-to/postmortems/).
 
 ## Public and internal updates
 
@@ -181,6 +214,27 @@ A schedule adds whoever is on call now. A policy adds the users and on-call peop
 | `PUT` | `/incident/{incident_id}/monitors/{monitor_type}/{monitor_id}` | `{ "impact": null \| "degraded" \| "partial_outage" \| "major_outage" }` | The full list. |
 | `DELETE` | `/incident/{incident_id}/monitors/{monitor_type}/{monitor_id}` | none | `204`. |
 
+### Postmortem
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| `GET` | `/incident/{incident_id}/postmortem` | none | The postmortem, or `404` when there is none. |
+| `POST` | `/incident/{incident_id}/postmortem` | Optional `body` and `owner_user_id`. Without `body` it is drafted from the timeline. | `201` and the new `draft`. |
+| `PUT` | `/incident/{incident_id}/postmortem` | Any of `body`, `status`, `owner_user_id` (`null` clears it). | The postmortem. |
+| `DELETE` | `/incident/{incident_id}/postmortem` | none | `204`. The action items stay. |
+
+### Action items
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| `GET` | `/incident/{incident_id}/action_items` | none | The incident's action items, oldest first. |
+| `POST` | `/incident/{incident_id}/action_items` | `title`, plus optional `owner_user_id`, `due_date` and `external_url`. | `201` and the item. |
+| `PUT` | `/incident/{incident_id}/action_items/{action_item_id}` | Any of `title`, `status`, `owner_user_id`, `due_date`, `external_url`; `null` clears the last three. | The item. |
+| `DELETE` | `/incident/{incident_id}/action_items/{action_item_id}` | none | `204`. |
+| `GET` | `/incident/action_items` | Query: `status` (`open` default, `done`, `wont_do`, `all`), `owner_user_id`, `overdue`, `limit`, `offset`. | Every incident's items in `data`, soonest due first, plus `total`. |
+
+A new due date or owner re-arms the one overdue email. See [the reminder](/incident-management/incidents/how-to/postmortems/#overdue-items-and-the-reminder-email).
+
 ### Publish (`POST /incident/{incident_id}/publish`)
 
 | Field | Type | Description |
@@ -224,6 +278,7 @@ Standalone incidents:
 | `POST` | `/incident` | Create. |
 | `GET` | `/incident` | List, with `limit` / `offset` pagination. |
 | `GET` | `/incident/metrics` | Creation-cohort counts and MTTA/MTTR summaries. |
+| `GET` | `/incident/action_items` | The [follow-up list](/incident-management/incidents/how-to/postmortems/#the-follow-up-list): every incident's action items. |
 | `GET` / `PUT` / `DELETE` | `/incident/{incident_id}` | Detail / update / delete. |
 | `POST` | `/incident/{incident_id}/acknowledge` | Acknowledge (stops escalation). |
 | `POST` | `/incident/{incident_id}/resolve` | Resolve. |
@@ -234,6 +289,9 @@ Standalone incidents:
 | `PUT` / `DELETE` | `/incident/{incident_id}/participants/{user_id}` | Change a participant's role / remove them. |
 | `POST` | `/incident/{incident_id}/monitors` | Add an [affected monitor](/incident-management/incidents/how-to/affected-monitors/). |
 | `PUT` / `DELETE` | `/incident/{incident_id}/monitors/{monitor_type}/{monitor_id}` | Set a monitor's impact / remove it. |
+| `GET` / `POST` / `PUT` / `DELETE` | `/incident/{incident_id}/postmortem` | Read / start / edit / delete the [postmortem](/incident-management/incidents/how-to/postmortems/). |
+| `GET` / `POST` | `/incident/{incident_id}/action_items` | List / add action items. |
+| `PUT` / `DELETE` | `/incident/{incident_id}/action_items/{action_item_id}` | Edit or close / delete an action item. |
 | `POST` | `/incident/{incident_id}/publish` | Publish to a status page. |
 | `DELETE` | `/incident/{incident_id}/publish/{status_page_id}` | Unpublish from a status page. |
 | `GET` / `POST` | `/incident/action/{token}` | [Acknowledge or resolve from an email or SMS](/incident-management/incidents/how-to/one-click-actions/). `GET` shows a confirmation page and changes nothing; `POST` (its button) acts. Token-authenticated, no session needed. Each link is made for one paged user, works once, expires after 24 hours, and stops working when the incident changes state. |
@@ -261,6 +319,10 @@ A `409` from these routes carries a code in `data.conflict`:
 | `POST /incident/{id}/participants` | `resolved` | `page` is `true` on a resolved incident. |
 | `POST /incident/{id}/participants` | `nobody_on_call` | The schedule or policy resolved to no one. |
 | `POST /incident/{id}/monitors` | `merged` | The incident was merged into another. |
+| `POST /incident/{id}/postmortem` | `exists` | The incident already has a postmortem; `data.postmortem` holds it. |
+| `POST /incident/{id}/postmortem` | `merged` | The incident was merged into another. |
+| `PUT /incident/{id}/postmortem` | `incident_open` | Publishing before the incident is resolved. |
+| `POST /incident/{id}/action_items` | `merged` | The incident was merged into another. |
 | `PUT /incident/{id}` | `open_auto_incident_exists` | You moved an auto-created incident onto a service that already has an open auto-created incident. |
 | `POST /incident/{id}/reopen` | `open_auto_incident_exists` | Another open auto-created incident already covers that service. |
 | `POST /incident/{id}/reopen` | `merged` | A merged incident cannot reopen. |

@@ -1,0 +1,118 @@
+---
+title: Write a postmortem and track follow-ups
+description: Draft a postmortem from the incident's timeline, assign action items with owners and due dates, and keep every open follow-up in one list.
+last_verified: 2026-10-20
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Once an incident is over, its **Post-incident** tab holds the work that comes after: one **postmortem** and any number of **action items**. Every incident's action items also appear together on the **Follow-ups** tab of the Incidents page, and an item's owner gets one email if it is still open after its due date.
+
+Postmortems and action items are internal. They never appear on a status page.
+
+## Start a postmortem
+
+Open the incident, choose the **Post-incident** tab and click **Start postmortem**. Site Qwality drafts it from the incident, so you start with the facts and fill in the analysis:
+
+- **Impact**: severity, service, when it started, how long it took to acknowledge and resolve, and the affected monitors.
+- **Timeline (UTC)**: status and severity changes, acknowledgements, escalations, monitor changes and updates, with who did each.
+- Empty sections for the root cause, contributing factors, what went well, what could be better and the action items.
+
+In the console, the person who starts it becomes its owner. The body is Markdown; edit it in the tab and click **Save**.
+
+From the API, `POST /incident/{incident_id}/postmortem` starts it. Send no `body` to get the drafted template, or your own `body` to start from that instead:
+
+```bash
+curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/postmortem \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "owner_user_id": "<user-id>" }'
+```
+
+An incident has at most one postmortem. If one already exists, the request returns `409` with `data.conflict` set to `exists` and the existing postmortem in `data.postmortem`.
+
+## Review and publish
+
+A postmortem moves through three statuses:
+
+| Status | Meaning |
+|---|---|
+| `draft` | Being written. Every postmortem starts here. |
+| `in_review` | Ready for the team to read and comment on. |
+| `published` | Final. `published_at` records when. |
+
+Change the status in the tab, or send it with `PUT /incident/{incident_id}/postmortem`. The same request edits `body` and `owner_user_id`; fields you leave out stay unchanged, and `"owner_user_id": null` clears the owner. A postmortem can only be published once the incident is resolved: publishing an open incident's postmortem returns `409` with `data.conflict` set to `incident_open`.
+
+Deleting a postmortem (`DELETE /incident/{incident_id}/postmortem`) keeps the incident's action items.
+
+## Add action items
+
+Each action item is one piece of follow-up work:
+
+| Field | Required | Notes |
+|---|---|---|
+| `title` | yes | Up to 300 characters. |
+| `owner_user_id` | no | A user in your account. |
+| `due_date` | no | A calendar date, `YYYY-MM-DD`. |
+| `external_url` | no | An `http` or `https` link to the ticket or issue that tracks the work. |
+
+Add them in the tab with **+ Add action item**, or from the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/action_items \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "title": "Add a retry to the payments client", "owner_user_id": "<user-id>", "due_date": "2026-11-03", "external_url": "https://github.com/acme/payments/issues/412" }'
+```
+
+An item's `status` is `open`, `done` or `wont_do`. Change it, or any other field, with `PUT /incident/{incident_id}/action_items/{action_item_id}`; send `null` to clear the owner, due date or link. Closing an item records `completed_at`, and reopening it clears that.
+
+## Overdue items and the reminder email
+
+An open item is **overdue** from the day after its due date, counted in your organization's timezone (**Settings → Organization**; UTC when none is set). Overdue items are flagged in red in the tab and on the Follow-ups list, and the API marks them with `"overdue": true`.
+
+At 09:00 in your organization's timezone on the day after the due date, the item's owner gets one email naming the item and the incident, with a link back to its Post-incident tab. The check runs every five minutes, so the email can arrive a few minutes after nine. Each item sends it once:
+
+- Changing the due date or the owner re-arms it for the new date or person.
+- Closing the item before then means no email.
+- Items with no owner or no due date never send one, and neither do owners who have left the account.
+
+`reminded_at` on the item records when the email went out.
+
+## The follow-up list
+
+The **Follow-ups** tab on the Incidents page lists every incident's action items, soonest due first, with undated items last. Filter it to **Open**, **Overdue**, **Done**, **Won't do** or **All**, tick **Only mine** to see your own, and change an item's status right in the list. Each row links to its incident's Post-incident tab.
+
+From the API, `GET /incident/action_items` returns the same list. Each item carries an `incident` object with the incident's `id`, `title`, `severity` and `responder_status`.
+
+| Query | Meaning |
+|---|---|
+| `status` | `open` (default), `done`, `wont_do` or `all`. |
+| `owner_user_id` | Only items this user owns. |
+| `overdue` | `true` for only open items past their due date. |
+| `limit` / `offset` | Paging. `limit` defaults to 50, at most 100. The response has `data` and `total`. |
+
+## Merged incidents
+
+A [merged](/incident-management/incidents/how-to/merge-incidents/) incident takes no new postmortem or action item: those requests return `409` with `data.conflict` set to `merged`, so write them on the incident it was merged into. Its existing postmortem and action items stay where they are and can still be edited and closed.
+
+## Who can do what
+
+Everyone in the account can read postmortems and action items. Viewers and auditors cannot change them. API keys and API clients need `read:incidents` to read and `write:incidents` to change them.
+
+The [MCP server](/integrations/mcp/) offers the same work as tools: `get_incident_postmortem`, `start_incident_postmortem`, `update_incident_postmortem`, `add_action_item`, `update_action_item` and `list_follow_ups`.
+
+## Errors
+
+| Status | When |
+|---|---|
+| `400` | The title is empty or longer than 300 characters, the body is longer than 100,000 characters, the link is not `http` or `https`, the owner is not a user in your account, or a follow-up list query is invalid. |
+| `404` | The incident is not in your account, it has no postmortem, or the action item is not on that incident. |
+| `409` | `data.conflict` is `exists` (the incident already has a postmortem), `incident_open` (publishing before the incident is resolved) or `merged` (the incident was merged into another). |
+| `422` | The request body is malformed: an unknown field, a `due_date` that is not `YYYY-MM-DD`, or an unknown `status`. |
+
+## See also
+
+<LinkCard title="Incident reference" description="The postmortem and action item fields and routes." href="/incident-management/incidents/reference/#postmortem" />
+<LinkCard title="Incident metrics" description="MTTA and MTTR across incidents." href="/incident-management/incidents/reference/#incident-metrics" />

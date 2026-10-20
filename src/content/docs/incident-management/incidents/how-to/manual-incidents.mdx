@@ -1,7 +1,7 @@
 ---
 title: Create manual incidents
 description: When to open an incident by hand, how to do it cleanly, and how to make it page your on-call.
-last_verified: 2026-10-16
+last_verified: 2026-10-20
 owner: jj
 ---
 
@@ -153,13 +153,15 @@ Severity drives display order, color, and filters. It also picks the **urgency**
 
 ## Following up
 
-After resolving, especially for `major` and `critical` incidents:
+After resolving, especially for `major` and `critical` incidents, open the incident's **Post-incident** tab:
 
-- Run a postmortem outside Site Qwality.
-- Link the postmortem doc in a final incident update so it's preserved on the timeline.
+- Start a postmortem. It is drafted from the incident's timeline, so you only write the analysis.
+- Add action items with an owner and a due date. Owners get one email if an item is still open after its due date, and every open item shows on the **Follow-ups** tab of the Incidents page.
+
+See [write a postmortem and track follow-ups](/incident-management/incidents/how-to/postmortems/).
 
 <Aside type="tip">
-The full update history is preserved on the incident object. `GET /incident/{id}` returns it sorted chronologically. Useful when generating retro / postmortem docs.
+The full update history is preserved on the incident object. `GET /incident/{id}` returns it sorted chronologically.
 </Aside>
 
 ## See also
