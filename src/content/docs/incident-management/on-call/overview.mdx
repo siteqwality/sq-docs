@@ -1,7 +1,7 @@
 ---
 title: On-call schedules
-description: Layered rotations in the schedule's timezone, with overrides. A schedule produces "who's on call right now" for any timestamp.
-last_verified: 2026-08-01
+description: Layered rotations in the schedule's timezone, with working-hours windows and overrides. A schedule answers "who's on call" for any instant, and the API and dashboard show it.
+last_verified: 2026-10-20
 owner: jj
 ---
 
@@ -22,16 +22,18 @@ If you only have one engineer, you don't need a schedule: just point your escala
 Each schedule has:
 
 - A **name** (`Primary on-call`, `Eng manager backup`).
-- A **timezone**, an IANA name (`America/Los_Angeles`, `Europe/Berlin`, `UTC`). All `handoff_time` and `handoff_day` values are interpreted in this timezone, so a 09:00 handoff stays at 09:00 local across DST changes.
-- One or more **layers**, stacked in priority order.
+- A **timezone**, an IANA name (`America/Los_Angeles`, `Europe/Berlin`, `Asia/Singapore`, `UTC`). Every name in the tz database is accepted; anything else is refused with `400`. Handoff times, handoff days and coverage windows are local times in this zone, so a 09:00 handoff stays at 09:00 local across DST changes.
+- One or more **layers**, stacked in priority order. A layer can carry its own timezone, for follow-the-sun.
 - Zero or more **overrides**: hard "user X is on from time A to time B" entries.
 
 When asked who's on call at time `T`:
 
 1. Apply overrides first. If any override covers `T`, that user is on call. Done.
-2. Otherwise walk layers from the **highest `layer_number` downward**. For each layer in its `effective_from`/`effective_until` window, compute whose turn it is given the rotation type. The first layer that returns a user wins.
+2. Otherwise walk layers from the **highest `layer_number` downward**. A layer answers when `T` is inside its `effective_from`/`effective_until` window and inside one of its coverage windows (a layer without windows covers around the clock). The first layer that answers wins; whose turn it is follows from the rotation.
 
-This means **higher-`layer_number` layers shadow lower ones during their effective windows**. A window is two absolute timestamps, not a time of day or a day of the week, so a higher layer covers all 24 hours of every day inside its window. Use one for a bounded period, such as a launch week, not for recurring night or weekend shifts.
+This means **higher layers shadow lower ones while they cover**. Give a higher layer coverage windows (`restrictions`) to make it a night, weekend or regional shift; lower layers answer the rest of the time.
+
+The first participant of a new layer is on call from its `effective_from` (or from when you create it) until the next handoff, then the rotation moves on.
 
 ## Layer rotation types
 
@@ -41,7 +43,23 @@ This means **higher-`layer_number` layers shadow lower ones during their effecti
 | `weekly` | Hand off once a week at `handoff_time`, on `handoff_day` (0=Sunday .. 6=Saturday) when one is set. |
 | `custom` | Hand off every `rotation_interval_days` days at `handoff_time`. |
 
-`participants` is an ordered list of user UUIDs; the rotation walks the list and wraps around.
+`participants` is an ordered list of user UUIDs; the rotation walks the list and wraps around. A person can appear more than once.
+
+## Coverage windows
+
+`restrictions` limits a layer to recurring windows in its zone:
+
+- **Daily:** `{ "type": "daily", "start_time": "22:00", "duration_minutes": 600 }` covers 22:00 to 08:00 every night. A window can run past midnight.
+- **Weekly:** `{ "type": "weekly", "start_day_of_week": 5, "start_time": "18:00", "duration_minutes": 3840 }` covers Friday 18:00 to Monday 10:00 every week.
+
+Windows keep their local hours across DST changes, so the night window above is 22:00 to 08:00 local on the night the clocks change too. Rotation handoffs happen on schedule whether or not the layer covers at that moment.
+
+## Daylight saving time
+
+Handoffs are compared as instants, not as clock readings:
+
+- When the clocks go back, a handoff whose local time happens twice (01:30 in New York on the first Sunday of November) happens once, at the first occurrence. The repeated hour never hands the pager back.
+- When the clocks go forward, a handoff whose local time is skipped (02:30 in Berlin on the last Sunday of March) happens at the moment the clocks jump, 03:00 local.
 
 ## Overrides
 
@@ -49,15 +67,34 @@ An override beats every layer. Use them for:
 
 - **Holiday cover:** "Bob is covering for Alice from Dec 22 to Jan 2."
 - **Swap weekends:** "I'll take next weekend if you take this one."
-- **Filling gaps:** if an effective window leaves a hole, an override patches it.
+- **Filling gaps:** if the layers leave a hole, an override patches it.
 
-Overrides are time-bounded with `start_at` and `end_at`. When overrides overlap, the **most recently created one wins**.
+Overrides are time-bounded with `start_at` and `end_at`, and `end_at` must be after `start_at`. When overrides overlap, the **most recently created one wins**.
+
+## See who's on call
+
+- **Dashboard:** the on-call page shows who is on call now on every schedule. A schedule's page shows who is on call, until when, who is next, and every shift of the next two weeks, gaps included.
+- **API:** `GET /on_call_schedule/{id}/on_call` answers for now (or any `at`), `GET /on_call_schedule/{id}/shifts` returns the timeline over a range, and `GET /on_call` lists who is on call across your schedules, or one person's shifts with `user_id`. See the [reference](/incident-management/on-call/reference/#see-whos-on-call).
+
+Escalation policies use the same answer when they page a schedule.
 
 ## Common patterns
 
 ### Single weekly rotation
 
 One layer, `rotation_type: weekly`, `handoff_day: 1` (Monday), `handoff_time: 09:00`, `participants: [alice, bob, carol]`. Each engineer is on for one week starting Monday morning.
+
+### Business hours with an after-hours rotation
+
+Layer 1: a weekly rotation of the whole team, no windows. Layer 2: a daily rotation of the day crew with `restrictions: [{ "type": "weekly", "start_day_of_week": 1, "start_time": "09:00", "duration_minutes": 480 }, ...]`, one window per weekday. The day crew answers 09:00 to 17:00 on weekdays; layer 1 answers nights and weekends.
+
+### Weekend coverage
+
+A higher layer with one weekly window, `start_day_of_week: 5`, `start_time: "18:00"`, `duration_minutes: 3840` (Friday 18:00 to Monday 10:00), and the weekend volunteers as participants.
+
+### Follow the sun
+
+Three layers, each with its own `timezone` and one daily 8-hour window in local time: an APAC layer in `Australia/Sydney` from 09:00, an EMEA layer in `Europe/London` from 09:00, and an Americas layer in `America/New_York` from 09:00. Add a bottom layer without windows to catch any hour the three leave uncovered.
 
 ### Primary + secondary
 

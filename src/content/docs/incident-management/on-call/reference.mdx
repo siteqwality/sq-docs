@@ -1,7 +1,7 @@
 ---
 title: On-call schedule reference
-description: Every field on schedules, layers, and overrides, plus how "who's on call" is resolved.
-last_verified: 2026-08-01
+description: Every field on schedules, layers, and overrides, how "who's on call" is resolved, and the endpoints that answer it.
+last_verified: 2026-10-20
 owner: jj
 ---
 
@@ -13,8 +13,10 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `name` | string | required | Schedule label, referenced from escalation levels. |
-| `timezone` | string | `UTC` | IANA timezone name stored on the schedule. Layer handoffs are interpreted in it; an unrecognized value falls back to UTC at resolution time. |
+| `name` | string | required | Schedule label, referenced from escalation levels. 1 to 256 characters. |
+| `timezone` | string | `UTC` | IANA zone name from the tz database (`America/New_York`, `Asia/Singapore`). Anything else is refused with `400`. Layer handoffs and coverage windows are interpreted in it unless the layer sets its own. |
+
+Changing `timezone` with `PUT` keeps whoever is on call now on until their next handoff: each layer that follows the schedule zone is re-anchored so the move does not shift the rotation.
 
 ## Layer
 
@@ -22,22 +24,54 @@ Created under `/on_call_schedule/{schedule_id}/layer`.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `layer_number` | int | `max(existing) + 1` | Layer position. Layers with a **higher** `layer_number` are evaluated first and shadow lower ones during their effective windows. |
+| `layer_number` | int | `max(existing) + 1` | Layer position, 1 or more, unique in the schedule (a taken number is `409`). Layers with a **higher** `layer_number` are evaluated first and shadow lower ones while they cover. |
 | `rotation_type` | enum | required | `daily`, `weekly`, or `custom`. |
-| `rotation_interval_days` | int | none | Days per handoff. Required for `custom` (a `custom` layer without it never resolves). Ignored for `daily` / `weekly`. |
-| `handoff_time` | string | required | `HH:MM` (24-hour) handoff time, interpreted in the schedule's timezone. Anchors the rotation. |
-| `handoff_day` | int | none | Weekly layers only: weekday of the handoff, 0=Sunday .. 6=Saturday, in the schedule's timezone. Values outside 0..6 are rejected at creation. Ignored for `daily` / `custom`. |
-| `participants` | uuid[] | required | Ordered user list. The rotation walks it and wraps around. A layer with no participants never matches. |
-| `effective_from` | rfc3339 | none | Layer applies only from this instant. |
-| `effective_until` | rfc3339 | none | Layer stops applying at this instant. |
+| `rotation_interval_days` | int | none | Days per handoff, 1 to 365. Required for `custom`; ignored for `daily` and `weekly`. |
+| `handoff_time` | string | required | `HH:MM` (24-hour) handoff time in the layer's zone. |
+| `handoff_day` | int | none | Weekly layers only: weekday of the handoff, 0=Sunday .. 6=Saturday, in the layer's zone. Ignored for `daily` and `custom`. |
+| `participants` | uuid[] | required | Ordered list of 1 to 100 users of the account. The rotation walks it and wraps around; a person can appear more than once. |
+| `effective_from` | rfc3339 | none | Layer applies only from this instant. The first participant covers from here (or from creation) to the next handoff. |
+| `effective_until` | rfc3339 | none | Layer stops applying at this instant. Must be after `effective_from`. |
+| `timezone` | string | schedule's | IANA zone for this layer's handoffs and windows, for follow-the-sun layers. |
+| `restrictions` | object[] | `[]` | Coverage windows, at most 28. Empty means the layer covers around the clock. |
+
+Responses also carry `rotation_anchor`, `{ "date": "2026-10-14", "start_index": 0 }`: the local date of one handoff and the participant (0-based) who starts there. The rotation counts whole periods from it, forwards and backwards. Layers created before October 2026 may not show one yet; their rotation carries on unchanged.
 
 Rotation periods:
 
 | `rotation_type` | Period |
 |---|---|
-| `daily` | 24 hours per participant. |
+| `daily` | 1 day per participant. |
 | `weekly` | 7 days per participant. |
 | `custom` | `rotation_interval_days` days per participant. |
+
+### Restriction
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | enum | `daily` (every day) or `weekly` (every week). |
+| `start_day_of_week` | int | Weekly only, required: the day the window opens, 0=Sunday .. 6=Saturday. |
+| `start_time` | string | `HH:MM` (24-hour) local time the window opens. |
+| `duration_minutes` | int | How long it stays open: 1 to 1440 for daily, 1 to 10080 for weekly. A window may run past midnight or past the end of the week. |
+
+Example: weeknights from 18:00 to 09:00 plus whole weekends, in a team's own zone:
+
+```json
+{
+  "rotation_type": "weekly",
+  "handoff_day": 1,
+  "handoff_time": "09:00",
+  "participants": ["<alice>", "<bob>"],
+  "timezone": "Europe/Berlin",
+  "restrictions": [
+    { "type": "weekly", "start_day_of_week": 1, "start_time": "18:00", "duration_minutes": 900 },
+    { "type": "weekly", "start_day_of_week": 2, "start_time": "18:00", "duration_minutes": 900 },
+    { "type": "weekly", "start_day_of_week": 3, "start_time": "18:00", "duration_minutes": 900 },
+    { "type": "weekly", "start_day_of_week": 4, "start_time": "18:00", "duration_minutes": 900 },
+    { "type": "weekly", "start_day_of_week": 5, "start_time": "18:00", "duration_minutes": 3780 }
+  ]
+}
+```
 
 ## Override
 
@@ -45,21 +79,97 @@ Created under `/on_call_schedule/{schedule_id}/override`. An override is a hard 
 
 | Field | Type | Description |
 |---|---|---|
-| `user_id` | uuid | The covering user. |
+| `user_id` | uuid | The covering user, a user of the account. |
 | `start_at` | rfc3339 | Window start (inclusive). |
-| `end_at` | rfc3339 | Window end (exclusive). |
+| `end_at` | rfc3339 | Window end (exclusive). Must be after `start_at`. |
 
 ## How "who's on call at time T" is resolved
 
 1. **Overrides first.** If any override covers `T`, that user is on call. When overrides overlap, the most recently created one wins.
-2. **Layers next, highest `layer_number` first.** A layer is skipped when it has no participants or `T` is outside its `effective_from` / `effective_until` window.
-3. For the first matching layer, the on-call participant is computed from the number of full rotation periods since the layer's anchor handoff, wrapped around `participants`. The anchor is the layer's start date (its `effective_from`, else its creation date) at `handoff_time` in the **schedule's timezone**; periods are counted in local calendar days, so handoffs stay at `handoff_time` local across DST changes.
-4. A weekly layer with a `handoff_day` anchors on that weekday instead: coverage starts immediately at `effective_from` (the first participant serves a shortened first stint) and every handoff lands on the configured weekday at `handoff_time`.
+2. **Layers next, highest `layer_number` first.** A layer is skipped when it has no participants, when `T` is outside its `effective_from` / `effective_until` window (a layer without `effective_from` starts when it was created), or when it has restrictions and `T` is in none of them.
+3. For the first layer left, the on-call participant is `participants[(start_index + periods) mod n]`, where `periods` counts whole rotation periods from the anchor handoff to the latest handoff at or before `T`. Handoffs fall at `handoff_time` local on the anchor date plus whole periods, counted on the local calendar.
+4. Handoffs are instants. A handoff whose local time happens twice (the night the clocks go back) happens at the first occurrence; one whose local time is skipped (the night they go forward) happens at the jump.
 5. If nothing matches, the schedule has a coverage gap and resolves to no one.
 
+A new layer is anchored on the latest handoff at or before its `effective_from` (or its creation), starting with the first participant, so it covers from that instant. A weekly layer with a `handoff_day` anchors on the latest handoff on that weekday.
+
 <Aside type="caution">
-A coverage gap resolves to no responder, and an escalation level targeting only that schedule pages nobody for that window. Keep a bottom layer without effective bounds as a catch-all.
+A coverage gap resolves to no responder, and an escalation level targeting only that schedule pages nobody for that window. Keep a bottom layer without effective bounds or restrictions as a catch-all, and check the shifts endpoint (or the schedule page) for gaps.
 </Aside>
+
+## See who's on call
+
+All three answer from the same resolver the escalation engine uses, so a shift and a point query never disagree.
+
+### `GET /on_call_schedule/{schedule_id}/on_call`
+
+Who is on call at `at` (RFC 3339, default now), the shift's bounds, and the shift after it.
+
+```bash
+curl "https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/on_call" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+```json
+{
+  "data": {
+    "schedule_id": "4c8395d5-...",
+    "at": "2026-10-20T15:00:00Z",
+    "timezone": "America/New_York",
+    "on_call": {
+      "user_id": "20400d91-...",
+      "source": "layer",
+      "layer_id": "b01a234d-...",
+      "layer_number": 1,
+      "starts_at": "2026-10-20T13:00:00Z",
+      "ends_at": "2026-10-21T13:00:00Z"
+    },
+    "next": {
+      "user_id": "1c887628-...",
+      "source": "override",
+      "override_id": "7f0e...",
+      "starts_at": "2026-10-21T13:00:00Z",
+      "ends_at": "2026-10-21T18:00:00Z"
+    }
+  }
+}
+```
+
+- `source` is `layer`, `override`, or `gap`. A gap has no `user_id`.
+- `starts_at` and `ends_at` are where the answer changes: a handoff to someone else, a window edge, an override, or a layer starting or ending. A handoff from a person to the same person is not a boundary.
+- A shift that runs more than 90 days past `at` has no `ends_at` (or `starts_at`), and then no `next`.
+
+### `GET /on_call_schedule/{schedule_id}/shifts`
+
+The final timeline: consecutive shifts from `since` (default now) to `until` (default 14 days later, at most 90 days after `since`), overrides applied and gaps included. The first shift can start before `since` and the last can end after `until`; each one has the same bounds a point query inside it returns.
+
+```bash
+curl "https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/shifts?since=2026-10-20T00:00:00Z&until=2026-11-03T00:00:00Z" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+The response is `{ "schedule_id", "since", "until", "timezone", "shifts": [...] }`, each shift shaped like `on_call` above.
+
+### `GET /on_call`
+
+Shifts across the account's schedules, earliest first, gaps left out. Each row adds `schedule_id` and `schedule_name`.
+
+| Query | Description |
+|---|---|
+| `user_id` | Only this user's shifts ("my shifts"). |
+| `schedule_id` | Only this schedule. |
+| `since` | RFC 3339, default now. |
+| `until` | RFC 3339, default `since`, at most 90 days after it. |
+
+With no range it answers "who is on call right now", one row per covered schedule. `GET /on_call?user_id=$ME&until=2026-11-20T00:00:00Z` lists your shifts until then.
+
+### Errors
+
+| Status | When |
+|---|---|
+| `400` | A timestamp that is not RFC 3339 (or outside 1970 to 2200), a malformed UUID, `until` before `since`, or a range over 90 days. On writes: an unknown time zone, an empty or overlong name, `handoff_time` not `HH:MM`, `handoff_day` outside 0..6, `custom` without `rotation_interval_days` or one outside 1..365, `effective_until` not after `effective_from`, no participants or one outside the account, `layer_number` below 1, a malformed restriction, or an override whose `end_at` is not after `start_at`. |
+| `404` | The schedule, or the `user_id` or `schedule_id` you filter by, does not exist in your account. |
+| `409` | Creating a layer with a `layer_number` the schedule already has. |
 
 ## Endpoints
 
@@ -67,15 +177,18 @@ A coverage gap resolves to no responder, and an escalation level targeting only 
 |---|---|---|
 | `POST` / `GET` | `/on_call_schedule` | Create / list schedules. |
 | `GET` / `PUT` / `DELETE` | `/on_call_schedule/{schedule_id}` | Detail (with layers + overrides) / update / delete. |
+| `GET` | `/on_call_schedule/{schedule_id}/on_call` | Who is on call now (or at `at`), until when, and who is next. |
+| `GET` | `/on_call_schedule/{schedule_id}/shifts` | The final timeline over a range. |
+| `GET` | `/on_call` | Who is on call across schedules, or one user's shifts. |
 | `POST` / `GET` | `/on_call_schedule/{schedule_id}/layer` | Create / list layers. |
 | `DELETE` | `/on_call_schedule/{schedule_id}/layer/{layer_id}` | Delete a layer. |
 | `POST` / `GET` | `/on_call_schedule/{schedule_id}/override` | Create / list overrides. |
 | `DELETE` | `/on_call_schedule/{schedule_id}/override/{override_id}` | Delete an override. |
 
-Layers and overrides have no update endpoint: delete and recreate to change one. Deleting a whole schedule needs an admin or an API key; other roles get `403`.
+Layers and overrides have no update endpoint: delete and recreate to change one. A recreated layer is anchored afresh, so check the shifts before and after. Deleting a whole schedule needs an admin or an API key; other roles get `403`. API keys and connected apps scoped to `incidents` can read all three on-call views.
 
 ## See also
 
-- [On-call overview](/incident-management/on-call/overview/) for patterns (weekly rotation, primary + secondary).
+- [On-call overview](/incident-management/on-call/overview/) for patterns (weekly rotation, business hours, weekends, follow the sun, primary + secondary).
 - [Rotation overrides](/incident-management/on-call/how-to/rotation-overrides/) for holiday cover and swaps.
 - [Escalation policy reference](/incident-management/escalation/reference/) for wiring schedules into paging.
