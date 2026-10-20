@@ -1,7 +1,7 @@
 ---
 title: Customer audit log
 description: Every change made through the dashboard, the API or an AI assistant, with who made it, readable for the last 90 days.
-last_verified: 2026-10-18
+last_verified: 2026-10-19
 owner: jj
 ---
 
@@ -74,6 +74,8 @@ Open a successful escalation policy, on-call schedule or service change to see *
 
 The API exposes these snapshots as `configuration_change.before` and `configuration_change.after`. Each snapshot has a `kind` (`escalation_policy`, `on_call_schedule` or `service`) and `settings`. A creation has a null `before`; a deletion has a null `after`. The dashboard CSV export includes both snapshots.
 
+A change to the account's [notification settings](/incident-management/notifications/settings/) records the same before and after comparison, so you can see who turned flap hold or acknowledgement-stops-repeats on or off, and when.
+
 Policy targets and schedule participants retain their order and repeated entries. Service links include the resource IDs and types. Monitor URLs, notification destinations and credentials are excluded from the snapshots.
 
 These are observed snapshots, read separately from the change. Concurrent edits can affect the comparison. Snapshot capture is best-effort: an unavailable snapshot leaves the ordinary audit entry without a comparison. Earlier entries and rejected requests do not gain snapshots retroactively.
@@ -83,6 +85,10 @@ These are observed snapshots, read separately from the change. Concurrent edits 
 A successful responder link writes `incident.acknowledge` or `incident.resolve` with `via: "action_link"`, the member and the incident. Its recorded path is `/incident/action/[redacted]`; the action token is never stored in the audit entry. Opening the confirmation page does not write a successful action, and replaying a used link does not add another one.
 
 An accepted, verified Slack action uses `via: "slack"`. Both action sources use `actor_type: "session"` to identify the member, even when no browser session was needed. Their `request_ip` and `user_agent` are absent.
+
+## Outage acknowledgements
+
+Acknowledging a monitor outage is recorded in the audit log, and the acknowledgement also appears in the monitor's alert history. See [Acknowledge a monitor outage](/incident-management/notifications/how-to/acknowledge-outages/).
 
 ## Query it
 

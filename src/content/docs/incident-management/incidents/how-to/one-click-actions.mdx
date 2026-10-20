@@ -1,7 +1,7 @@
 ---
 title: Acknowledge from the alert itself
 description: Single-use acknowledge and resolve links in email and SMS, made for the person being paged. Shared channels get a link to the incident.
-last_verified: 2026-10-18
+last_verified: 2026-10-19
 owner: jj
 ---
 
@@ -61,6 +61,10 @@ Two practical notes:
 - **Suspended accounts can still acknowledge and resolve.** Both the links and the acknowledge and resolve endpoints are deliberately exempt from suspension blocking, so an account can always silence its own pager.
 
 If a link cannot be created when the message is sent, the message carries the link to the incident page instead.
+
+## Monitor outage links
+
+These links are for incidents. The down alert email for a monitor outage carries its own acknowledge link, which acknowledges the outage and, if the outage opened an incident, the incident too. See [acknowledge a monitor outage](/incident-management/notifications/how-to/acknowledge-outages/#the-email-link).
 
 ## Slack
 

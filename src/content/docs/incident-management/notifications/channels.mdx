@@ -1,7 +1,7 @@
 ---
 title: Channels reference
 description: Every notification channel type, from email and SMS to PagerDuty, Jira Service Management (Opsgenie), Google Chat, Mattermost, Pushover, and Pushbullet, and which alerts reach each one.
-last_verified: 2026-10-13
+last_verified: 2026-10-19
 owner: jj
 ---
 
@@ -67,7 +67,7 @@ Creating or updating an HTTP, heartbeat or DNS record monitor still succeeds whe
 - Validated against a basic email regex.
 - No verification step, so anything that parses as an email is accepted.
 - Sender is `Site Qwality <no-reply@notifications.siteqwality.com>`. Allow it to avoid spam folders.
-- The subject names the monitor type, the state and the monitor (for example `[HTTP down] prod-api`); the body links to the monitor in the dashboard.
+- The subject names the monitor type, the state and the monitor (for example `[HTTP down] prod-api`); the body links to the monitor in the dashboard. Down alerts for HTTP monitors, heartbeat (cron) monitors and browser checks also carry a single-use [acknowledge link](/incident-management/notifications/how-to/acknowledge-outages/#the-email-link).
 
 ## SMS
 

@@ -1,7 +1,7 @@
 ---
 title: Escalation policies
 description: Ordered chains of "page these targets, wait, then escalate", with timeouts, repeat cycles, and on-call schedule integration.
-last_verified: 2026-10-16
+last_verified: 2026-10-19
 owner: jj
 ---
 
@@ -86,6 +86,7 @@ Every route into acknowledgement does this, so it does not matter how the respon
 - `POST /incident/{id}/acknowledge` and `POST /incident/{id}/resolve`
 - the [acknowledge and resolve links](/incident-management/incidents/how-to/one-click-actions/) in a paged responder's email and SMS
 - the dashboard's incident page
+- [acknowledging the monitor outage](/incident-management/notifications/how-to/acknowledge-outages/#incidents-opened-by-the-outage) that opened the incident
 - automatic recovery, when the monitor that opened the incident comes back
 
 <Aside type="caution" title="An exhausted policy can still page once more">

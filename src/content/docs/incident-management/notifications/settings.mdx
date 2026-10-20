@@ -1,0 +1,98 @@
+---
+title: Notification settings
+description: Two account-wide switches under Notifications, Settings. One decides whether monitors hold alerts while they flap, the other whether acknowledging an outage stops its repeat alerts.
+last_verified: 2026-10-19
+owner: jj
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+Notification settings are account-wide switches that change how monitor alerts behave. Open **Notifications** and choose **Settings**, the button beside **Maintenance Windows**. The page shows the two switches, a plain-words description of each and who changed them last.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `flap_hold` | on | Holds alerts while a monitor flaps. Applies to HTTP monitors for now. Every monitor follows it unless it has its own override. |
+| `outage_ack_stops_repeats` | on | When someone acknowledges an outage, its repeat alerts (`resend_every_minutes`) stop. When off, an acknowledgement only records who is on it. |
+
+An account that has never saved these settings uses the defaults.
+
+## Hold alerts while flapping
+
+A monitor flaps when it keeps changing status. With flap hold on, Site Qwality sends one **Flapping** notice, holds each short outage and drops it together with its recovery if the monitor comes back within 5 minutes. [Confirm recoveries and hold flapping alerts](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/) has the exact thresholds and what each channel receives.
+
+Flap hold covers HTTP monitors for now. Heartbeat (cron) monitors and browser checks do not hold alerts, whatever this switch says.
+
+### Per-monitor override
+
+Each HTTP monitor can follow the account setting or override it. In the monitor form, the **Hold alerts while flapping** field is a choice:
+
+| Choice | `flap_hold_override` | Result |
+|---|---|---|
+| Follow the Notifications setting (the form shows whether that is currently on or off) | `null` | The monitor does what the account setting says. |
+| Always hold | `true` | The monitor holds flaps even when the account setting is off. |
+| Never hold | `false` | The monitor never holds flaps, even when the account setting is on. |
+
+The monitor's sidebar shows the value in effect and whether it comes from the account. The value in effect is the monitor's override when it has one, otherwise the account setting, otherwise on.
+
+<Aside type="caution" title="Existing monitors now follow the account setting">
+Flap hold used to be a per-monitor field, and monitors created before it shipped had it off. Those monitors now follow the account setting, which is on by default, so **they start holding flaps** unless you set them to never hold. Monitors where someone had explicitly turned flap hold off after it shipped keep that choice as **Never hold**.
+
+To keep the old behaviour for the whole account, turn `flap_hold` off here. To keep it for single monitors, set those monitors to never hold.
+</Aside>
+
+## Acknowledge stops repeats
+
+A [notification group](/incident-management/notifications/overview/#notification-groups) with `resend_every_minutes` repeats the down alert until the monitor recovers. With `outage_ack_stops_repeats` on, [acknowledging the outage](/incident-management/notifications/how-to/acknowledge-outages/) ends the repeats: the next scheduled repeat sees the acknowledgement, sends nothing and cancels the rest. The recovery alert is still sent.
+
+With the switch off, an acknowledgement is only a record of who is on the outage, and the repeats continue until the monitor recovers.
+
+## API
+
+```bash
+curl https://api.siteqwality.com/account/notification_settings \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+```json
+{
+  "flap_hold": true,
+  "outage_ack_stops_repeats": true,
+  "updated_at": null,
+  "updated_by_user_id": null,
+  "updated_by_name": null
+}
+```
+
+`updated_at` is an rfc3339 timestamp, or `null` while the account has never saved the settings. `updated_by_user_id` and `updated_by_name` name whoever saved them last, or are `null`.
+
+`PUT /account/notification_settings` takes either field or both. A field you leave out stays as it is. It returns the same shape as the read.
+
+```bash
+curl -X PUT https://api.siteqwality.com/account/notification_settings \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "flap_hold": false }'
+```
+
+Changing the settings needs the same role as editing notification groups.
+
+### Monitor fields
+
+HTTP monitor responses carry two fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `flap_hold` | bool | The value in effect: the override when there is one, otherwise the account setting. Read-only. |
+| `flap_hold_override` | bool \| null | The monitor's own choice. `null` follows the account. |
+
+`POST /http/job` and `PUT /http/job/{job_id}` accept `flap_hold_override`. On update, leaving it out keeps the current value and sending `null` returns the monitor to following the account. A request that still sends the older `flap_hold` field sets the override.
+
+## Audit
+
+A change to these settings goes through the [configuration audit](/enterprise/audit-log/#configuration-comparisons), with the settings before and after, so the audit log shows who changed which switch and when.
+
+## See also
+
+<LinkCard title="Confirm recoveries and hold flapping alerts" description="Recovery period, flap thresholds and what gets held." href="/uptime-monitoring/http-checks/how-to/recovery-and-flapping/" />
+<LinkCard title="Acknowledge a monitor outage" description="Where to acknowledge, and what it does." href="/incident-management/notifications/how-to/acknowledge-outages/" />
+<LinkCard title="Notifications overview" description="Channels, groups, contact methods and rules." href="/incident-management/notifications/overview/" />

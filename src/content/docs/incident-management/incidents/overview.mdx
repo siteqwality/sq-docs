@@ -1,7 +1,7 @@
 ---
 title: Incidents
 description: The record-and-timeline object that tracks an outage from "we noticed something" to "we're done."
-last_verified: 2026-10-16
+last_verified: 2026-10-19
 owner: jj
 ---
 
@@ -83,6 +83,8 @@ For these, use `POST /incident` (standalone) or `POST /status_page/{id}/incident
 Acknowledging an incident is **not** resolving it. Ack stops the page (so escalation won't keep paging), but the incident stays open until someone explicitly resolves it. This is intentional: the responder claims ownership, then has the time to actually fix the thing without their phone going off.
 
 The first person to acknowledge an incident that has no lead becomes its `lead` participant.
+
+An incident that a monitor outage opened automatically is linked to that outage's own [acknowledgement](/incident-management/notifications/how-to/acknowledge-outages/#incidents-opened-by-the-outage). Acknowledging the outage acknowledges the incident if it is still `triggered`, and acknowledging the incident records the outage acknowledgement. Incidents you create by hand are never linked to an outage.
 
 ## Working an incident with others
 

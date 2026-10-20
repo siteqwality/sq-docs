@@ -347,6 +347,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Overview', slug: 'incident-management/notifications/overview' },
 								{ label: 'Who gets notified', slug: 'incident-management/notifications/default-routing' },
+								{ label: 'Notification settings', slug: 'incident-management/notifications/settings' },
 								{ label: 'Channels reference', slug: 'incident-management/notifications/channels' },
 								{
 									label: 'How-to guides',

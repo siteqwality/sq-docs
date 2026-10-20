@@ -1,7 +1,7 @@
 ---
 title: HTTP check reference
 description: Every field on an HTTP check, with defaults, validation limits, and status meanings.
-last_verified: 2026-10-14
+last_verified: 2026-10-19
 owner: jj
 ---
 
@@ -24,7 +24,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `min_healthy_regions` | int | `1` | Minimum locations that must pass for the check to count as healthy. At least `1`, at most the number of `check_regions`. In a run where some locations return no result, it is capped at the number that did. |
 | `confirmation_threshold` | int | `1` | Consecutive failed checks required before the monitor transitions to `failed` and alerts. `1` to `10`. See [requiring N failed checks](/uptime-monitoring/http-checks/how-to/confirmation-threshold/). |
 | `recovery_period_runs` | int | `2` | Consecutive healthy checks before the all clear is sent and the incident resolves. `1` to `10`; `1` is immediate. Monitors created before this field existed have `1`. See [recovery and flapping](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/). |
-| `flap_hold` | bool | `true` | Hold short outages while the monitor flaps and send one notice instead. Monitors created before this field existed have `false`. See [recovery and flapping](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/). |
+| `flap_hold_override` | bool \| null | `null` | Whether this monitor holds short outages while it flaps. `null` follows the account's [notification settings](/incident-management/notifications/settings/) (on by default), `true` always holds, `false` never holds. On update, leaving it out keeps the current value. A request that still sends `flap_hold` sets this override. See [recovery and flapping](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/#turn-flap-hold-on-or-off). |
 | `follow_redirects` | bool | `true` | Follow HTTP redirects before evaluating the response. |
 | `request_body` | string | none | Body sent with the request. |
 | `content_type` | enum | none | `Content-Type` of the request body. See [content types](#content-types). |
@@ -61,6 +61,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `last_run_at` | rfc3339 \| null | Most recent check execution. |
 | `last_status_change_at` | rfc3339 \| null | When `current_status` last transitioned. |
 | `created_at` | rfc3339 | When the check was created. |
+| `flap_hold` | bool | The flap hold value in effect: `flap_hold_override` when it is set, otherwise the account's `flap_hold` notification setting. |
 | `tls_job_id` | uuid \| null | Paired TLS check, if `monitor_tls` is on. |
 | `dns_job_id` | uuid \| null | Paired domain expiry check, if `monitor_dns` is on and the domain is registrable. |
 | `page_speed_job_id` | uuid \| null | Paired page-speed check, if `monitor_page_speed` is on. |

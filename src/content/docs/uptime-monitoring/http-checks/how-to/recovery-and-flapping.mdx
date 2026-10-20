@@ -1,29 +1,31 @@
 ---
 title: Confirm recoveries and hold flapping alerts
-description: Use recovery_period_runs to send the all clear only after several healthy checks, and flap_hold to stop a monitor that keeps bouncing from paging you on every change.
-last_verified: 2026-10-14
+description: Use recovery_period_runs to send the all clear only after several healthy checks, and the flap hold setting to stop a monitor that keeps bouncing from paging you on every change.
+last_verified: 2026-10-19
 owner: jj
 ---
 
-import { LinkCard } from '@astrojs/starlight/components';
+import { Aside, LinkCard } from '@astrojs/starlight/components';
 
 A site that comes back for one check and fails again sends you an all clear and then a second outage alert a minute later. A site that bounces up and down every few minutes sends a pair of alerts every time. Two HTTP check settings deal with this:
 
 - `recovery_period_runs` waits for several healthy checks before the all clear.
-- `flap_hold` holds short outages while a monitor flaps and sends one notice instead.
+- Flap hold holds short outages while a monitor flaps and sends one notice instead. It is an account setting that each monitor can override.
 
-New monitors get both: a recovery period of `2` and the flap hold on. Monitors created before they shipped keep `recovery_period_runs: 1` and `flap_hold: false`, so nothing changes until you opt in. The monitor form offers the new defaults on those monitors.
+New monitors get a recovery period of `2`. Monitors created before it shipped keep `recovery_period_runs: 1`, so nothing changes until you opt in. The monitor form offers the new default on those monitors. Flap hold is different: it follows the account's [notification settings](/incident-management/notifications/settings/), which have it on, so every monitor holds flaps unless it is set to never hold.
 
 | Field | Type | Default for new monitors | Range |
 |---|---|---|---|
 | `recovery_period_runs` | int | `2` | `1` to `10`. `1` sends the all clear on the first healthy check. |
-| `flap_hold` | bool | `true` | |
+| `flap_hold_override` | bool \| null | `null` | `null` follows the account setting, `true` always holds, `false` never holds. |
+
+`flap_hold` on a response is the value in effect, a read-only bool. See [turn flap hold on or off](#turn-flap-hold-on-or-off).
 
 ```bash
 curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{ "recovery_period_runs": 2, "flap_hold": true }'
+  -d '{ "recovery_period_runs": 2, "flap_hold_override": null }'
 ```
 
 Out-of-range values are rejected with `400` and the message `recovery_period_runs must be between 1 and 10`. There is no plan gate.
@@ -51,7 +53,21 @@ SMS, PagerDuty, Opsgenie and Pushover never get the Flapping or Stable notices, 
 
 Held outages show on the monitor page with **Alert held while flapping**, and **then sent** once one broke through. The activity feed records when flapping started, each break-through and when it ended.
 
+### Turn flap hold on or off
+
+Flap hold applies to HTTP monitors for now. Whether a monitor holds depends on two things:
+
+- The account setting `flap_hold`, under **Notifications**, **Settings**. It is on by default.
+- The monitor's own `flap_hold_override`. In the monitor form, **Hold alerts while flapping** lets you follow the Notifications setting, always hold or never hold. `null` follows the account, `true` always holds and `false` never holds.
+
+An override wins over the account setting. A monitor's `flap_hold` is the result: the override if it has one, otherwise the account setting, otherwise on. `PUT /http/job/{job_id}` takes `flap_hold_override` (leave it out to keep it, send `null` to follow the account), and a request that still sends `flap_hold` sets the override.
+
+<Aside type="caution" title="Older monitors now hold flaps">
+Monitors created before flap hold shipped used to have it off. They now follow the account setting, so they start holding flaps unless you set them to never hold. A monitor where flap hold was explicitly turned off after it shipped stays on never hold.
+</Aside>
+
 ## See also
 
+<LinkCard title="Notification settings" description="The account-wide flap hold switch and the per-monitor override." href="/incident-management/notifications/settings/" />
 <LinkCard title="Require N failed checks before alerting" description="confirmation_threshold, the location quorum and transport retries." href="/uptime-monitoring/http-checks/how-to/confirmation-threshold/" />
 <LinkCard title="HTTP check reference" description="Every field on an HTTP check, with defaults and limits." href="/uptime-monitoring/http-checks/reference/" />

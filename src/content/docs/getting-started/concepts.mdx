@@ -1,7 +1,7 @@
 ---
 title: Concepts and glossary
 description: The vocabulary used across the Site Qwality docs and product, defined precisely.
-last_verified: 2026-10-16
+last_verified: 2026-10-19
 owner: jj
 ---
 
@@ -52,6 +52,10 @@ A single timeline entry on an incident: a change of status with a written messag
 ### Acknowledgement
 
 When a responder claims an incident, its `responder_status` flips from `triggered` to `acknowledged`. This stops further escalation but doesn't resolve the incident.
+
+### Outage acknowledgement
+
+A person's claim on a monitor outage, separate from an incident: it records who is on a down HTTP, heartbeat (cron) or browser monitor and, by default, stops that outage's repeat alerts. The recovery alert is still sent. Acknowledge from the monitor page, the link in the down alert email, the API or an AI assistant. See [Acknowledge a monitor outage](/incident-management/notifications/how-to/acknowledge-outages/).
 
 ### Participant
 
@@ -119,7 +123,7 @@ A notification belongs to a **notification group**; it's not attached to monitor
 
 ### Notification group
 
-A bundle of notification channels that monitors attach to. Optionally has `delay_send_after_minutes` (wait this long before the first down alert) and `resend_every_minutes` (repeat the down alert until the monitor recovers). Both apply to HTTP monitors and browser checks only. One group per account can be the default group (`is_default`), which new monitors get when they are created without groups; at signup that is the **Default** group.
+A bundle of notification channels that monitors attach to. Optionally has `delay_send_after_minutes` (wait this long before the first down alert) and `resend_every_minutes` (repeat the down alert until the monitor recovers or someone acknowledges the outage). Both apply to HTTP monitors and browser checks only. One group per account can be the default group (`is_default`), which new monitors get when they are created without groups; at signup that is the **Default** group.
 
 ### Contact method
 

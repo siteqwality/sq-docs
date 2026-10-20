@@ -1,7 +1,7 @@
 ---
 title: Services
 description: Group monitors into a service, choose who gets paged, and decide whether failures open incidents on their own.
-last_verified: 2026-10-16
+last_verified: 2026-10-19
 owner: jj
 ---
 
@@ -85,7 +85,7 @@ When every monitor on the incident has recovered, `auto_resolve` decides whether
 | Value | What happens |
 |---|---|
 | `always` | The incident resolves itself. |
-| `unless_acknowledged` (default) | It resolves itself unless someone acknowledged it. An acknowledged incident stays open for a person to resolve. |
+| `unless_acknowledged` (default) | It resolves itself unless someone acknowledged it, including by [acknowledging the outage](/incident-management/notifications/how-to/acknowledge-outages/#incidents-opened-by-the-outage) that opened it. An acknowledged incident stays open for a person to resolve. |
 | `never` | It stays open until someone resolves it. |
 
 <Aside type="note" title="Retired settings">

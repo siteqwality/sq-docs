@@ -1,7 +1,7 @@
 ---
 title: Who gets notified
 description: How monitor alerts and incident pages reach people, the account's default notification group, and how to find monitors that notify no one.
-last_verified: 2026-10-16
+last_verified: 2026-10-19
 owner: jj
 ---
 
@@ -24,7 +24,7 @@ Every channel in each group             Each targeted user's notification
 (email, SMS, Slack, webhook, ...)       rules, then their contact methods
 ```
 
-**Monitor alerts** go to the notification groups attached to the monitor (`group_notification_ids`). No incident is involved, and nobody acknowledges them.
+**Monitor alerts** go to the notification groups attached to the monitor (`group_notification_ids`). No incident is involved. A person can still [acknowledge the outage](/incident-management/notifications/how-to/acknowledge-outages/), which records who is on it and, by default, stops its repeat alerts.
 
 **Incident pages** go through the escalation policy of the incident's service. Each level pages its users, and each user's [notification rules](/incident-management/notifications/how-to/notification-rules/) decide which of their [contact methods](/incident-management/notifications/how-to/contact-methods/) fire. An incident opens automatically only when a monitor is linked to a [service](/incident-management/services/overview/) whose `incident_creation_mode` is `auto`; otherwise you open it by hand.
 
