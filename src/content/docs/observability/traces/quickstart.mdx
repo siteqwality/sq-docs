@@ -1,20 +1,25 @@
 ---
 title: Traces quickstart
-description: Configure traces collection and verify readable data in the correct account.
-last_verified: 2026-10-18
+description: Send your first traces in about five minutes, from any of eight languages or the platform you already use.
+last_verified: 2026-10-20
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
+import TechGrid from '../../../../components/TechGrid.astro';
 
-<Aside type="note" title="Early access">
-Logs, traces and metrics are in early access. To enable them for your account, email [hello@siteqwality.com](mailto:hello@siteqwality.com). Until then, telemetry sent from the account is refused.
-</Aside>
+Pick your language. Each guide takes about five minutes: install, add your key and start your app. Most frameworks are traced automatically from there.
 
-1. Open [Add data](https://app.siteqwality.com/add-data?signal=traces), select your platform and create a scoped ingest key. Choose a stable service name and environment. Keep the key on your server.
-2. Follow the [curl guide](/observability/platforms/curl/) for a standalone OTLP JSON sample, or your language/platform guide for real instrumentation. Use `https://otlp.siteqwality.com/v1/traces` for the OTLP signal endpoint and the required Authorization header. An arbitrary JSON record belongs to its adapter route, not an OTLP envelope.
-3. Inspect the response, including partial-success counters. Accepted records reached storage or durable spill; this is separate from readable data.
-4. Choose **Check again** in Add data, then open [Traces](https://app.siteqwality.com/traces). Set the recent time window and your service/environment. Check read permissions if the first-data query is denied.
-5. Inspect a record/sample and its fields. Generate real application traffic before expecting a useful chart or trace tree. Save a useful view with a relative time range if you want it to move with the clock.
+<BeforeYouStart />
 
-Use separate read-only credentials for API queries. See the [traces reference](/observability/traces/reference/), [query examples](/observability/query/) and [failure handling](/observability/ingest/#failure-handling). No browser test sends or stores your server ingest key.
+<TechGrid kind="languages" signal="traces" />
+
+## Or send from your platform
+
+<TechGrid kind="platforms" signal="traces" />
+
+Anything else that speaks OTLP over HTTP works too: point it at `https://otlp.siteqwality.com` with your key in the `Authorization` header. See [Ingest routes and limits](/observability/ingest/).
+
+## Check that it worked
+
+Open [Traces](https://app.siteqwality.com/traces). Until your first span arrives, the page shows setup help, then it switches to your data on its own. Next, read the [traces reference](/observability/traces/reference/) or try a [query](/observability/query/).

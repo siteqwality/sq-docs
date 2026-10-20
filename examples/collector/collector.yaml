@@ -1,0 +1,40 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 127.0.0.1:4318
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+    spike_limit_mib: 64
+  resource:
+    attributes:
+      - {key: service.name, value: "checkout", action: upsert}
+      - {key: deployment.environment.name, value: "production", action: upsert}
+  batch:
+    send_batch_size: 256
+    send_batch_max_size: 512
+    timeout: 1s
+exporters:
+  otlphttp/siteqwality:
+    endpoint: https://otlp.siteqwality.com
+    headers:
+      Authorization: "Bearer YOUR_INGEST_KEY"
+    compression: gzip
+    sending_queue: {enabled: true, queue_size: 1000}
+    retry_on_failure: {enabled: true, initial_interval: 1s, max_interval: 30s, max_elapsed_time: 300s}
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/siteqwality]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/siteqwality]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/siteqwality]

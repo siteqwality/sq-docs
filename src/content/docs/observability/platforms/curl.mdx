@@ -1,58 +1,39 @@
 ---
 title: curl / HTTP
 description: Send telemetry from curl / HTTP to Site Qwality with scoped ingest authentication.
-last_verified: 2026-10-18
+last_verified: 2026-10-20
 owner: jj
 ---
 
-This guide configures logs, traces, metrics. You need a Site Qwality account with early access to telemetry (email [hello@siteqwality.com](mailto:hello@siteqwality.com) to request it) and an ingest key from [API keys](https://app.siteqwality.com/account?tab=api-keys). Replace YOUR_INGEST_KEY on your server. Never use a real key in a public example.
+import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
+import Snippet from '../../../../components/Snippet.astro';
+import logs from '../../../../../examples/curl/logs.sh?raw';
+import traces from '../../../../../examples/curl/traces.sh?raw';
+import metrics from '../../../../../examples/curl/metrics.sh?raw';
+
+This guide configures logs, traces, metrics. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+
+<BeforeYouStart />
 
 ## 1. Send an OTLP logs sample
 
-Run in a terminal with curl and a POSIX shell. Each run generates a current timestamp. The trace sample uses fixed demonstration IDs; use unique IDs for real requests.
+Run in a terminal with curl and a POSIX shell. Each run sends a record with the current time.
 
-```bash
-timestamp="$(date +%s)000000000"
-curl --fail-with-body -X POST 'https://otlp.siteqwality.com/v1/logs' \
-  -H 'Authorization: Bearer YOUR_INGEST_KEY' \
-  -H 'Content-Type: application/json' \
-  --data-binary '{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"my-service"}},{"key":"deployment.environment.name","value":{"stringValue":"production"}}]},"scopeLogs":[{"logRecords":[{"timeUnixNano":"'"$timestamp"'","severityNumber":9,"severityText":"INFO","body":{"stringValue":"Hello from my service"}}]}]}]}'
-```
+<Snippet code={logs} lang="bash" />
 
 ## 2. Send an OTLP traces sample
 
-Run in a terminal with curl and a POSIX shell. Each run generates a current timestamp. The trace sample uses fixed demonstration IDs; use unique IDs for real requests.
+This sample uses fixed demonstration trace and span IDs; use unique IDs for real requests.
 
-```bash
-timestamp="$(date +%s)000000000"
-start_timestamp="$(($(date +%s) - 1))000000000"
-curl --fail-with-body -X POST 'https://otlp.siteqwality.com/v1/traces' \
-  -H 'Authorization: Bearer YOUR_INGEST_KEY' \
-  -H 'Content-Type: application/json' \
-  --data-binary '{"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"my-service"}},{"key":"deployment.environment.name","value":{"stringValue":"production"}}]},"scopeSpans":[{"spans":[{"traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","name":"example.request","kind":2,"startTimeUnixNano":"'"$start_timestamp"'","endTimeUnixNano":"'"$timestamp"'","status":{"code":1}}]}]}]}'
-```
+<Snippet code={traces} lang="bash" />
 
 ## 3. Send an OTLP metrics sample
 
-Run in a terminal with curl and a POSIX shell. Each run generates a current timestamp. The trace sample uses fixed demonstration IDs; use unique IDs for real requests.
+<Snippet code={metrics} lang="bash" />
 
-```bash
-timestamp="$(date +%s)000000000"
-curl --fail-with-body -X POST 'https://otlp.siteqwality.com/v1/metrics' \
-  -H 'Authorization: Bearer YOUR_INGEST_KEY' \
-  -H 'Content-Type: application/json' \
-  --data-binary '{"resourceMetrics":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"my-service"}},{"key":"deployment.environment.name","value":{"stringValue":"production"}}]},"scopeMetrics":[{"metrics":[{"name":"example.temperature","unit":"Cel","gauge":{"dataPoints":[{"timeUnixNano":"'"$timestamp"'","asDouble":21.5}]}}]}]}]}'
-```
+## See your data
 
-## Confirm readable data
-
-Open [Add data](https://app.siteqwality.com/add-data?platform=curl), select the signal and choose **Check again**. This reads retained data permitted for your account and member. A permission error is not proof that collection failed. Open the explorer, select your service/environment and a recent window.
-
-- Create an ingest key for this account and only the signals you send. Read-only keys cannot ingest; ingest keys cannot query. Use a separate read-only API key or your signed-in session for exploration.
-- A successful OTLP HTTP response is 200 with an ExportResponse. Inspect partialSuccess for rejected records. JSON /ingest and /metrics return 200 with accepted, rejected and errors. Remote-write returns 204 on full acceptance; platform adapters use their own acknowledgement formats.
-- Accepted data has been written to storage or durable spill. It can appear later during replay. Acceptance does not mean every record passed validation or that it is already searchable. Retry transient 429/5xx failures with backoff and honor Retry-After; do not blindly resend an entire partially accepted batch.
-- Requests allow 4,000,000 wire bytes, up to 40,000,000 inflated bytes for logs/traces or 16,000,000 for metrics, and at most 100:1 inflation. Use gzip or supported deflate on HTTP; Prometheus uses Snappy. Split oversized requests instead of retrying unchanged.
-- 401/403: check key, account, signal scope and collection access. 413: reduce batch bytes. 415: check protocol and content type. 429: check quota/cardinality/rate and wait for Retry-After. Persistent 5xx: retain your local buffer and contact support with request time, never the key.
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 

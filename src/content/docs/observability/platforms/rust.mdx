@@ -1,0 +1,47 @@
+---
+title: Rust
+description: Send logs, traces and metrics from a Rust app using tracing, in about five minutes.
+last_verified: 2026-10-20
+owner: jj
+---
+
+import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
+import SeeYourData from '../../../../components/SeeYourData.astro';
+import Snippet from '../../../../components/Snippet.astro';
+import install from '../../../../../examples/rust/install.sh?raw';
+import env from '../../../../../examples/rust/env.sh?raw';
+import app from '../../../../../examples/rust/src/main.rs?raw';
+
+<BeforeYouStart />
+
+## 1. Install
+
+<Snippet code={install} lang="bash" />
+
+## 2. Set up the exporters
+
+Add this at the start of `main`. It sends `tracing` events as logs and `tracing` spans as traces:
+
+<Snippet code={app} region="setup" lang="rust" />
+
+Before your program exits, call `shutdown()` on the three providers so buffered data is sent.
+
+## 3. Configure
+
+Set these where your app runs. Replace `YOUR_INGEST_KEY` with your key and `checkout` with your service name.
+
+<Snippet code={env} lang="bash" />
+
+## 4. Send a log
+
+Keep using the `tracing` macros. Events inside a span are linked to its trace:
+
+<Snippet code={app} region="log" lang="rust" />
+
+## 5. Record a metric (optional)
+
+<Snippet code={app} region="metric" lang="rust" />
+
+## See your data
+
+<SeeYourData example="rust" />

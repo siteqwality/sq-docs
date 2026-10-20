@@ -78,4 +78,4 @@ Accepted records were written to storage or durable spill before acknowledgement
 
 A 100% usage email is not the hard stop. The 110% grace boundary triggers hard 429 for that signal; no silent success-and-drop and no automatic overage bill. See [billing](/observability/billing/).
 
-Confirm first retained data with `GET https://api.siteqwality.com/telemetry/first-data/logs` (or `traces`, `metrics`) using read credentials, or **Check again** in Add data. Results are permission-scoped. A read denial is distinct from an ingest refusal.
+Confirm first retained data with `GET https://api.siteqwality.com/telemetry/first-data/logs` (or `traces`, `metrics`) using read credentials, or open the Logs, Traces or Metrics page, which shows setup help until the first data arrives. Results are permission-scoped. A read denial is distinct from an ingest refusal.

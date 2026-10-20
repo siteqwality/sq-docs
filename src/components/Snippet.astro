@@ -1,0 +1,44 @@
+---
+// Shows an example file, or one marked region of it, so docs code is the tested code.
+// Regions are marked with `// [name]` ... `// [/name]` (or `#` comments) and may repeat.
+import { Code } from '@astrojs/starlight/components';
+
+interface Props {
+	code: string;
+	lang: string;
+	region?: string;
+	title?: string;
+}
+
+const { code, lang, region, title } = Astro.props;
+const marker = /^\s*(?:\/\/|#)\s*\[(\/?)([\w-]+)\]\s*$/;
+
+function dedent(lines: string[]) {
+	while (lines.length && !lines[0].trim()) lines.shift();
+	while (lines.length && !lines.at(-1)!.trim()) lines.pop();
+	const indent = Math.min(
+		...lines.filter((line) => line.trim()).map((line) => line.match(/^\s*/)![0].length)
+	);
+	return lines.map((line) => line.slice(indent)).join('\n');
+}
+
+function extract(source: string, name?: string) {
+	const lines = source.replace(/\n$/, '').split('\n');
+	if (!name) return lines.filter((line) => !marker.test(line)).join('\n');
+	const segments: string[][] = [];
+	let current: string[] | null = null;
+	for (const line of lines) {
+		const match = line.match(marker);
+		if (match && match[2] === name) {
+			if (match[1]) {
+				if (current) segments.push(current);
+				current = null;
+			} else current = [];
+		} else if (current && !match) current.push(line);
+	}
+	if (!segments.length) throw new Error(`Snippet region "${name}" not found`);
+	return segments.map(dedent).join('\n\n');
+}
+---
+
+<Code code={extract(code, region)} lang={lang} title={title} />

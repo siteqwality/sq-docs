@@ -1,0 +1,129 @@
+---
+// Logo tiles linking to the setup guides, optionally only those that send one signal.
+import { LANGUAGES, PLATFORMS, guideHref, type Signal } from '../data/telemetry-guides';
+
+interface Props {
+	kind: 'languages' | 'platforms';
+	signal?: Signal;
+}
+
+const logos = import.meta.glob('../assets/logos/*.svg', {
+	query: '?raw',
+	import: 'default',
+	eager: true,
+}) as Record<string, string>;
+const { kind, signal } = Astro.props;
+const guides = (kind === 'languages' ? LANGUAGES : PLATFORMS).filter(
+	(guide) => !signal || guide.signals.includes(signal)
+);
+const initials = (label: string) =>
+	label
+		.split(/\s+/)
+		.map((word) => word[0])
+		.join('')
+		.slice(0, 2);
+---
+
+<ul class:list={['tech-grid', 'not-content', kind]}>
+	{
+		guides.map((guide) => {
+			const svg = guide.logo && logos[`../assets/logos/${guide.logo}.svg`];
+			return (
+				<li>
+					<a href={guideHref(guide.id)}>
+						{svg ? (
+							<span class="logo" set:html={svg} />
+						) : (
+							<span class="logo initials" aria-hidden="true">
+								{initials(guide.label)}
+							</span>
+						)}
+						<span class="label">
+							{guide.label}
+							{guide.note && <span class="note">{guide.note}</span>}
+						</span>
+					</a>
+				</li>
+			);
+		})
+	}
+</ul>
+
+<style>
+	.tech-grid {
+		list-style: none;
+		padding: 0;
+		margin: 1rem 0 1.5rem;
+		display: grid;
+		gap: 0.625rem;
+		grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+	}
+	.tech-grid.platforms {
+		grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+	}
+	a {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		height: 100%;
+		padding: 0.75rem 0.875rem;
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: 12px;
+		color: var(--sl-color-white);
+		text-decoration: none;
+		transition:
+			transform var(--at-t-med) var(--at-ease),
+			border-color var(--at-t-med) var(--at-ease),
+			box-shadow var(--at-t-med) var(--at-ease);
+	}
+	a:hover {
+		transform: translateY(-2px);
+		border-color: var(--sl-color-accent);
+		box-shadow: var(--sl-shadow-md);
+	}
+	a:focus-visible {
+		outline: 2px solid var(--sl-color-accent);
+		outline-offset: 2px;
+	}
+	.logo {
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 2rem;
+		height: 2rem;
+	}
+	.logo :global(svg) {
+		width: 1.75rem;
+		height: 1.75rem;
+		fill: currentColor;
+	}
+	.platforms .logo :global(svg) {
+		width: 1.375rem;
+		height: 1.375rem;
+	}
+	.initials {
+		border-radius: 8px;
+		background: var(--sl-color-gray-6);
+		font-family: var(--at-mono);
+		font-size: 0.75rem;
+		font-weight: 600;
+	}
+	.label {
+		display: flex;
+		flex-direction: column;
+		font-weight: 700;
+		line-height: 1.25;
+	}
+	.note {
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--sl-color-gray-3);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		a,
+		a:hover {
+			transition: none;
+			transform: none;
+		}
+	}
+</style>

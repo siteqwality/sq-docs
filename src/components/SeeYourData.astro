@@ -1,0 +1,24 @@
+---
+// Closing section of a language guide: where the data shows up and the tested example.
+interface Props {
+	example: string;
+}
+const { example } = Astro.props;
+const source = `https://github.com/siteqwality/sq-docs/tree/main/examples/${example}`;
+---
+
+<p>
+	Open <a href="https://app.siteqwality.com/logs">Logs</a>,
+	<a href="https://app.siteqwality.com/traces">Traces</a> or
+	<a href="https://app.siteqwality.com/metrics">Metrics</a>. New data usually shows up within a minute,
+	and a page that says it is waiting for data switches to your data on its own.
+</p>
+<p>
+	The code on this page comes from a <a href={source}>runnable example</a> that is checked against our
+	ingest rules every month.
+</p>
+<p>
+	Nothing arriving? Check that the key is an ingest key for this account, that your account has early
+	access, and the status codes in <a href="/observability/ingest/#failure-handling">Ingest routes and
+	limits</a>.
+</p>

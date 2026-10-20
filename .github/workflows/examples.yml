@@ -1,0 +1,45 @@
+name: Setup examples
+
+on:
+  schedule:
+    - cron: '17 6 1 * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'examples/**'
+      - 'scripts/stale-guides.mjs'
+      - 'src/content/docs/observability/platforms/**'
+      - '.github/workflows/examples.yml'
+  pull_request:
+    paths:
+      - 'examples/**'
+      - 'scripts/stale-guides.mjs'
+      - 'src/content/docs/observability/platforms/**'
+      - '.github/workflows/examples.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: ${{ matrix.example }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [node, python, java, dotnet, php, go, rust, ruby, collector, curl]
+    steps:
+      - uses: actions/checkout@v4
+      - run: examples/verify.sh ${{ matrix.example }}
+
+  stale-guides:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/stale-guides.mjs

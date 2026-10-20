@@ -1,0 +1,5 @@
+export OTEL_SERVICE_NAME=checkout
+export OTEL_RESOURCE_ATTRIBUTES=deployment.environment.name=production
+export OTEL_EXPORTER_OTLP_ENDPOINT=https://otlp.siteqwality.com
+export OTEL_EXPORTER_OTLP_HEADERS=Authorization=YOUR_INGEST_KEY
+export OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf

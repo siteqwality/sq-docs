@@ -1,62 +1,47 @@
 ---
 title: Ruby
-description: Send telemetry from Ruby to Site Qwality with scoped ingest authentication.
-last_verified: 2026-10-18
+description: Send logs, traces and metrics from a Ruby or Rails app in about five minutes.
+last_verified: 2026-10-20
 owner: jj
 ---
 
-This guide configures traces. You need a Site Qwality account with early access to telemetry (email [hello@siteqwality.com](mailto:hello@siteqwality.com) to request it) and an ingest key from [API keys](https://app.siteqwality.com/account?tab=api-keys). Replace YOUR_INGEST_KEY on your server. Never use a real key in a public example.
+import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
+import SeeYourData from '../../../../components/SeeYourData.astro';
+import Snippet from '../../../../components/Snippet.astro';
+import install from '../../../../../examples/ruby/install.sh?raw';
+import env from '../../../../../examples/ruby/env.sh?raw';
+import app from '../../../../../examples/ruby/app.rb?raw';
 
-## 1. Add tracing gems
+<BeforeYouStart />
 
-This guide sets up traces. Forward Ruby logger output with Fluent Bit or Vector and application metrics with a Collector.
+## 1. Install
 
-```bash
-bundle add opentelemetry-sdk opentelemetry-exporter-otlp opentelemetry-instrumentation-all
-```
+<Snippet code={install} lang="bash" />
 
-## 2. Set server environment variables
+## 2. Configure
 
-Set these on the running service. Keep the key out of source control, client bundles and build logs.
+Set these where your app runs. Replace `YOUR_INGEST_KEY` with your key and `checkout` with your service name.
 
-```bash
-export OTEL_SERVICE_NAME='my-service'
-export OTEL_RESOURCE_ATTRIBUTES='deployment.environment.name=production'
-export OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT='https://otlp.siteqwality.com/v1/traces'
-export OTEL_EXPORTER_OTLP_TRACES_HEADERS='Authorization=YOUR_INGEST_KEY'
-export OTEL_LOGS_EXPORTER=none
-export OTEL_TRACES_EXPORTER=otlp
-export OTEL_METRICS_EXPORTER=none
-```
+<Snippet code={env} lang="bash" />
 
-## 3. Load before the application
+Then start the SDK once, after your gems load. In Rails, put this in `config/initializers/opentelemetry.rb`:
 
-Put this in a Rails initializer or a file required before your server imports its framework. Restart the process and generate a request. For a short script, call OpenTelemetry.tracer_provider.shutdown before exit.
+<Snippet code={app} region="setup" lang="ruby" />
 
-```ruby
-require 'opentelemetry/sdk'
-require 'opentelemetry/exporter/otlp'
-require 'opentelemetry/instrumentation/all'
-OpenTelemetry::SDK.configure { |c| c.use_all }
-```
+## 3. Start your app
 
-## Confirm readable data
+Start it as usual. Rails, Sinatra, Rack, HTTP clients, ActiveRecord, Redis and Sidekiq are now traced automatically.
 
-Open [Add data](https://app.siteqwality.com/add-data?platform=ruby), select the signal and choose **Check again**. This reads retained data permitted for your account and member. A permission error is not proof that collection failed. Open the explorer, select your service/environment and a recent window.
+## 4. Send a log
 
-- Create an ingest key for this account and only the signals you send. Read-only keys cannot ingest; ingest keys cannot query. Use a separate read-only API key or your signed-in session for exploration.
-- A successful OTLP HTTP response is 200 with an ExportResponse. Inspect partialSuccess for rejected records. JSON /ingest and /metrics return 200 with accepted, rejected and errors. Remote-write returns 204 on full acceptance; platform adapters use their own acknowledgement formats.
-- Accepted data has been written to storage or durable spill. It can appear later during replay. Acceptance does not mean every record passed validation or that it is already searchable. Retry transient 429/5xx failures with backoff and honor Retry-After; do not blindly resend an entire partially accepted batch.
-- Requests allow 4,000,000 wire bytes, up to 40,000,000 inflated bytes for logs/traces or 16,000,000 for metrics, and at most 100:1 inflation. Use gzip or supported deflate on HTTP; Prometheus uses Snappy. Split oversized requests instead of retrying unchanged.
-- 401/403: check key, account, signal scope and collection access. 413: reduce batch bytes. 415: check protocol and content type. 429: check quota/cardinality/rate and wait for Retry-After. Persistent 5xx: retain your local buffer and contact support with request time, never the key.
+Keep using Ruby's `Logger` or `Rails.logger`. Records arrive as logs, linked to the trace of the request that wrote them:
 
-## Production checklist
+<Snippet code={app} region="log" lang="ruby" />
 
-Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
+## 5. Record a metric (optional)
 
-- [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
-- [Pipelines, access and privacy](/observability/privacy/)
-- [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
-- [Upstream Ruby documentation](https://opentelemetry.io/docs/languages/ruby/getting-started/)
+<Snippet code={app} region="metric" lang="ruby" />
+
+## See your data
+
+<SeeYourData example="ruby" />

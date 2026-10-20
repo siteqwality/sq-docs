@@ -4,6 +4,7 @@ import starlight from '@astrojs/starlight';
 import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import rehypeTableWrap from './src/plugins/rehype-table-wrap.mjs';
+import { LANGUAGES, PLATFORMS } from './src/data/telemetry-guides.ts';
 
 // NOTE: Expressive Code (code-block) theming lives in ./ec.config.mjs, not in
 // the Starlight `expressiveCode` option below. starlight-openapi's plugin
@@ -198,7 +199,22 @@ export default defineConfig({
 					collapsed: true,
 					items: [
 						{ label: 'Overview', slug: 'observability/overview' },
-                        { label: 'Platform setup guides', autogenerate: { directory: 'observability/platforms' } },
+                        {
+                            label: 'Send data',
+                            collapsed: true,
+                            items: [
+                                { label: 'Choose a language or platform', slug: 'observability/platforms/overview' },
+                                ...LANGUAGES.map((g) => ({ label: g.label, slug: `observability/platforms/${g.id}` })),
+                                {
+                                    label: 'Platforms and forwarders',
+                                    collapsed: true,
+                                    items: [
+                                        ...PLATFORMS.map((g) => ({ label: g.label, slug: `observability/platforms/${g.id}` })),
+                                        { label: 'Syslog', slug: 'observability/platforms/syslog' },
+                                    ],
+                                },
+                            ],
+                        },
                         { label: 'Ingest routes and limits', slug: 'observability/ingest' },
                         { label: 'Query language', slug: 'observability/query' },
                         { label: 'Billing and retention', slug: 'observability/billing' },

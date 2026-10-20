@@ -1,33 +1,25 @@
 ---
-title: Platform setup guides
-description: Practical installation and forwarding guides for telemetry.
-last_verified: 2026-10-18
+title: Send logs, traces and metrics
+description: Pick your language or platform. Each guide gets data flowing in about five minutes.
+last_verified: 2026-10-20
 owner: jj
 ---
 
-Choose your platform in [Add data](https://app.siteqwality.com/add-data), or follow a guide below. All examples use placeholder keys. Availability and sender limitations are stated in each guide.
+import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
+import TechGrid from '../../../../components/TechGrid.astro';
 
-- [Node.js](/observability/platforms/node/): logs, traces, metrics.
-- [Python](/observability/platforms/python/): logs, traces, metrics.
-- [Go](/observability/platforms/go/): logs, traces, metrics.
-- [Java](/observability/platforms/java/): logs, traces, metrics.
-- [.NET](/observability/platforms/dotnet/): logs, traces, metrics.
-- [Ruby](/observability/platforms/ruby/): traces.
-- [PHP](/observability/platforms/php/): traces.
-- [Kubernetes](/observability/platforms/kubernetes/): logs, traces, metrics.
-- [Docker](/observability/platforms/docker/): logs, traces, metrics.
-- [AWS Lambda](/observability/platforms/aws-lambda/): logs, traces, metrics.
-- [Vercel](/observability/platforms/vercel/): traces. Log drains are not available yet.
-- [Cloudflare Workers](/observability/platforms/cloudflare-workers/): logs.
-- [OpenTelemetry Collector](/observability/platforms/collector/): logs, traces, metrics.
-- [Prometheus remote-write](/observability/platforms/prometheus/): metrics.
-- [StatsD through a Collector](/observability/platforms/statsd/): metrics.
-- [Fluent Bit](/observability/platforms/fluent-bit/): logs.
-- [Vector](/observability/platforms/vector/): logs.
-- [Syslog over TLS](/observability/platforms/syslog/): logs. Not available yet.
-- [Heroku](/observability/platforms/heroku/): logs.
-- [Render](/observability/platforms/render/): logs, traces, metrics.
-- [Fly.io](/observability/platforms/fly/): logs.
-- [Amazon Data Firehose](/observability/platforms/firehose/): logs, metrics.
-- [Cloudflare Logpush](/observability/platforms/cloudflare-logpush/): logs.
-- [curl / HTTP](/observability/platforms/curl/): logs, traces, metrics.
+Every language guide follows the same short path: install, add your key, start your app. They use [OpenTelemetry](https://opentelemetry.io), so there is no Site Qwality SDK to learn and your instrumentation stays portable.
+
+<BeforeYouStart />
+
+## Languages
+
+<TechGrid kind="languages" />
+
+## Platforms and forwarders
+
+Already running an agent, or on a platform that collects logs for you:
+
+<TechGrid kind="platforms" />
+
+Anything else that speaks OTLP over HTTP works too: point it at `https://otlp.siteqwality.com` with your key in the `Authorization` header. See [Ingest routes and limits](/observability/ingest/).
