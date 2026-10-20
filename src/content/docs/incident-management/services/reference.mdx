@@ -1,7 +1,7 @@
 ---
 title: Services reference
 description: Service fields, broadcast target types and every /service endpoint.
-last_verified: 2026-10-16
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -19,10 +19,10 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 | `reopen_window_minutes` | integer | `30` for new services | `0` to `1440`. A monitor that fails again within this many minutes of the last alert of a resolved auto-created incident reopens it instead of opening a new one. `0` never reopens. See [reopen window](/incident-management/services/overview/#reopen-window). |
 | `auto_resolve` | `always`, `unless_acknowledged`, `never` | `unless_acknowledged` | Whether an auto-created incident resolves itself when all its monitors recover. `unless_acknowledged` leaves an acknowledged incident for a person to resolve. See [auto-resolve](/incident-management/services/overview/#auto-resolve). |
 | `incident_merge_window_minutes` | integer | none | Deprecated and ignored. While an auto-created incident is open, every failing monitor of the service joins it. |
-| `default_incident_severity` | `minor`, `major`, `critical` | `minor` | Severity of incidents the service opens automatically. |
+| `default_incident_severity` | `minor`, `major`, `critical` | `minor` | Severity of incidents the service opens automatically, and of manual incidents opened on it without a `severity`. |
 | `auto_publish_to_status_page_id` | UUID | none | Puts automatic incidents on this status page and emails its subscribers. `null` on update clears it. |
 | `public_incident_template` | object | none | `{ "title", "message", "resolved_message" }`, each optional: the public title, first public update and resolved update for this service's incidents on a status page. Values are trimmed and blank ones dropped. The title is at most 512 characters and each message 5,000 (`400` otherwise). Leaving it out keeps it; `null` clears it. Omitted from responses when empty. |
-| `monitor_count` | integer | | Read-only. Linked HTTP monitors and heartbeats; browser checks are not counted. |
+| `monitor_count` | integer | | Read-only. Linked monitors of every type. |
 | `created_at` | RFC 3339 | | Read-only. |
 
 ## Endpoints
@@ -30,12 +30,14 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 | Method | Path | What it does |
 |---|---|---|
 | `GET` | `/service` | List services. |
-| `POST` | `/service` | Create a service. |
+| `POST` | `/service` | Create a service. `409` with code `service_limit_reached` at 100 services. |
 | `GET` | `/service/{id}` | Fetch one service. |
 | `PUT` | `/service/{id}` | Update the fields you send. |
-| `DELETE` | `/service/{id}` | Delete the service and its broadcast targets. Linked monitors are not unlinked. Needs an admin, or an API key with `write:services`: other roles get `403`. |
-| `GET` | `/service/{id}/monitors` | List linked monitors as `{ id, name, monitor_type }`, where `monitor_type` is `http` or `cron`. |
-| `PUT` | `/service/{id}/monitors` | Replace the linked set with `{ "http_job_ids": [...], "cron_job_ids": [...] }`. A list you leave out is treated as empty. |
+| `DELETE` | `/service/{id}` | Delete the service and its broadcast targets, and unlink its monitors. Needs an admin, or an API key with `write:services`: other roles get `403`. |
+| `GET` | `/service/{id}/monitors` | List linked monitors of every type as `{ id, name, monitor_type, status, healthy, paused }`. |
+| `POST` | `/service/{id}/monitors` | Link monitors. See [linking monitors](#linking-monitors). |
+| `DELETE` | `/service/{id}/monitors/{monitor_type}/{monitor_id}` | Unlink one monitor. `204`; `404` when it is not on this service. |
+| `PUT` | `/service/{id}/monitors` | Deprecated. Replaces the HTTP and heartbeat links with `{ "http_job_ids": [...], "cron_job_ids": [...] }`; other types are untouched. |
 | `GET` | `/service/{id}/notification_target` | List broadcast targets. |
 | `POST` | `/service/{id}/notification_target` | Add a broadcast target. |
 | `DELETE` | `/service/{id}/notification_target/{target_id}` | Remove a broadcast target. |
@@ -46,9 +48,34 @@ Scoped API keys, M2M API clients and AI assistants need `read:services` for the 
 
 ## Linking monitors
 
-`PUT /service/{id}/monitors` unlinks every HTTP monitor and heartbeat currently on the service, then links the IDs you send. To add one monitor, send the full list including the ones already linked. An ID that is not a monitor in your account returns `404`, and nothing changes.
+`POST /service/{id}/monitors` adds monitors and leaves the service's other monitors alone. Linking a monitor that is already on the service does nothing.
 
-Browser checks link through their own `service_id` field on `POST /browser_check` and `PUT /browser_check/{id}`. New HTTP monitors accept an optional `service_id` on `POST /http/job`; an unknown or foreign service ID returns `404` before a monitor is created. Change an existing HTTP monitor's assignment through the service form or `PUT /service/{id}/monitors`.
+```bash
+curl -X POST https://api.siteqwality.com/service/$SERVICE_ID/monitors \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "monitors": [
+        { "monitor_type": "http", "monitor_id": "<http-monitor-id>" },
+        { "monitor_type": "tls", "monitor_id": "<tls-check-id>" }
+      ] }'
+```
+
+| Field | Notes |
+|---|---|
+| `monitors` | One or more `{ "monitor_type", "monitor_id" }`. `monitor_type` is `http`, `cron`, `browser`, `tls`, `dns`, `dns_record` or `page_speed`. |
+| `move` | `true` moves monitors that belong to another service. Default `false`. |
+
+It answers with the service's monitors, like `GET`. Nothing is linked when any monitor fails:
+
+| Status | When |
+|---|---|
+| `400` | `monitors` is empty, or a type is unknown or `alert_rule` (alert rules link in their own settings). |
+| `404` | The service, or a monitor of that type, is not in your account. |
+| `409` | A monitor belongs to another service and `move` is not `true`. Code `monitor_in_other_service`; `data.conflicts` lists each `{ monitor_type, monitor_id, service_id }`. |
+
+`DELETE /service/{id}/monitors/{monitor_type}/{monitor_id}` unlinks one monitor and returns `204`, `400` for an unknown type, and `404` when the service is not yours or the monitor is not on it.
+
+Monitors also take a `service_id` when you create or update them: `POST /http/job`, `PUT /http/job/{id}`, `POST /cron/job`, `PUT /cron/job/{id}`, `POST /browser_check`, `PUT /browser_check/{id}`, `POST /dns/record-monitor` and `PUT /dns/record-monitor/{id}`. On an update, `null` unlinks and leaving it out keeps it. A service ID that is not in your account returns `404` before anything changes.
 
 ## Broadcast targets
 
@@ -56,9 +83,11 @@ Create one with `type` and `details`:
 
 | `type` | `details` | Notes |
 |---|---|---|
-| `email` | `{ "email": "oncall@example.com" }` | Any address. |
+| `email` | `{ "email": "oncall@example.com" }` | Any address. One outside your members' email domains returns `409` with code `email_target_confirmation_required` and the address in `data.email`, until you send `"confirm_external_recipients": true` beside `type` and `details`. |
 | `slack_channel` | `{ "slack_token": "xoxb-...", "channel": "#incidents" }` | A Slack bot token you supply, not the [Slack integration](/integrations/slack/). The token is write-only: it reads back as `"has_token": true`. |
 | `webhook` | `{ "url": "https://hooks.example.com/incidents" }` | Must be a public URL. It reads back as its scheme and host only, such as `https://hooks.example.com/****`. Uses the [webhook envelope](/integrations/webhooks/#incident-webhooks) and retry schedule, unsigned, and does not appear in the integration's delivery log. |
+
+A service can have up to 20 targets; the 21st returns `409` with code `service_target_limit_reached`.
 
 ```bash
 curl -X POST https://api.siteqwality.com/service/$SERVICE_ID/notification_target \
@@ -87,13 +116,13 @@ A recorded event starts delivering as each channel's message for it ships. A mon
 
 | Behavior | Value |
 |---|---|
-| Sources | Linked HTTP monitors and heartbeats; browser checks with this `service_id`. |
+| Sources | Linked monitors of every type. See [what fails and recovers](/incident-management/services/overview/#auto-created-incidents) for each. |
 | Title | `<monitor name> is down` |
 | Severity | `default_incident_severity` |
 | Skipped when | A maintenance window matching the monitor's tags is active, or the service is `manual`. |
 | One open incident | The service has at most one open auto-created incident. Every failing monitor joins it, recorded as a `monitor_joined` timeline event. |
 | Reopened when | A monitor fails again within `reopen_window_minutes` of the last alert of the resolved incident. |
-| Resolved when | Every monitor on the incident (HTTP, heartbeat and browser checks) is healthy again, and `auto_resolve` allows it. |
+| Resolved when | Every monitor on the incident is healthy again (`healthy` in the monitor list), and `auto_resolve` allows it. |
 | Paged | Right after the incident is recorded. If that is interrupted, a sweep pages it within about a minute. |
 
 ## See also

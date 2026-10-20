@@ -1,7 +1,7 @@
 ---
 title: Services
 description: Group monitors into a service, choose who gets paged, and decide whether failures open incidents on their own.
-last_verified: 2026-10-19
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -31,7 +31,7 @@ Services are the only way a monitor failure becomes an incident, and the only wa
 
 5. Set how long a resolved incident can reopen (the reopen window, 30 minutes for a new service; `0` never reopens) and when an incident resolves itself (auto-resolve; `unless_acknowledged` by default).
 
-6. Choose the **HTTP monitors** and **cron monitors** (heartbeats) that belong to the service, and save.
+6. Choose the **HTTP monitors**, **cron monitors** (heartbeats) and **browser checks** that belong to the service, and save. Saving changes only the links you added or removed; the form waits for the current links to load before it lets you change them.
 
 </Steps>
 
@@ -70,7 +70,15 @@ A service in `auto` mode has **at most one open auto-created incident**. The fir
 
 The incident starts at the service's default severity and pages the service's escalation policy as soon as it is recorded. If that is interrupted, a sweep pages it within about a minute. It is skipped while a [maintenance window](/incident-management/maintenance/overview/) matching the monitor's tags is active.
 
-HTTP, heartbeat and browser checks all count: the incident counts as recovered when every one of its monitors is healthy again.
+Every linked monitor type counts, and the incident counts as recovered when every one of its monitors is healthy again. What healthy means depends on the type:
+
+| Monitor type | Fails when | Recovers when |
+|---|---|---|
+| HTTP, heartbeat, browser check | Its check goes down. | Its check is up again. |
+| TLS certificate | The certificate has expired. A check that cannot reach the site keeps the last known expiry date, so a blip neither opens nor resolves anything. | A valid certificate is read. |
+| Domain registration | The registration has expired, on the same rule as TLS. | The registry reports a later expiry date. |
+| DNS records | A change alert is sent, or the zone becomes unreadable (after two failed checks in a row). | A check matches the baseline again, for example after you accept the change. |
+| Page speed | The performance score drops below the job's threshold. | The score is back at or above the threshold. |
 
 ### Reopen window
 
@@ -94,24 +102,29 @@ The merge window (`incident_merge_window_minutes`) is deprecated and ignored, an
 
 ## Link monitors
 
-| Monitor type | How to link it |
-|---|---|
-| HTTP monitors | Choose **Service** when creating the monitor, send `service_id` on `POST /http/job`, or use the service form and `PUT /service/{id}/monitors`. |
-| Heartbeat (cron) monitors | On the service form, or `PUT /service/{id}/monitors`. |
-| Browser checks | Set `service_id` when you create or update the browser check through the API. They do not appear in the service's monitor list or count. |
-| DNS, TLS, domain, page speed, RUM and alert rules | Cannot be linked. They never open incidents. |
+Every type below can join a service with `POST /service/{id}/monitors`, one or more at a time, and leave it with `DELETE /service/{id}/monitors/{type}/{monitor_id}`. Neither touches the service's other monitors.
 
-A monitor belongs to at most one service. Linking it to a second service moves it without warning.
+| Monitor type | `monitor_type` | Other ways to link it |
+|---|---|---|
+| HTTP monitors | `http` | **Service** when creating the monitor, the service form, or `service_id` on `POST /http/job` and `PUT /http/job/{id}`. |
+| Heartbeat (cron) monitors | `cron` | The service form, or `service_id` on `POST /cron/job` and `PUT /cron/job/{id}`. |
+| Browser checks | `browser` | The service form, or `service_id` on `POST /browser_check` and `PUT /browser_check/{id}`. |
+| DNS record monitors | `dns_record` | `service_id` on `POST /dns/record-monitor` and `PUT /dns/record-monitor/{id}`. |
+| TLS certificate, domain registration and page speed checks of an HTTP monitor | `tls`, `dns`, `page_speed` | Only the link endpoint. Their maintenance windows follow the HTTP monitor's tags. |
+| Alert rules | | In the rule's own settings. |
+| RUM | | Cannot be linked. |
+
+A monitor belongs to at most one service. Linking one that belongs to another service returns `409` unless you send `"move": true`; the dashboard's service form moves it.
 
 <Aside type="note">
-The HTTP monitor edit form shows its service read-only. Change an existing monitor's assignment from the service form.
+The HTTP monitor edit form shows its service read-only. Change it from the service form, or with `service_id` on `PUT /http/job/{id}`.
 </Aside>
 
 ## Broadcast targets
 
 A broadcast target tells someone outside the escalation chain about the service's incidents. There are three types:
 
-- **Email:** any address.
+- **Email:** any address. An address outside your members' email domains needs a confirmation, because every incident update for the service will be emailed there.
 - **Slack channel:** a Slack bot token and channel that you paste in. It does not use the [Slack integration](/integrations/slack/). The token is write-only and is never shown again.
 - **Webhook:** a public URL. Deliveries use the [webhook envelope](/integrations/webhooks/#payload) with `incident.created` and `incident.resolved` events, but they are not signed.
 
@@ -119,7 +132,11 @@ Incident lifecycle events go to the service's broadcast targets: opened, acknowl
 
 An incident merged into another sends no resolved message. An update posted as an internal note is marked internal on its event, while status page subscribers only ever get public updates.
 
-Add targets on the service's detail page in the dashboard (it opens from a monitor or incident linked to the service), or through the API. See the [reference](/incident-management/services/reference/#broadcast-targets).
+Add targets on the service's detail page in the dashboard (it opens from a monitor or incident linked to the service), or through the API. A service can have up to 20 targets. See the [reference](/incident-management/services/reference/#broadcast-targets).
+
+## Manual incidents
+
+An incident you open by hand on a service pages its escalation policy and tells its broadcast targets, like an automatic one. It starts at the service's default severity unless you pick one; the dashboard's **Report Incident** form fills the severity in when you choose the service. It is never published by itself: publish it from the incident, where the service's public template prefills the words.
 
 ## Publish incidents to a status page
 
@@ -135,7 +152,11 @@ The template also prefills **Publish** for the service's manual incidents. Set b
 
 ## Deleting a service
 
-Only admins, or an API key with `write:services`, can delete a service. Deleting it removes its broadcast targets and detaches its incidents, but linked monitors keep pointing at the deleted service. Unlink them first by sending empty lists to `PUT /service/{id}/monitors`.
+Only admins, or an API key with `write:services`, can delete a service. Deleting it removes its broadcast targets, detaches its incidents and unlinks its monitors, which keep running.
+
+## Limits
+
+An account can have up to 100 services. Ask support if you need more.
 
 ## See also
 
