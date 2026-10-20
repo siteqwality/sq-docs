@@ -1,7 +1,7 @@
 ---
 title: On-call schedules
 description: Layered rotations in the schedule's timezone, with working-hours windows and overrides. A schedule answers "who's on call" for any instant, and the API and dashboard show it.
-last_verified: 2026-10-20
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -76,7 +76,15 @@ Overrides are time-bounded with `start_at` and `end_at`, and `end_at` must be af
 - **Dashboard:** the on-call page shows who is on call now on every schedule. A schedule's page shows who is on call, until when, who is next, and every shift of the next two weeks, gaps included.
 - **API:** `GET /on_call_schedule/{id}/on_call` answers for now (or any `at`), `GET /on_call_schedule/{id}/shifts` returns the timeline over a range, and `GET /on_call` lists who is on call across your schedules, or one person's shifts with `user_id`. See the [reference](/incident-management/on-call/reference/#see-whos-on-call).
 
+- **Calendar:** subscribe to your own shifts, or a whole schedule, in Google Calendar, Outlook or Apple Calendar. See [In a calendar](/incident-management/on-call/reference/#in-a-calendar).
+- **CLI, assistants and Slack:** `siteqwality oncall now`, the MCP tools, and `/oncall` in a connected Slack workspace give the same answer.
+- **Notices:** whoever goes on call can be told through their low-urgency notification rules. See [Handoff notices](/incident-management/on-call/reference/#handoff-notices).
+
 Escalation policies use the same answer when they page a schedule.
+
+## Changing a rotation
+
+Edit a layer to change its people, order, handoff time or windows. Whoever is on call stays on until the next handoff, past shifts stay as they were, and the layer keeps its id, so API and Terraform clients keep working. The [on-call report](/incident-management/on-call/reference/#on-call-report) shows who carried how much on-call time, including nights and weekends.
 
 ## Common patterns
 

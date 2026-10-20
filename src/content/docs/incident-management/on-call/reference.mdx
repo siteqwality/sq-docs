@@ -1,7 +1,7 @@
 ---
 title: On-call schedule reference
-description: Every field on schedules, layers, and overrides, how "who's on call" is resolved, and the endpoints that answer it.
-last_verified: 2026-10-20
+description: Every field on schedules, layers, and overrides, how "who's on call" is resolved, layer edits and history, calendar feeds, handoff notices, the on-call report, and the endpoints.
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -16,7 +16,7 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | `name` | string | required | Schedule label, referenced from escalation levels. 1 to 256 characters. |
 | `timezone` | string | `UTC` | IANA zone name from the tz database (`America/New_York`, `Asia/Singapore`). Anything else is refused with `400`. Layer handoffs and coverage windows are interpreted in it unless the layer sets its own. |
 
-Changing `timezone` with `PUT` keeps whoever is on call now on until their next handoff: each layer that follows the schedule zone is re-anchored so the move does not shift the rotation.
+Changing `timezone` with `PUT` keeps whoever is on call now on until their next handoff: each layer that follows the schedule zone is re-anchored so the move does not shift the rotation. Layers that have started keep their past in the old zone as an ended version (see [Edit a layer](#edit-a-layer)), so past shifts do not move either.
 
 ## Layer
 
@@ -71,6 +71,25 @@ Example: weeknights from 18:00 to 09:00 plus whole weekends, in a team's own zon
     { "type": "weekly", "start_day_of_week": 5, "start_time": "18:00", "duration_minutes": 3780 }
   ]
 }
+```
+
+## Edit a layer
+
+`PUT /on_call_schedule/{schedule_id}/layer/{layer_id}` takes the same body as creating a layer and keeps the layer's id, so API and Terraform clients can hold on to it. A missing `layer_number` keeps the current one.
+
+- **A layer that has started** keeps its history. The current version ends now and the new one starts now, anchored so whoever the layer has on call stays on until the new rotation's next handoff. When the period, handoff time, handoff day and zone are unchanged the rotation keeps its handoff dates and only the order moves; otherwise the new rotation counts from its latest handoff. If the person on call now is no longer in `participants`, the first participant takes over at once. `effective_from` cannot change (`400`), and `effective_until` must be in the future.
+- **A layer that has not started** is changed in place, and it never starts in the past.
+- **A layer that has ended** cannot be edited (`409`): add a new layer instead.
+
+The response adds `version` (1 until the first edit) and `version_started_at`. Past shifts, the calendar feed and the report keep using each version for the time it covered.
+
+`GET /on_call_schedule/{schedule_id}/layer/{layer_id}/versions` lists the history: every ended version with its `effective_from`, `effective_until`, rotation, zone and anchor, then the current one with `"current": true`.
+
+```bash
+curl -X PUT "https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/layer/$LAYER_ID" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" -H "Content-Type: application/json" \
+  -d '{ "rotation_type": "weekly", "handoff_day": 1, "handoff_time": "09:00",
+        "participants": ["<carol>", "<alice>", "<bob>"] }'
 ```
 
 ## Override
@@ -163,13 +182,48 @@ Shifts across the account's schedules, earliest first, gaps left out. Each row a
 
 With no range it answers "who is on call right now", one row per covered schedule. `GET /on_call?user_id=$ME&until=2026-11-20T00:00:00Z` lists your shifts until then.
 
+### In a calendar
+
+`POST /on_call/feed_tokens` creates a calendar feed and returns its address once, in `url` (and `webcal_url` for apps that open `webcal://` links). Subscribe to it in Google Calendar, Outlook or Apple Calendar; they refresh it about hourly.
+
+| Body field | Description |
+|---|---|
+| `user_id` | Whose feed it is. Defaults to the signed-in user; an API key must name one (`400` otherwise). |
+| `schedule_id` | Optional. Without it the feed holds the user's own shifts on every schedule; with it, every shift of that schedule, each titled with the person's name. |
+
+The feed covers 7 days back to 60 days ahead, overrides applied. It shows names only, never an email address or a phone number. The address is the only key, so treat it like a password: `GET /on_call/feed_tokens` lists feeds without their addresses, and `DELETE /on_call/feed_tokens/{feed_id}` revokes one at once. A feed also stops when its user leaves the account. Feed requests are rate limited.
+
+### From the CLI, an assistant or Slack
+
+- The CLI (`@siteqwality/cli`) has `siteqwality oncall now`, `oncall shifts <schedule>` and `oncall mine --user <member>`.
+- The MCP server has tools for who is on call, shifts, the report and editing a layer.
+- In Slack, `/oncall` (optionally followed by part of a schedule name) answers privately with who is on call, until when, and who is next. It works in a workspace connected through the Slack integration, for people who added Slack as a contact method on their profile.
+
+## Handoff notices
+
+When someone goes on call, Site Qwality can tell them through their **low-urgency** notification rules (the channels with the shortest delay). A rotation handoff is `on_call_starting`; a change made by an override starting or ending is `on_call_changed`. Each notice is sent once, within a few minutes of the handoff. Email notices are sent first; SMS and Slack DM notices follow as those channels move to the new delivery pipeline.
+
+Webhooks get handoffs only when they ask for them: add `on_call_starting` or `on_call_changed` to the webhook's `events` filter. They arrive as `on_call.handoff` events.
+
+## On-call report
+
+`GET /reports/on_call` shows who carried the on-call load over a range (default the last 30 days, at most 90).
+
+| Query | Description |
+|---|---|
+| `since`, `until` | RFC 3339 range. |
+| `schedule_id` | Only this schedule. |
+| `user_id` | Only this user. |
+
+Each entry of `users` has `shifts`, `on_call_seconds`, `override_seconds` (the part covered by overrides), `off_hours_seconds` (the part outside 09:00 to 18:00, Monday to Friday, in the schedule's zone), `pages` (responder pages accepted for them) and `paged_incidents`. Each entry of `schedules` has `covered_seconds` and `gap_seconds`.
+
 ### Errors
 
 | Status | When |
 |---|---|
 | `400` | A timestamp that is not RFC 3339 (or outside 1970 to 2200), a malformed UUID, `until` before `since`, or a range over 90 days. On writes: an unknown time zone, an empty or overlong name, `handoff_time` not `HH:MM`, `handoff_day` outside 0..6, `custom` without `rotation_interval_days` or one outside 1..365, `effective_until` not after `effective_from`, no participants or one outside the account, `layer_number` below 1, a malformed restriction, or an override whose `end_at` is not after `start_at`. |
 | `404` | The schedule, or the `user_id` or `schedule_id` you filter by, does not exist in your account. |
-| `409` | Creating a layer with a `layer_number` the schedule already has. |
+| `409` | Creating or editing a layer with a `layer_number` the schedule already has, or editing a layer that has ended. |
 
 ## Endpoints
 
@@ -181,11 +235,16 @@ With no range it answers "who is on call right now", one row per covered schedul
 | `GET` | `/on_call_schedule/{schedule_id}/shifts` | The final timeline over a range. |
 | `GET` | `/on_call` | Who is on call across schedules, or one user's shifts. |
 | `POST` / `GET` | `/on_call_schedule/{schedule_id}/layer` | Create / list layers. |
-| `DELETE` | `/on_call_schedule/{schedule_id}/layer/{layer_id}` | Delete a layer. |
+| `PUT` / `DELETE` | `/on_call_schedule/{schedule_id}/layer/{layer_id}` | Edit a layer, keeping its id / delete a layer. |
+| `GET` | `/on_call_schedule/{schedule_id}/layer/{layer_id}/versions` | A layer's history. |
 | `POST` / `GET` | `/on_call_schedule/{schedule_id}/override` | Create / list overrides. |
 | `DELETE` | `/on_call_schedule/{schedule_id}/override/{override_id}` | Delete an override. |
+| `POST` / `GET` | `/on_call/feed_tokens` | Create a calendar feed / list feeds. |
+| `DELETE` | `/on_call/feed_tokens/{feed_id}` | Revoke a calendar feed. |
+| `GET` | `/on_call/feed/{token}.ics` | The calendar feed itself; no sign-in, the address is the key. |
+| `GET` | `/reports/on_call` | The on-call load report. |
 
-Layers and overrides have no update endpoint: delete and recreate to change one. A recreated layer is anchored afresh, so check the shifts before and after. Deleting a whole schedule needs an admin or an API key; other roles get `403`. API keys and connected apps scoped to `incidents` can read all three on-call views.
+Overrides have no update endpoint: delete and recreate to change one. Deleting a whole schedule needs an admin or an API key; other roles get `403`. API keys and connected apps scoped to `incidents` can read the on-call views and the report.
 
 ## See also
 
