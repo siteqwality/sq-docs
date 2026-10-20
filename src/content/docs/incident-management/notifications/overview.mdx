@@ -61,7 +61,7 @@ New accounts get a **Default** group: an email channel to the address you signed
 
 A repeat stops when the monitor recovers, after the 10th resend, or earlier when someone [acknowledges the outage](/incident-management/notifications/how-to/acknowledge-outages/) and the account's `outage_ack_stops_repeats` [notification setting](/incident-management/notifications/settings/) is on (the default). The recovery alert is still sent. When a repeat is set, the first down alert also waits for the first scheduled send.
 
-Two account-wide switches under **Notifications**, **Settings** also shape monitor alerts: whether monitors hold alerts while they flap, and whether an acknowledgment stops repeats. See [notification settings](/incident-management/notifications/settings/).
+Two account-wide switches under **Notifications**, **Settings** also shape monitor alerts: whether monitors (HTTP, heartbeat and browser) hold alerts while they flap, and whether an acknowledgment stops repeats. See [notification settings](/incident-management/notifications/settings/).
 
 A monitor can attach to multiple groups (cap of 10 per monitor), which is useful when you want a single check to alert both an internal team and a customer-facing channel.
 

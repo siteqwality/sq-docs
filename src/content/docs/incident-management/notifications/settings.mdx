@@ -1,7 +1,7 @@
 ---
 title: Notification settings
 description: Two account-wide switches under Notifications, Settings. One decides whether monitors hold alerts while they flap, the other whether acknowledging an outage stops its repeat alerts.
-last_verified: 2026-10-19
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -11,7 +11,7 @@ Notification settings are account-wide switches that change how monitor alerts b
 
 | Setting | Default | What it does |
 |---|---|---|
-| `flap_hold` | on | Holds alerts while a monitor flaps. Applies to HTTP monitors for now. Every monitor follows it unless it has its own override. |
+| `flap_hold` | on | Holds alerts while a monitor flaps. Applies to HTTP monitors, heartbeat (cron) monitors and browser checks. HTTP monitors can have their own override. |
 | `outage_ack_stops_repeats` | on | When someone acknowledges an outage, its repeat alerts (`resend_every_minutes`) stop. When off, an acknowledgment only records who is on it. |
 
 An account that has never saved these settings uses the defaults.
@@ -20,7 +20,7 @@ An account that has never saved these settings uses the defaults.
 
 A monitor flaps when it keeps changing status. With flap hold on, Site Qwality sends one **Flapping** notice, holds each short outage and drops it together with its recovery if the monitor comes back within 5 minutes. [Confirm recoveries and hold flapping alerts](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/) has the exact thresholds and what each channel receives.
 
-Flap hold covers HTTP monitors for now. Heartbeat (cron) monitors and browser checks do not hold alerts, whatever this switch says.
+Flap hold covers HTTP monitors, heartbeat (cron) monitors and browser checks. Heartbeats and browser checks follow this switch directly; they have no per-monitor override yet.
 
 ### Per-monitor override
 

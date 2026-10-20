@@ -16,7 +16,7 @@ The pattern is simple:
 curl -X POST https://ping.siteqwality.com/<account-id>/<cron-job-id>
 ```
 
-If the expected ping stops arriving, the check flips to failure and notifications fire.
+If the expected ping stops arriving, the check flips to failure and notifications fire. A heartbeat that keeps flipping between late and on time is held like a flapping HTTP monitor: see [flap hold](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/#heartbeat-and-browser-monitors).
 
 ## When to use cron checks
 

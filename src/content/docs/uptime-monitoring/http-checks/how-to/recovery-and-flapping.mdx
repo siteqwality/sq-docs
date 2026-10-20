@@ -1,7 +1,7 @@
 ---
 title: Confirm recoveries and hold flapping alerts
 description: Use recovery_period_runs to send the all clear only after several healthy checks, and the flap hold setting to stop a monitor that keeps bouncing from paging you on every change.
-last_verified: 2026-10-19
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -55,7 +55,7 @@ Held outages show on the monitor page with **Alert held while flapping**, and **
 
 ### Turn flap hold on or off
 
-Flap hold applies to HTTP monitors for now. Whether a monitor holds depends on two things:
+Whether an HTTP monitor holds depends on two things:
 
 - The account setting `flap_hold`, under **Notifications**, **Settings**. It is on by default.
 - The monitor's own `flap_hold_override`. In the monitor form, **Hold alerts while flapping** lets you follow the Notifications setting, always hold or never hold. `null` follows the account, `true` always holds and `false` never holds.
@@ -64,6 +64,19 @@ An override wins over the account setting. A monitor's `flap_hold` is the result
 
 <Aside type="caution" title="Older monitors now hold flaps">
 Monitors created before flap hold shipped used to have it off. They now follow the account setting, so they start holding flaps unless you set them to never hold. A monitor where flap hold was explicitly turned off after it shipped stays on never hold.
+</Aside>
+
+## Heartbeat and browser monitors
+
+Heartbeat (cron) monitors and browser checks hold flaps the same way: the same 4 changes in 30 minutes, the same 5-minute break-through, the same **Flapping** notice and **Stable** summary, and no incident or escalation while an outage is held. Two differences:
+
+- They follow the account's `flap_hold` setting only. There is no per-monitor override for them yet.
+- They have no recovery period. The all clear goes out on the first healthy check, as before.
+
+Each held outage appears in the monitor's activity feed as **Outage held**, followed by **Held outage sent** if it broke through. A heartbeat checks on its own interval, so a held outage is decided by the one-minute tick, not by the next ping.
+
+<Aside type="note" title="Existing heartbeats and browser checks start holding flaps">
+The account setting is on by default, so heartbeats and browser checks that flap now get one notice instead of an alert pair for every change. Turn `flap_hold` off under **Notifications**, **Settings** to keep the old behaviour for the whole account.
 </Aside>
 
 ## See also
