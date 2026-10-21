@@ -1,7 +1,7 @@
 ---
 title: Syslog over TLS
 description: Send telemetry from Syslog over TLS to Site Qwality with scoped ingest authentication.
-last_verified: 2026-10-18
+last_verified: 2026-10-20
 owner: jj
 ---
 
@@ -10,7 +10,7 @@ import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
 import { Aside } from '@astrojs/starlight/components';
 
 <Aside type="caution" title="Not available yet">
-Syslog over TLS (port 6514) is not available during early access, so this configuration does not connect today. Send logs over OTLP/HTTP instead, for example with the [OpenTelemetry Collector](/observability/platforms/collector/), [Fluent Bit](/observability/platforms/fluent-bit/) or [Vector](/observability/platforms/vector/). There is no public UDP syslog port.
+Syslog over TLS (port 6514) is not available yet, so this configuration does not connect today. Send logs over OTLP/HTTP instead, for example with the [OpenTelemetry Collector](/observability/platforms/collector/), [Fluent Bit](/observability/platforms/fluent-bit/) or [Vector](/observability/platforms/vector/). There is no public UDP syslog port.
 </Aside>
 
 This guide configures logs once syslog over TLS is available. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.

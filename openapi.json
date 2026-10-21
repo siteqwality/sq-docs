@@ -39662,7 +39662,7 @@
           },
           "ingest_enabled": {
             "type": "boolean",
-            "description": "False while the account is outside telemetry early access; ingest is refused."
+            "description": "False when the telemetry account policy does not admit the account; ingest is refused."
           },
           "meta": {
             "$ref": "#/components/schemas/ReadMeta"

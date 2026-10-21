@@ -1,7 +1,7 @@
 ---
 title: Vercel
 description: Send telemetry from Vercel to Site Qwality with scoped ingest authentication.
-last_verified: 2026-10-18
+last_verified: 2026-10-20
 owner: jj
 ---
 
@@ -10,7 +10,7 @@ import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
 import { Aside } from '@astrojs/starlight/components';
 
 <Aside type="caution" title="Log drains not available yet">
-Vercel log drains (`/v1/vercel`) are not available during early access, so step 1 does not work today. A Vercel traces drain (step 2) sends to the standard OTLP traces endpoint.
+Vercel log drains (`/v1/vercel`) are not available yet, so step 1 does not work today. A Vercel traces drain (step 2) sends to the standard OTLP traces endpoint.
 </Aside>
 
 This guide configures traces, and logs once log drains are available. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.

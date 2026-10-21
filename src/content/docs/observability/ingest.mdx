@@ -1,15 +1,9 @@
 ---
 title: Ingest routes and limits
 description: Exact telemetry request paths, authentication, supported formats and acknowledgment semantics.
-last_verified: 2026-10-18
+last_verified: 2026-10-20
 owner: jj
 ---
-
-import { Aside } from '@astrojs/starlight/components';
-
-<Aside type="note" title="Early access">
-Logs, traces and metrics are in early access. To enable them for your account, email [hello@siteqwality.com](mailto:hello@siteqwality.com). Until then, telemetry sent from the account is refused.
-</Aside>
 
 ## Endpoints and authentication
 
@@ -70,7 +64,7 @@ Accepted records were written to storage or durable spill before acknowledgment.
 | Status | Action |
 |---|---|
 | 400 | Correct malformed envelopes, values, IDs or protocol headers. Inspect bounded errors. |
-| 401 / 403 | Check the key, that the account has early access, the selected signal, revocation and access. Do not retry indefinitely. |
+| 401 / 403 | Check the key, the selected signal, revocation and access. Do not retry indefinitely. |
 | 413 | Split the request by bytes. An unchanged retry will fail again. |
 | 415 | Correct Content-Type, Content-Encoding or protocol. |
 | 429 | Honor `Retry-After`; inspect rate, series or per-signal quota. Use backoff with jitter and a local queue. |
