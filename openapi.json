@@ -9052,7 +9052,7 @@
             "description": "Feature requires a paid plan"
           },
           "404": {
-            "description": "HTTP monitor not found"
+            "description": "HTTP monitor or service not found"
           },
           "500": {
             "description": "Internal server error"
@@ -17826,6 +17826,179 @@
         ]
       }
     },
+    "/on_call/feed/{file}": {
+      "get": {
+        "tags": [
+          "On-Call Schedules"
+        ],
+        "summary": "The calendar feed itself, for calendar apps. No sign-in: the token in the address is the key.",
+        "operationId": "on_call_feed",
+        "parameters": [
+          {
+            "name": "file",
+            "in": "path",
+            "description": "The token from the feed's address, followed by .ics",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An iCalendar feed of shifts from 7 days ago to 60 days ahead",
+            "content": {
+              "text/calendar": {}
+            }
+          },
+          "404": {
+            "description": "Unknown or revoked feed"
+          },
+          "429": {
+            "description": "Too many requests"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/on_call/feed_tokens": {
+      "get": {
+        "tags": [
+          "On-Call Schedules"
+        ],
+        "summary": "The account's calendar feeds, revoked ones included, without their tokens.",
+        "operationId": "list_on_call_feed_tokens",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "description": "Only this user's feeds",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feeds, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OnCallFeedTokenResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad UUID"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "On-Call Schedules"
+        ],
+        "summary": "Create a calendar feed. The response holds the address with its token; it is never shown again.",
+        "operationId": "create_on_call_feed_token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOnCallFeedTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Feed created; url holds the token and is shown once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOnCallFeedTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An API key named no user_id"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "User or schedule not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/on_call/feed_tokens/{feed_id}": {
+      "delete": {
+        "tags": [
+          "On-Call Schedules"
+        ],
+        "summary": "Revoke a calendar feed; its address stops working at once.",
+        "operationId": "revoke_on_call_feed_token",
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "path",
+            "description": "Calendar feed identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Feed revoked"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Feed not found or already revoked"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/on_call_schedule": {
       "get": {
         "tags": [
@@ -17966,7 +18139,7 @@
         "tags": [
           "On-Call Schedules"
         ],
-        "summary": "Update an on-call schedule. A new time zone re-anchors the layers that follow it, so whoever\nis on call now stays on until their next handoff.",
+        "summary": "Update an on-call schedule. A new time zone re-anchors the layers that follow it, so whoever\nis on call now stays on until their next handoff; layers that have started keep their past in\nthe old zone as an ended version.",
         "operationId": "update_on_call_schedule",
         "parameters": [
           {
@@ -18164,6 +18337,80 @@
       }
     },
     "/on_call_schedule/{schedule_id}/layer/{layer_id}": {
+      "put": {
+        "tags": [
+          "On-Call Schedules"
+        ],
+        "summary": "Edit a layer and keep its id. A layer that has started keeps its history: the current version\nends now and the new one starts now, anchored so whoever the layer has on call stays on until\nthe new rotation's next handoff. A layer that has not started is changed in place. The body is\nthe create body; an absent `layer_number` keeps the layer's.",
+        "operationId": "update_on_call_schedule_layer",
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "description": "On-call schedule identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "layer_id",
+            "in": "path",
+            "description": "Layer identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOnCallScheduleLayerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Layer updated; the id is unchanged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnCallScheduleLayerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, a participant not in this account, effective_from moved on a started layer, or effective_until not in the future"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "Incident responder limit reached"
+          },
+          "404": {
+            "description": "Schedule or layer not found"
+          },
+          "409": {
+            "description": "The layer has ended, or another layer has this layer_number"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
       "delete": {
         "tags": [
           "On-Call Schedules"
@@ -18201,6 +18448,63 @@
           },
           "404": {
             "description": "Layer not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/on_call_schedule/{schedule_id}/layer/{layer_id}/versions": {
+      "get": {
+        "tags": [
+          "On-Call Schedules"
+        ],
+        "summary": "A layer's history: every version an edit ended, oldest first, then the current one.",
+        "operationId": "list_on_call_layer_versions",
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "description": "On-call schedule identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "layer_id",
+            "in": "path",
+            "description": "Layer identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The layer's versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnCallLayerVersionsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Schedule or layer not found"
           },
           "500": {
             "description": "Internal server error"
@@ -18827,6 +19131,84 @@
             "description": "Internal server error"
           }
         }
+      }
+    },
+    "/reports/on_call": {
+      "get": {
+        "tags": [
+          "On-Call Schedules"
+        ],
+        "summary": "Who carried the on-call load: per person, shifts, on-call time, the part covered by overrides,\nthe part outside business hours (09:00 to 18:00 Monday to Friday in each schedule's zone) and\nthe pages they got; per schedule, covered time and gaps. Defaults to the last 30 days.",
+        "operationId": "on_call_report",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "description": "RFC 3339 start; defaults to 30 days before until",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "description": "RFC 3339 end; defaults to now, at most 90 days after since",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schedule_id",
+            "in": "query",
+            "description": "Only this schedule",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "description": "Only this user",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnCallReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad UUID or timestamp, until before since, or a range over 90 days"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "User or schedule not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
       }
     },
     "/rum": {
@@ -23296,6 +23678,9 @@
           "404": {
             "description": "Escalation policy or auto-publish status page not found"
           },
+          "409": {
+            "description": "The account has as many services as it may (`service_limit_reached`)"
+          },
           "500": {
             "description": "Internal server error"
           }
@@ -23496,7 +23881,7 @@
         "tags": [
           "Services"
         ],
-        "summary": "Update the set of monitors associated with a service.",
+        "summary": "Replace the service's HTTP and heartbeat links. Deprecated: it clears every\nHTTP and heartbeat link the body leaves out, so a stale form clobbers the set.\nUse `POST /service/{service_id}/monitors` and\n`DELETE /service/{service_id}/monitors/{monitor_type}/{monitor_id}`.",
         "operationId": "update_service_monitors",
         "parameters": [
           {
@@ -23529,6 +23914,132 @@
           },
           "404": {
             "description": "Service or monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Services"
+        ],
+        "summary": "Add monitors of any type to a service. Monitors already on it stay; nothing\nelse on the service changes.",
+        "operationId": "link_service_monitors",
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "description": "Service identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkServiceMonitorsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Every monitor now on the service",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceMonitorResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No monitors, or a type that cannot join a service"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Service or monitor not found"
+          },
+          "409": {
+            "description": "A monitor belongs to another service (`monitor_in_other_service`); send `move: true` to move it"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/service/{service_id}/monitors/{monitor_type}/{monitor_id}": {
+      "delete": {
+        "tags": [
+          "Services"
+        ],
+        "summary": "Remove one monitor from a service. Its other links are untouched.",
+        "operationId": "unlink_service_monitor",
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "description": "Service identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "monitor_type",
+            "in": "path",
+            "description": "`http`, `cron`, `browser`, `tls`, `dns`, `dns_record` or `page_speed`",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "monitor_id",
+            "in": "path",
+            "description": "Monitor identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Monitor removed from the service"
+          },
+          "400": {
+            "description": "A type that cannot join a service"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Service not found, or the monitor is not on it"
           },
           "500": {
             "description": "Internal server error"
@@ -23627,6 +24138,9 @@
           },
           "404": {
             "description": "Service not found"
+          },
+          "409": {
+            "description": "The service has 20 targets (`service_target_limit_reached`), or an email address outside the members' domains needs `confirm_external_recipients` (`email_target_confirmation_required`)"
           },
           "500": {
             "description": "Internal server error"
@@ -35501,6 +36015,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The service this monitor belongs to."
           }
         }
       },
@@ -35604,6 +36126,14 @@
               "format": "uuid"
             },
             "description": "Notification groups to alert. Left out or null: the account's default group. `[]`: notify no one."
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The service this monitor belongs to."
           }
         }
       },
@@ -35996,7 +36526,6 @@
         "type": "object",
         "required": [
           "title",
-          "severity",
           "message"
         ],
         "properties": {
@@ -36011,7 +36540,15 @@
             "type": "string"
           },
           "severity": {
-            "$ref": "#/components/schemas/IncidentSeverity"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IncidentSeverity",
+                "description": "Defaults to the service's default severity; required without a `service_id`."
+              }
+            ]
           },
           "message": {
             "type": "string"
@@ -36264,6 +36801,27 @@
           },
           "details": {
             "$ref": "#/components/schemas/NotificationDetails"
+          }
+        }
+      },
+      "CreateOnCallFeedTokenRequest": {
+        "type": "object",
+        "description": "Ask for a calendar feed. Without `schedule_id` the feed is the user's own shifts on every\nschedule; with it, every shift of that schedule.",
+        "properties": {
+          "schedule_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Whose feed it is. Defaults to the signed-in user; an API key must name one."
           }
         }
       },
@@ -36621,7 +37179,11 @@
           "type": {
             "$ref": "#/components/schemas/ServiceNotificationTargetType"
           },
-          "details": {}
+          "details": {},
+          "confirm_external_recipients": {
+            "type": "boolean",
+            "description": "Required (true) for an email target with an address outside the members' domains;\nwithout it that target answers 409 `email_target_confirmation_required`."
+          }
         }
       },
       "CreateServiceRequest": {
@@ -36840,6 +37402,31 @@
             "format": "int32"
           }
         }
+      },
+      "CreatedOnCallFeedTokenResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OnCallFeedTokenResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "url",
+              "webcal_url"
+            ],
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "The https address to subscribe to."
+              },
+              "webcal_url": {
+                "type": "string",
+                "description": "The same address for calendar apps that open `webcal://` links."
+              }
+            }
+          }
+        ],
+        "description": "A new feed. `url` holds the token and is shown only in this response."
       },
       "CronJobState": {
         "type": "string",
@@ -40969,6 +41556,17 @@
                 "description": "How deliveries through it are going. Only the list carries it."
               }
             ]
+          },
+          "disabled": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IntegrationDisabled",
+                "description": "Set while it is turned off. The list and the enable and disable answers carry it."
+              }
+            ]
           }
         }
       },
@@ -41053,6 +41651,24 @@
           "is_test": {
             "type": "boolean",
             "description": "A test send from the dashboard."
+          }
+        }
+      },
+      "IntegrationDisabled": {
+        "type": "object",
+        "description": "Why an integration sends nothing: its channels skip with `integration_disabled`.",
+        "required": [
+          "at",
+          "reason"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string",
+            "description": "customer | auto_failing | app_uninstalled | auth_revoked"
           }
         }
       },
@@ -41894,6 +42510,25 @@
             "items": {
               "$ref": "#/components/schemas/TargetReadiness"
             }
+          }
+        }
+      },
+      "LinkServiceMonitorsRequest": {
+        "type": "object",
+        "required": [
+          "monitors"
+        ],
+        "properties": {
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceMonitorRef"
+            },
+            "description": "The monitors to add; ones already on this service are left as they are."
+          },
+          "move": {
+            "type": "boolean",
+            "description": "Move monitors that belong to another service instead of answering 409."
           }
         }
       },
@@ -43178,7 +43813,7 @@
           },
           "kind": {
             "type": "string",
-            "description": "`quota_not_checked`, `schedule_missing`, `tls_unknown`, `inconclusive_run`, `degraded_quorum`,\n`partial_failure`, `recovery_pending`, `recovery_reset`, `recovery_confirmed`, `flap_started`,\n`flap_break_through` or `flap_ended`. New kinds may be added."
+            "description": "`quota_not_checked`, `schedule_missing`, `tls_unknown`, `inconclusive_run`, `degraded_quorum`,\n`partial_failure`, `recovery_pending`, `recovery_reset`, `recovery_confirmed`, `flap_started`,\n`flap_held`, `flap_break_through` or `flap_ended`. New kinds may be added."
           },
           "data": {
             "type": "object",
@@ -44167,6 +44802,160 @@
           }
         }
       },
+      "OnCallFeedTokenResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "schedule_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revoked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_used_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "OnCallLayerVersionResponse": {
+        "type": "object",
+        "description": "One version of a layer: an ended one, or the current one (`effective_until` absent unless the\nlayer itself ends).",
+        "required": [
+          "version",
+          "current",
+          "effective_from",
+          "rotation_type",
+          "handoff_time",
+          "participants",
+          "restrictions"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "current": {
+            "type": "boolean"
+          },
+          "effective_from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "effective_until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "rotation_type": {
+            "$ref": "#/components/schemas/RotationType"
+          },
+          "rotation_interval_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "handoff_time": {
+            "type": "string"
+          },
+          "handoff_day": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "timezone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Ended versions always name their zone; the current one only when it has its own."
+          },
+          "restrictions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayerRestriction"
+            }
+          },
+          "rotation_anchor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RotationAnchorResponse"
+              }
+            ]
+          },
+          "ended_by_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Who made the edit that ended this version."
+          }
+        }
+      },
+      "OnCallLayerVersionsResponse": {
+        "type": "object",
+        "description": "A layer's history: every ended version, then the current one.",
+        "required": [
+          "layer_id",
+          "versions"
+        ],
+        "properties": {
+          "layer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnCallLayerVersionResponse"
+            }
+          }
+        }
+      },
       "OnCallNowResponse": {
         "type": "object",
         "description": "Who a schedule has on call at `at`, until when, and who comes next.",
@@ -44238,6 +45027,122 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "OnCallReportResponse": {
+        "type": "object",
+        "description": "Who carried the on-call load over a range, and where the schedules had gaps.",
+        "required": [
+          "since",
+          "until",
+          "users",
+          "schedules"
+        ],
+        "properties": {
+          "since": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnCallReportUser"
+            }
+          },
+          "schedules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnCallReportSchedule"
+            }
+          }
+        }
+      },
+      "OnCallReportSchedule": {
+        "type": "object",
+        "required": [
+          "schedule_id",
+          "name",
+          "timezone",
+          "covered_seconds",
+          "gap_seconds"
+        ],
+        "properties": {
+          "schedule_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "covered_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "gap_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Time nobody was on call."
+          }
+        }
+      },
+      "OnCallReportUser": {
+        "type": "object",
+        "description": "One person's on-call load over the report range.",
+        "required": [
+          "user_id",
+          "shifts",
+          "on_call_seconds",
+          "override_seconds",
+          "off_hours_seconds",
+          "pages",
+          "paged_incidents"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "shifts": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "on_call_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "override_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Part of `on_call_seconds` covered by overrides."
+          },
+          "off_hours_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Part of `on_call_seconds` outside 09:00 to 18:00, Monday to Friday, in the schedule's zone."
+          },
+          "pages": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Responder pages accepted for them, and the incidents those pages were for."
+          },
+          "paged_incidents": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -44336,6 +45241,22 @@
                 "description": "Where the rotation is counted from: absent on layers created before anchors were stored."
               }
             ]
+          },
+          "version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The current version's number (1 until the layer is edited). Set by the edit and versions routes."
+          },
+          "version_started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the current version took over. Set by the edit and versions routes."
           }
         }
       },
@@ -52960,6 +53881,23 @@
           "bars"
         ]
       },
+      "ServiceMonitorRef": {
+        "type": "object",
+        "required": [
+          "monitor_type",
+          "monitor_id"
+        ],
+        "properties": {
+          "monitor_type": {
+            "type": "string",
+            "description": "`http`, `cron`, `browser`, `tls`, `dns`, `dns_record` or `page_speed`; any other is a 400."
+          },
+          "monitor_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "ServiceMonitorResponse": {
         "type": "object",
         "required": [
@@ -52976,7 +53914,19 @@
             "type": "string"
           },
           "monitor_type": {
-            "type": "string"
+            "type": "string",
+            "description": "`http`, `cron`, `browser`, `tls`, `dns`, `dns_record` or `page_speed`."
+          },
+          "status": {
+            "type": "string",
+            "description": "The monitor's own status label, such as `success`, `failed`, `bad` or `expired`."
+          },
+          "healthy": {
+            "type": "boolean",
+            "description": "Whether the monitor counts as healthy for auto-resolve."
+          },
+          "paused": {
+            "type": "boolean"
           }
         }
       },
@@ -59326,6 +60276,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The service this monitor belongs to; `null` detaches it and omission keeps it."
           }
         }
       },
@@ -59426,6 +60384,14 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The service this monitor belongs to; `null` detaches it and omission keeps it."
           }
         }
       },
@@ -59749,6 +60715,14 @@
               "boolean",
               "null"
             ]
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The service this monitor belongs to; `null` detaches it and omission keeps it."
           }
         }
       },
@@ -60250,6 +61224,7 @@
       },
       "UpdateServiceMonitorsRequest": {
         "type": "object",
+        "description": "Replaces the service's HTTP and heartbeat links only. Deprecated: link and unlink one monitor\nat a time with `POST /service/{id}/monitors` and `DELETE /service/{id}/monitors/{type}/{id}`.",
         "properties": {
           "http_job_ids": {
             "type": "array",
