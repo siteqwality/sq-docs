@@ -88,7 +88,7 @@ Everything else the registry does publish still works. Only the expiry ladder is
 
 ### Set the renewal date yourself
 
-For those TLDs, you supply the date. Send it to the check with `PUT /dns/job/{dns_job_id}`:
+For those TLDs, you supply the date. In the dashboard, open the HTTP check, pick the **Renewal date** in its domain registration details and click **Save** (**Clear** removes it). Through the API, send it to the check with `PUT /dns/job/{dns_job_id}`:
 
 ```bash
 curl -X PUT https://api.siteqwality.com/dns/job/$DNS_JOB_ID \
@@ -178,7 +178,7 @@ Both are quiet about things that are not really changes:
 
 ## What it cannot tell you
 
-- **Eleven TLDs publish no expiry date at all**, so no chain can find one and you have to [enter the renewal date yourself](#when-the-registry-publishes-no-expiry-date). Everything else on the registration still works for them.
+- **Ten TLDs publish no expiry date at all**, so no chain can find one and you have to [enter the renewal date yourself](#when-the-registry-publishes-no-expiry-date). Everything else on the registration still works for them.
 - **Platform-hosted hostnames get no domain check.** A monitor on `*.github.io`, `*.herokuapp.com`, `*.vercel.app` or any of the roughly 3,200 similar shared suffixes is not paired with a domain check, because the registration belongs to the platform. Reporting GitHub's renewal date as yours, and firing an alert ladder on it, would be a confident wrong answer.
 - **It does not monitor DNS resolution or record values.** See the caution at the top of this page.
 - **There is no standalone domain check.** It is always paired with an HTTP check.

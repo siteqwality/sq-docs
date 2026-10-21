@@ -16,14 +16,14 @@ By the end of this guide you'll have a cron check expecting a ping every 24 hour
 
 <Steps>
 
-1. **Monitors → New → Cron check.**
+1. Go to **Observe → Monitors**, open **Add Monitor** and choose **Cron Monitor**.
 
 2. Configure:
-   - **Friendly name:** `Nightly backup`.
-   - **Expected interval:** `1 day` (`86400` seconds).
+   - **Name:** `Nightly backup`.
+   - **Check Interval Minutes:** the `24h` mark (one day, `86400` seconds in the API).
    - **Notification groups:** pick your default group.
 
-3. Save. The check page now shows a unique **ping URL** at the top.
+3. Click **Submit**. The check page now shows **Your Cron Push URL** at the top.
 
 </Steps>
 
@@ -101,7 +101,7 @@ Ping at the **end** of the job, after work succeeds. Pinging at the start gives 
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-The check's **Recent pings** list shows each received ping with timestamp and source IP within seconds.
+The check's **Recent Received Pings** list shows each ping, when it arrived and who sent it, within seconds.
 
 </TabItem>
 <TabItem label="API">
@@ -120,12 +120,12 @@ Returns the most recent receipts.
 
 To verify the alerting path:
 
-1. Edit the cron check, drop `check_interval_seconds` to `300` (5 minutes).
+1. Edit the cron check and drop **Check Interval Minutes** to `5m` (`check_interval_seconds: 300` in the API).
 2. Don't ping for 10 minutes.
 3. The check flips to `failed`, an incident opens, your notification group fires.
 4. Send a ping manually (`curl <ping-url>`). The check flips back to `success` and the incident auto-resolves.
 
-Don't forget to set the interval back to `86400` when done testing.
+Don't forget to set the interval back to `24h` (`86400`) when done testing.
 
 ## What's next
 

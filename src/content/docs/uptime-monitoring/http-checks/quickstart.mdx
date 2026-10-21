@@ -12,7 +12,7 @@ By the end of this guide you'll have an HTTP check running every 10 minutes agai
 ## Prerequisites
 
 - A Site Qwality account ([sign up free](https://app.siteqwality.com)).
-- An API key. Generate one in **Settings → API keys**, then export it as an env var:
+- For the API path, an API key. Generate one in **Settings → API keys**, then export it as an env var:
 
   ```bash
   export SITEQWALITY_API_KEY="<your API key>"
@@ -27,17 +27,17 @@ By the end of this guide you'll have an HTTP check running every 10 minutes agai
 
 <Steps>
 
-1. **Go to Monitors → New → HTTP check.**
+1. **Go to Observe → Monitors, open Add Monitor and choose HTTP Monitor.**
 
 2. **Fill in the basics.**
-   - **Friendly name:** `Mock 200 endpoint`
-   - **URL:** `https://mock.codes/200`
-   - **Method:** `GET`
-   - **Run interval:** `Every 10 minutes`
+   - **Name:** `Mock 200 endpoint`
+   - **URL or IP:** `https://mock.codes/200`
+   - **Check Interval:** `5m`
+   - **Method:** `GET` (under **Request**)
 
-3. **Pick a notification group** (or create one). Email is the fastest channel to test.
+3. **Pick a notification group** under **Alerting** (or create one). Email is the fastest channel to test.
 
-4. **Click Create.**
+4. **Click Submit.**
 
 </Steps>
 
@@ -87,7 +87,7 @@ The full request schema is in the [API Reference](/api-reference/operations/crea
 1. **Wait one tick** (≤10 minutes). The monitor's status changes from "pending" to "success."
 
 2. **Look at the recent results.**
-   - Dashboard: open the monitor, scroll to **Recent runs**.
+   - Dashboard: open the monitor, scroll to **Recent Checks**.
    - API: `GET /http/job/{job_id}/recent`.
 
 3. **Force a failure to test notifications.** Edit the check and change the URL to `https://mock.codes/500`. The next tick will fail, the monitor's status will flip, and your notification group will fire.
