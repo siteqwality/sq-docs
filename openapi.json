@@ -637,7 +637,7 @@
         "tags": [
           "M2M API Clients"
         ],
-        "summary": "Rotate an M2M client's secret. Runs Stytch's start + complete in one\ncall: the old secret stops validating immediately and the new one is\nreturned exactly once. If completing fails after start, the rotation is\ncancelled best-effort so the old secret keeps working and the client can\nretry.",
+        "summary": "Rotate an M2M client's secret. Runs Stytch's start + complete in one\ncall: the old secret stops validating immediately and the new one is\nreturned exactly once. If completing fails after start, the rotation is\ncanceled best-effort so the old secret keeps working and the client can\nretry.",
         "operationId": "rotate_m2m_client_secret",
         "parameters": [
           {
@@ -909,7 +909,7 @@
         "tags": [
           "SCIM"
         ],
-        "summary": "Rotate the SCIM bearer token. Runs Stytch's start + complete in one call\n(same shape as the M2M secret rotation): the old token stops working\nimmediately and the new one is returned exactly once. If completing fails\nafter start, the rotation is cancelled best-effort so the IdP keeps\nsyncing with its current token.",
+        "summary": "Rotate the SCIM bearer token. Runs Stytch's start + complete in one call\n(same shape as the M2M secret rotation): the old token stops working\nimmediately and the new one is returned exactly once. If completing fails\nafter start, the rotation is canceled best-effort so the IdP keeps\nsyncing with its current token.",
         "operationId": "rotate_scim_token",
         "responses": {
           "200": {
@@ -5806,7 +5806,7 @@
           {
             "name": "favorites",
             "in": "query",
-            "description": "Only the caller's favourites.",
+            "description": "Only the caller's favorites.",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -10621,7 +10621,7 @@
           "Incidents"
         ],
         "summary": "Merge incidents into this one.",
-        "description": "All or nothing. Each source is resolved as `merged` (no resolved\nnotification), keeps its updates, and hands its monitors, participants and\nstatus pages to this incident; a published source gets one public \"Merged\ninto\" update. This incident takes the highest severity, and if a source was\npaging and this one was not, its escalation starts. The sources'\nescalations are cancelled. Returns this incident.",
+        "description": "All or nothing. Each source is resolved as `merged` (no resolved\nnotification), keeps its updates, and hands its monitors, participants and\nstatus pages to this incident; a published source gets one public \"Merged\ninto\" update. This incident takes the highest severity, and if a source was\npaging and this one was not, its escalation starts. The sources'\nescalations are canceled. Returns this incident.",
         "operationId": "merge_incident",
         "parameters": [
           {
@@ -16771,7 +16771,7 @@
           "Monitors"
         ],
         "summary": "A branded uptime report for one calendar month, as a printable page.",
-        "description": "Returns **HTML, not JSON**. The page is styled for paper: open it in a\nbrowser and use Print, or \"Save as PDF\", to produce the document you send\non. There is a print button on the page for exactly that.\n\n`month` is a UTC calendar month, `YYYY-MM`. Omit it and you get the last\ncomplete month, which is the one a monthly report normally covers. Asking\nfor the month in progress is allowed and the report says plainly that it\nis not finished.\n\nThe page takes its logo, colours and title from your status page branding.\nAn account with no branding gets a plain, unbranded document rather than\nours, because this is a report you hand to somebody else.\n\nTwo things the report states about itself, and worth knowing before you\nsend it:\n\n* It covers **HTTP monitors only**. Heartbeat monitors and browser checks\n  have no daily uptime figure behind them, so they are named as excluded\n  rather than quietly dropped.\n* Uptime comes from a rollup rebuilt daily at 03:00 UTC, so a report for\n  the current month is month-to-date. The outage log is separate and is\n  current to the minute.",
+        "description": "Returns **HTML, not JSON**. The page is styled for paper: open it in a\nbrowser and use Print, or \"Save as PDF\", to produce the document you send\non. There is a print button on the page for exactly that.\n\n`month` is a UTC calendar month, `YYYY-MM`. Omit it and you get the last\ncomplete month, which is the one a monthly report normally covers. Asking\nfor the month in progress is allowed and the report says plainly that it\nis not finished.\n\nThe page takes its logo, colors and title from your status page branding.\nAn account with no branding gets a plain, unbranded document rather than\nours, because this is a report you hand to somebody else.\n\nTwo things the report states about itself, and worth knowing before you\nsend it:\n\n* It covers **HTTP monitors only**. Heartbeat monitors and browser checks\n  have no daily uptime figure behind them, so they are named as excluded\n  rather than quietly dropped.\n* Uptime comes from a rollup rebuilt daily at 03:00 UTC, so a report for\n  the current month is month-to-date. The outage log is separate and is\n  current to the minute.",
         "operationId": "get_monthly_report",
         "parameters": [
           {
@@ -17146,7 +17146,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The outage's acknowledgement",
+            "description": "The outage's acknowledgment",
             "content": {
               "application/json": {
                 "schema": {
@@ -17180,7 +17180,7 @@
         "tags": [
           "Monitors"
         ],
-        "summary": "Acknowledge an outage. The first acknowledgement wins; later calls return it unchanged.",
+        "summary": "Acknowledge an outage. The first acknowledgment wins; later calls return it unchanged.",
         "operationId": "acknowledge_monitor_outage",
         "parameters": [
           {
@@ -17206,7 +17206,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The outage's acknowledgement",
+            "description": "The outage's acknowledgment",
             "content": {
               "application/json": {
                 "schema": {
@@ -22399,7 +22399,7 @@
           "RUM Analytics"
         ],
         "summary": "List user sessions for a RUM application.",
-        "description": "A listed session has a measure in `[from, to]` and a page view in its extended range. Each session is summarised\nover its whole lifetime, so `duration_ms`, `first_seen` and `last_seen` are never clipped by\nthe range. `total` and `total_with_replay` count every session matching the query exactly.\nPage with `next_cursor`; the cursor keeps the first page's range, so new sessions never\nshift later pages. Filters use the RUM filter grammar in `f`; the Wave 1 parameters still\nwork and combine with them. Filtering on `console_message` needs body access; without it,\n`error_message` and `search` skip errors captured from the console.",
+        "description": "A listed session has a measure in `[from, to]` and a page view in its extended range. Each session is summarized\nover its whole lifetime, so `duration_ms`, `first_seen` and `last_seen` are never clipped by\nthe range. `total` and `total_with_replay` count every session matching the query exactly.\nPage with `next_cursor`; the cursor keeps the first page's range, so new sessions never\nshift later pages. Filters use the RUM filter grammar in `f`; the Wave 1 parameters still\nwork and combine with them. Filtering on `console_message` needs body access; without it,\n`error_message` and `search` skip errors captured from the console.",
         "operationId": "list_rum_sessions",
         "parameters": [
           {
@@ -22695,7 +22695,7 @@
           "RUM Analytics"
         ],
         "summary": "Page through a RUM session's events: page views and their updates, actions, errors,\nrequests, resources, console lines, long frames, custom events and recording status, oldest\nfirst, in the shapes of the ingest kinds.",
-        "description": "`counts` gives rows per kind for the whole session (honouring `q` and `collapse`) on every\npage. Bodies, headers, console messages, breadcrumbs and console-handled error messages need\nbody access: API keys and M2M clients need the `read:rum_replay` scope, people the account's\nbody access level; connected apps never get them. Without it they are left out and\n`bodies_withheld` is true. A page that shows them is audited as `rum.network_body.viewed`.",
+        "description": "`counts` gives rows per kind for the whole session (honoring `q` and `collapse`) on every\npage. Bodies, headers, console messages, breadcrumbs and console-handled error messages need\nbody access: API keys and M2M clients need the `read:rum_replay` scope, people the account's\nbody access level; connected apps never get them. Without it they are left out and\n`bodies_withheld` is true. A page that shows them is audited as `rum.network_body.viewed`.",
         "operationId": "list_rum_session_events",
         "parameters": [
           {
@@ -33318,7 +33318,7 @@
           },
           "status": {
             "type": "string",
-            "description": "The same statuses as `change-plan`: `\"updated\"` when the change is\nlive, `\"requires_payment\"` when the customer must confirm a payment\nfirst, `\"scheduled\"` for a cheaper tier (applied at `effective_at`),\nand `\"scheduled_change_cancelled\"` when re-picking the current tier\ncancelled a scheduled change."
+            "description": "The same statuses as `change-plan`: `\"updated\"` when the change is\nlive, `\"requires_payment\"` when the customer must confirm a payment\nfirst, `\"scheduled\"` for a cheaper tier (applied at `effective_at`),\nand `\"scheduled_change_cancelled\"` when re-picking the current tier\ncanceled a scheduled change."
           },
           "client_secret": {
             "type": [
@@ -35238,7 +35238,7 @@
               "null"
             ],
             "format": "uuid",
-            "description": "Client-generated, stable across retries of ONE confirm attempt, so a\ndouble-click is one Stripe mutation.\n\nOptional purely for backwards compatibility: a cached frontend bundle\npredating this field must keep working. A request without one gets no\nreplay protection beyond the per-account advisory lock, which serializes\nconcurrent requests but cannot recognise a client retry after a timeout."
+            "description": "Client-generated, stable across retries of ONE confirm attempt, so a\ndouble-click is one Stripe mutation.\n\nOptional purely for backwards compatibility: a cached frontend bundle\npredating this field must keep working. A request without one gets no\nreplay protection beyond the per-account advisory lock, which serializes\nconcurrent requests but cannot recognize a client retry after a timeout."
           },
           "quantity": {
             "type": [
@@ -35969,7 +35969,7 @@
               "string",
               "null"
             ],
-            "description": "The serialised arguments; needs body access."
+            "description": "The serialized arguments; needs body access."
           },
           "stack": {
             "type": [
@@ -36286,7 +36286,7 @@
               },
               {
                 "$ref": "#/components/schemas/ApiKeyType",
-                "description": "Omitted means `full`.\n\nThis is deliberately NOT the dashboard's default (which is `ingest`,\nthe safer choice). The API default has to preserve the historical\nbehaviour, because a customer script that has been POSTing\n`{\"friendly_name\": \"...\"}` for years must keep getting a key that can\ndo what its keys have always done."
+                "description": "Omitted means `full`.\n\nThis is deliberately NOT the dashboard's default (which is `ingest`,\nthe safer choice). The API default has to preserve the historical\nbehavior, because a customer script that has been POSTing\n`{\"friendly_name\": \"...\"}` for years must keep getting a key that can\ndo what its keys have always done."
               }
             ]
           },
@@ -36528,7 +36528,7 @@
         "properties": {
           "domain": {
             "type": "string",
-            "description": "The zone to watch. Normalised to lowercase without a trailing dot."
+            "description": "The zone to watch. Normalized to lowercase without a trailing dot."
           },
           "friendly_name": {
             "type": [
@@ -38017,7 +38017,7 @@
       },
       "CustomDomainSender": {
         "type": "object",
-        "description": "Sending a white-labelled page's subscriber email from the domain. Optional for the owner.",
+        "description": "Sending a white-labeled page's subscriber email from the domain. Optional for the owner.",
         "required": [
           "status",
           "dkim_record",
@@ -41133,7 +41133,9 @@
           "degraded",
           "failing",
           "skipped",
-          "untested"
+          "untested",
+          "disabled",
+          "quiet"
         ]
       },
       "HigherIs": {
@@ -42308,6 +42310,14 @@
           "is_test": {
             "type": "boolean",
             "description": "A test send from the dashboard."
+          },
+          "webhook_delivery_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "For a webhook, the delivery whose attempts the webhook log shows."
           }
         }
       },
@@ -44907,7 +44917,7 @@
           },
           "url": {
             "type": "string",
-            "description": "The request URL, sanitised."
+            "description": "The request URL, sanitized."
           },
           "resource_route": {
             "type": [
@@ -45272,7 +45282,7 @@
           },
           "outage_ack_stops_repeats": {
             "type": "boolean",
-            "description": "Acknowledging an outage stops its repeat alerts. When false, an\nacknowledgement only records who is on it."
+            "description": "Acknowledging an outage stops its repeat alerts. When false, an\nacknowledgment only records who is on it."
           },
           "updated_at": {
             "type": [
@@ -46125,7 +46135,7 @@
       },
       "OutageAcknowledgement": {
         "type": "object",
-        "description": "One outage's acknowledgement. The first one wins and never changes.",
+        "description": "One outage's acknowledgment. The first one wins and never changes.",
         "required": [
           "transition_id",
           "monitor_id",
@@ -48933,7 +48943,7 @@
           },
           "url": {
             "type": "string",
-            "description": "The page URL when recording started, minimised (empty until known)."
+            "description": "The page URL when recording started, minimized (empty until known)."
           },
           "start_ms": {
             "type": "integer",
@@ -55107,7 +55117,7 @@
           },
           "cancelled": {
             "type": "integer",
-            "description": "How many partner-sourced entitlement rows this call cancelled, i.e.\nwhat the previous bundle had that this one does not. Rows sourced from\nStripe or from a staff grant are never counted here because they are\nnever touched.",
+            "description": "How many partner-sourced entitlement rows this call canceled, i.e.\nwhat the previous bundle had that this one does not. Rows sourced from\nStripe or from a staff grant are never counted here because they are\nnever touched.",
             "minimum": 0
           }
         }
@@ -57564,7 +57574,7 @@
               "null"
             ],
             "format": "uuid",
-            "description": "Acknowledgement and resolution use the existing /incident/{id} actions."
+            "description": "Acknowledgment and resolution use the existing /incident/{id} actions."
           },
           "muted_until": {
             "type": [
@@ -62488,14 +62498,14 @@
               "string",
               "null"
             ],
-            "description": "`#rrggbb`. Colours the page title (without a logo) and headings."
+            "description": "`#rrggbb`. Colors the page title (without a logo) and headings."
           },
           "accent_color": {
             "type": [
               "string",
               "null"
             ],
-            "description": "`#rrggbb`. Colours the subscribe button, links, focus ring and chart\nline; falls back to `primary_color`. The page adjusts both colours per\ntheme where needed to keep text and controls readable."
+            "description": "`#rrggbb`. Colors the subscribe button, links, focus ring and chart\nline; falls back to `primary_color`. The page adjusts both colors per\ntheme where needed to keep text and controls readable."
           },
           "header_text": {
             "type": [
@@ -63083,7 +63093,7 @@
       },
       "ValueThreshold": {
         "type": "object",
-        "description": "A conditional colour on a value (query value, toplist, table cells).",
+        "description": "A conditional color on a value (query value, toplist, table cells).",
         "required": [
           "op",
           "value",
