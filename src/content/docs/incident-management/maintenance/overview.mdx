@@ -103,7 +103,7 @@ Patterns we recommend:
 
 ## What "silenced" means precisely
 
-Suppression applies to monitor notifications that carry monitor context (HTTP monitors, heartbeats, browser checks and alert rules, including RUM issue alerts). While a matching window is active:
+Suppression applies to monitor notifications that carry monitor context (HTTP monitors, heartbeats, browser checks, TLS certificate, domain registration, DNS record and page speed checks, and alert rules, including RUM issue alerts). TLS, domain and page speed checks match by their HTTP monitor's tags; all of them match by the service they are linked to. Each RUM issue is held on its own. While a matching window is active:
 
 - **Checks still run on schedule.** Results are recorded.
 - **Failure notifications are held, not dropped.** They are stored and re-evaluated when the window's current occurrence ends, so a monitor that is still down after the window pages then.

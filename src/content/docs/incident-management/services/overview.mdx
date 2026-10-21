@@ -131,7 +131,7 @@ Every type below can join a service with `POST /service/{id}/monitors`, one or m
 | Heartbeat (cron) monitors | `cron` | The service form, or `service_id` on `POST /cron/job` and `PUT /cron/job/{id}`. |
 | Browser checks | `browser` | The service form, or `service_id` on `POST /browser_check` and `PUT /browser_check/{id}`. |
 | DNS record monitors | `dns_record` | `service_id` on `POST /dns/record-monitor` and `PUT /dns/record-monitor/{id}`. |
-| TLS certificate, domain registration and page speed checks of an HTTP monitor | `tls`, `dns`, `page_speed` | Only the link endpoint. Their maintenance windows follow the HTTP monitor's tags. |
+| TLS certificate, domain registration and page speed checks of an HTTP monitor | `tls`, `dns`, `page_speed` | Only the link endpoint. A maintenance window holds their alerts when it matches the HTTP monitor's tags or names the service the check is linked to. |
 | Alert rules | | In the rule's own settings. |
 | RUM | | Cannot be linked. |
 
