@@ -2054,7 +2054,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "preview",
+        "operationId": "preview_telemetry_alert_rule",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2089,7 +2089,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "list",
+        "operationId": "list_telemetry_alert_rules",
         "responses": {
           "200": {
             "description": "",
@@ -2115,7 +2115,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "create",
+        "operationId": "create_telemetry_alert_rule",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2176,7 +2176,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "detail",
+        "operationId": "get_telemetry_alert_rule",
         "parameters": [
           {
             "name": "id",
@@ -2210,7 +2210,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "update",
+        "operationId": "update_telemetry_alert_rule",
         "parameters": [
           {
             "name": "id",
@@ -2255,7 +2255,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "remove",
+        "operationId": "delete_telemetry_alert_rule",
         "parameters": [
           {
             "name": "id",
@@ -2294,7 +2294,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "events",
+        "operationId": "list_telemetry_alert_rule_events",
         "parameters": [
           {
             "name": "id",
@@ -2333,7 +2333,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "history",
+        "operationId": "get_telemetry_alert_rule_history",
         "parameters": [
           {
             "name": "id",
@@ -2411,7 +2411,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "mute_instance",
+        "operationId": "mute_telemetry_alert_instance",
         "parameters": [
           {
             "name": "id",
@@ -2450,7 +2450,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "mute",
+        "operationId": "mute_telemetry_alert_rule",
         "parameters": [
           {
             "name": "id",
@@ -2487,7 +2487,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "unmute",
+        "operationId": "unmute_telemetry_alert_rule",
         "parameters": [
           {
             "name": "id",
@@ -2526,7 +2526,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "pause",
+        "operationId": "pause_telemetry_alert_rule",
         "parameters": [
           {
             "name": "id",
@@ -2565,7 +2565,7 @@
         "tags": [
           "Telemetry alerts"
         ],
-        "operationId": "resume",
+        "operationId": "resume_telemetry_alert_rule",
         "parameters": [
           {
             "name": "id",
@@ -2825,7 +2825,7 @@
           "Authentication"
         ],
         "summary": "Send a sign-in link and code, or Stytch's link, to an address. The\nresponse is the same whether or not the address has an account.",
-        "operationId": "start",
+        "operationId": "start_email_sign_in",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2868,7 +2868,7 @@
           "Authentication"
         ],
         "summary": "Redeem an emailed link or code. A known address signs in; a new one gets\nan account first. Either way the session broker finishes the login.",
-        "operationId": "verify",
+        "operationId": "verify_email_sign_in",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3034,7 +3034,7 @@
           "Authentication"
         ],
         "summary": "Complete a login with a TOTP code or a recovery code.",
-        "operationId": "verify",
+        "operationId": "verify_mfa_sign_in",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3076,7 +3076,7 @@
         "tags": [
           "Authentication"
         ],
-        "operationId": "start",
+        "operationId": "start_passkey_sign_in",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3109,7 +3109,7 @@
         "tags": [
           "Authentication"
         ],
-        "operationId": "verify",
+        "operationId": "verify_passkey_sign_in",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3146,7 +3146,7 @@
           "Authentication"
         ],
         "summary": "Resolve an email address to its account's SSO start URL, if that domain\nhas an active SAML connection. Always 200; `redirect_url` is null when\nthere is nothing to start.",
-        "operationId": "start",
+        "operationId": "start_sso_sign_in",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3185,7 +3185,7 @@
         "tags": [
           "Security"
         ],
-        "operationId": "start",
+        "operationId": "start_step_up",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3220,7 +3220,7 @@
         "tags": [
           "Security"
         ],
-        "operationId": "verify",
+        "operationId": "verify_step_up",
         "parameters": [
           {
             "name": "X-SQ-Session-Token",
@@ -4230,7 +4230,7 @@
         "tags": [
           "Billing"
         ],
-        "operationId": "preview",
+        "operationId": "preview_sms_credit_purchase",
         "requestBody": {
           "content": {
             "application/json": {
@@ -5943,7 +5943,7 @@
         ],
         "summary": "The query catalog.",
         "description": "Every source with its measures, aggregations, fields and intervals, for the widget editor.",
-        "operationId": "catalog",
+        "operationId": "get_dashboard_query_catalog",
         "responses": {
           "200": {
             "description": "The catalog",
@@ -6023,7 +6023,7 @@
           "Dashboards"
         ],
         "summary": "Run up to 50 widgets. Scoped callers need each source's read scope, such as `read:logs`;\nwidgets lacking a scope return `denied`. Invalid requests fail the entire call.",
-        "operationId": "query",
+        "operationId": "run_dashboard_queries",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7773,7 +7773,7 @@
         "tags": [
           "Errors"
         ],
-        "operationId": "list",
+        "operationId": "list_backend_errors",
         "parameters": [
           {
             "name": "from",
@@ -7962,7 +7962,7 @@
         "tags": [
           "Errors"
         ],
-        "operationId": "detail",
+        "operationId": "get_backend_error",
         "parameters": [
           {
             "name": "service",
@@ -8155,7 +8155,7 @@
         "tags": [
           "Errors"
         ],
-        "operationId": "events",
+        "operationId": "list_backend_error_events",
         "parameters": [
           {
             "name": "service",
@@ -11911,6 +11911,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "The credentials could not be sealed; nothing was saved, try again"
           }
         },
         "security": [
@@ -11955,6 +11958,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "The credentials could not be sealed; nothing was saved, try again"
           }
         },
         "security": [
@@ -11999,6 +12005,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "The credentials could not be sealed; nothing was saved, try again"
           }
         },
         "security": [
@@ -12043,6 +12052,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "The credentials could not be sealed; nothing was saved, try again"
           }
         },
         "security": [
@@ -12087,6 +12099,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "The credentials could not be sealed; nothing was saved, try again"
           }
         },
         "security": [
@@ -12131,6 +12146,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "The credentials could not be sealed; nothing was saved, try again"
           }
         },
         "security": [
@@ -12175,6 +12193,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "The credentials could not be sealed; nothing was saved, try again"
           }
         },
         "security": [
@@ -12219,6 +12240,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "The credentials could not be sealed; nothing was saved, try again"
           }
         },
         "security": [
@@ -12263,6 +12287,9 @@
           },
           "502": {
             "description": "Slack could not be reached, or refused our app's credentials"
+          },
+          "503": {
+            "description": "The credentials could not be sealed; nothing was saved, try again"
           }
         },
         "security": [
@@ -12470,6 +12497,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "The credentials could not be sealed; nothing was saved, try again"
           }
         },
         "security": [
@@ -12585,7 +12615,7 @@
           "Log Saved Views"
         ],
         "summary": "List saved log views for the user/account.",
-        "operationId": "list_saved_views",
+        "operationId": "list_log_saved_views",
         "responses": {
           "200": {
             "description": "Saved views"
@@ -12608,7 +12638,7 @@
           "Log Saved Views"
         ],
         "summary": "Create a saved log view.",
-        "operationId": "create_saved_view",
+        "operationId": "create_log_saved_view",
         "requestBody": {
           "content": {
             "application/json": {
@@ -12646,7 +12676,7 @@
           "Log Saved Views"
         ],
         "summary": "Get a saved log view by ID.",
-        "operationId": "get_saved_view",
+        "operationId": "get_log_saved_view",
         "parameters": [
           {
             "name": "view_id",
@@ -12684,7 +12714,7 @@
           "Log Saved Views"
         ],
         "summary": "Update a saved log view.",
-        "operationId": "update_saved_view",
+        "operationId": "update_log_saved_view",
         "parameters": [
           {
             "name": "view_id",
@@ -12732,7 +12762,7 @@
           "Log Saved Views"
         ],
         "summary": "Delete a saved log view.",
-        "operationId": "delete_saved_view",
+        "operationId": "delete_log_saved_view",
         "parameters": [
           {
             "name": "view_id",
@@ -14509,7 +14539,7 @@
         "tags": [
           "Telemetry logs"
         ],
-        "operationId": "search_get",
+        "operationId": "search_logs_get",
         "parameters": [
           {
             "name": "range",
@@ -14697,7 +14727,7 @@
         "tags": [
           "Telemetry logs"
         ],
-        "operationId": "search",
+        "operationId": "search_logs",
         "requestBody": {
           "content": {
             "application/json": {
@@ -15104,7 +15134,7 @@
           "Metric Saved Views"
         ],
         "summary": "List saved metric views for the user/account.",
-        "operationId": "list_saved_views",
+        "operationId": "list_metric_saved_views",
         "responses": {
           "200": {
             "description": "Saved views"
@@ -15127,7 +15157,7 @@
           "Metric Saved Views"
         ],
         "summary": "Create a saved metric view.",
-        "operationId": "create_saved_view",
+        "operationId": "create_metric_saved_view",
         "requestBody": {
           "content": {
             "application/json": {
@@ -15165,7 +15195,7 @@
           "Metric Saved Views"
         ],
         "summary": "Get a saved metric view by ID.",
-        "operationId": "get_saved_view",
+        "operationId": "get_metric_saved_view",
         "parameters": [
           {
             "name": "view_id",
@@ -15203,7 +15233,7 @@
           "Metric Saved Views"
         ],
         "summary": "Update a saved metric view.",
-        "operationId": "update_saved_view",
+        "operationId": "update_metric_saved_view",
         "parameters": [
           {
             "name": "view_id",
@@ -15251,7 +15281,7 @@
           "Metric Saved Views"
         ],
         "summary": "Delete a saved metric view.",
-        "operationId": "delete_saved_view",
+        "operationId": "delete_metric_saved_view",
         "parameters": [
           {
             "name": "view_id",
@@ -15480,7 +15510,7 @@
         "tags": [
           "Telemetry metrics"
         ],
-        "operationId": "catalog",
+        "operationId": "get_metric_catalog",
         "parameters": [
           {
             "name": "range",
@@ -15965,7 +15995,7 @@
         "tags": [
           "Telemetry metrics"
         ],
-        "operationId": "query",
+        "operationId": "query_metrics",
         "requestBody": {
           "content": {
             "application/json": {
@@ -18875,7 +18905,7 @@
         "tags": [
           "RUM Privacy"
         ],
-        "operationId": "list",
+        "operationId": "list_rum_deletion_requests",
         "parameters": [
           {
             "name": "before",
@@ -18919,7 +18949,7 @@
         "tags": [
           "RUM Privacy"
         ],
-        "operationId": "create",
+        "operationId": "create_rum_deletion_request",
         "requestBody": {
           "content": {
             "application/json": {
@@ -18969,7 +18999,7 @@
         "tags": [
           "RUM Privacy"
         ],
-        "operationId": "get",
+        "operationId": "get_rum_deletion_request",
         "parameters": [
           {
             "name": "id",
@@ -22536,7 +22566,7 @@
         "tags": [
           "RUM Analytics"
         ],
-        "operationId": "timeseries",
+        "operationId": "get_rum_timeseries",
         "parameters": [
           {
             "name": "app_id",
@@ -24044,7 +24074,7 @@
         "tags": [
           "Telemetry services"
         ],
-        "operationId": "list",
+        "operationId": "list_telemetry_services",
         "parameters": [
           {
             "name": "range",
@@ -24234,7 +24264,7 @@
         "tags": [
           "Telemetry services"
         ],
-        "operationId": "detail",
+        "operationId": "get_telemetry_service",
         "parameters": [
           {
             "name": "range",
@@ -25080,7 +25110,7 @@
         "tags": [
           "SLOs"
         ],
-        "operationId": "list",
+        "operationId": "list_slos",
         "responses": {
           "200": {
             "description": "",
@@ -25106,7 +25136,7 @@
         "tags": [
           "SLOs"
         ],
-        "operationId": "create",
+        "operationId": "create_slo",
         "requestBody": {
           "content": {
             "application/json": {
@@ -25142,7 +25172,7 @@
         "tags": [
           "SLOs"
         ],
-        "operationId": "detail",
+        "operationId": "get_slo",
         "parameters": [
           {
             "name": "id",
@@ -25176,7 +25206,7 @@
         "tags": [
           "SLOs"
         ],
-        "operationId": "update",
+        "operationId": "update_slo",
         "parameters": [
           {
             "name": "id",
@@ -25221,7 +25251,7 @@
         "tags": [
           "SLOs"
         ],
-        "operationId": "remove",
+        "operationId": "delete_slo",
         "parameters": [
           {
             "name": "id",
@@ -25260,7 +25290,7 @@
         "tags": [
           "SLOs"
         ],
-        "operationId": "events",
+        "operationId": "list_slo_events",
         "parameters": [
           {
             "name": "id",
@@ -25299,7 +25329,7 @@
         "tags": [
           "SLOs"
         ],
-        "operationId": "history",
+        "operationId": "get_slo_history",
         "parameters": [
           {
             "name": "id",
@@ -25336,9 +25366,9 @@
     "/slos/{id}/instances/mute": {
       "post": {
         "tags": [
-          "Telemetry alerts"
+          "SLOs"
         ],
-        "operationId": "mute_instance",
+        "operationId": "mute_slo_instance",
         "parameters": [
           {
             "name": "id",
@@ -25377,7 +25407,7 @@
         "tags": [
           "SLOs"
         ],
-        "operationId": "mute",
+        "operationId": "mute_slo",
         "parameters": [
           {
             "name": "id",
@@ -25414,7 +25444,7 @@
         "tags": [
           "SLOs"
         ],
-        "operationId": "unmute",
+        "operationId": "unmute_slo",
         "parameters": [
           {
             "name": "id",
@@ -25453,7 +25483,7 @@
         "tags": [
           "SLOs"
         ],
-        "operationId": "pause",
+        "operationId": "pause_slo",
         "parameters": [
           {
             "name": "id",
@@ -25492,7 +25522,7 @@
         "tags": [
           "SLOs"
         ],
-        "operationId": "resume",
+        "operationId": "resume_slo",
         "parameters": [
           {
             "name": "id",
@@ -28471,7 +28501,7 @@
         "tags": [
           "Telemetry Privacy"
         ],
-        "operationId": "create",
+        "operationId": "create_telemetry_deletion_request",
         "requestBody": {
           "content": {
             "application/json": {
@@ -28521,7 +28551,7 @@
         "tags": [
           "Telemetry Privacy"
         ],
-        "operationId": "get",
+        "operationId": "get_telemetry_deletion_request",
         "parameters": [
           {
             "name": "id",
@@ -28568,7 +28598,7 @@
           "Telemetry exports"
         ],
         "description": "Returns up to 50 exports. Pass the x-next-cursor response header as the next request's cursor. Stored queries are never returned.",
-        "operationId": "list",
+        "operationId": "list_telemetry_exports",
         "parameters": [
           {
             "name": "cursor",
@@ -28607,7 +28637,7 @@
         "tags": [
           "Telemetry exports"
         ],
-        "operationId": "create",
+        "operationId": "create_telemetry_export",
         "requestBody": {
           "content": {
             "application/json": {
@@ -28735,7 +28765,7 @@
         "tags": [
           "Telemetry settings"
         ],
-        "operationId": "list",
+        "operationId": "list_telemetry_pipelines",
         "responses": {
           "200": {
             "description": "",
@@ -28764,7 +28794,7 @@
         "tags": [
           "Telemetry settings"
         ],
-        "operationId": "create",
+        "operationId": "create_telemetry_pipeline",
         "requestBody": {
           "content": {
             "application/json": {
@@ -28847,7 +28877,7 @@
         "tags": [
           "Telemetry settings"
         ],
-        "operationId": "update",
+        "operationId": "update_telemetry_pipeline",
         "parameters": [
           {
             "name": "id",
@@ -29032,7 +29062,7 @@
         "tags": [
           "Telemetry views"
         ],
-        "operationId": "list",
+        "operationId": "list_telemetry_views",
         "parameters": [
           {
             "name": "page",
@@ -29068,7 +29098,7 @@
         "tags": [
           "Telemetry views"
         ],
-        "operationId": "create",
+        "operationId": "create_telemetry_view",
         "requestBody": {
           "content": {
             "application/json": {
@@ -29109,7 +29139,7 @@
         "tags": [
           "Telemetry views"
         ],
-        "operationId": "update",
+        "operationId": "update_telemetry_view",
         "parameters": [
           {
             "name": "id",
@@ -29156,7 +29186,7 @@
         "tags": [
           "Telemetry views"
         ],
-        "operationId": "remove",
+        "operationId": "delete_telemetry_view",
         "parameters": [
           {
             "name": "id",
@@ -29318,7 +29348,7 @@
         "tags": [
           "Telemetry traces"
         ],
-        "operationId": "detail",
+        "operationId": "get_trace_detail",
         "requestBody": {
           "content": {
             "application/json": {
@@ -29558,7 +29588,7 @@
         "tags": [
           "Telemetry traces"
         ],
-        "operationId": "search_get",
+        "operationId": "search_traces_get",
         "parameters": [
           {
             "name": "range",
@@ -29746,7 +29776,7 @@
         "tags": [
           "Telemetry traces"
         ],
-        "operationId": "search",
+        "operationId": "search_traces",
         "requestBody": {
           "content": {
             "application/json": {
@@ -29796,7 +29826,7 @@
         "tags": [
           "Telemetry traces"
         ],
-        "operationId": "timeseries",
+        "operationId": "get_trace_timeseries",
         "parameters": [
           {
             "name": "range",
@@ -39852,6 +39882,16 @@
           }
         }
       },
+      "HealthState": {
+        "type": "string",
+        "enum": [
+          "healthy",
+          "degraded",
+          "failing",
+          "skipped",
+          "untested"
+        ]
+      },
       "HigherIs": {
         "type": "string",
         "enum": [
@@ -40918,6 +40958,130 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "health": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IntegrationHealth",
+                "description": "How deliveries through it are going. Only the list carries it."
+              }
+            ]
+          }
+        }
+      },
+      "IntegrationDelivery": {
+        "type": "object",
+        "description": "One receipt, as health and the delivery log show it.",
+        "required": [
+          "id",
+          "at",
+          "status",
+          "is_test"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "description": "sent | delivered | delayed | soft_bounced | failed | rejected | bounced | complained | skipped"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The vendor's reason for a non-success status, URLs cut to hosts; a slug for `skipped`."
+          },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "slack | webhook | pagerduty | …"
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Masked: a Slack channel, a webhook host."
+          },
+          "source_kind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What produced it, such as `http_transition`; `null` on older rows."
+          },
+          "event_kind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What happened, such as `down`; `null` on older rows."
+          },
+          "why": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The older slug for why it was sent, such as `monitor_down`."
+          },
+          "monitor_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The monitor it was about, and which table: http | cron | browser | page_speed | tls | dns."
+          },
+          "monitor_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_test": {
+            "type": "boolean",
+            "description": "A test send from the dashboard."
+          }
+        }
+      },
+      "IntegrationHealth": {
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/HealthState"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why it is not healthy: the vendor's words or a skip slug."
+          },
+          "last_delivery": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IntegrationDelivery",
+                "description": "The newest receipt, skips by design included."
+              }
+            ]
           }
         }
       },
