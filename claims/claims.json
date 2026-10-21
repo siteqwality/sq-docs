@@ -31,6 +31,7 @@
   { "page": "incident-management/on-call/overview.mdx", "text": "`GET /on_call_schedule/{id}/on_call` answers for now (or any `at`)", "needs": ["oncall.who_is_on_call"] },
   { "page": "incident-management/on-call/overview.mdx", "text": "subscribe to your own shifts, or a whole schedule, in Google Calendar, Outlook or Apple Calendar", "needs": ["oncall.calendar_feed"] },
   { "page": "incident-management/on-call/overview.mdx", "text": "whoever goes on call can be told through their low-urgency notification rules", "needs": ["oncall.handoff_notices", "notify.notification_rules"] },
+  { "page": "incident-management/on-call/reference.mdx", "text": "`/oncall` answers privately with who is on call, until when, and who is next", "needs": ["oncall.cli_slack"] },
   { "page": "incident-management/notifications/overview.mdx", "text": "It must be verified with a 6-digit code before a rule can use it.", "needs": ["notify.contact_methods"] },
   { "page": "incident-management/notifications/overview.mdx", "text": "Each user can have up to 20 contact methods.", "needs": ["notify.contact_methods"] },
   {"page": "incident-management/services/overview.mdx", "text": "Health is the worse of its incidents and its monitors:", "needs": ["service.health_rollup"]},
