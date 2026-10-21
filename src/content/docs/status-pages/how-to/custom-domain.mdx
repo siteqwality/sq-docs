@@ -28,9 +28,9 @@ Both values come from the API response in step 1 below.
 
 <Steps>
 
-1. Open the status page in the dashboard, then **Settings → Custom domain → Add domain**.
+1. Open the status page in the dashboard and go to its **Custom Domain** tab.
 
-2. Enter your subdomain, e.g. `status.example.com`. Save.
+2. Under **Domain**, enter your subdomain, e.g. `status.example.com`, and click **Set Up Domain**.
 
 3. The page reloads with two CNAME records to add to your DNS provider, plus a status badge that starts at `pending_validation`.
 
@@ -104,12 +104,14 @@ On your domain, the page's live updates and the subscribe form call the API at y
 
 ## Removing a custom domain
 
+On the **Custom Domain** tab, click **Remove Domain**. Through the API:
+
 ```bash
 curl -X DELETE https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/custom_domain \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-Or use the **Remove** button in the dashboard. Removing the custom domain immediately stops serving it; you should also delete the two CNAME records from your DNS to avoid a dangling pointer at Site Qwality's edge.
+Removing the custom domain immediately stops serving it; you should also delete the two CNAME records from your DNS to avoid a dangling pointer at Site Qwality's edge.
 
 Deleting the status page removes its custom domain the same way, so delete the two CNAME records then too.
 

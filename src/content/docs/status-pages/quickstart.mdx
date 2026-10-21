@@ -21,11 +21,11 @@ By the end of this guide you'll have a public status page at `https://statuspage
 
 <Steps>
 
-1. **Status pages → New status page.**
+1. Go to **Manage → Status Page** and click **+ Create status page**.
 
-2. Set the **friendly name**. This is the public page title, so use your product name, e.g. `Acme Cloud`.
+2. Set the **Name**. This is the public page title, so use your product name, e.g. `Acme Cloud`.
 
-3. Click **Create**. You're dropped onto the page settings, with the page's public URL (`https://statuspage.siteqwality.com/<account-id>/<page-id>`) shown at the top.
+3. Click **Add**, then click the new page in the list to open it. Its public URL (`https://statuspage.siteqwality.com/<account-id>/<page-id>`) is shown at the top.
 
 </Steps>
 
@@ -90,17 +90,17 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/browser_che
 
 <Steps>
 
-1. On the page, open **Branding**.
+1. On the page, open the **Branding** tab.
 
-2. **Upload a logo** in PNG, JPEG, SVG or WebP, up to 2MB, and a **dark theme logo** if your logo needs one. Site Qwality stores them on S3 and serves them via CDN.
+2. Under **Images**, click **Upload** next to **Logo** and pick a PNG, JPEG, SVG or WebP file up to 2MB. Add a **Dark theme logo** the same way if your logo needs one. Each file is saved as soon as it uploads.
 
-3. Set the **primary color** (`#RRGGBB`) for the page title and the **accent color** for links and the Subscribe button. The page shifts either one to a readable shade in a theme where it would be hard to read; the preview shows both themes.
+3. Set the **Primary Color** (`#RRGGBB`) for the page title and the **Accent Color** for links and the Subscribe button. The page shifts either one to a readable shade in a theme where it would be hard to read; the preview shows both themes.
 
-4. Set a **page title** (browser tab) and optional **header/footer text**.
+4. Under **Page Info**, set a **Page Title** (browser tab) and optional **Header Text** and **Footer Text**.
 
-5. Pick a **default theme** (`light`, `dark`, or `system` to follow visitor's preference).
+5. Under **Theme**, pick a **Default Theme**: **Light**, **Dark**, or **System (auto)** to follow the visitor's preference.
 
-6. Save.
+6. Click **Save Settings**.
 
 </Steps>
 
@@ -153,15 +153,15 @@ An incident reaches a status page when you create it on the page, publish an exi
 
 <Steps>
 
-1. On the status page, open **Incidents → New incident**.
+1. On the status page, open the **Incidents** tab and click **Report Incident**.
 
-2. Title: `Investigating elevated API latency`. Severity: `minor`. Status: `investigating`.
+2. **Title:** `Investigating elevated API latency`. **Severity:** **Minor**. The incident starts as investigating.
 
-3. Paste an initial update message: `Our monitoring detected increased latency on the API. We're looking into it now.`
+3. In **Initial Update**, paste: `Our monitoring detected increased latency on the API. We're looking into it now.` Optionally pick the **Affected Monitors**.
 
-4. Save. The incident appears immediately on the public page.
+4. Click **Report Incident**. The incident appears immediately on the public page.
 
-5. To resolve, post a closing update with status `resolved`, then mark the incident resolved. The update alone adds a line to the timeline but leaves the incident open on the page.
+5. To resolve, open the incident from the **Incidents** tab and click **Mark Resolved**. That posts a public **Resolved** update, emails the page's subscribers and closes the incident on the page. To add a closing message of your own first, write it under **Post Update** and click **Post Update**.
 
 </Steps>
 
