@@ -93,7 +93,7 @@ An override wins over the monitor, a pause and any maintenance, and it counts to
 |---|---|---|---|---|
 | `page_title` | string | max 100 characters | Browser tab title, and the header heading when there is no logo. | `Status Page` |
 | `default_theme` | enum | `light` \| `dark` \| `system` | Theme for first-time visitors. | `system` |
-| `primary_color` | string | `#rrggbb` | Page title and the subscribe heading. Also the accent when `accent_color` is unset. | body text colour |
+| `primary_color` | string | `#rrggbb` | Page title and the subscribe heading. Also the accent when `accent_color` is unset. | body text color |
 | `accent_color` | string | `#rrggbb` | Links, the Subscribe button, focus rings, text selection and the response time line. | `primary_color`, else Atlas clay |
 | `header_text` | string | max 500 characters | Line under the logo or title. | `System Status` |
 | `footer_text` | string | max 500 characters | Line in the footer. | nothing |
@@ -102,7 +102,7 @@ An override wins over the monitor, a pause and any maintenance, and it counts to
 | `white_label` | bool | none | Removes the "Powered by Site Qwality" badge. | `false` |
 | `logo_s3_key` | string | from the upload flow | Header logo. | the title |
 | `logo_dark_s3_key` | string | from the upload flow | Header logo in the dark theme. | `logo_s3_key` |
-| `favicon_s3_key` | string | from the upload flow | Browser tab icon. | Site Qwality icon, none when white-labelled |
+| `favicon_s3_key` | string | from the upload flow | Browser tab icon. | Site Qwality icon, none when white-labeled |
 | `og_image_s3_key` | string | from the upload flow | Link preview image. | none |
 
 Every field is free on every plan, `white_label` included. Clearing a field is always allowed.
@@ -111,9 +111,9 @@ An `*_s3_key` must be the `s3_key` the upload endpoint returned for that asset t
 
 `GET` and `PUT` return the stored fields plus `logo_url`, `logo_dark_url`, `favicon_url` and `og_image_url`, the CDN addresses of the assets (`null` when unset).
 
-### Colours and contrast
+### Colors and contrast
 
-The page never draws a brand colour where it would be hard to read. For each theme it uses the colour as given when it meets WCAG 2.2 AA on the page's backgrounds, and otherwise the nearest shade of the same hue that does: 4.5:1 for text (the title, links), 3:1 for focus rings and the chart line. The Subscribe button keeps 4.5:1 between its fill and its label, which is ink or cream, whichever reads better. No colour reaches 4.5:1 on both the light and the dark background, so a strong brand colour usually shows a lighter or darker shade in one theme. The dashboard's Branding tab shows the ratio and the shade the page will use as you pick a colour, and previews both themes.
+The page never draws a brand color where it would be hard to read. For each theme it uses the color as given when it meets WCAG 2.2 AA on the page's backgrounds, and otherwise the nearest shade of the same hue that does: 4.5:1 for text (the title, links), 3:1 for focus rings and the chart line. The Subscribe button keeps 4.5:1 between its fill and its label, which is ink or cream, whichever reads better. No color reaches 4.5:1 on both the light and the dark background, so a strong brand color usually shows a lighter or darker shade in one theme. The dashboard's Branding tab shows the ratio and the shade the page will use as you pick a color, and previews both themes.
 
 ### Asset upload flow
 
@@ -142,7 +142,7 @@ Public responses expose CDN URLs (`logo_url`, `logo_dark_url`, `favicon_url`, `o
 | `acm_validation.name` / `.value` | string | The DNS validation CNAME record to create while `status` is `pending_validation`. |
 | `failure_reason` | string \| null | Populated when `status` is `failed`. |
 | `health` | object | Absent until the first check. Once `active`, the domain is checked every 6 hours: `checked_at`, `problem` (a sentence on what to fix, or absent when all is well) and `certificate_expires_at`. |
-| `sender` | object | Subscriber email from the domain, for a white-labelled page: `status` (`not_started` until the domain is provisioned, then `pending`, `verified` or `failed`), `dkim_record` (`name` and `value` of the CNAME to add) and `from_address`, where the mail comes from once verified. |
+| `sender` | object | Subscriber email from the domain, for a white-labeled page: `status` (`not_started` until the domain is provisioned, then `pending`, `verified` or `failed`), `dkim_record` (`name` and `value` of the CNAME to add) and `from_address`, where the mail comes from once verified. |
 | `created_at` / `updated_at` | rfc3339 | Timestamps. |
 
 Deleting the status page removes its custom domain too, along with the certificate and distribution behind it. See the [custom domain guide](/status-pages/how-to/custom-domain/) for the DNS walkthrough.
@@ -388,5 +388,5 @@ The same page is also published as static files that update within a minute of a
 
 - [Status pages overview](/status-pages/overview/) for the three-layer model.
 - [Custom domain guide](/status-pages/how-to/custom-domain/) for DNS setup.
-- [Brand your status page](/status-pages/how-to/branding/) for colours, dark logos and custom CSS.
+- [Brand your status page](/status-pages/how-to/branding/) for colors, dark logos and custom CSS.
 - [API Reference](/api-reference/) for wire-level shapes.

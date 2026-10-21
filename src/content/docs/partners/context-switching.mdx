@@ -36,7 +36,7 @@ Every change you make inside a client is recorded in **that client's** [audit lo
 | [M2M client](/enterprise/api-clients/) | yes |
 | [API key](/getting-started/account-and-team/#generate-api-keys) | **no** |
 
-API keys are excluded on purpose. A key created before scopes existed carries no scope list and is unrestricted by design, so honouring the header on API keys would silently hand every one of those older keys the run of your entire client base. Use a session, or an M2M client with the scopes it needs.
+API keys are excluded on purpose. A key created before scopes existed carries no scope list and is unrestricted by design, so honoring the header on API keys would silently hand every one of those older keys the run of your entire client base. Use a session, or an M2M client with the scopes it needs.
 
 <Aside type="caution" title="An M2M client still needs its scopes">
 The header changes which account the request acts on. It does not widen what the credential may do. An M2M client scoped to `read:monitors` reads a client's monitors and gets a `403` trying to write them, exactly as it would on your own account.
@@ -48,7 +48,7 @@ Five prefixes return `404` while you are in client context:
 
 | Prefix | Why |
 |---|---|
-| `/account` | Team, roles, invitations and SSO are identity-provider operations, and your session is minted against **your** organization. Honouring them here would edit your own team while appearing to edit the client's. |
+| `/account` | Team, roles, invitations and SSO are identity-provider operations, and your session is minted against **your** organization. Honoring them here would edit your own team while appearing to edit the client's. |
 | `/auth` | Same reason, for the one authenticated route under it. |
 | `/billing` | A client has no payment method. Their entitlements come from the [bundle you set](/partners/client-accounts/#set-a-clients-bundle). |
 | `/partner` | A client managing clients would be a third level. There are two. |

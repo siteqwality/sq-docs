@@ -26,7 +26,7 @@ Country comes from an IP-to-country database bundled with the ingest service, so
 
 **`device_type`** is a closed set: `desktop`, `mobile`, `tablet`, `bot`, or empty.
 
-**`os`** normalises to `Windows`, `macOS`, `iOS`, `Android` or `Linux` where it can, and otherwise passes through whatever was detected, so less common values do appear.
+**`os`** normalizes to `Windows`, `macOS`, `iOS`, `Android` or `Linux` where it can, and otherwise passes through whatever was detected, so less common values do appear.
 
 **`browser`** covers the mainstream engines: `Chrome`, `Firefox`, `Safari`, `Edge`, `Opera` and similar. Requests from HTTP libraries such as curl or scripted clients are deliberately left **empty** rather than polluting the browser breakdown with tool names.
 
@@ -107,7 +107,7 @@ Each list holds the top 50 non-empty values by session count. Counts above about
 
 These dimensions live on **session measurements only**. Individual error and detail events do not carry them.
 
-In practice that means you segment sessions by browser or device, and reach errors through those sessions, rather than filtering an error list directly by browser. The overview's top errors do honour a dimension filter, by keeping errors from sessions that match it.
+In practice that means you segment sessions by browser or device, and reach errors through those sessions, rather than filtering an error list directly by browser. The overview's top errors do honor a dimension filter, by keeping errors from sessions that match it.
 
 ## See also
 

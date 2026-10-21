@@ -7,7 +7,7 @@ owner: jj
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-The Site Qwality client SDK is a single browser-side package: **`@siteqwality/rum`**. It collects [Real User Monitoring](/observability/rum/overview/) data and, when a recording rule activates it, [session replay](/observability/replay/overview/). Every option and behaviour is in the [SDK reference](/sdk/v2/). SDK 1.x is retired and no longer accepts data; install SDK 2.
+The Site Qwality client SDK is a single browser-side package: **`@siteqwality/rum`**. It collects [Real User Monitoring](/observability/rum/overview/) data and, when a recording rule activates it, [session replay](/observability/replay/overview/). Every option and behavior is in the [SDK reference](/sdk/v2/). SDK 1.x is retired and no longer accepts data; install SDK 2.
 
 It is **not** a back-end ingestion library, and there are no Site Qwality logging or metrics libraries for back-end languages. Send backend logs, traces and metrics through standard OpenTelemetry SDKs over OTLP/HTTP or the supported JSON/remote-write adapters. Follow the [platform guides](/observability/platforms/overview/) and keep server ingest credentials separate from the public RUM client token.
 
@@ -132,10 +132,10 @@ Pass low-cardinality, non-personal labels only, as in the `{ feature: 'checkout'
 
 Auto-captured clicks are attributed to the nearest link, button, form control or similar element at or above the click target, and recorded with a name (its `data-sq-action-name`, `aria-label` or text, up to 64 characters) and a stable selector. Set `data-sq-action-name` on an element (or an ancestor) to name its clicks yourself, or turn on [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names) for the application. See [click names](/sdk/v2/#click-names).
 
-## Behaviour worth knowing
+## Behavior worth knowing
 
 - **Errors are filtered.** Known browser noise (ResizeObserver loop warnings, detail-less `Script error.`, errors raised entirely inside browser extensions) is dropped, identical errors within 5 seconds are folded into one, and each error is limited to 10 and then one every 10 seconds, with at most 500 per page load. Ingest applies the same noise rules. A dropped error never marks a session as errored, never triggers a recording rule and is never billed. Add your own with `ignoreErrors`, `denyUrls` and `beforeSend`. See [error filtering](/sdk/v2/#error-filtering).
-- **Page views follow real URL changes.** A view is recorded only when the minimised URL changes, and carries `loading_type` (`initial_load`, `route_change` or `bfcache_restore`). Web Vitals always belong to the document's initial view. See [page views and Web Vitals](/sdk/v2/#page-views-and-web-vitals).
+- **Page views follow real URL changes.** A view is recorded only when the minimized URL changes, and carries `loading_type` (`initial_load`, `route_change` or `bfcache_restore`). Web Vitals always belong to the document's initial view. See [page views and Web Vitals](/sdk/v2/#page-views-and-web-vitals).
 - **Sessions are shared by tabs and follow the user.** Only user input, the tab becoming visible and new page views keep a session alive; it ends after 15 minutes without them or 4 hours in all. See [sessions](/sdk/v2/#sessions).
 - **Recording rules are evaluated in the browser**, when the config arrives and on every relevant input, with per-session sampling. The decision lasts for the rest of the session, in every tab. See [rule evaluation](/sdk/v2/#rule-evaluation).
 - **Frustration signals.** A click carries at most one of `error_click`, `rage_click` or `dead_click`, in that order of precedence. Add `data-sq-no-frustration` to an element, or list selectors in the application settings, to exempt controls that draw rapid or no-op clicks by design from rage and dead clicks. See [frustration signals](/sdk/v2/#frustration-signals).
@@ -171,7 +171,7 @@ The SDK is free; what costs is the data it sends. See [capture and billing](/sdk
 ## See also
 
 <CardGrid>
-  <LinkCard title="SDK reference" description="Every option, method and behaviour." href="/sdk/v2/" />
+  <LinkCard title="SDK reference" description="Every option, method and behavior." href="/sdk/v2/" />
   <LinkCard title="RUM quickstart" description="First-install walkthrough." href="/observability/rum/quickstart/" />
   <LinkCard title="Source maps" description="Symbolicate your error stacks." href="/observability/rum/how-to/source-maps/" />
   <LinkCard title="Recording rules" description="Activate detail and replay capture." href="/observability/rum/how-to/session-filters/" />

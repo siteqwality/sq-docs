@@ -24,7 +24,7 @@ Keep the API key in your shell or CI secret store. Listing requires `read:incide
 
 ## Acknowledge and resolve
 
-API keys do not identify a member, so acknowledgement requires `--by` with a member UUID in the account. Acknowledgement stops escalation. A resolved incident cannot be acknowledged, and repeating acknowledgement returns `409`.
+API keys do not identify a member, so acknowledgment requires `--by` with a member UUID in the account. Acknowledgment stops escalation. A resolved incident cannot be acknowledged, and repeating acknowledgment returns `409`.
 
 Resolving a published incident always posts a public resolution and emails its status-page subscribers by default. Add `--no-notify-subscribers` to suppress that email. `--message` supplies the public resolution text.
 

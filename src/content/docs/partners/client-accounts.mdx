@@ -245,7 +245,7 @@ done < clients.csv
 
 <Steps>
 
-1. **One at a time, with a pause.** Roughly one create per second is the right shape. Creation is not a cheap insert: it provisions an identity-provider organization and writes several rows in one transaction, so parallelising it buys little and makes partial failures harder to read.
+1. **One at a time, with a pause.** Roughly one create per second is the right shape. Creation is not a cheap insert: it provisions an identity-provider organization and writes several rows in one transaction, so parallelizing it buys little and makes partial failures harder to read.
 
 2. **Treat `429` as a full stop, not a retry-in-a-tight-loop.** API rate limits are shared across the whole API, so hammering through a limit degrades your own dashboard as well. Back off and rerun.
 

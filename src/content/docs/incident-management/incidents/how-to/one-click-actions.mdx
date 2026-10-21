@@ -7,7 +7,7 @@ owner: jj
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-The fastest acknowledgement is the one that does not require finding a laptop. When an escalation policy pages you by email or SMS, the message carries a link that acknowledges the incident from your phone.
+The fastest acknowledgment is the one that does not require finding a laptop. When an escalation policy pages you by email or SMS, the message carries a link that acknowledges the incident from your phone.
 
 ## What each destination carries
 
@@ -21,7 +21,7 @@ The fastest acknowledgement is the one that does not require finding a laptop. W
 
 An action link acts without a login, so it only ever goes to one person: the responder the escalation policy paged. Anything that reaches a shared place, such as a Slack channel, a chat or generic webhook, or a team address, gets a link to the incident page instead, and that page needs you to sign in.
 
-Acting through a link does exactly what the API endpoints do, including cancelling the escalation and deleting any pending delayed pages.
+Acting through a link does exactly what the API endpoints do, including canceling the escalation and deleting any pending delayed pages.
 
 ## Links in email and SMS
 
@@ -57,7 +57,7 @@ Treat the link like a password. It acts in your name, once, without a login, so 
 
 Two practical notes:
 
-- **SMS carries the acknowledge link only.** The URL is long, so an SMS page can span multiple segments and bill accordingly. If that matters more than one-tap acknowledgement, route pages through email or a push channel instead.
+- **SMS carries the acknowledge link only.** The URL is long, so an SMS page can span multiple segments and bill accordingly. If that matters more than one-tap acknowledgment, route pages through email or a push channel instead.
 - **Suspended accounts can still acknowledge and resolve.** Both the links and the acknowledge and resolve endpoints are deliberately exempt from suspension blocking, so an account can always silence its own pager.
 
 If a link cannot be created when the message is sent, the message carries the link to the incident page instead.

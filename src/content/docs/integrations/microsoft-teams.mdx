@@ -7,7 +7,7 @@ owner: jj
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-The Microsoft Teams integration posts alerts to a Teams channel through a Workflows webhook URL. Each alert is an Adaptive Card with a coloured title (red when a monitor goes down, green when it recovers) and a fact set: **Monitor**, **Status** and **URL** on every card, **Reason** when the check reported one, and **Started** and **Resolved** on a recovery. The card has no link back to Site Qwality.
+The Microsoft Teams integration posts alerts to a Teams channel through a Workflows webhook URL. Each alert is an Adaptive Card with a colored title (red when a monitor goes down, green when it recovers) and a fact set: **Monitor**, **Status** and **URL** on every card, **Reason** when the check reported one, and **Started** and **Resolved** on a recovery. The card has no link back to Site Qwality.
 
 <Aside type="caution" title="Office 365 Connectors no longer work">
 Microsoft retired Office 365 Connectors in Teams in May 2026, so Incoming Webhook connector URLs (`outlook.office.com/webhook/...` or `*.webhook.office.com`) no longer deliver. Use a Workflows webhook as described below. If you have a Teams integration with a connector URL, create a new integration with a Workflows URL and point your notification channels at it.
@@ -42,9 +42,9 @@ curl -X POST https://api.siteqwality.com/integration/microsoft_teams \
 ```
 
 <Aside type="note" title="Things to know about Workflows flows">
-- A flow belongs to the person who created it. If they leave your organisation, the flow stops, so add a co-owner to the flow in Power Automate.
+- A flow belongs to the person who created it. If they leave your organization, the flow stops, so add a co-owner to the flow in Power Automate.
 - On some Microsoft 365 plans, Microsoft turns off a flow that has had no successful run for 90 days. A channel for a quiet monitor can reach that, so check the flow if a channel has been silent for a long time.
-- Your organisation must allow Workflows in Teams.
+- Your organization must allow Workflows in Teams.
 </Aside>
 
 ## Add it to a notification group

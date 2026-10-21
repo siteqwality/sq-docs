@@ -80,7 +80,7 @@ Managed under `/rum/{app_id}/releases`. See [Source maps](/observability/rum/how
 
 ## SDK config
 
-The SDK reads `https://cdn.siteqwality.com/rum/config/v2/{app_id}.json`, published on every change and cached for up to 6 minutes. Its schema is `SdkConfigV2` in the [API reference](/api-reference/); a deleted application's file is `{"v":2,"status":"paused"}`. See [Change SDK behaviour without redeploying](/observability/rum/how-to/remote-config/).
+The SDK reads `https://cdn.siteqwality.com/rum/config/v2/{app_id}.json`, published on every change and cached for up to 6 minutes. Its schema is `SdkConfigV2` in the [API reference](/api-reference/); a deleted application's file is `{"v":2,"status":"paused"}`. See [Change SDK behavior without redeploying](/observability/rum/how-to/remote-config/).
 
 ## Analytics conventions
 
@@ -118,7 +118,7 @@ The SDK reads `https://cdn.siteqwality.com/rum/config/v2/{app_id}.json`, publish
 | `vitals_distribution` | Per vital (`lcp`, `inp`, `cls`, `fcp`, `ttfb`): `samples`, `good`, `needs_improvement`, `poor` page-view counts, using the [thresholds](/observability/rum/overview/#in-the-dashboard). |
 | `avg_lcp_ms`, `avg_fcp_ms`, `avg_cls`, `avg_inp_ms`, `avg_ttfb_ms` | Deprecated. Means of the per-view values; prefer the p75 fields. |
 | `top_pages` | Top 10 URLs by page views: `url`, `view_count`, `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `p75_load_time_ms` (initial loads only), `vitals_samples`, and the deprecated `avg_lcp_ms`, `avg_load_time_ms`. |
-| `top_errors` | Top 10 error groups by events, honouring the filters. |
+| `top_errors` | Top 10 error groups by events, honoring the filters. |
 | `country_breakdown`, `browser_breakdown` | Top 20 countries and top 10 browsers by sessions. |
 
 ### `GET /rum/{app_id}/vitals`

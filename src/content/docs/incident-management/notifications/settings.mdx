@@ -12,7 +12,7 @@ Notification settings are account-wide switches that change how monitor alerts b
 | Setting | Default | What it does |
 |---|---|---|
 | `flap_hold` | on | Holds alerts while a monitor flaps. Applies to HTTP monitors for now. Every monitor follows it unless it has its own override. |
-| `outage_ack_stops_repeats` | on | When someone acknowledges an outage, its repeat alerts (`resend_every_minutes`) stop. When off, an acknowledgement only records who is on it. |
+| `outage_ack_stops_repeats` | on | When someone acknowledges an outage, its repeat alerts (`resend_every_minutes`) stop. When off, an acknowledgment only records who is on it. |
 
 An account that has never saved these settings uses the defaults.
 
@@ -37,14 +37,14 @@ The monitor's sidebar shows the value in effect and whether it comes from the ac
 <Aside type="caution" title="Existing monitors now follow the account setting">
 Flap hold used to be a per-monitor field, and monitors created before it shipped had it off. Those monitors now follow the account setting, which is on by default, so **they start holding flaps** unless you set them to never hold. Monitors where someone had explicitly turned flap hold off after it shipped keep that choice as **Never hold**.
 
-To keep the old behaviour for the whole account, turn `flap_hold` off here. To keep it for single monitors, set those monitors to never hold.
+To keep the old behavior for the whole account, turn `flap_hold` off here. To keep it for single monitors, set those monitors to never hold.
 </Aside>
 
 ## Acknowledge stops repeats
 
-A [notification group](/incident-management/notifications/overview/#notification-groups) with `resend_every_minutes` repeats the down alert until the monitor recovers. With `outage_ack_stops_repeats` on, [acknowledging the outage](/incident-management/notifications/how-to/acknowledge-outages/) ends the repeats: the next scheduled repeat sees the acknowledgement, sends nothing and cancels the rest. The recovery alert is still sent.
+A [notification group](/incident-management/notifications/overview/#notification-groups) with `resend_every_minutes` repeats the down alert until the monitor recovers. With `outage_ack_stops_repeats` on, [acknowledging the outage](/incident-management/notifications/how-to/acknowledge-outages/) ends the repeats: the next scheduled repeat sees the acknowledgment, sends nothing and cancels the rest. The recovery alert is still sent.
 
-With the switch off, an acknowledgement is only a record of who is on the outage, and the repeats continue until the monitor recovers.
+With the switch off, an acknowledgment is only a record of who is on the outage, and the repeats continue until the monitor recovers.
 
 ## API
 

@@ -71,7 +71,7 @@ In your DNS provider (Cloudflare, Route53, NS1, etc.) add:
 | `CNAME` | `_xyz.status` (the `acm_validation.name`) | `_xyz.acm-validations.aws` (the `acm_validation.value`) | `300` |
 
 <Aside type="caution">
-If you use Cloudflare with the orange-cloud proxy, **set the traffic CNAME to "DNS only" (grey cloud)**. Cloudflare's proxy will break the upstream TLS handshake against ACM's certificate.
+If you use Cloudflare with the orange-cloud proxy, **set the traffic CNAME to "DNS only" (gray cloud)**. Cloudflare's proxy will break the upstream TLS handshake against ACM's certificate.
 </Aside>
 
 ## 3. Wait for validation
@@ -127,7 +127,7 @@ Once the domain is live, Site Qwality checks it every 6 hours: that your hostnam
 
 ## Email from your domain (optional)
 
-With the page white-labelled, subscriber email carries your page's name. It can also come from your domain, as `notifications@status.example.com`, signed for it. The **Custom domain** tab shows a third, optional record, **Email from your domain**: one more CNAME. Add it, and once the domain is live Site Qwality checks it every 15 minutes until it is verified, then every 6 hours. The API returns the same in the custom domain's `sender` field.
+With the page white-labeled, subscriber email carries your page's name. It can also come from your domain, as `notifications@status.example.com`, signed for it. The **Custom domain** tab shows a third, optional record, **Email from your domain**: one more CNAME. Add it, and once the domain is live Site Qwality checks it every 15 minutes until it is verified, then every 6 hours. The API returns the same in the custom domain's `sender` field.
 
 Until the record is verified, or if it is later removed, subscriber email still goes out, from Site Qwality's address. Without white-label it always does.
 

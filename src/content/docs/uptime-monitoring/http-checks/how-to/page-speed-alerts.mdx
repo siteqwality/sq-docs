@@ -33,7 +33,7 @@ Alerting is **transition-only**. Each run compares the previous run's performanc
 | both below | | nothing |
 | both at or above | | nothing |
 
-Two consequences worth internalising:
+Two consequences worth internalizing:
 
 - A score sitting **exactly at** the threshold counts as healthy. The comparison is strictly "below".
 - A monitor that stays degraded does **not** re-alert every 6 hours. You get one alert on the way down and one on the way back up.

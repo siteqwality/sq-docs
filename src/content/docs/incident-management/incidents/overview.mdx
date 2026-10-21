@@ -53,7 +53,7 @@ A status page incident can be `status: monitoring` while still `responder_status
 
 Severity sets the urgency of the page: `critical` and `major` incidents page at **high** urgency, `minor` at **low**, and each responder's [notification rules](/incident-management/notifications/how-to/notification-rules/) decide how each urgency reaches them. It does not choose a different escalation policy: the policy comes from the incident's service.
 
-Raising an incident's severity from `minor` to `major` or `critical` pages the current escalation level again. An acknowledged incident goes back to `triggered`, so an earlier acknowledgement does not silence the new page.
+Raising an incident's severity from `minor` to `major` or `critical` pages the current escalation level again. An acknowledged incident goes back to `triggered`, so an earlier acknowledgment does not silence the new page.
 
 ## Lifecycle: a typical auto-created incident
 
@@ -78,13 +78,13 @@ You can override any of these transitions manually if needed: the auto-resolutio
 
 For these, use `POST /incident` (standalone) or `POST /status_page/{id}/incident` (creates it on that page and emails the page's confirmed subscribers). Add `service_id` to page the service's escalation policy.
 
-## Acknowledgement
+## Acknowledgment
 
 Acknowledging an incident is **not** resolving it. Ack stops the page (so escalation won't keep paging), but the incident stays open until someone explicitly resolves it. This is intentional: the responder claims ownership, then has the time to actually fix the thing without their phone going off.
 
 The first person to acknowledge an incident that has no lead becomes its `lead` participant.
 
-An incident that a monitor outage opened automatically is linked to that outage's own [acknowledgement](/incident-management/notifications/how-to/acknowledge-outages/#incidents-opened-by-the-outage). Acknowledging the outage acknowledges the incident if it is still `triggered`, and acknowledging the incident records the outage acknowledgement. Incidents you create by hand are never linked to an outage.
+An incident that a monitor outage opened automatically is linked to that outage's own [acknowledgment](/incident-management/notifications/how-to/acknowledge-outages/#incidents-opened-by-the-outage). Acknowledging the outage acknowledges the incident if it is still `triggered`, and acknowledging the incident records the outage acknowledgment. Incidents you create by hand are never linked to an outage.
 
 ## Working an incident with others
 

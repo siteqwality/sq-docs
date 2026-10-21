@@ -242,7 +242,7 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 | `get_monitor` | Shows one monitor's settings and state. | Read |
 | `get_recent_checks` | Shows a monitor's latest check results, including the failing step of a browser check. | Read |
 | `get_alert_history` | Shows a monitor's recent outages, the alerts each one sent and who acknowledged it. | Read |
-| `acknowledge_monitor_outage` | Acknowledges a monitor's outage, recording who is on it and, by default, stopping its repeat alerts. Takes `monitor_id` and an optional `transition_id`; without one it acknowledges the open outage. The first acknowledgement stands, and an outage that has ended is refused. See [acknowledge a monitor outage](/incident-management/notifications/how-to/acknowledge-outages/). | Write |
+| `acknowledge_monitor_outage` | Acknowledges a monitor's outage, recording who is on it and, by default, stopping its repeat alerts. Takes `monitor_id` and an optional `transition_id`; without one it acknowledges the open outage. The first acknowledgment stands, and an outage that has ended is refused. See [acknowledge a monitor outage](/incident-management/notifications/how-to/acknowledge-outages/). | Write |
 | `list_check_locations` | Lists the locations a check can run from, with the ids to use when creating or updating a monitor. | Read |
 | `create_http_monitor` | Creates an HTTP monitor that alerts your account's default notification group. | Write |
 | `update_http_monitor` | Changes an HTTP monitor's settings. | Write |
@@ -250,8 +250,8 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 | `delete_monitor` | Deletes a monitor. | Write, asks first |
 | `run_browser_check` | Runs a browser check now. | Write |
 | `list_incidents`, `get_incident` | Lists incidents, or shows one with its timeline. | Read |
-| `incident_metrics` | Counts incidents created in a time window and returns mean, p50 and p90 acknowledgement/resolution durations in seconds. Supports service and severity filters; merged incidents are excluded. | Read |
-| `acknowledge_incident`, `resolve_incident` | Acknowledges or resolves an incident. API-key and M2M acknowledgement needs `acknowledged_by`; sessions act as their own member. Resolve accepts a message and `notify_subscribers`. | Write |
+| `incident_metrics` | Counts incidents created in a time window and returns mean, p50 and p90 acknowledgment/resolution durations in seconds. Supports service and severity filters; merged incidents are excluded. | Read |
+| `acknowledge_incident`, `resolve_incident` | Acknowledges or resolves an incident. API-key and M2M acknowledgment needs `acknowledged_by`; sessions act as their own member. Resolve accepts a message and `notify_subscribers`. | Write |
 | `create_incident` | Opens an incident, optionally linked to a service and published on a status page. A service's configured policy pages responders. | Write |
 | `update_incident` | Changes title, severity or service. Omitted fields stay unchanged; `service_id: null` detaches the service. Moving service or increasing severity can start paging. | Write |
 | `reopen_incident` | Reopens a resolved incident, restarting its escalation and posting a public reopening on linked pages. Open and merged incidents return `409`. | Write |

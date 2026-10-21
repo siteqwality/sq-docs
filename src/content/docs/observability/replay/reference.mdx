@@ -99,7 +99,7 @@ The player loads a replay in two steps: a manifest that lists every piece withou
 | `start_ms`, `end_ms` | First and last recorded event, Unix milliseconds. |
 | `active_ms`, `activity` | Time with user input, and the `[start, end]` ranges it falls in, for skipping inactivity. |
 | `windows[]` | One per browser tab: `window_id`, `index` (0 for the tab that recorded first) and its `page_loads[]`. |
-| `page_loads[]` | One per document: `page_load_id`, `url` (minimised), `start_ms`, `end_ms` and its `chunks[]` in playback order. |
+| `page_loads[]` | One per document: `page_load_id`, `url` (minimized), `start_ms`, `end_ms` and its `chunks[]` in playback order. |
 | `chunks[]` | `id` (opaque), `kind` (`block` or `segment`), `start_ms`, `end_ms`, `bytes`, and `snapshot` (playback can start here). |
 
 ### Chunk URLs

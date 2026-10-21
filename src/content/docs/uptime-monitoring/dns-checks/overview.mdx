@@ -19,7 +19,7 @@ Nothing in this check queries a nameserver. It does not confirm that your domain
 
 - Any domain you would lose if a renewal silently failed. The usual cause is an expired card on the registrar account, not a forgotten date.
 - Domains you inherited: from an agency, a former employee, or an acquisition, where nobody is certain who holds the renewal.
-- Domains where a hijack would be expensive. An unannounced registrar or nameserver change is the earliest visible signal of an unauthorised transfer, usually well before the site goes dark.
+- Domains where a hijack would be expensive. An unannounced registrar or nameserver change is the earliest visible signal of an unauthorized transfer, usually well before the site goes dark.
 - Portfolios. Every monitored domain reports the same three signals, so one alert format covers all of them.
 
 ## How it works
@@ -32,7 +32,7 @@ Each run:
 2. Records the result, whether or not the lookup worked, along with the expiry date, the registry status codes, the registrar and the nameservers.
 3. Decides whether any of the three signals below is worth an alert, and fans it out through the parent HTTP check's notification groups.
 
-**Cadence is daily.** It was weekly until August 2026, which made the warning ladder below impossible to honour: seven days between observations means a domain can be seen at "30 days left" and then next at "expired".
+**Cadence is daily.** It was weekly until August 2026, which made the warning ladder below impossible to honor: seven days between observations means a domain can be seen at "30 days left" and then next at "expired".
 
 ### The three legs
 
@@ -128,7 +128,7 @@ Each rung fires **once** per expiry date. There is no repeat every day, and no s
 
 **The ladder is fixed. It is not configurable.** There is no field for it on the API, no setting in the dashboard, and no way to add or move a rung.
 
-Three behaviours are worth knowing, because none of them is what the table alone suggests:
+Three behaviors are worth knowing, because none of them is what the table alone suggests:
 
 - **Rungs fire on crossing, not on an exact match.** A check that lands at 29 days remaining, having last run at 31, still sends the 30-day warning. A skipped run cannot silently swallow a rung.
 - **A rung that was already passed when monitoring started does not fire late.** Enable a check on a domain with 45 days left and you get one warning, the 60-day rung, not a burst of 90 and 60. The skipped 90 is marked done and never fires afterwards.

@@ -1,5 +1,5 @@
 ---
-title: Change SDK behaviour without redeploying
+title: Change SDK behavior without redeploying
 description: How the browser SDK fetches its configuration, what you can change remotely, and how long changes take to reach live sessions.
 last_verified: 2026-10-10
 owner: jj
@@ -63,7 +63,7 @@ Changing `privacy`, `retention`, `capture.network.body_urls` or `capture.network
 
 Every change that alters the configuration publishes it before the request returns. If it cannot be published, the request returns `503` and nothing is changed. Changes are recorded in the [audit log](/enterprise/audit-log/) with the names of the settings changed.
 
-A new application starts on the Balanced [privacy level](#privacy-levels), honours Global Privacy Control, and has the [default recording rules](/observability/rum/how-to/session-filters/#the-rules-a-new-application-starts-with). Nothing is excluded or ignored.
+A new application starts on the Balanced [privacy level](#privacy-levels), honors Global Privacy Control, and has the [default recording rules](/observability/rum/how-to/session-filters/#the-rules-a-new-application-starts-with). Nothing is excluded or ignored.
 
 <Aside type="danger" title="An existing application may not carry those defaults">
 Applications created before the privacy levels have no level (shown as Custom) and keep the masking flags stored at creation, and nothing rewrites them. One created earlier can have `mask_inputs` stored as `false`, in which case its recordings capture input values.

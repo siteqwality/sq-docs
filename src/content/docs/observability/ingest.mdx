@@ -1,6 +1,6 @@
 ---
 title: Ingest routes and limits
-description: Exact telemetry request paths, authentication, supported formats and acknowledgement semantics.
+description: Exact telemetry request paths, authentication, supported formats and acknowledgment semantics.
 last_verified: 2026-10-18
 owner: jj
 ---
@@ -63,7 +63,7 @@ Prefer OTel resource fields `service.name`, `deployment.environment.name`, `serv
 
 OTLP/HTTP returns **200** with an ExportResponse. Inspect `partialSuccess` and rejected record/point/span counters even when HTTP succeeded. JSON `/ingest` and `/metrics` return **200** with `accepted`, `rejected` and bounded `errors`. Platform log adapters return **200** using their platform contract. Firehose echoes the request ID and timestamp after delivery and fails a batch with rejected records. Remote-write returns **204** for full acceptance; 2.0 also returns written-sample/histogram/exemplar headers. Rejected remote-write records produce a failure response.
 
-Accepted records were written to storage or durable spill before acknowledgement. Durable spill can delay query visibility until replay. This is not an exactly-once promise across new requests, a promise that every record was retained, or a latency SLA. Exclusion/sampling rules and rejection counters matter. Retrying an ambiguous failure can duplicate records; retain sender identity where supported. StatsD over UDP to your Collector has no per-record durable application acknowledgement.
+Accepted records were written to storage or durable spill before acknowledgment. Durable spill can delay query visibility until replay. This is not an exactly-once promise across new requests, a promise that every record was retained, or a latency SLA. Exclusion/sampling rules and rejection counters matter. Retrying an ambiguous failure can duplicate records; retain sender identity where supported. StatsD over UDP to your Collector has no per-record durable application acknowledgment.
 
 ## Failure handling
 

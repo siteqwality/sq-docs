@@ -61,7 +61,7 @@ New accounts get a **Default** group: an email channel to the address you signed
 
 A repeat stops when the monitor recovers, after the 10th resend, or earlier when someone [acknowledges the outage](/incident-management/notifications/how-to/acknowledge-outages/) and the account's `outage_ack_stops_repeats` [notification setting](/incident-management/notifications/settings/) is on (the default). The recovery alert is still sent. When a repeat is set, the first down alert also waits for the first scheduled send.
 
-Two account-wide switches under **Notifications**, **Settings** also shape monitor alerts: whether monitors hold alerts while they flap, and whether an acknowledgement stops repeats. See [notification settings](/incident-management/notifications/settings/).
+Two account-wide switches under **Notifications**, **Settings** also shape monitor alerts: whether monitors hold alerts while they flap, and whether an acknowledgment stops repeats. See [notification settings](/incident-management/notifications/settings/).
 
 A monitor can attach to multiple groups (cap of 10 per monitor), which is useful when you want a single check to alert both an internal team and a customer-facing channel.
 
@@ -128,7 +128,7 @@ Email, Slack, webhook, Discord, Teams, Telegram, PagerDuty, Jira Service Managem
 <CardGrid>
   <LinkCard title="Channels reference" description="Every channel type with required fields." href="/incident-management/notifications/channels/" />
   <LinkCard title="Who gets notified" description="The two routing paths and the default group." href="/incident-management/notifications/default-routing/" />
-  <LinkCard title="Notification settings" description="Account-wide flap hold and acknowledgement behaviour." href="/incident-management/notifications/settings/" />
+  <LinkCard title="Notification settings" description="Account-wide flap hold and acknowledgment behavior." href="/incident-management/notifications/settings/" />
   <LinkCard title="Acknowledge a monitor outage" description="Stop repeat alerts and say who is on it." href="/incident-management/notifications/how-to/acknowledge-outages/" />
   <LinkCard title="Add and verify contact methods" description="Email, SMS in any country, and Slack DM." href="/incident-management/notifications/how-to/contact-methods/" />
   <LinkCard title="Set up notification rules" description="Personal delivery preferences for high vs low urgency." href="/incident-management/notifications/how-to/notification-rules/" />

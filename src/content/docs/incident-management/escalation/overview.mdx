@@ -7,7 +7,7 @@ owner: jj
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-An **escalation policy** is the rule for *what to do if no one acknowledges an incident*. It's an ordered list of levels; each level fires its targets, waits its timeout, and if no acknowledgement arrives, the next level fires.
+An **escalation policy** is the rule for *what to do if no one acknowledges an incident*. It's an ordered list of levels; each level fires its targets, waits its timeout, and if no acknowledgment arrives, the next level fires.
 
 ## What starts an escalation
 
@@ -109,7 +109,7 @@ A policy that another policy falls back to cannot be deleted: the API returns `4
 
 Acknowledging or resolving the incident cancels the escalation: its state moves to `acknowledged`, and neither its pending timeout nor any per-user delayed page will fire. The incident itself keeps existing, and the responder works the fix.
 
-Every route into acknowledgement does this, so it does not matter how the responder answers:
+Every route into acknowledgment does this, so it does not matter how the responder answers:
 
 - `POST /incident/{id}/acknowledge` and `POST /incident/{id}/resolve`
 - the [acknowledge and resolve links](/incident-management/incidents/how-to/one-click-actions/) in a paged responder's email and SMS
@@ -126,7 +126,7 @@ Acknowledging or resolving is the only thing that suppresses those. Waiting for 
 ## When an incident changes while it escalates
 
 - **Severity goes up.** Raising an incident from `minor` to `major` or `critical` pages the current level again, and an acknowledged incident goes back to `triggered`.
-- **It moves to another service.** The old service's escalation is cancelled and the new service's policy starts at level one, but only while the incident is `triggered`. See [move an incident to another service](/incident-management/incidents/how-to/manual-incidents/#move-an-incident-to-another-service).
+- **It moves to another service.** The old service's escalation is canceled and the new service's policy starts at level one, but only while the incident is `triggered`. See [move an incident to another service](/incident-management/incidents/how-to/manual-incidents/#move-an-incident-to-another-service).
 - **You add participants.** Adding a user, a schedule or a policy as [participants](/incident-management/incidents/how-to/participants/) pages each person through their own notification rules.
 
 ## Targets vs notification groups
@@ -161,7 +161,7 @@ Each incident carries one escalation state. The incident API does not return it,
 |---|---|
 | `active` | Cycling through levels. |
 | `acknowledged` | Someone acked or resolved. Paging stopped, pending schedules deleted. |
-| `exhausted` | The policy ran out without an acknowledgement and `on_exhausted` has applied. Level cycling has stopped. |
+| `exhausted` | The policy ran out without an acknowledgment and `on_exhausted` has applied. Level cycling has stopped. |
 
 ## When to use multiple policies
 

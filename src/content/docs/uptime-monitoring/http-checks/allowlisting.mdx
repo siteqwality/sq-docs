@@ -53,7 +53,7 @@ If your setup cannot match on a header and you need checks from a fixed IP addre
 
 ## Blocked by bot protection
 
-When a check fails and the response carries the signature of a known bot-protection service, the result's `failure_reason` is `bot_protection`, shown in the dashboard as **Blocked by bot protection**. The signatures recognised include Cloudflare challenges, AWS WAF CAPTCHA and challenge actions, Akamai, Imperva, DataDome and PerimeterX (HUMAN). The label is only applied to a check that already failed on its status code, so a passing check is never relabelled.
+When a check fails and the response carries the signature of a known bot-protection service, the result's `failure_reason` is `bot_protection`, shown in the dashboard as **Blocked by bot protection**. The signatures recognized include Cloudflare challenges, AWS WAF CAPTCHA and challenge actions, Akamai, Imperva, DataDome and PerimeterX (HUMAN). The label is only applied to a check that already failed on its status code, so a passing check is never relabeled.
 
 It still counts as a failure: the monitor goes down and alerts like any other failed check. The site refused our request, and from the outside we cannot tell whether your users are being refused too.
 

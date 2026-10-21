@@ -49,11 +49,11 @@ Auto-created incidents have `auto_created: true`; manually created ones do not.
 
 A single timeline entry on an incident: a change of status with a written message ("We've identified a database failover; recovery in progress"). Posted via the dashboard or `POST /incident/{id}/update`.
 
-### Acknowledgement
+### Acknowledgment
 
 When a responder claims an incident, its `responder_status` flips from `triggered` to `acknowledged`. This stops further escalation but doesn't resolve the incident.
 
-### Outage acknowledgement
+### Outage acknowledgment
 
 A person's claim on a monitor outage, separate from an incident: it records who is on a down HTTP, heartbeat (cron) or browser monitor and, by default, stops that outage's repeat alerts. The recovery alert is still sent. Acknowledge from the monitor page, the link in the down alert email, the API or an AI assistant. See [Acknowledge a monitor outage](/incident-management/notifications/how-to/acknowledge-outages/).
 

@@ -32,7 +32,7 @@ The full request schema is in the auto-generated [API Reference](/api-reference/
 
 With `rerun_on_failure: true`, a failed run is held back and the same script runs once more from the same location, usually within a minute. Only the rerun's result counts, so a one-off blip never alerts. A rerun is billed in browser check minutes like any run, so a failing check can use up to twice its usual minutes. A rerun is skipped when the minutes are used up or the check was paused, and the next failed run then counts without one. A check already `failed` is not rerun.
 
-`confirmation_threshold` counts the failures that stand after any rerun: the check goes `failed` only after that many in a row (per location, judged against `min_healthy_regions`). Recovery is immediate. A check created through the API without these fields, and every check made before they existed, keeps the old behaviour: no rerun and an alert on the first failure.
+`confirmation_threshold` counts the failures that stand after any rerun: the check goes `failed` only after that many in a row (per location, judged against `min_healthy_regions`). Recovery is immediate. A check created through the API without these fields, and every check made before they existed, keeps the old behavior: no rerun and an alert on the first failure.
 
 | Request | Result |
 |---|---|
