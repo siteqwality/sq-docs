@@ -138,6 +138,8 @@ Two errors distinguish the cases:
 
 ## Rotate a secret
 
+In the dashboard, go to **Settings → API clients**, click the rotate icon on the client's card and confirm with **Rotate secret**. Through the API:
+
 ```bash
 curl -X POST https://api.siteqwality.com/account/m2m_client/$CLIENT_ID/rotate_secret \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
@@ -148,6 +150,8 @@ Rotation is **immediate and has no overlap window**. The moment the call returns
 Owner role required. Rotating a revoked client returns `404`.
 
 ## Revoke a client
+
+In the dashboard, click the trash icon on the client's card under **Settings → API clients** and confirm with **Revoke client**. Through the API:
 
 ```bash
 curl -X DELETE https://api.siteqwality.com/account/m2m_client/$CLIENT_ID \

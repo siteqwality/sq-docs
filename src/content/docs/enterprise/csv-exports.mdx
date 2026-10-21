@@ -17,7 +17,7 @@ Three endpoints return CSV attachments for offline analysis, board reporting, or
 
 ## Check results
 
-Every recorded check run for one HTTP monitor, oldest first.
+Every recorded check run for one HTTP monitor, oldest first. In the dashboard, open the monitor and choose **Export CSV** from its actions menu; it exports the range currently selected. Through the API:
 
 ```bash
 curl -G "https://api.siteqwality.com/http/job/$JOB_ID/results/export" \
@@ -26,8 +26,6 @@ curl -G "https://api.siteqwality.com/http/job/$JOB_ID/results/export" \
   --data-urlencode "to=2026-08-01T00:00:00Z" \
   -o checks.csv
 ```
-
-In the dashboard this is the **Export CSV** button in the monitor header, which exports the range currently selected.
 
 Columns, in order:
 
@@ -44,7 +42,7 @@ The per-phase timing columns (`dns_ms`, `tcp_connect_ms`, `tls_ms`, `ttfb_ms`, `
 
 ## Monitor uptime summary
 
-One row per HTTP monitor, summarising the range.
+One row per HTTP monitor, summarising the range. This export is API only; the dashboard has no button for it.
 
 ```bash
 curl -G "https://api.siteqwality.com/monitors/export" \
@@ -70,7 +68,7 @@ Two things to read carefully:
 
 ## Log query results
 
-The same filters as `GET /logs/query`, exported instead of paged.
+The same filters as `GET /logs/query`, exported instead of paged. In the dashboard, click **Export CSV** in the Logs page header; it uses whatever filters are active. Through the API:
 
 ```bash
 curl -G "https://api.siteqwality.com/logs/export" \
@@ -80,8 +78,6 @@ curl -G "https://api.siteqwality.com/logs/export" \
   --data-urlencode "level=error" \
   -o logs.csv
 ```
-
-In the dashboard this is **Export CSV** in the Logs page header, which uses whatever filters are active.
 
 Columns, in order:
 

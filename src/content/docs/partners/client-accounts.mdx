@@ -9,11 +9,13 @@ import { Steps, Aside, LinkCard, CardGrid } from '@astrojs/starlight/components'
 
 A **client account** is one of your managed clients. You create it, you choose what it is entitled to, you build its monitors and its status page inside it, and you remove it when the engagement ends.
 
-In the dashboard the whole surface is **Clients** in the sidebar. Everything there is also an API call, which is what the rest of this page documents.
+In the dashboard the whole surface is **Manage → Clients** in the sidebar. There you can add a client, see every client with its monitor counts, and open one to work inside it. Setting a client's bundle, reading its usage and removing it are API calls only for now. The rest of this page documents the API.
 
 Every endpoint below requires the **Admin** or **Super Admin** role and a session token. Machine credentials are refused; see [Roles and access](/partners/overview/#roles-and-access).
 
 ## Create a client
+
+In the dashboard, go to **Manage → Clients** and click **+ Add client**. Fill in the **Client name** and **Contact email**, optionally a **Contact name**, and click **Create client**. Through the API:
 
 <Steps>
 
@@ -89,6 +91,8 @@ This is a pricing rule, not data hygiene. The partner rate is below what the sam
 
 ## List your clients
 
+The **Clients** page lists them, with each client's contact, monitor counts and status. Through the API:
+
 ```bash
 curl https://api.siteqwality.com/partner/accounts \
   -H "Authorization: Bearer $SESSION_JWT"
@@ -99,6 +103,8 @@ Returns `{ "data": { "clients": [...] } }`, newest first, unpaged. Each row carr
 Removed clients are absent. So are their monitor counts, which means the list is a fair basis for reconciling your invoice.
 
 ## Set a client's bundle
+
+There is no dashboard control for this yet; use the API:
 
 ```bash
 curl -X PUT https://api.siteqwality.com/partner/accounts/$CLIENT_ID/plan \
@@ -145,6 +151,8 @@ An unknown bundle name is a `422`.
 
 ## Check a client's usage
 
+There is no dashboard view for this yet; use the API:
+
 ```bash
 curl https://api.siteqwality.com/partner/accounts/$CLIENT_ID/usage \
   -H "Authorization: Bearer $SESSION_JWT"
@@ -177,6 +185,8 @@ Per-product counters for that client, in the product's customer-facing unit, mat
 </Aside>
 
 ## Remove a client
+
+Removal is an API call only. The dashboard deliberately has no button for it, because it stops everything in the client's account and cannot be undone.
 
 ```bash
 curl -X DELETE https://api.siteqwality.com/partner/accounts/$CLIENT_ID \
