@@ -12,7 +12,8 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `name` | string | required | Window label. |
-| `tags` | string[] | required | Must be non-empty. A monitor is covered when its tags overlap this list. |
+| `tags` | string[] | `[]` | A monitor is covered when its tags overlap this list. |
+| `service_ids` | uuid[] | `[]` | Every monitor and alert rule of these services is covered. Up to 50; each must be a service in your account (`404` otherwise). A window needs tags, services or both (`400` otherwise). On update, the list replaces the old one. |
 | `schedule_type` | enum | required | `one_time` or `recurring`. |
 | `timezone` | string | `UTC` | IANA timezone name. Recurrence times are interpreted in this timezone. |
 | `starts_at` | rfc3339 | required for `one_time` | Window start. Must be before `ends_at`. |
@@ -50,11 +51,13 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 
 ## What suppression does, precisely
 
-The check applies to notifications that carry monitor context (HTTP and cron monitors). While a matching window is active:
+The check applies to notifications that carry monitor context (HTTP monitors, heartbeats, browser checks and alert rules). A window matches by tag, by the monitor's or rule's service, or by the rule's id in `alert_rule_ids`. While a matching window is active:
 
 - **Failure notifications are held**, not dropped: they are stored and re-evaluated when the window's current occurrence ends, so a monitor still down after the window pages then.
 - **Recovery notifications are suppressed** and clear the held failure for that monitor, so a blip fully inside the window pages no one.
 - **Checks keep running** and results keep being recorded throughout.
+- **Auto-created incidents wait** and open when the window ends if the monitor is still failing.
+- **Updating or deleting a window releases** the alerts it no longer covers on the next minute tick.
 
 ## Endpoints
 
@@ -63,7 +66,8 @@ The check applies to notifications that carry monitor context (HTTP and cron mon
 | `GET` | `/maintenance_windows` | List. |
 | `POST` | `/maintenance_windows` | Create. |
 | `PUT` | `/maintenance_windows/{window_id}` | Update (partial; omitted fields keep their value). |
-| `DELETE` | `/maintenance_windows/{window_id}` | Delete. |
+| `DELETE` | `/maintenance_windows/{window_id}` | Delete. Alerts it held go out within a minute unless another window covers them. |
+| `GET` | `/maintenance_windows/{window_id}/coverage` | The monitors the window matches, `{ monitor_type, monitor_id, name, service_id, held_alerts }`, with `is_currently_active`, the total `held_alerts` and `truncated` past 500 monitors. `404` when the window is not yours. |
 
 ## See also
 

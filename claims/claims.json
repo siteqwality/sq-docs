@@ -4,8 +4,11 @@
   { "page": "incident-management/services/overview.mdx", "text": "The window runs from `0` to `1440` minutes. New services start at `30`.", "needs": ["service.reopen_window"] },
   { "page": "incident-management/services/overview.mdx", "text": "`auto_resolve` decides whether it resolves itself and stops the escalation", "needs": ["service.auto_resolve"] },
   { "page": "incident-management/services/overview.mdx", "text": "Every type below can join a service with `POST /service/{id}/monitors`", "needs": ["service.link_any_monitor"] },
-  { "page": "incident-management/services/overview.mdx", "text": "It is skipped while a [maintenance window](/incident-management/maintenance/overview/) matching the monitor's tags is active.", "needs": ["service.maintenance_by_tag"] },
+  { "page": "incident-management/services/overview.mdx", "text": "While a [maintenance window](/incident-management/maintenance/overview/) covers the monitor, by its tags or by its service, the incident waits", "needs": ["service.maintenance_by_service"] },
+  { "page": "incident-management/services/overview.mdx", "text": "A service switched off with `\"disabled\": true` opens no automatic incidents", "needs": ["service.disabled"] },
   { "page": "incident-management/services/overview.mdx", "text": "Today the Slack, email and webhook targets deliver **opened** and **resolved**.", "needs": ["service.broadcast_targets", "service.broadcast_open_resolve"] },
+  { "page": "incident-management/services/overview.mdx", "text": "With the integration, nothing secret is stored on the target", "needs": ["service.secure_targets"] },
+  { "page": "incident-management/services/overview.mdx", "text": "Each target can take only some incidents: a minimum severity", "needs": ["service.broadcast_filters"] },
   { "page": "incident-management/services/overview.mdx", "text": "An address outside your members' email domains needs a confirmation", "needs": ["service.email_target_confirmation"] },
   { "page": "incident-management/services/overview.mdx", "text": "puts every incident the service opens automatically on that [status page](/status-pages/overview/)", "needs": ["service.auto_publish"] },
   { "page": "incident-management/services/overview.mdx", "text": "An account can have up to 100 services.", "needs": ["service.limit"] },
@@ -30,12 +33,13 @@
   { "page": "incident-management/on-call/overview.mdx", "text": "whoever goes on call can be told through their low-urgency notification rules", "needs": ["oncall.handoff_notices", "notify.notification_rules"] },
   { "page": "incident-management/notifications/overview.mdx", "text": "It must be verified with a 6-digit code before a rule can use it.", "needs": ["notify.contact_methods"] },
   { "page": "incident-management/notifications/overview.mdx", "text": "Each user can have up to 20 contact methods.", "needs": ["notify.contact_methods"] },
-  { "page": "incident-management/maintenance/overview.mdx", "text": "A **maintenance window** is a time range during which monitors with matching tags don't page.", "needs": ["maintenance.windows"] },
   {"page": "incident-management/services/overview.mdx", "text": "Health is the worse of its incidents and its monitors:", "needs": ["service.health_rollup"]},
   {"page": "incident-management/services/overview.mdx", "text": "maintenance holds paging, never the status: a forgotten window cannot hide a real outage. Only a window whose end is still in the future counts.", "needs": ["service.health_rollup"]},
   {"page": "incident-management/services/overview.mdx", "text": "otherwise everyone on the first level of its escalation policy", "needs": ["service.health_rollup", "escalation.policies"]},
   {"page": "incident-management/services/overview.mdx", "text": "uptime, the share of that time with no open incident on the service.", "needs": ["service.metrics"]},
   {"page": "incident-management/services/reference.mdx", "text": "`GET /service` answers `{ \"data\": [...], \"total\": N, \"next_cursor\": \"...\" }`.", "needs": ["service.health_rollup"]},
   {"page": "incident-management/services/reference.mdx", "text": "the share of the window with no open incident on the service.", "needs": ["service.metrics"]},
-  {"page": "integrations/mcp.mdx", "text": "A service's incidents, mean time to acknowledge and resolve, and uptime over a window", "needs": ["service.metrics", "service.mcp_tools"]}
+  {"page": "integrations/mcp.mdx", "text": "A service's incidents, mean time to acknowledge and resolve, and uptime over a window", "needs": ["service.metrics", "service.mcp_tools"]},
+  { "page": "incident-management/maintenance/overview.mdx", "text": "A **maintenance window** is a time range during which monitors with matching tags, or the monitors of chosen services, don't page.", "needs": ["maintenance.windows", "service.maintenance_by_service"] },
+  { "page": "incident-management/maintenance/overview.mdx", "text": "Ending a window early releases what it held.", "needs": ["service.maintenance_by_service"] }
 ]

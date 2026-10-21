@@ -77,8 +77,19 @@
   },
   "service.maintenance_by_tag": {
     "status": "live",
-    "summary": "Auto-created incidents are skipped while a maintenance window matching the monitor's tags is active",
+    "summary": "Maintenance windows match monitors by tag",
     "source": "core-rs common/src/incident/auto.rs (matching_maintenance_is_active)"
+  },
+  "service.disabled": {
+    "status": "live",
+    "summary": "A service switched off with disabled: true opens no automatic incidents",
+    "api": ["PUT /service/{service_id}"],
+    "source": "core-rs common/src/incident/auto.rs (handle_monitor_failure_inner, disabled_at)"
+  },
+  "service.broadcast_filters": {
+    "status": "live",
+    "summary": "Broadcast targets filter by min_severity (the incident's highest severity) and events",
+    "source": "core-rs common/src/service_target.rs (target_admits), common/src/incident/broadcast.rs"
   },
   "service.mcp_tools": {
     "status": "live",
@@ -109,18 +120,19 @@
   },
   "service.broadcast_lifecycle": {
     "status": "held",
-    "summary": "Broadcast targets deliver every incident lifecycle event, filtered by min_severity and events",
-    "source": "docs/plans/2026-10-12-alerts-incidents-design.md 4.6 (A7.3, wave w22 broadcast lane)"
+    "summary": "Broadcast targets deliver acknowledged, updated, reopened, merged and service changed too (staged and recorded today; each waits for its channel's renderer)",
+    "source": "core-rs common/src/incident/broadcast.rs (rendered_today), common/src/dispatch/table.rs"
   },
   "service.secure_targets": {
-    "status": "held",
-    "summary": "Broadcast targets that reference a connected integration, and signed webhook targets",
-    "source": "docs/plans/2026-10-12-alerts-incidents-design.md 4.6 (A7.3, wave w22 broadcast lane)"
+    "status": "live",
+    "summary": "Slack and webhook broadcast targets that send with a connected integration (opened by the notifier through the credential store), and pasted-URL webhook targets signed with a secret returned once",
+    "api": ["POST /service/{service_id}/notification_target"],
+    "source": "core-rs common/src/service_target.rs (open_integration_target), notifier/src/lambda.rs (send_incident_notification)"
   },
   "service.maintenance_by_service": {
-    "status": "held",
-    "summary": "Maintenance windows that cover services, releasing held alerts when ended early",
-    "source": "docs/plans/2026-10-12-alerts-incidents-design.md 4.6 (A7.3, wave w22 broadcast lane)"
+    "status": "live",
+    "summary": "Maintenance windows that cover services, defer auto incidents to the window end, release held alerts when ended early, and show what they hold",
+    "source": "core-rs common/src/incident/maintenance.rs, common/src/db/maintenance_windows.rs"
   },
   "incident.manual": {
     "status": "live",

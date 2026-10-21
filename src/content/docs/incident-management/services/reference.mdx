@@ -25,6 +25,8 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 | `owner_team` | string | none | The owning team, at most 256 characters. Trimmed; blank stores none. `null` on update clears it. |
 | `tags` | string array | `[]` | Up to 20 labels of 256 characters; blanks and repeats are dropped. An update replaces the list; `[]` clears it. |
 | `on_call_schedule_id` | UUID | none | The [on-call schedule](/incident-management/on-call/overview/) shown as on call for this service. Without one, the first level of the escalation policy is. Must be a schedule in your account (`404` otherwise). `null` on update clears it. |
+| `disabled` | boolean | | Write-only, on update. `true` switches the service off: its monitors open no automatic incidents, and incidents you open by hand still work. `false` switches it back on. |
+| `disabled_at` | RFC 3339 | none | Read-only. When the service was switched off; omitted while it is on. |
 | `monitor_count` | integer | | Read-only. Linked monitors of every type. |
 | `health` | object | | Read-only, on `GET /service` and `GET /service/{id}`. See [health](#health). |
 | `created_at` | RFC 3339 | | Read-only. |
@@ -45,6 +47,7 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 | `PUT` | `/service/{id}/monitors` | Deprecated. Replaces the HTTP and heartbeat links with `{ "http_job_ids": [...], "cron_job_ids": [...] }`; other types are untouched. |
 | `GET` | `/service/{id}/notification_target` | List broadcast targets. |
 | `POST` | `/service/{id}/notification_target` | Add a broadcast target. |
+| `PUT` | `/service/{id}/notification_target/{target_id}` | Change a target's `min_severity` and `events`, or a Slack target's `channel`. `null` resets a filter; omitted fields keep their value. `400` for an unknown or empty event list, `404` when the target is not on the service. |
 | `DELETE` | `/service/{id}/notification_target/{target_id}` | Remove a broadcast target. |
 
 <Aside type="note" title="Scopes">
@@ -139,8 +142,20 @@ Create one with `type` and `details`:
 | `type` | `details` | Notes |
 |---|---|---|
 | `email` | `{ "email": "oncall@example.com" }` | Any address. One outside your members' email domains returns `409` with code `email_target_confirmation_required` and the address in `data.email`, until you send `"confirm_external_recipients": true` beside `type` and `details`. |
-| `slack_channel` | `{ "slack_token": "xoxb-...", "channel": "#incidents" }` | A Slack bot token you supply, not the [Slack integration](/integrations/slack/). The token is write-only: it reads back as `"has_token": true`. |
-| `webhook` | `{ "url": "https://hooks.example.com/incidents" }` | Must be a public URL. It reads back as its scheme and host only, such as `https://hooks.example.com/****`. Uses the [webhook envelope](/integrations/webhooks/#incident-webhooks) and retry schedule, unsigned, and does not appear in the integration's delivery log. |
+| `slack_channel` | `{ "channel": "C0123456" }` with `integration_id` | Sends with a connected [Slack integration](/integrations/slack/). Nothing secret is stored on the target. |
+| `slack_channel` | `{ "slack_token": "xoxb-...", "channel": "#incidents" }` | A Slack bot token you supply. The token is write-only: it reads back as `"has_token": true`. |
+| `webhook` | `{}` with `integration_id` | Sends with a connected [webhook integration](/integrations/webhooks/): signed with its secret, with its settings, and listed in its delivery log. |
+| `webhook` | `{ "url": "https://hooks.example.com/incidents" }` | Must be a public URL. It reads back as its scheme and host only, such as `https://hooks.example.com/****`. Uses the [webhook envelope](/integrations/webhooks/#incident-webhooks) and retry schedule, and is signed with a secret of its own that the create response returns once as `signing_secret`. |
+
+Every target also takes these optional fields:
+
+| Field | Notes |
+|---|---|
+| `integration_id` | A Slack integration for `slack_channel`, a webhook integration for `webhook`. `404` when it is not in your account; `400` for another kind of integration, for a token or URL sent beside it, or for a Slack target without a `channel`. If the integration is deleted later, the target sends nothing, and an integration that is switched off records each skipped delivery. |
+| `min_severity` | `minor`, `major` or `critical`. Incidents below it are not sent. It is compared with the highest severity the incident has reached. Omitted means every severity. |
+| `events` | Any of `incident_opened`, `incident_acknowledged`, `incident_updated`, `incident_resolved`, `incident_reopened`, `incident_merged`, `incident_service_changed`. Omitted means every event; an empty list or an unknown name is a `400`. |
+
+A filtered-out event leaves no trace on the target: nothing is sent and nothing is recorded.
 
 A service can have up to 20 targets; the 21st returns `409` with code `service_target_limit_reached`.
 
@@ -174,7 +189,8 @@ A recorded event starts delivering as each channel's message for it ships. A mon
 | Sources | Linked monitors of every type. See [what fails and recovers](/incident-management/services/overview/#auto-created-incidents) for each. |
 | Title | `<monitor name> is down` |
 | Severity | `default_incident_severity` |
-| Skipped when | A maintenance window matching the monitor's tags is active, or the service is `manual`. |
+| Skipped when | The service is `manual` or switched off (`disabled_at` set). |
+| Waits when | A maintenance window covers the monitor by tag or by service. It opens when the window ends if the monitor is still failing, and never opens if it recovers first. |
 | One open incident | The service has at most one open auto-created incident. Every failing monitor joins it, recorded as a `monitor_joined` timeline event. |
 | Reopened when | A monitor fails again within `reopen_window_minutes` of the last alert of the resolved incident. |
 | Resolved when | Every monitor on the incident is healthy again (`healthy` in the monitor list), and `auto_resolve` allows it. |

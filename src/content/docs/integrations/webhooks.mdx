@@ -253,7 +253,7 @@ An unknown event or field name, or an empty list, is refused with a `400` that n
 
 ## Incident webhooks
 
-A service can also send `incident.created` and `incident.resolved` events to a webhook URL as a broadcast target. Those are the only incident events a webhook target delivers today. Acknowledged, updated, reopened, merged and service-changed events are recorded and not yet delivered. Those deliveries use the same envelope and retries, but they are not signed and do not appear in an integration's delivery log, because a service target is not a webhook integration. The signature check above cannot verify them.
+A service can also send `incident.created` and `incident.resolved` events to a webhook URL as a broadcast target. Those are the only incident events a webhook target delivers today. Acknowledged, updated, reopened, merged and service-changed events are recorded and not yet delivered. Those deliveries use the same envelope and retries and are signed. A target that sends with a webhook integration uses the integration's signing secret and appears in its delivery log; a target with a pasted URL is signed with a secret of its own, returned once when you add it, and verified with the same check.
 
 `data` for an incident event:
 

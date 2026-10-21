@@ -89,7 +89,7 @@ HTTP monitors open incidents only after their own confirmation settings pass, an
 
 A service in `auto` mode has **at most one open auto-created incident**. The first linked monitor to fail opens it, titled `<monitor name> is down`. While it is open, every other failing monitor of the service joins it instead of opening a second one. Each join adds a `monitor_joined` event to the timeline, and each monitor records when it joined and when it recovered; see [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/).
 
-The incident starts at the service's default severity and pages the service's escalation policy as soon as it is recorded. If that is interrupted, a sweep pages it within about a minute. It is skipped while a [maintenance window](/incident-management/maintenance/overview/) matching the monitor's tags is active.
+The incident starts at the service's default severity and pages the service's escalation policy as soon as it is recorded. If that is interrupted, a sweep pages it within about a minute. While a [maintenance window](/incident-management/maintenance/overview/) covers the monitor, by its tags or by its service, the incident waits: it opens when the window ends if the monitor is still failing, and never opens if the monitor recovers first. A service switched off with `"disabled": true` opens no automatic incidents until you switch it back on.
 
 Every linked monitor type counts, and the incident counts as recovered when every one of its monitors is healthy again. What healthy means depends on the type:
 
@@ -146,8 +146,10 @@ The HTTP monitor edit form shows its service read-only. Change it from the servi
 A broadcast target tells someone outside the escalation chain about the service's incidents. There are three types:
 
 - **Email:** any address. An address outside your members' email domains needs a confirmation, because every incident update for the service will be emailed there.
-- **Slack channel:** a Slack bot token and channel that you paste in. It does not use the [Slack integration](/integrations/slack/). The token is write-only and is never shown again.
-- **Webhook:** a public URL. Deliveries use the [webhook envelope](/integrations/webhooks/#payload) with `incident.created` and `incident.resolved` events, but they are not signed.
+- **Slack channel:** a channel of a connected [Slack integration](/integrations/slack/), or a bot token you paste in. With the integration, nothing secret is stored on the target: the token stays in the integration and is read only when a message is sent. A pasted token is write-only and is never shown again.
+- **Webhook:** a connected [webhook integration](/integrations/webhooks/), or a public URL you paste in. Deliveries use the [webhook envelope](/integrations/webhooks/#payload) with `incident.created` and `incident.resolved` events and are signed. A webhook integration signs with its own secret and shows the deliveries in its log; a pasted URL gets a signing secret of its own, shown once when you add it.
+
+Each target can take only some incidents: a minimum severity, compared with the highest severity the incident reaches, so a target that hears an escalation also hears how it ends, and a list of the lifecycle events it wants.
 
 Incident lifecycle events go to the service's broadcast targets: opened, acknowledged, updated (an update posted, or the severity or title changed), resolved, reopened, merged and service changed. Today the Slack, email and webhook targets deliver **opened** and **resolved**. The other events are recorded, and start delivering as each channel's message for them ships.
 
