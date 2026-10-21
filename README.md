@@ -37,6 +37,23 @@ owner: jj
 
 `last_verified` powers the scheduled stale-page audit. Bump it whenever you confirm a page still reflects reality.
 
+## Claims and capabilities
+
+`.github/workflows/docs-gates.yml` runs two checks on every docs change:
+
+- `npm run check:claims` (`scripts/claims-gate.mjs`). `claims/capabilities.json` lists what the product does, each
+  capability `live`, `held` (built, not shipped) or `absent`, with its evidence: API operations, which must be in
+  `openapi.json`, or a source path. `claims/claims.json` lists load-bearing sentences in the docs and the capabilities
+  each one needs. The gate fails when a claim needs a capability that is missing or not `live`, when a claim's text is
+  no longer on its page, or when any page matches an `absent` capability's pattern without negating it ("there are no
+  phone calls" passes, "you get a phone call" fails). When you document something new, add its capability and claim;
+  when a sentence moves, update the claim after re-checking it against the product.
+- `npm run check:api-examples` (`scripts/api-examples.mjs`). Every `curl` against `https://api.siteqwality.com` in a
+  code block must name a method and path in `openapi.json`, and its JSON body must use known fields and send the
+  required ones. Routes that are live but missing from the spec go in `claims/unlisted-routes.json`. The monthly run
+  adds `--live`: each authenticated route is called in production without a key and must answer `401` or `403`, not
+  `404`.
+
 ## Deployment
 
 Pushed commits to `main` trigger a Netlify build automatically.

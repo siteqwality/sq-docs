@@ -1,0 +1,7 @@
+[
+  {
+    "route": "PUT /integration/webhook/{integration_id}/settings",
+    "source": "core-rs api/src/routes/mod.rs (integrations::webhook::settings)",
+    "note": "Live, but missing from openapi.json. Remove this entry once the spec lists it."
+  }
+]

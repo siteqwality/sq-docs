@@ -1,0 +1,43 @@
+name: Docs gates
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/content/docs/**'
+      - 'claims/**'
+      - 'openapi.json'
+      - 'scripts/claims-gate.mjs'
+      - 'scripts/api-examples.mjs'
+      - '.github/workflows/docs-gates.yml'
+  pull_request:
+    paths:
+      - 'src/content/docs/**'
+      - 'claims/**'
+      - 'openapi.json'
+      - 'scripts/claims-gate.mjs'
+      - 'scripts/api-examples.mjs'
+      - '.github/workflows/docs-gates.yml'
+  schedule:
+    - cron: '41 6 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Claims against capabilities
+        run: node scripts/claims-gate.mjs
+      - name: API examples against openapi.json
+        run: node scripts/api-examples.mjs
+      - name: API examples against production, without a key
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: node scripts/api-examples.mjs --live

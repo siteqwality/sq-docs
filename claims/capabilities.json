@@ -1,0 +1,404 @@
+{
+  "service.crud": {
+    "status": "live",
+    "summary": "Create, read, update and delete services",
+    "api": [
+      "GET /service",
+      "POST /service",
+      "GET /service/{service_id}",
+      "PUT /service/{service_id}",
+      "DELETE /service/{service_id}"
+    ]
+  },
+  "service.limit": {
+    "status": "live",
+    "summary": "Up to 100 services per account, 409 service_limit_reached past it",
+    "api": [
+      "POST /service"
+    ],
+    "source": "core-rs api/src/handlers/service/create.rs"
+  },
+  "service.link_any_monitor": {
+    "status": "live",
+    "summary": "Link and unlink monitors of every type one at a time, without replacing the set",
+    "api": [
+      "POST /service/{service_id}/monitors",
+      "DELETE /service/{service_id}/monitors/{monitor_type}/{monitor_id}",
+      "GET /service/{service_id}/monitors"
+    ]
+  },
+  "service.auto_incidents": {
+    "status": "live",
+    "summary": "A service in auto mode opens one incident that every failing linked monitor joins",
+    "source": "core-rs common/src/incident/auto.rs"
+  },
+  "service.reopen_window": {
+    "status": "live",
+    "summary": "reopen_window_minutes, 0 to 1440, default 30",
+    "api": [
+      "POST /service",
+      "PUT /service/{service_id}"
+    ],
+    "source": "core-rs api/src/handlers/service/create.rs"
+  },
+  "service.auto_resolve": {
+    "status": "live",
+    "summary": "auto_resolve: always, unless_acknowledged (default), never",
+    "source": "core-rs common/src/incident/auto.rs"
+  },
+  "service.auto_publish": {
+    "status": "live",
+    "summary": "Auto-publish a service's automatic incidents to a status page, with a public incident template",
+    "api": [
+      "PUT /service/{service_id}"
+    ],
+    "source": "core-rs api/src/handlers/service/update.rs"
+  },
+  "service.broadcast_targets": {
+    "status": "live",
+    "summary": "Email, Slack channel and webhook broadcast targets, up to 20 per service",
+    "api": [
+      "GET /service/{service_id}/notification_target",
+      "POST /service/{service_id}/notification_target",
+      "DELETE /service/{service_id}/notification_target/{target_id}"
+    ]
+  },
+  "service.broadcast_open_resolve": {
+    "status": "live",
+    "summary": "Broadcast targets deliver incident opened and resolved",
+    "source": "core-rs common/src/incident/broadcast.rs"
+  },
+  "service.email_target_confirmation": {
+    "status": "live",
+    "summary": "An email target outside the members' domains needs confirm_external_recipients",
+    "api": [
+      "POST /service/{service_id}/notification_target"
+    ]
+  },
+  "service.maintenance_by_tag": {
+    "status": "live",
+    "summary": "Auto-created incidents are skipped while a maintenance window matching the monitor's tags is active",
+    "source": "core-rs common/src/incident/auto.rs (matching_maintenance_is_active)"
+  },
+  "service.mcp_tools": {
+    "status": "live",
+    "summary": "MCP tools to list, read, create and update services and link or unlink their monitors",
+    "source": "core-rs api/src/mcp/server/services.rs"
+  },
+  "service.scopes": {
+    "status": "live",
+    "summary": "read:services and write:services for scoped keys, M2M clients and assistants",
+    "source": "core-rs api/src/middleware/auth.rs"
+  },
+  "service.health_rollup": {
+    "status": "held",
+    "summary": "Service health roll-up (status, in_maintenance, open incidents, failing monitors, on call now) and list paging and filters",
+    "source": "docs/plans/2026-10-12-alerts-incidents-design.md 4.6 (A7.2, wave w22 health lane)"
+  },
+  "service.metrics": {
+    "status": "held",
+    "summary": "GET /service/{id}/metrics: incidents, MTTA, MTTR and uptime",
+    "api": [
+      "GET /service/{service_id}/metrics"
+    ],
+    "source": "docs/plans/2026-10-12-alerts-incidents-design.md 4.6 (A7.2, wave w22 health lane)"
+  },
+  "service.broadcast_lifecycle": {
+    "status": "held",
+    "summary": "Broadcast targets deliver every incident lifecycle event, filtered by min_severity and events",
+    "source": "docs/plans/2026-10-12-alerts-incidents-design.md 4.6 (A7.3, wave w22 broadcast lane)"
+  },
+  "service.secure_targets": {
+    "status": "held",
+    "summary": "Broadcast targets that reference a connected integration, and signed webhook targets",
+    "source": "docs/plans/2026-10-12-alerts-incidents-design.md 4.6 (A7.3, wave w22 broadcast lane)"
+  },
+  "service.maintenance_by_service": {
+    "status": "held",
+    "summary": "Maintenance windows that cover services, releasing held alerts when ended early",
+    "source": "docs/plans/2026-10-12-alerts-incidents-design.md 4.6 (A7.3, wave w22 broadcast lane)"
+  },
+  "incident.manual": {
+    "status": "live",
+    "summary": "Open incidents by hand in the dashboard or the API",
+    "api": [
+      "POST /incident"
+    ]
+  },
+  "incident.acknowledge": {
+    "status": "live",
+    "summary": "Acknowledge an incident, which stops its escalation",
+    "api": [
+      "POST /incident/{incident_id}/acknowledge"
+    ]
+  },
+  "incident.resolve": {
+    "status": "live",
+    "summary": "Resolve an incident",
+    "api": [
+      "POST /incident/{incident_id}/resolve"
+    ]
+  },
+  "incident.reopen": {
+    "status": "live",
+    "summary": "Reopen a resolved incident",
+    "api": [
+      "POST /incident/{incident_id}/reopen"
+    ]
+  },
+  "incident.updates": {
+    "status": "live",
+    "summary": "Public and internal incident updates",
+    "api": [
+      "POST /incident/{incident_id}/update"
+    ]
+  },
+  "incident.severity_urgency": {
+    "status": "live",
+    "summary": "critical and major page at high urgency, minor at low",
+    "source": "core-rs common/src/incident/escalation.rs"
+  },
+  "incident.merge": {
+    "status": "live",
+    "summary": "Merge duplicate incidents into one",
+    "api": [
+      "POST /incident/{incident_id}/merge"
+    ]
+  },
+  "incident.participants": {
+    "status": "live",
+    "summary": "Incident participants with lead, responder and comms roles",
+    "api": [
+      "GET /incident/{incident_id}/participants",
+      "POST /incident/{incident_id}/participants"
+    ]
+  },
+  "incident.postmortem": {
+    "status": "live",
+    "summary": "Postmortems and follow-up action items",
+    "api": [
+      "GET /incident/{incident_id}/postmortem",
+      "POST /incident/{incident_id}/postmortem",
+      "GET /incident/action_items"
+    ]
+  },
+  "incident.metrics": {
+    "status": "live",
+    "summary": "Incident counts and acknowledgment and resolution times",
+    "api": [
+      "GET /incident/metrics"
+    ]
+  },
+  "incident.publish": {
+    "status": "live",
+    "summary": "Publish an incident to a status page",
+    "api": [
+      "POST /incident/{incident_id}/publish"
+    ]
+  },
+  "incident.affected_monitors": {
+    "status": "live",
+    "summary": "Monitors on an incident with impact, joined and recovered times",
+    "api": [
+      "POST /incident/{incident_id}/monitors",
+      "PUT /incident/{incident_id}/monitors/{monitor_type}/{monitor_id}"
+    ]
+  },
+  "incident.signed_actions": {
+    "status": "live",
+    "summary": "Signed acknowledge and resolve links in notifications",
+    "api": [
+      "GET /incident/action/{token}",
+      "POST /incident/action/{token}"
+    ]
+  },
+  "escalation.policies": {
+    "status": "live",
+    "summary": "Escalation policies with ordered levels of user and schedule targets",
+    "api": [
+      "GET /escalation_policy",
+      "POST /escalation_policy",
+      "POST /escalation_policy/{policy_id}/level",
+      "PUT /escalation_policy/{policy_id}/level/reorder"
+    ]
+  },
+  "escalation.timeout_range": {
+    "status": "live",
+    "summary": "Level timeouts of 1 to 1440 minutes",
+    "source": "core-rs common/src/model/api/escalation_policy.rs (MAX_LEVEL_TIMEOUT_MINUTES)"
+  },
+  "escalation.repeats": {
+    "status": "live",
+    "summary": "repeat_count from 0 to 20",
+    "source": "core-rs api/src/handlers/escalation_policy/create.rs"
+  },
+  "escalation.on_exhausted": {
+    "status": "live",
+    "summary": "on_exhausted: notify_owners, stop or escalate_to_policy",
+    "source": "core-rs common/src/incident/escalation.rs"
+  },
+  "escalation.readiness": {
+    "status": "live",
+    "summary": "Readiness check of whether a policy reaches someone at each urgency",
+    "api": [
+      "GET /escalation_policy/{policy_id}/readiness",
+      "POST /escalation_policy/readiness"
+    ]
+  },
+  "escalation.fallback_email": {
+    "status": "live",
+    "summary": "A targeted user no rule can reach is paged at their sign-in email",
+    "source": "core-rs common/src/incident/escalation.rs (escalation_fallback_email)"
+  },
+  "oncall.schedules": {
+    "status": "live",
+    "summary": "On-call schedules with layers and overrides",
+    "api": [
+      "GET /on_call_schedule",
+      "POST /on_call_schedule",
+      "POST /on_call_schedule/{schedule_id}/layer",
+      "POST /on_call_schedule/{schedule_id}/override"
+    ]
+  },
+  "oncall.layer_edit": {
+    "status": "live",
+    "summary": "Edit a layer in place, with its version history",
+    "api": [
+      "PUT /on_call_schedule/{schedule_id}/layer/{layer_id}",
+      "GET /on_call_schedule/{schedule_id}/layer/{layer_id}/versions"
+    ]
+  },
+  "oncall.who_is_on_call": {
+    "status": "live",
+    "summary": "Who is on call now, the shift timeline, and every schedule at once",
+    "api": [
+      "GET /on_call_schedule/{schedule_id}/on_call",
+      "GET /on_call_schedule/{schedule_id}/shifts",
+      "GET /on_call"
+    ]
+  },
+  "oncall.calendar_feed": {
+    "status": "live",
+    "summary": "Calendar feeds of shifts",
+    "api": [
+      "POST /on_call/feed_tokens",
+      "GET /on_call/feed/{file}"
+    ]
+  },
+  "oncall.handoff_notices": {
+    "status": "live",
+    "summary": "Notices to whoever goes on call, through low-urgency rules",
+    "source": "core-rs common/src/db/on_call_schedule.rs"
+  },
+  "oncall.report": {
+    "status": "live",
+    "summary": "On-call report",
+    "api": [
+      "GET /reports/on_call"
+    ]
+  },
+  "oncall.cli_slack": {
+    "status": "held",
+    "summary": "On-call CLI commands and the Slack /oncall command",
+    "source": "docs/plans/2026-10-12-alerts-incidents-build/oncall-cli-slack-docs-held.patch"
+  },
+  "notify.contact_methods": {
+    "status": "live",
+    "summary": "Email, SMS and Slack DM contact methods, SMS verified by code",
+    "api": [
+      "POST /user/{user_id}/contact_method",
+      "POST /user/{user_id}/contact_method/{contact_method_id}/verification",
+      "POST /user/{user_id}/contact_method/{contact_method_id}/verification/confirm"
+    ]
+  },
+  "notify.notification_rules": {
+    "status": "live",
+    "summary": "Per-user notification rules by urgency with a delay",
+    "api": [
+      "GET /user/{user_id}/notification_rule",
+      "POST /user/{user_id}/notification_rule"
+    ]
+  },
+  "notify.groups": {
+    "status": "live",
+    "summary": "Notification groups of channels for monitor alerts",
+    "api": [
+      "GET /notification_group",
+      "POST /notification_group"
+    ]
+  },
+  "notify.outage_acknowledge": {
+    "status": "live",
+    "summary": "Acknowledge a monitor outage to stop its repeat alerts",
+    "api": [
+      "POST /monitors/{monitor_id}/outages/{transition_id}/acknowledge",
+      "POST /monitors/{monitor_id}/outages/current/acknowledge"
+    ]
+  },
+  "notify.account_settings": {
+    "status": "live",
+    "summary": "Account-wide notification settings",
+    "api": [
+      "GET /account/notification_settings",
+      "PUT /account/notification_settings"
+    ]
+  },
+  "maintenance.windows": {
+    "status": "live",
+    "summary": "Maintenance windows that hold monitor alerts",
+    "api": [
+      "GET /maintenance_windows",
+      "POST /maintenance_windows"
+    ]
+  },
+  "notify.phone_call": {
+    "status": "absent",
+    "summary": "Phone or voice calls. phone_call contact methods are refused and never called",
+    "source": "core-rs common/src/dispatch/docs/capability.md (phone_call_not_delivered)",
+    "patterns": [
+      "phone calls?",
+      "voice calls?"
+    ]
+  },
+  "notify.mobile_app": {
+    "status": "absent",
+    "summary": "A Site Qwality mobile app or its push notifications",
+    "source": "core-rs common/src/dispatch/docs/capability.md (mobile_push: channel_not_built)",
+    "patterns": [
+      "mobile app",
+      "mobile push",
+      "iOS app",
+      "Android app"
+    ]
+  },
+  "notify.browser": {
+    "status": "absent",
+    "summary": "Browser notifications",
+    "patterns": [
+      "browser notifications?",
+      "desktop notifications?"
+    ]
+  },
+  "notify.twilio": {
+    "status": "absent",
+    "summary": "Twilio. SMS goes through AWS and is billed from SMS credits",
+    "patterns": [
+      "twilio"
+    ]
+  },
+  "incident.human_ids": {
+    "status": "absent",
+    "summary": "Human-readable incident numbers. Incident ids are UUIDs",
+    "patterns": [
+      "\\bINC-\\d+"
+    ]
+  },
+  "escalation.team_targets": {
+    "status": "absent",
+    "summary": "Team targets on escalation levels. Levels target users and schedules only",
+    "patterns": [
+      "\"target_team_ids\"",
+      "team targets?"
+    ]
+  }
+}
