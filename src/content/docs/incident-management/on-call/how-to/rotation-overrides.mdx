@@ -22,11 +22,11 @@ Overrides do *not* modify the underlying rotation. Once the override expires, th
 
 <Steps>
 
-1. Open the schedule, click **Overrides → Add override**.
+1. Open the schedule and click **Add override** beside **Overrides**.
 
-2. Pick the **user** to put on call, the **start** and **end** timestamps.
+2. Pick the **User** to put on call, then the **Start At** and **End At** times.
 
-3. Save.
+3. Click **Add Override**.
 
 </Steps>
 
@@ -69,12 +69,12 @@ If two overrides cover the same time, the **most recently created one wins**. Do
 
 ## Removing an override
 
+In the schedule's **Overrides** list, open the row's actions menu and choose **Delete override**. Through the API:
+
 ```bash
 curl -X DELETE https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/override/$OVERRIDE_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
-
-The dashboard's per-schedule **Overrides** list has a delete button per row.
 
 <Aside type="tip">
 You can delete an active override (one currently in effect). The on-call lookup re-evaluates immediately, and the next page will route per the underlying layers.

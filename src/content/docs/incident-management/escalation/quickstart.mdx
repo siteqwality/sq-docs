@@ -17,7 +17,7 @@ By the end of this guide you'll have an escalation policy that:
 ## Prerequisites
 
 - An on-call schedule already created. See [On-call quickstart](/incident-management/on-call/quickstart/).
-- The user UUIDs of the secondary engineer and the manager (`GET /account/info`).
+- A secondary engineer and an engineering manager on your team. The dashboard lets you pick them by name; the API needs their user UUIDs (`GET /account/info`).
 
 ## 1. Create the policy
 
@@ -26,9 +26,9 @@ By the end of this guide you'll have an escalation policy that:
 
 <Steps>
 
-1. **Escalation → New policy.**
+1. Go to **Respond → Escalation Policies** and click **New policy**.
 
-2. Name: `Primary escalation`. **Times to repeat:** `1`. Leave **When nobody acknowledges** on **Email the account owners and admins**. Save.
+2. Name: `Primary escalation`. **Times to repeat:** `1`. Leave **When nobody acknowledges** on **Email the account owners and admins**. Click **Create Policy**.
 
 </Steps>
 
@@ -54,13 +54,13 @@ Save the returned `id`.
 
 <Steps>
 
-1. On the policy, **Add level**.
+1. Open the policy and click **Add level**.
 
-2. Level 1: **Timeout** `5 min`. **Targets:** the `Primary on-call` schedule. Save.
+2. Level 1: **Timeout (minutes)** `5`. Under **Target Schedules**, pick the `Primary on-call` schedule. Click **Add Level**.
 
-3. **Add level**. Level 2: **Timeout** `10 min`. **Targets:** the secondary engineer (a user). Save.
+3. **Add level** again. Level 2: **Timeout (minutes)** `10`. Under **Target Users**, pick the secondary engineer. Click **Add Level**.
 
-4. **Add level**. Level 3: **Timeout** `15 min`. **Targets:** the engineering manager (a user). Save.
+4. **Add level** again. Level 3: **Timeout (minutes)** `15`. Under **Target Users**, pick the engineering manager. Click **Add Level**.
 
 </Steps>
 
@@ -103,7 +103,7 @@ curl -X POST https://api.siteqwality.com/escalation_policy/$POLICY_ID/level \
 
 ## 3. (Optional) Reorder levels
 
-If you ever want to swap level order without recreating, send the desired sequence of level UUIDs:
+To change the order without recreating levels, use the **Move up** and **Move down** arrows on a level in the policy's **Levels** list. Through the API, send the level UUIDs in the order you want:
 
 ```bash
 curl -X PUT https://api.siteqwality.com/escalation_policy/$POLICY_ID/level/reorder \
