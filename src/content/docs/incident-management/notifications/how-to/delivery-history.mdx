@@ -52,7 +52,7 @@ curl https://api.siteqwality.com/notification/history?limit=50&status=failed \
 | `since`, `until` | RFC 3339 times. `since` may be at most 90 days back, the default; `until` defaults to now. |
 | `include_tests` | `true` to include test sends. |
 
-The response is `{ "data": [...], "next_cursor": "..." }`, newest first. `next_cursor` is `null` on the last page. Each entry carries `at`, `status`, `reason`, `channel`, `destination` (masked), `monitor_id`, `monitor_type`, `monitor_name`, `event_kind`, `occurrence`, `repeat` and `fallback`:
+The response is `{ "data": { "data": [...], "next_cursor": "..." } }`, newest first, the same page shape as the integration delivery log. `next_cursor` is `null` on the last page. Each entry carries `at`, `status`, `reason`, `channel`, `destination` (masked), `monitor_id`, `monitor_type`, `monitor_name`, `event_kind`, `occurrence`, `repeat` and `fallback`:
 
 - `occurrence` is which send of the event it was: `0` for the first, `3` for the third repeat.
 - `repeat` is the repeat number, `null` for a first send.
