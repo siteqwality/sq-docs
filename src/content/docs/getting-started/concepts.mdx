@@ -1,7 +1,7 @@
 ---
 title: Concepts and glossary
 description: The vocabulary used across the Site Qwality docs and product, defined precisely.
-last_verified: 2026-10-20
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -89,7 +89,7 @@ A hard "user X is on call from time A to time B" entry that beats every layer. U
 
 ### Service
 
-A named part of your product, such as `Checkout API`, that ties monitors to incident handling. A service holds the escalation policy to page, an incident creation mode (`manual` or `auto`), a reopen window, an auto-resolve setting, a default severity for the incidents it opens, and optional broadcast targets. In `auto` mode it keeps one open incident that every failing monitor joins. Link HTTP monitors and heartbeats to it from the service, and browser checks through the API. See [Services](/incident-management/services/overview/).
+A named part of your product, such as `Checkout API`, that ties monitors to incident handling. A service holds the escalation policy to page, an incident creation mode (`manual` or `auto`), a reopen window, an auto-resolve setting, a default severity for the incidents it opens, and optional broadcast targets. In `auto` mode it keeps one open incident that every failing monitor joins. Any monitor type can join it: HTTP monitors, heartbeats and browser checks from the service form, and every type, including TLS, domain, DNS record and page speed checks, through the API. See [Services](/incident-management/services/overview/).
 
 ### Broadcast target
 

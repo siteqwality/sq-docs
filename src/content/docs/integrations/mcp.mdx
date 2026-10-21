@@ -1,7 +1,7 @@
 ---
 title: Connect AI assistants (MCP)
 description: Ask Claude, ChatGPT, Cursor and other AI assistants about your monitors, incidents and telemetry, and let them take everyday actions for you.
-last_verified: 2026-10-20
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -303,6 +303,19 @@ These tools manage status pages end to end. They use the Status Pages scopes, ex
 | `get_status_page_custom_domain` | Shows a page's custom domain and the DNS records it needs. | Read |
 | `set_status_page_custom_domain` | Serves a page on your own domain. | Write |
 | `remove_status_page_custom_domain` | Stops serving a page on its custom domain. | Write, asks first |
+
+### Services
+
+These tools group monitors into services and decide which failures open incidents. They use the Services scopes. See [services](/incident-management/services/overview/).
+
+| Tool | What it does | Access |
+|---|---|---|
+| `list_services`, `get_service` | Lists your services with their incident settings and monitor counts, or shows one with its escalation policy, creation mode, default severity, reopen window, auto-resolve and auto-publish page. | Read |
+| `create_service` | Creates a service. Fails with `409` at the account's service limit. | Write |
+| `update_service` | Changes a service's settings. Omitted fields stay unchanged; `null` clears the description, escalation policy or auto-publish page. Switching to `auto` lets failing monitors open incidents and page. | Write |
+| `list_service_monitors` | Lists every monitor a service groups, of every type, with its status and whether it counts as healthy. | Read |
+| `link_service_monitor` | Adds one monitor to a service and leaves its other monitors alone. A monitor in another service fails with `409` unless `move` is true. | Write |
+| `unlink_service_monitor` | Removes one monitor from a service. Fails with `404` when the monitor is not on it. | Write, asks first |
 
 ### Everything else
 
