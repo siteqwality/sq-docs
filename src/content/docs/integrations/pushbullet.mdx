@@ -25,7 +25,9 @@ An **access token** from your Pushbullet account.
 
 ## Connect it
 
-In the dashboard, **Integrations → Add Integrations → Pushbullet**. Paste the token into **Access Token** and click **Add**. Or via the API:
+In the dashboard, go to **Manage → Integrations** and click the **Pushbullet** card. Give it a name, paste the token into **Access Token** and click **Add**.
+
+Or through the API, with [`POST /integration/pushbullet`](/api-reference/operations/add_pushbullet_integration/):
 
 ```bash
 curl -X POST https://api.siteqwality.com/integration/pushbullet \
@@ -45,7 +47,21 @@ The token is a secret: `GET /integration` never returns it, and it is redacted f
 A Pushbullet account access token grants full access to the account, not just the ability to push. Create it on an account you are comfortable dedicating to alerting.
 </Aside>
 
-## Create a channel
+## Add it to a notification group
+
+Integrations deliver nothing on their own. Alerts reach one once it is a channel in a notification group that your monitors use.
+
+<Steps>
+
+1. Go to **Respond → Notifications**. Click a group's name to open it, or click **Add group** to make a new one.
+
+2. Under **Notifications**, click **Add Notification Method**. Set **Notification Type** to **Pushbullet** and choose this integration under **Integration**.
+
+3. Click **Done editing**, then **Update Group** (**Create Group** for a new group).
+
+</Steps>
+
+Through the API, create the channel with [`POST /notification`](/api-reference/operations/create_notification/):
 
 ```bash
 curl -X POST https://api.siteqwality.com/notification \

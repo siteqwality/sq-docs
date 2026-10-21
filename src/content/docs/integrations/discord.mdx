@@ -17,11 +17,11 @@ The Discord integration uses an incoming webhook URL from a Discord channel. Sit
 
 2. Name it (`Site Qwality Alerts`), assign an avatar (optional), copy the **Webhook URL**.
 
-3. In Site Qwality: **Manage → Integrations → Discord**. Give the integration a name, paste the URL and save.
+3. In Site Qwality, go to **Manage → Integrations** and click the **Discord** card. Give the integration a name, paste the URL into **Webhook URL** and click **Add**.
 
 </Steps>
 
-Or via the API:
+Or through the API, with [`POST /integration/discord`](/api-reference/operations/add_discord_integration/):
 
 ```bash
 curl -X POST https://api.siteqwality.com/integration/discord \
@@ -35,7 +35,21 @@ curl -X POST https://api.siteqwality.com/integration/discord \
 
 The URL must be a Discord webhook URL (`https://discord.com/api/webhooks/...`), or the save is refused with a `400`. `GET /integration` shows it only as `https://discord.com/****`.
 
-## Create a notification channel
+## Add it to a notification group
+
+Integrations deliver nothing on their own. Alerts reach one once it is a channel in a notification group that your monitors use.
+
+<Steps>
+
+1. Go to **Respond → Notifications**. Click a group's name to open it, or click **Add group** to make a new one.
+
+2. Under **Notifications**, click **Add Notification Method**. Set **Notification Type** to **Discord** and choose this integration under **Integration**.
+
+3. Click **Done editing**, then **Update Group** (**Create Group** for a new group).
+
+</Steps>
+
+Through the API, create the channel with [`POST /notification`](/api-reference/operations/create_notification/):
 
 ```bash
 curl -X POST https://api.siteqwality.com/notification \

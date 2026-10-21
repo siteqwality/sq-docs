@@ -15,7 +15,7 @@ Only an account admin can install it.
 
 <Steps>
 
-1. **Manage → Integrations → Slack**. Optionally type a name (it defaults to the workspace name followed by "Slack"), then click **Add to Slack**.
+1. Go to **Manage → Integrations** and click the **Slack** card. Optionally type a name (it defaults to the workspace name followed by "Slack"), then click **Add to Slack**.
 
 2. You're sent to Slack's consent screen. Pick the workspace and approve.
 
@@ -35,9 +35,23 @@ Org-wide Enterprise Grid installs are not supported yet. Install the app into a 
 
 The app can post to any public channel without joining it. For a private channel, add the Site Qwality app to the channel first (from the channel's settings, or with `/invite` and the app's name).
 
-## Create a Slack notification channel
+## Add it to a notification group
 
-Once the integration is in, create a channel that targets a specific Slack channel:
+Integrations deliver nothing on their own. Alerts reach one once it is a channel in a notification group that your monitors use.
+
+<Steps>
+
+1. Go to **Respond → Notifications**. Click a group's name to open it, or click **Add group** to make a new one.
+
+2. Under **Notifications**, click **Add Notification Method**. Set **Notification Type** to **Slack** and choose this integration under **Integration**.
+
+3. In **Channel Name or ID**, enter the Slack channel, such as `#ops` or a channel ID like `C0123456789`.
+
+4. Click **Done editing**, then **Update Group** (**Create Group** for a new group).
+
+</Steps>
+
+Through the API, create the channel with [`POST /notification`](/api-reference/operations/create_notification/):
 
 ```bash
 curl -X POST https://api.siteqwality.com/notification \
@@ -72,14 +86,14 @@ Incident messages do not use this integration. A service's Slack broadcast targe
 
 ## Removing
 
-Delete the integration in Site Qwality:
+Go to **Manage → Integrations**, find the Slack integration under **Existing Integrations** and delete it. Through the API, call [`DELETE /integration/{integration_id}`](/api-reference/operations/delete_integration/):
 
 ```bash
 curl -X DELETE https://api.siteqwality.com/integration/$INTEGRATION_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-This removes the integration and invalidates every channel that used it, so recreate those channels with a different integration first if you don't want to lose alerting. It does not revoke the token in Slack: to remove access, also remove the Site Qwality app from your workspace in Slack.
+This removes the integration and deletes every channel that used it, so add channels on a different integration first if you don't want to lose alerting. It does not revoke the token in Slack: to remove access, also remove the Site Qwality app from your workspace in Slack.
 
 ## Troubleshooting
 

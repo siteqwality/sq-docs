@@ -17,15 +17,15 @@ A **webhook integration** POSTs a JSON event to a URL you control. Use it when t
 
 <Steps>
 
-1. **Manage → Integrations → Webhook**.
+1. Go to **Manage → Integrations** and click the **Webhook** card.
 
-2. Give it a name (for example `Internal event bus`) and the URL that should receive POSTs. Save.
+2. Give it a name (for example `Internal event bus`) and the URL that should receive POSTs. Click **Add**.
 
 3. Copy the signing secret. It is shown once, when the integration is created, and no endpoint returns it again.
 
 </Steps>
 
-Or via the API:
+Or through the API, with [`POST /integration/webhook`](/api-reference/operations/add_webhook_integration/):
 
 ```bash
 curl -X POST https://api.siteqwality.com/integration/webhook \
@@ -45,7 +45,21 @@ The URL never reads back in full. `GET /integration`, and the create response it
 
 The URL must be reachable at a public address. A URL whose host is a private, loopback or link-local address (`10.x`, `192.168.x`, `127.0.0.1`, `localhost`, `169.254.169.254`, and their IPv6 equivalents) is refused with a `400` when you save it. A hostname that resolves only to such addresses at delivery time fails with `blocked_destination` and is not retried. The same check applies to Discord, Microsoft Teams, Google Chat and Mattermost URLs.
 
-## Create a notification channel
+## Add it to a notification group
+
+Integrations deliver nothing on their own. Alerts reach one once it is a channel in a notification group that your monitors use.
+
+<Steps>
+
+1. Go to **Respond → Notifications**. Click a group's name to open it, or click **Add group** to make a new one.
+
+2. Under **Notifications**, click **Add Notification Method**. Set **Notification Type** to **Webhook** and choose this integration under **Integration**.
+
+3. Click **Done editing**, then **Update Group** (**Create Group** for a new group).
+
+</Steps>
+
+Through the API, create the channel with [`POST /notification`](/api-reference/operations/create_notification/):
 
 ```bash
 curl -X POST https://api.siteqwality.com/notification \
