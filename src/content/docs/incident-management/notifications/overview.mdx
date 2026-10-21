@@ -38,7 +38,7 @@ A *channel* is a single delivery destination. Each channel has a `type` and `det
 | `pushover` | `pushover_integration_id` |
 | `pushbullet` | `pushbullet_integration_id` |
 
-Every type except `email` and `sms` references an [integration](/integrations/overview/); set those up first under **Integrations**.
+Every type except `email` and `sms` references an [integration](/integrations/overview/); set those up first under **Manage → Integrations**.
 
 See the [channels reference](/incident-management/notifications/channels/) for the per-type `details` shape, the delivery guarantees table, and [which alerts reach which channels](/integrations/coverage/).
 
@@ -46,18 +46,20 @@ Channels live inside a notification group; you don't attach raw channels to moni
 
 ## Notification groups
 
-A *notification group* is the bag of channels you attach to a monitor. Two extra knobs let you control timing:
+A *notification group* is the bag of channels you attach to a monitor. In the dashboard, groups live under **Respond → Notifications**: click **Add group** to make one, or a group's name to edit it. **Add Notification Method** adds a channel to the group, and the group is saved with **Create Group** or **Update Group**.
 
-| Field | Purpose |
-|---|---|
-| `delay_send_after_minutes` | Wait this long before sending the first down alert. Clamped 0–60. |
-| `resend_every_minutes` | While the monitor is still down, re-send the down alert every N minutes. Clamped 0–60. |
+Two extra knobs, under **Advanced Settings** in the group, control timing:
+
+| Dashboard field | API field | Purpose |
+|---|---|---|
+| **Delay after (minutes)** | `delay_send_after_minutes` | Wait this long before sending the first down alert. Clamped 0–60. |
+| **Resend every (minutes)** | `resend_every_minutes` | While the monitor is still down, re-send the down alert every N minutes, at most 10 times. Clamped 0–60. |
 
 Both apply to down alerts from HTTP monitors and browser checks only. Heartbeat (cron), TLS expiry, domain expiry, DNS record and page-speed alerts, and alert rules, ignore them and send at once. Recovery alerts are not delayed.
 
 New accounts get a **Default** group: an email channel to the address you signed up with and a 3-minute delay, so an HTTP or browser down alert waits 3 minutes, then sends if the monitor is still down. The account's default group (`is_default`) is attached to new monitors that are created without groups. See [who gets notified](/incident-management/notifications/default-routing/).
 
-A repeat stops when the monitor recovers, or earlier when someone [acknowledges the outage](/incident-management/notifications/how-to/acknowledge-outages/) and the account's `outage_ack_stops_repeats` [notification setting](/incident-management/notifications/settings/) is on (the default). The recovery alert is still sent. When a repeat is set, the first down alert also waits for the first scheduled send.
+A repeat stops when the monitor recovers, after the 10th resend, or earlier when someone [acknowledges the outage](/incident-management/notifications/how-to/acknowledge-outages/) and the account's `outage_ack_stops_repeats` [notification setting](/incident-management/notifications/settings/) is on (the default). The recovery alert is still sent. When a repeat is set, the first down alert also waits for the first scheduled send.
 
 Two account-wide switches under **Notifications**, **Settings** also shape monitor alerts: whether monitors hold alerts while they flap, and whether an acknowledgement stops repeats. See [notification settings](/incident-management/notifications/settings/).
 
@@ -106,7 +108,7 @@ There are two separate paths, and they share nothing. [Who gets notified](/incid
 1. A monitor goes down or recovers.
 2. For each notification group on the monitor, wait `delay_send_after_minutes` if it applies (down alerts from HTTP monitors and browser checks only).
 3. Send to every channel in the group whose type supports that alert.
-4. If `resend_every_minutes` is set, repeat the down alert until the monitor recovers or someone acknowledges the outage (unless the account turned that off).
+4. If `resend_every_minutes` is set, repeat the down alert, at most 10 times, until the monitor recovers or someone acknowledges the outage (unless the account turned that off).
 
 **Incidents** page people through escalation policies:
 

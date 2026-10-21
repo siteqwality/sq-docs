@@ -17,7 +17,7 @@ A new user (sign-up, accepted invite or SCIM) starts with their sign-in email as
 
 When you add a contact method and have no rule for an urgency (for example, you deleted your `low` rule), Site Qwality creates that rule on the new method with no delay. For an SMS number this happens when you verify it.
 
-In the dashboard, rules are under your personal settings: open the menu under your name (bottom left), choose **Notifications**, then **Paging rules**.
+In the dashboard, rules are under your personal settings: open the menu under your name (bottom left), choose **Notifications**, then **Paging rules**. Each rule shows as a step in the **High urgency** or **Low urgency** column, in delay order.
 
 ## How a rule works
 
@@ -33,18 +33,32 @@ A user with no rule for the incident's urgency, or whose rules all fail (an unve
 A rule cannot use an SMS number until it is verified. Creating or updating a rule with an unverified SMS method returns `409` with code `contact_method_unverified`: "Verify this phone number before using it in a notification rule." See [verify a contact method](/incident-management/notifications/how-to/contact-methods/#verify-a-contact-method). Email and Slack DM methods can be used straight away.
 </Aside>
 
-List your contact methods to get their ids:
+## Recommended high-urgency stack
+
+Three rules at increasing delays: SMS at 0 minutes, Slack DM at 5, email at 15. Your starting `high` rule on your sign-in email is the third one; move it to 15 minutes instead of adding another.
+
+Add and [verify](/incident-management/notifications/how-to/contact-methods/#verify-a-contact-method) the SMS number and the Slack DM first. Then, under **Paging rules**:
+
+<Steps>
+
+1. Under **High urgency**, click **Add step**. Under **Reach me by**, pick the SMS number; under **Send it**, pick **Immediately**. Click **Add step**.
+
+2. Add a second step the same way: the Slack DM, at **5 min**.
+
+3. Click the pencil icon on your starting email step, pick **15 min** and click **Save step**.
+
+</Steps>
+
+**Send it** offers **Immediately**, 5, 10, 15 and 30 minutes and 1 hour, or a custom delay of up to 1440 minutes.
+
+Through the API, list your contact methods to get their ids:
 
 ```bash
 curl https://api.siteqwality.com/user/$USER_ID/contact_method \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-## Recommended high-urgency stack
-
-Three rules at increasing delays: SMS at 0 minutes, Slack DM at 5, email at 15. Your starting `high` rule on your sign-in email is the third one; move it to 15 minutes instead of adding another.
-
-Verify the SMS number first, then:
+Then create the two rules and move the email one:
 
 ```bash
 # 0 min: SMS me

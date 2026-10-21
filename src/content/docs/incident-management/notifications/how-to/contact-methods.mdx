@@ -33,9 +33,9 @@ Each user can have up to 20 contact methods. A 21st returns `409` with code `con
 
 1. Open the menu under your name (bottom left), choose **Notifications**, then go to **Contact methods**.
 
-2. Add a contact method and pick its type. For SMS, choose the country, then type the number the way you would dial it locally, for example `07911 123456` for the UK.
+2. Click **Add method** (**Add contact method** if you have none yet) and pick **Email**, **SMS** or **Slack DM**. For SMS, choose the country, then type the number the way you would dial it locally, for example `07911 123456` for the UK.
 
-3. Save, then verify the method: Site Qwality sends a 6-digit code to it, and you enter the code. An SMS number cannot be used in a rule until you do.
+3. Click **Add contact method**, then [verify the method](#verify-a-contact-method). An SMS number cannot be used in a rule until you do.
 
 </Steps>
 
@@ -111,6 +111,10 @@ When you add a method that a rule can use (any email or Slack DM method, or a ve
 
 An email that matches your sign-in email is verified when you add it. Every other method starts unverified. An SMS number must be verified before a notification rule can use it; for email and Slack DM, verifying confirms the destination works.
 
+In the dashboard, click **Verify** next to the method, then **Send code**. Enter the 6-digit code you receive and click **Confirm**. The method then shows **Verified**.
+
+Through the API:
+
 <Steps>
 
 1. Send a code. Site Qwality sends a 6-digit code by email, SMS or Slack DM, depending on the method.
@@ -160,7 +164,7 @@ A verification SMS needs SMS credits on the account. See [pricing](https://siteq
 
 ## Edit a contact method
 
-Change the address or number in place instead of deleting and re-adding the method, so your rules keep pointing at it.
+Change the address or number in place instead of deleting and re-adding the method, so your rules keep pointing at it. In the dashboard, click the pencil icon next to the method, change the details and click **Save changes**. Through the API:
 
 ```bash
 curl -X PATCH https://api.siteqwality.com/user/$USER_ID/contact_method/$METHOD_ID \
@@ -175,6 +179,8 @@ curl -X PATCH https://api.siteqwality.com/user/$USER_ID/contact_method/$METHOD_I
 - Invalid details return `400`; a method that is not this user's returns `404`.
 
 ## Delete a contact method
+
+In the dashboard, click the trash icon next to the method and confirm with **Remove**. The confirmation says how many paging rules go with it. Through the API:
 
 ```bash
 curl -X DELETE https://api.siteqwality.com/user/$USER_ID/contact_method/$METHOD_ID \
