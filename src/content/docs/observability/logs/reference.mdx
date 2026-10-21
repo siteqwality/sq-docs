@@ -17,7 +17,7 @@ Common body aliases include `message`, `msg`, `body` and wrapper `log`; severity
 |---|---|---|
 | `/logs/v2/search` | POST / GET | Cursor-paged event search. |
 | `/logs/v2/count` | POST / GET | Matching count. |
-| `/logs/v2/histogram` | POST / GET | Time buckets. |
+| `/logs/v2/histogram` | POST / GET | Time buckets with counts by level: `error` (includes fatal), `warn`, `info` and `debug` (includes trace). Records without a level make up the rest of `count`. |
 | `/logs/v2/facets` | POST / GET | Scoped field values. |
 | `/logs/v2/fields` | GET | Field catalog. |
 | `/logs/v2/patterns` | GET | Bounded grouped message templates. |

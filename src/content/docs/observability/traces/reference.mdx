@@ -23,6 +23,7 @@ OTLP over gRPC is [not available yet](/observability/ingest/#endpoints-and-authe
 | `/traces/v2/timeseries` | GET | RED series for selected scope. |
 | `/traces/v2/top` | GET | Endpoint/service ranking. |
 | `/traces/v2/heatmap` | GET | Duration distribution. |
+| `/traces/v2/histogram` | GET | Matching spans per time bucket, with `error` counting the spans a `status:error` filter matches. |
 | `/traces/v2/compare` | POST | Bounded period comparison. |
 
 Use `https://api.siteqwality.com` and read credentials. Preserve service/environment/time restrictions when following a link. A span query uses `signal: "spans"`; a supported trace summary query uses `"traces"`. Use [typed query examples](/observability/query/).
