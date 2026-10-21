@@ -193,6 +193,20 @@ With no range it answers "who is on call right now", one row per covered schedul
 
 The feed covers 7 days back to 60 days ahead, overrides applied. It shows names only, never an email address or a phone number. The address is the only key, so treat it like a password: `GET /on_call/feed_tokens` lists feeds without their addresses, and `DELETE /on_call/feed_tokens/{feed_id}` revokes one at once. A feed also stops when its user leaves the account. Feed requests are rate limited.
 
+### From the CLI
+
+`@siteqwality/cli` 0.1.3 or later reads schedules with an account API key that has `read:incidents`. It never changes a schedule.
+
+```bash
+export SITEQWALITY_API_KEY='your-incident-api-key'
+npx siteqwality oncall now
+npx siteqwality oncall now --schedule "$SCHEDULE_ID" --at 2026-10-21T09:00:00Z
+npx siteqwality oncall shifts "$SCHEDULE_ID" --since 2026-10-21T00:00:00Z --until 2026-11-04T00:00:00Z
+npx siteqwality oncall mine --user "$MEMBER_ID"
+```
+
+`now` lists who is on call on every schedule, or one schedule's current shift and who is next. `shifts` returns a schedule's timeline with gaps, 14 days by default and at most 90. `mine` lists one member's shifts for the next 14 days; `--user` is required because an API key does not identify a member.
+
 ### From an assistant
 
 - The MCP server has tools for who is on call, shifts, the report and editing a layer.
