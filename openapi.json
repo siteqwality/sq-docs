@@ -15014,10 +15014,13 @@
             }
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid request body, or neither tags nor services"
           },
           "401": {
             "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "A service in `service_ids` is not in this account"
           },
           "500": {
             "description": "Internal server error"
@@ -15077,7 +15080,7 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Window not found"
+            "description": "Window or a service in `service_ids` not found"
           },
           "500": {
             "description": "Internal server error"
@@ -15110,6 +15113,53 @@
         "responses": {
           "200": {
             "description": "Window deleted"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Window not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/maintenance_windows/{window_id}/coverage": {
+      "get": {
+        "tags": [
+          "Maintenance Windows"
+        ],
+        "summary": "The monitors a maintenance window matches by tag or service, and the alerts held for each now.",
+        "operationId": "get_maintenance_window_coverage",
+        "parameters": [
+          {
+            "name": "window_id",
+            "in": "path",
+            "description": "Maintenance window identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the window holds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenanceWindowCoverage"
+                }
+              }
+            }
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -17223,6 +17273,127 @@
           },
           "422": {
             "description": "The integration is not in this account, or is another type"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/notification/history": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "The account's delivery history, newest first.",
+        "operationId": "list_notification_history",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 100, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "description": "Only this channel kind, such as `email` or `sms`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Only this status, such as `failed` or `skipped`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "monitor_id",
+            "in": "query",
+            "description": "Only this monitor.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "notification_id",
+            "in": "query",
+            "description": "Only this notification channel.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "RFC 3339; at most 90 days back, the default.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "description": "RFC 3339; now by default.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_tests",
+            "in": "query",
+            "description": "Include test sends from the dashboard (default false).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of delivery receipts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryHistoryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A bad cursor, limit, time range or filter"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
           },
           "500": {
             "description": "Internal server error"
@@ -24257,7 +24428,7 @@
         },
         "responses": {
           "200": {
-            "description": "Notification target created",
+            "description": "Notification target created. A pasted-URL webhook target carries its `signing_secret` here, once",
             "content": {
               "application/json": {
                 "schema": {
@@ -24267,13 +24438,13 @@
             }
           },
           "400": {
-            "description": "Invalid request body"
+            "description": "Invalid request body, an unknown event, or an integration that cannot back this target type"
           },
           "401": {
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Service not found"
+            "description": "Service or integration not found"
           },
           "409": {
             "description": "The service has 20 targets (`service_target_limit_reached`), or an email address outside the members' domains needs `confirm_external_recipients` (`email_target_confirmation_required`)"
@@ -24290,6 +24461,74 @@
       }
     },
     "/service/{service_id}/notification_target/{target_id}": {
+      "put": {
+        "tags": [
+          "Services"
+        ],
+        "summary": "Change a notification target's severity and event filters, or a Slack target's channel.",
+        "operationId": "update_service_notification_target",
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "description": "Service identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "target_id",
+            "in": "path",
+            "description": "Notification target identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateServiceNotificationTargetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Notification target updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceNotificationTargetResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An unknown event, an empty event list, or a channel on a target that has none"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Service or target not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
       "delete": {
         "tags": [
           "Services"
@@ -35067,6 +35306,31 @@
           }
         }
       },
+      "ChannelBounce": {
+        "type": "object",
+        "description": "The permanent bounce or complaint that marks an email channel's address dead.",
+        "required": [
+          "since",
+          "event_type"
+        ],
+        "properties": {
+          "since": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "`bounce` or `complaint`."
+          },
+          "sub_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "e.g. `Permanent/General`, `Permanent/OnAccountSuppressionList`."
+          }
+        }
+      },
       "ChannelDelivery": {
         "type": "object",
         "description": "One delivery, as a channel's health shows it.",
@@ -35110,6 +35374,17 @@
               "$ref": "#/components/schemas/ChannelDelivery"
             },
             "description": "Newest first, at most [`CHANNEL_HEALTH_RECENT`]."
+          },
+          "bouncing": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChannelBounce",
+                "description": "An email channel whose address hard-bounced or complained after its last delivery:\nSES now suppresses it, so the channel is `degraded` until the address is fixed."
+              }
+            ]
           }
         }
       },
@@ -35845,6 +36120,40 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "CoveredMonitor": {
+        "type": "object",
+        "required": [
+          "monitor_type",
+          "monitor_id",
+          "name",
+          "held_alerts"
+        ],
+        "properties": {
+          "monitor_type": {
+            "type": "string",
+            "description": "`http`, `cron`, `browser`, `tls`, `dns`, `dns_record` or `page_speed`."
+          },
+          "monitor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "held_alerts": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Alerts this window or another one holds for the monitor right now."
           }
         }
       },
@@ -36795,7 +37104,6 @@
         "type": "object",
         "required": [
           "name",
-          "tags",
           "schedule_type"
         ],
         "properties": {
@@ -36806,7 +37114,16 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Monitors with any of these tags are held. May be empty when `service_ids` is not."
+          },
+          "service_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Every monitor and alert rule of these services is held, and their auto incidents wait."
           },
           "schedule_type": {
             "type": "string"
@@ -37319,6 +37636,35 @@
           "confirm_external_recipients": {
             "type": "boolean",
             "description": "Required (true) for an email target with an address outside the members' domains;\nwithout it that target answers 409 `email_target_confirmation_required`."
+          },
+          "integration_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Send with this connected integration instead of a pasted token or URL: a Slack integration for\n`slack_channel` (details `{channel}`), a webhook integration for `webhook` (details `{}`)."
+          },
+          "min_severity": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IncidentSeverity",
+                "description": "Skip incidents below this severity. Compared with the highest severity the incident reached."
+              }
+            ]
+          },
+          "events": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Only these lifecycle events: `incident_opened`, `incident_acknowledged`, `incident_updated`,\n`incident_resolved`, `incident_reopened`, `incident_merged`, `incident_service_changed`."
           }
         }
       },
@@ -38723,6 +39069,156 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "DeliveryHistoryEntry": {
+        "type": "object",
+        "description": "One delivery attempt's receipt.",
+        "required": [
+          "id",
+          "at",
+          "status",
+          "fallback",
+          "is_test"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "description": "sent | delivered | delayed | soft_bounced | failed | rejected | bounced | complained | skipped"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The provider's reason for a non-success status, URLs cut to hosts; a slug for `skipped`."
+          },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "email | sms | slack | webhook | …"
+          },
+          "notification_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The notification channel it went to; `null` for an owner fallback email or a deleted channel."
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Masked: `o***@example.com`, `***0100`, a Slack channel, a webhook host."
+          },
+          "source_kind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What produced it, such as `http_transition`; `null` on older rows."
+          },
+          "event_kind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What happened, such as `down`; `null` on older rows."
+          },
+          "why": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The older slug for why it was sent, such as `monitor_down`."
+          },
+          "monitor_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The monitor it was about, and which table: http | cron | browser | page_speed | tls | dns."
+          },
+          "monitor_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "monitor_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The monitor's name, when it still exists and has one."
+          },
+          "state_transition_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The outage (state transition) it announced."
+          },
+          "occurrence": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Which send of the event this was: `0` the first, `3` the third repeat,\n`0:fallback` an SMS fallback email. `null` on receipts written before the outbox."
+          },
+          "repeat": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The repeat number (\"resend every\"), `null` for a first send.",
+            "minimum": 0
+          },
+          "fallback": {
+            "type": "boolean",
+            "description": "An email sent to the account owner because the SMS was blocked."
+          },
+          "is_test": {
+            "type": "boolean",
+            "description": "A test send from the dashboard."
+          }
+        }
+      },
+      "DeliveryHistoryPage": {
+        "type": "object",
+        "description": "One page of the history.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryHistoryEntry"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass back as `cursor` for the next page; `null` on the last."
           }
         }
       },
@@ -43150,6 +43646,42 @@
           }
         }
       },
+      "MaintenanceWindowCoverage": {
+        "type": "object",
+        "description": "What a window holds: the monitors it matches and the alerts held for each right now.",
+        "required": [
+          "window_id",
+          "is_currently_active",
+          "monitors",
+          "held_alerts",
+          "truncated"
+        ],
+        "properties": {
+          "window_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_currently_active": {
+            "type": "boolean",
+            "description": "Whether the window is in effect now; held alerts go out when it ends."
+          },
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoveredMonitor"
+            }
+          },
+          "held_alerts": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Alerts held right now across these monitors."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "More than 500 monitors match; the list is cut."
+          }
+        }
+      },
       "MaintenanceWindowResponse": {
         "type": "object",
         "required": [
@@ -43180,6 +43712,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "service_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The services the window covers."
           },
           "schedule_type": {
             "type": "string"
@@ -54226,6 +54766,42 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "integration_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The connected integration this target sends with, when it uses one."
+          },
+          "min_severity": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IncidentSeverity",
+                "description": "Lifecycle events of incidents below this severity are not sent; absent sends every severity."
+              }
+            ]
+          },
+          "events": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "The lifecycle events this target takes; absent takes every one."
+          },
+          "signing_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A pasted-URL webhook's signing secret, returned once on create and never again."
           }
         }
       },
@@ -54356,6 +54932,14 @@
           "auto_resolve": {
             "$ref": "#/components/schemas/AutoResolve",
             "description": "Whether an auto-created incident resolves itself once every monitor recovers."
+          },
+          "disabled_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the service was switched off; while set its monitors open no auto incidents."
           },
           "auto_publish_to_status_page_id": {
             "type": [
@@ -61245,6 +61829,17 @@
               "type": "string"
             }
           },
+          "service_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Replaces the services; `[]` clears them."
+          },
           "schedule_type": {
             "type": [
               "string",
@@ -61640,6 +62235,40 @@
           }
         }
       },
+      "UpdateServiceNotificationTargetRequest": {
+        "type": "object",
+        "description": "Change a target's filters, or a Slack target's channel. Omitted fields keep their value.",
+        "properties": {
+          "min_severity": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IncidentSeverity",
+                "description": "`null` sends every severity again."
+              }
+            ]
+          },
+          "events": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "`null` takes every event again."
+          },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A Slack target's new channel."
+          }
+        }
+      },
       "UpdateServiceRequest": {
         "type": "object",
         "properties": {
@@ -61672,6 +62301,13 @@
                 "$ref": "#/components/schemas/IncidentCreationMode"
               }
             ]
+          },
+          "disabled": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`true` switches the service off: its monitors open no auto incidents. `false` switches it on."
           },
           "incident_merge_window_minutes": {
             "type": [
