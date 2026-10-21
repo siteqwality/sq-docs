@@ -193,11 +193,9 @@ With no range it answers "who is on call right now", one row per covered schedul
 
 The feed covers 7 days back to 60 days ahead, overrides applied. It shows names only, never an email address or a phone number. The address is the only key, so treat it like a password: `GET /on_call/feed_tokens` lists feeds without their addresses, and `DELETE /on_call/feed_tokens/{feed_id}` revokes one at once. A feed also stops when its user leaves the account. Feed requests are rate limited.
 
-### From the CLI, an assistant or Slack
+### From an assistant
 
-- The CLI (`@siteqwality/cli`) has `siteqwality oncall now`, `oncall shifts <schedule>` and `oncall mine --user <member>`.
 - The MCP server has tools for who is on call, shifts, the report and editing a layer.
-- In Slack, `/oncall` (optionally followed by part of a schedule name) answers privately with who is on call, until when, and who is next. It works in a workspace connected through the Slack integration, for people who added Slack as a contact method on their profile.
 
 ## Handoff notices
 
