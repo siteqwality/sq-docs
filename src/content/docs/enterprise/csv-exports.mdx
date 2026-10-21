@@ -1,19 +1,20 @@
 ---
 title: CSV exports
-description: Export raw check results, a per-monitor uptime summary, or log query results, with the row caps that apply.
-last_verified: 2026-08-02
+description: Export raw check results or a per-monitor uptime summary as CSV, with the row cap that applies. Logs and other telemetry export separately.
+last_verified: 2026-10-21
 owner: jj
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-Three endpoints return CSV attachments for offline analysis, board reporting, or feeding a warehouse. All three are `GET`, all three return `text/csv; charset=utf-8` with a `Content-Disposition` filename, and all three work with any credential that can read the underlying data.
+Two endpoints return CSV attachments for offline analysis, board reporting, or feeding a warehouse. Both are `GET`, both return `text/csv; charset=utf-8` with a `Content-Disposition` filename, and both work with any credential that can read the underlying data.
 
 | Export | Endpoint | Row cap |
 |---|---|---|
 | Check results | `GET /http/job/{job_id}/results/export` | 50,000 |
 | Monitor uptime summary | `GET /monitors/export` | none |
-| Log query results | `GET /logs/export` | 10,000 |
+
+Logs, metrics and traces export through [telemetry exports](/observability/privacy/#exports) instead, as CSV or NDJSON.
 
 ## Check results
 
@@ -66,54 +67,23 @@ Two things to read carefully:
 - **HTTP monitors only**, despite the endpoint name. Browser, cron, DNS and TLS monitors are not included. Paused monitors are, with empty metrics.
 - **`uptime_percentage` is the unweighted average of daily uptime percentages**, the same convention the [SLA report](/enterprise/sla-reports/) uses. It comes from a daily rollup that refreshes at 03:00 UTC, so the current day is usually missing.
 
-## Log query results
+## When you exceed the cap
 
-The same filters as `GET /logs/query`, exported instead of paged. In the dashboard, click **Export CSV** in the Logs page header; it uses whatever filters are active. Through the API:
-
-```bash
-curl -G "https://api.siteqwality.com/logs/export" \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  --data-urlencode "start_time=2026-08-01T00:00:00Z" \
-  --data-urlencode "end_time=2026-08-02T00:00:00Z" \
-  --data-urlencode "level=error" \
-  -o logs.csv
-```
-
-Columns, in order:
-
-```
-timestamp, level, source, host, env, message, tags, metadata
-```
-
-`tags` and `metadata` are compact JSON; empty objects render as blank cells. `limit` and `offset` are ignored, since the export is not paginated. Sorting follows `sort_field` and `sort_order`, defaulting to newest first.
-
-<Aside type="caution">
-The logs export has **no default time range**. Without `start_time` and `end_time` it matches your entire retention window, which almost always exceeds the cap. Always pass a range.
-</Aside>
-
-## When you exceed a cap
-
-Both capped exports **count the matching rows first**. If the count is over the cap, you get a `400` before any data is generated, with a message telling you the actual count:
+The check results export **counts the matching rows first**. If the count is over the cap, you get a `400` before any data is generated, with a message telling you the actual count:
 
 ```
 Range matches 91240 rows; the export cap is 50000. Narrow the date range.
 ```
 
-```
-Filters match 24500 rows; the export cap is 10000. Narrow the time range or filters.
-```
-
-Nothing is truncated silently. You never receive a partial file believing it is complete, which is the failure mode these caps exist to prevent.
+Nothing is truncated silently. You never receive a partial file believing it is complete, which is the failure mode the cap exists to prevent.
 
 To get more data, split the request into smaller windows and concatenate the results, keeping one header row.
 
-## Why the caps exist
+## Why the cap exists
 
-Exports are generated and returned in a single request, and that response has a hard size ceiling of roughly 6 MB imposed by the serverless platform. The caps are sized against that: check-result rows are compact, so 50,000 fit; log rows carry free-text messages and JSON metadata and are far larger, so the ceiling arrives sooner.
-
-A larger asynchronous export path is the intended follow-up if these caps become limiting.
+Exports are generated and returned in a single request, and that response has a hard size ceiling of roughly 6 MB imposed by the serverless platform. The cap is sized against that: check-result rows are compact, so 50,000 fit.
 
 ## See also
 
 <LinkCard title="SLA reports" description="Monthly attainment, from the same daily rollup." href="/enterprise/sla-reports/" />
-<LinkCard title="Logs reference" description="Every filter the log export accepts." href="/observability/logs/reference/" />
+<LinkCard title="Telemetry exports" description="Export logs, metrics and traces as CSV or NDJSON." href="/observability/privacy/#exports" />
