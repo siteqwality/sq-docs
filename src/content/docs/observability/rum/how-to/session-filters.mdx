@@ -14,7 +14,7 @@ Every sampled session records the basics: page views, Web Vitals, errors, failed
 
 This is the main cost control: capture every user lightly, and only the interesting sessions in full.
 
-Manage rules in the dashboard under **RUM → Recording rules**, or through the API under `/rum/{app_id}/rules`. The SDK evaluates them in the browser; see [rule evaluation](/sdk/v2/#rule-evaluation).
+Manage rules in the dashboard on the application's **Recording rules** page (**Observe → RUM**, then open the application), or through the API under `/rum/{app_id}/rules`. The SDK evaluates them in the browser; see [rule evaluation](/sdk/v2/#rule-evaluation).
 
 ## The rules a new application starts with
 
@@ -85,7 +85,7 @@ The rate in force is the rule's `effective_sample_rate`. A change of less than 1
 
 ## Estimate a rule before saving
 
-`POST /rum/{app_id}/rules/preview` takes a rule body (`name` optional) and estimates what it would record from the last 7 days of sessions. Read access is enough.
+In the dashboard, the rule builder's **Preview** section shows this estimate while you edit. Through the API, `POST /rum/{app_id}/rules/preview` takes a rule body (`name` optional) and estimates what it would record from the last 7 days of sessions. Read access is enough.
 
 ```bash
 curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules/preview" \
@@ -116,7 +116,11 @@ The estimate is the matching sessions times the sample rate, scaled to 30 days. 
 
 ## Examples
 
+Each example is a rule you can build in the dashboard. Open the application's **Recording rules** page and click **New recording rule**. Give it a **Rule name**, choose **Replay** or **Analyze** under **What to capture**, add conditions under **Sessions to match**, set the **Sample rate**, then click **Save rule**. The API calls below create the same rules.
+
 ### Replay sessions that reach checkout, half of them
+
+In the builder: **Replay**, a **Page URL** condition that starts with `/checkout`, and a **Sample rate** of `50`%.
 
 ```bash
 curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
@@ -132,6 +136,8 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
 
 ### Analyze every session with a failed API call
 
+In the builder: **Analyze**, and a **Failed request** condition for **Server error (5xx)** with `/api/` in the request URL.
+
 ```bash
 curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
@@ -145,7 +151,9 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
 
 ### Pause a rule, then delete it
 
-`PUT /rum/{app_id}/rules/{rule_id}` changes only the fields you send, and validates the result as a whole:
+In the dashboard, turn off the rule's **Enabled** switch to pause it, and choose **Delete** from its actions menu to remove it.
+
+Through the API, `PUT /rum/{app_id}/rules/{rule_id}` changes only the fields you send, and validates the result as a whole:
 
 ```bash
 curl -X PUT "https://api.siteqwality.com/rum/$APP_ID/rules/$RULE_ID" \

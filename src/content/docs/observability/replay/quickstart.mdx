@@ -23,13 +23,13 @@ New applications start on the **Balanced** [privacy level](/observability/rum/ho
 
 <Steps>
 
-1. **RUM → Applications → your app → Settings → Privacy.**
+1. Go to **Observe → RUM**, open your application and choose **Settings**.
 
-2. Check that **Mask all user inputs** is on. (Almost always a yes, since your customers shouldn't see other customers' typed data.)
+2. Under **Masking**, check that **Mask all inputs** is on. (Almost always a yes, since your customers shouldn't see other customers' typed data.)
 
-3. Turn on **Mask all text content** if your app displays sensitive content (financial info, PII).
+3. Turn on **Mask all text** if your app displays sensitive content (financial info, PII), or pick the **Strict** **Privacy level**.
 
-4. Save.
+4. Save the change from the bar that appears at the bottom.
 
 </Steps>
 
@@ -50,7 +50,7 @@ curl -X PATCH https://api.siteqwality.com/rum/$APP_ID \
 
 ## 2. Add a recording rule to enable replay
 
-Replay activates when a session matches a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application already has one, **Errored sessions**, which replays every session with an error, so you can skip this step. If you deleted it, add one in **RUM → Recording rules**, or through the API:
+Replay activates when a session matches a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application already has one, **Errored sessions**, which replays every session with an error, so you can skip this step. If you deleted it, open the application's **Recording rules** page, click **New recording rule**, choose **Replay**, add an **Error** condition and click **Save rule**. Or through the API:
 
 ```bash
 curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
