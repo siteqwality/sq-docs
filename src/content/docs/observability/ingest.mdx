@@ -1,7 +1,7 @@
 ---
 title: Ingest routes and limits
 description: Exact telemetry request paths, authentication, supported formats and acknowledgment semantics.
-last_verified: 2026-10-20
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -16,7 +16,7 @@ All paths below use `https://otlp.siteqwality.com`. Prefer this origin for new i
 | `/metrics` | Custom metric JSON, including v2 resource/points | Authorization header |
 | `/api/v1/write` | Prometheus remote-write 1.x or 2.0, Snappy protobuf | Authorization header |
 | `/v1/heroku` | `application/logplex-1`, octet-counted frames | Basic auth, key as password |
-| `/v1/vercel` | Vercel log JSON/NDJSON (**not available yet**) | Authorization plus `x-vercel-signature` |
+| `/v1/vercel` | Vercel log JSON/NDJSON | Authorization plus `x-vercel-signature` |
 | `/v1/cloudflare` | Supported Logpush dataset JSON/NDJSON, optional gzip | Authorization header |
 | `/v1/firehose` | Firehose protocol 1.0 envelope | `X-Amz-Firehose-Access-Key`, raw key |
 

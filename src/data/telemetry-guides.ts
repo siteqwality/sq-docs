@@ -26,7 +26,7 @@ export const PLATFORMS: Guide[] = [
 	{ id: 'docker', label: 'Docker', logo: 'docker', signals: all },
 	{ id: 'collector', label: 'OpenTelemetry Collector', logo: 'opentelemetry', signals: all },
 	{ id: 'aws-lambda', label: 'AWS Lambda', signals: all },
-	{ id: 'vercel', label: 'Vercel', logo: 'vercel', signals: ['traces'] },
+	{ id: 'vercel', label: 'Vercel', logo: 'vercel', signals: ['logs', 'traces'] },
 	{ id: 'cloudflare-workers', label: 'Cloudflare Workers', logo: 'cloudflareworkers', signals: ['logs'] },
 	{ id: 'prometheus', label: 'Prometheus', logo: 'prometheus', signals: ['metrics'] },
 	{ id: 'fluent-bit', label: 'Fluent Bit', logo: 'fluentbit', signals: ['logs'] },
