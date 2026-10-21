@@ -9,6 +9,26 @@ import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/compon
 
 Recurring maintenance windows fire on a schedule instead of a single timestamp pair. Two recurrence types are supported: `daily` and `weekly`.
 
+## In the dashboard
+
+<Steps>
+
+1. Go to **Respond → Notifications**, click **Maintenance windows**, then **+ Add Maintenance Window**.
+
+2. Give it a **Name** and the **Tags** of the monitors it should silence.
+
+3. Set **Schedule Type** to **Recurring** and pick the **Timezone**.
+
+4. Under **Recurrence Pattern**, choose **Daily**, or **Weekly (specific days)** and tick the **Days**. Set the **Start Time** and **End Time**.
+
+5. Click **Create Window**.
+
+</Steps>
+
+To change a window later, use the pencil icon (**Edit window**) on its row and click **Update Window**. The cross icon (**Delete window**) removes it.
+
+The API examples below create the same windows.
+
 ## Daily: same window every day
 
 Useful for nightly batch jobs, regular cache warm-ups, or anything else that hits a known short window every 24 hours.
@@ -90,7 +110,7 @@ curl -X PUT https://api.siteqwality.com/maintenance_windows/$WINDOW_ID \
 
 ## Disabling vs deleting
 
-There's no "disabled" flag. To temporarily stop a window from firing, delete it; to permanently keep it for reference, leave it alone (it has no real cost beyond a row in the DB).
+There's no "disabled" flag. To stop a window from firing, delete it with **Delete window** in the dashboard or through the API; to keep it for reference, leave it alone (it has no real cost beyond a row in the DB).
 
 ```bash
 curl -X DELETE https://api.siteqwality.com/maintenance_windows/$WINDOW_ID \

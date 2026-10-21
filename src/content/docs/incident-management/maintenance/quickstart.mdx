@@ -11,7 +11,7 @@ By the end of this guide you'll have a one-time maintenance window scheduled for
 
 ## Prerequisites
 
-- One or more monitors tagged with `service:api`. Tags are an array on every monitor, set on create or via `PUT`.
+- One or more monitors tagged with `service:api`. Tags are set in the monitor form, or as the `tags` array through the API.
 
 ## 1. Tag your monitors
 
@@ -20,7 +20,7 @@ If your monitors aren't tagged yet:
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-Open the monitor → **Settings → Tags** → add `service:api` → save.
+Open the monitor and choose **Edit monitor**. In the **Monitor** section, add `service:api` under **Tags**, then click **Save**.
 
 </TabItem>
 <TabItem label="API">
@@ -42,15 +42,16 @@ curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
 
 <Steps>
 
-1. **Maintenance → New window.**
+1. Go to **Respond → Notifications**, click **Maintenance windows**, then **+ Add Maintenance Window**.
 
 2. Configure:
    - **Name:** `Friday API deploy`.
    - **Tags:** `service:api`.
-   - **Schedule type:** `one-time`.
-   - **Starts:** `2026-05-10 14:00 UTC`. **Ends:** `2026-05-10 14:30 UTC`.
+   - **Schedule Type:** **One-time**.
+   - **Timezone:** `UTC`.
+   - **Start:** `2026-05-10 14:00`. **End:** `2026-05-10 14:30`.
 
-3. Save.
+3. Click **Create Window**.
 
 </Steps>
 
@@ -77,11 +78,13 @@ The response includes `is_currently_active: false` (assuming the window is in th
 
 ## 3. Verify
 
-The window appears in the **Maintenance** list with a status badge:
+The window appears on the **Maintenance Windows** page with a status badge. The card view shows:
 
-- `Scheduled`: in the future.
-- `Active`: happening now.
-- `Past`: already ended.
+- **Scheduled**: in the future.
+- **Active**: happening now.
+- **Ended**: already over.
+
+The list view shows **Active** or **Inactive**.
 
 When the window goes active, any matching monitor's status badge in the dashboard gets a "Maintenance" overlay. Notifications are suppressed automatically.
 
