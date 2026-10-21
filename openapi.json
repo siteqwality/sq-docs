@@ -40476,7 +40476,8 @@
           "degraded",
           "failing",
           "skipped",
-          "untested"
+          "untested",
+          "disabled"
         ]
       },
       "HigherIs": {
@@ -41651,6 +41652,14 @@
           "is_test": {
             "type": "boolean",
             "description": "A test send from the dashboard."
+          },
+          "webhook_delivery_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "For a webhook, the delivery whose attempts the webhook log shows."
           }
         }
       },
