@@ -7,6 +7,8 @@ owner: jj
 
 import { Steps, Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
+The report comes from the API; the dashboard has no button for it yet.
+
 ```bash
 curl "https://api.siteqwality.com/monitors/report?month=2026-07" \
   -H "Authorization: Bearer $SESSION_JWT" \
@@ -67,7 +69,7 @@ The report takes its logo, colours and title from status page branding, resolved
 Site Qwality branding is never used as a fallback at any level. This page is handed to a third party, so it carries your identity or none.
 
 <Aside type="note" title="Set your branding before you send the first one">
-If neither you nor your client has configured status page branding, the report is correct but plain. Branding lives under **Status pages → Branding**; the logo, brand colour and display name are what the report reads.
+If neither you nor your client has configured status page branding, the report is correct but plain. Branding lives on each status page's **Branding** tab (**Manage → Status Page**, then open the page); the logo, brand colour and display name are what the report reads.
 </Aside>
 
 ## A monitor paused during an outage

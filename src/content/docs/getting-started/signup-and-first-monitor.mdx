@@ -38,17 +38,17 @@ On signup, Site Qwality creates a notification group named **Default** with your
 
 <Steps>
 
-1. **Monitors → New → HTTP check.**
+1. Go to **Observe → Monitors**, open **Add Monitor** and choose **HTTP Monitor**.
 
 2. Fill in the form:
-   - **Friendly name:** `Mock 200 endpoint`
-   - **URL:** `https://mock.codes/200`
-   - **Method:** `GET`
-   - **Run interval:** `Every 10 minutes` (the free-plan minimum is 5 minutes; we use 10 minutes here so the demo doesn't spam your inbox)
-   - Leave **Notification groups** on its default. Your account's auto-created group is pre-selected.
+   - **Name:** `Mock 200 endpoint`
+   - **URL or IP:** `https://mock.codes/200`
+   - **Check Interval:** `5m`, the free-plan minimum
+   - **Method:** `GET` (under **Request**, the default)
+   - Leave the notification groups under **Alerting** on their default. Your account's auto-created group is pre-selected.
    - Leave everything else as default.
 
-3. Click **Create**. The check runs immediately; the first result appears within a few seconds.
+3. Click **Submit**. The check runs immediately; the first result appears within a few seconds.
 
 </Steps>
 
@@ -87,7 +87,7 @@ Omitting `group_notification_ids` attaches the monitor to your account's default
 
 1. Open the monitor's detail page. The status badge should flip to **Success** within one minute.
 
-2. Scroll down to **Recent runs**. You'll see one row per check result with status code, latency, and the location it ran from.
+2. Scroll down to **Recent Checks**. You'll see one row per check result with status code, latency, and the location it ran from.
 
 3. Force a failure: edit the check, change the URL to `https://mock.codes/500`, save.
 

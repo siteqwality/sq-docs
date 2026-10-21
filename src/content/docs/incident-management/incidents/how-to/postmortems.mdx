@@ -70,7 +70,7 @@ An item's `status` is `open`, `done` or `wont_do`. Change it, or any other field
 
 ## Overdue items and the reminder email
 
-An open item is **overdue** from the day after its due date, counted in your organization's timezone (**Settings → Organization**; UTC when none is set). Overdue items are flagged in red in the tab and on the Follow-ups list, and the API marks them with `"overdue": true`.
+An open item is **overdue** from the day after its due date, counted in your organization's timezone (**Timezone** under **Settings → General**; UTC when none is set). Overdue items are flagged in red in the tab and on the Follow-ups list, and the API marks them with `"overdue": true`.
 
 At 09:00 in your organization's timezone on the day after the due date, the item's owner gets one email naming the item and the incident, with a link back to its Post-incident tab. The check runs every five minutes, so the email can arrive a few minutes after nine. Each item sends it once:
 

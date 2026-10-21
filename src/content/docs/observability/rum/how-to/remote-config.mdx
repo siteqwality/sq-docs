@@ -159,7 +159,7 @@ When the list is not empty, ingest refuses requests from other origins with `403
 
 Auto-captured clicks are recorded with a `name`, taken from the clicked element's `data-sq-action-name`, `aria-label` or text (up to 64 characters), and a `selector` such as `button.btn.primary`. On pages that render what users wrote, the name can be personal data.
 
-Turn on **Hide element text in click names** under **RUM → Settings → Click Names** (or set `settings.privacy.hide_action_text` to `true`) and clicks are stored with their selector only:
+Turn on **Hide action text** under **RUM → Settings → Privacy** (or set `settings.privacy.hide_action_text` to `true`) and clicks are stored with their selector only:
 
 | Sent | Stored |
 |---|---|
@@ -180,7 +180,7 @@ Names passed to `addAction()` are never changed by this setting.
 
 ## Ignoring elements for frustration signals
 
-Some controls draw rapid clicks by design (a carousel arrow, a stepper) or legitimately change nothing on screen. To stop their clicks being marked as rage or dead clicks, list CSS selectors under **RUM → Settings → Frustration signals**, one per line, or set `settings.frustration_ignore_selectors`:
+Some controls draw rapid clicks by design (a carousel arrow, a stepper) or legitimately change nothing on screen. To stop their clicks being marked as rage or dead clicks, list CSS selectors under **RUM → Settings → Frustration**, one per line, or set `settings.frustration_ignore_selectors`:
 
 ```json
 "frustration_ignore_selectors": [".carousel-next", "[data-role=stepper] button"]
