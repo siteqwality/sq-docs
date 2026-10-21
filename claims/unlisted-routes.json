@@ -3,5 +3,10 @@
     "route": "PUT /integration/webhook/{integration_id}/settings",
     "source": "core-rs api/src/routes/mod.rs (integrations::webhook::settings)",
     "note": "Live, but missing from openapi.json. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "GET /notification/history",
+    "source": "core-rs api/src/handlers/notification/history.rs",
+    "note": "Added with the alerts A5.6 release. Remove this entry once openapi.json lists it."
   }
 ]

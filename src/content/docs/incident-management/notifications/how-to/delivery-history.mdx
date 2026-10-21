@@ -1,0 +1,61 @@
+---
+title: Check what was sent
+description: The delivery history lists every alert your account sent in the last 90 days, across monitors and channels, with whether it arrived, why one was skipped, and which repeat it was.
+last_verified: 2026-10-22
+owner: jj
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The **delivery history** answers "did anyone get told?" for the whole account. Each row is one alert to one channel: when it went, what it was about, where it went and what happened to it.
+
+In the dashboard, open **Respond → Notifications** and click **Delivery history**. Filter by channel type or by result, and click **Load older deliveries** to go further back. The history reaches back 90 days.
+
+## What a row tells you
+
+| Column | What it shows |
+|---|---|
+| **When** | When the alert was handed over. Hover for the exact time. |
+| **What** | The alert, such as **Down alert** or **Recovery**, and the monitor it was about (a link to the monitor's page). A repeat reads **Down alert, repeat 2**. |
+| **Channel** | The channel type and its address, masked: `o***@example.com`, `***0100`, a Slack channel. |
+| **Result** | Sent, Delivered, Delayed, Failed, Refused, Bounced, Marked as spam or Skipped, with the provider's reason or, for a skip, what the reason code means. |
+
+A **repeat** is a re-send of a down alert from a notification group with **Resend every** set (see [notification groups](/incident-management/notifications/overview/#notification-groups)). The first alert has no number; the repeats count up from 1.
+
+**Delivered**, **Bounced** and **Marked as spam** come from the receiving mail server, so an email row can move from **Sent** to one of them a little later.
+
+A **Skipped** row is an alert we deliberately did not send to that channel. [Alert coverage](/integrations/coverage/#skipped-deliveries) lists every reason code and whether it means the channel needs fixing.
+
+<Aside type="note">
+Test sends from the dashboard are left out. Receipts recorded before receipts named their account are not listed.
+</Aside>
+
+## Bouncing email channels
+
+An email channel whose address hard-bounced, or whose recipient marked an alert as spam, shows **Bouncing** on its notification group, with the day it happened. The mail service suppresses that address from then on, so alerts to it will not arrive. Fix or replace the address. The channel goes back to healthy once a later alert to it is delivered.
+
+## REST
+
+```bash
+curl https://api.siteqwality.com/notification/history?limit=50&status=failed \
+  -H "Authorization: Bearer $SQ_API_KEY"
+```
+
+| Query parameter | Meaning |
+|---|---|
+| `cursor` | `next_cursor` from the previous page. |
+| `limit` | 1 to 100, default 50. |
+| `channel` | Only this channel type: `email`, `sms`, `slack`, `webhook`, `platform_webhook` (Teams, Discord, Google Chat, Mattermost), `telegram`, `pagerduty`, `opsgenie`, `pushover`. |
+| `status` | Only this result: `sent`, `delivered`, `delayed`, `soft_bounced`, `failed`, `rejected`, `bounced`, `complained`, `skipped`. |
+| `monitor_id` | Only alerts about this monitor. |
+| `notification_id` | Only this channel. |
+| `since`, `until` | RFC 3339 times. `since` may be at most 90 days back, the default; `until` defaults to now. |
+| `include_tests` | `true` to include test sends. |
+
+The response is `{ "data": [...], "next_cursor": "..." }`, newest first. `next_cursor` is `null` on the last page. Each entry carries `at`, `status`, `reason`, `channel`, `destination` (masked), `monitor_id`, `monitor_type`, `monitor_name`, `event_kind`, `occurrence`, `repeat` and `fallback`:
+
+- `occurrence` is which send of the event it was: `0` for the first, `3` for the third repeat.
+- `repeat` is the repeat number, `null` for a first send.
+- `fallback` is `true` for an email sent to the account owner instead of a blocked SMS.
+
+A bad cursor, a `limit` outside 1 to 100, a `since` more than 90 days back or an `until` before `since` returns `400`. Scoped API keys and AI assistants need `read:notifications`. The AI assistant tool is `list_notification_history`.

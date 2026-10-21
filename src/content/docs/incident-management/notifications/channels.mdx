@@ -35,6 +35,8 @@ When an alert is deliberately not sent to a channel, Site Qwality records a rece
 
 Skipped receipts appear in a channel's recent deliveries (`health.recent` on `GET /notification/{id}` and on each channel in `GET /notification_group`) and in a monitor's alert history (`GET /monitors/{id}/alert_history`, with the slug in `detail`). A skip by design, such as `heartbeat_channel_unsupported`, is listed but does not change the channel's `health.state`. An `sms_quota`, `sms_platform_limit` or `recipient_suppressed` skip sets it to `degraded`, because the next alert will likely not arrive either.
 
+An email channel whose address hard-bounced or complained after its last delivered alert is `degraded` too, with `health.bouncing` naming when (`since`), the `event_type` (`bounce` or `complaint`) and the `sub_type`. It recovers when a later alert to the channel is delivered. Every channel's alerts are listed in the [delivery history](/incident-management/notifications/how-to/delivery-history/).
+
 ### Warnings when you save a monitor
 
 Creating or updating an HTTP, heartbeat or DNS record monitor still succeeds when one of its notification groups holds a channel its alerts cannot reach. The response carries a `warnings` array beside `data`, one entry per channel and alert source:
