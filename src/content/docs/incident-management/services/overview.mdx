@@ -1,7 +1,7 @@
 ---
 title: Services
 description: Group monitors into a service, choose who gets paged, and decide whether failures open incidents on their own.
-last_verified: 2026-10-21
+last_verified: 2026-10-22
 owner: jj
 ---
 
@@ -56,6 +56,25 @@ Scoped API keys, M2M API clients and AI assistants need `read:services` to read 
 </Aside>
 
 An AI assistant connected to [MCP](/integrations/mcp/#services) with an API key can do the same: list, create and update services, and link or unlink their monitors.
+
+## Service health
+
+The **Services** page shows each service's health, worst first by default, and opening a service shows the same at the top of its page. Health is the worse of its incidents and its monitors:
+
+| Health | When |
+|---|---|
+| Major outage | An open critical incident, or every active monitor of the service failing. |
+| Partial outage | An open major incident, or some monitors failing. |
+| Degraded | An open minor incident. |
+| Operational | No open incident and no failing monitor. |
+
+Paused monitors and merged incidents do not count. A running [maintenance window](/incident-management/maintenance/overview/) that names the service shows a **Maintenance** badge beside the health instead of changing it, because maintenance holds paging, never the status: a forgotten window cannot hide a real outage. Only a window whose end is still in the future counts.
+
+Beside the health, each service shows its open incidents, failing monitors, when its last incident opened and **who is on call now**: the person on the service's own on-call schedule if you set one, otherwise everyone on the first level of its escalation policy (people named directly, and whoever each schedule on that level has on call).
+
+The service page also shows the last 30 days: incidents opened, mean time to acknowledge, mean time to resolve, and uptime, the share of that time with no open incident on the service.
+
+Filter the list by name, team, tag or health, and sort it by health, name, latest incident or age. Set a service's team, tags and on-call schedule in **Edit Settings** on its page.
 
 ## Incident creation modes
 

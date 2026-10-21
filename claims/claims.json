@@ -30,5 +30,12 @@
   { "page": "incident-management/on-call/overview.mdx", "text": "whoever goes on call can be told through their low-urgency notification rules", "needs": ["oncall.handoff_notices", "notify.notification_rules"] },
   { "page": "incident-management/notifications/overview.mdx", "text": "It must be verified with a 6-digit code before a rule can use it.", "needs": ["notify.contact_methods"] },
   { "page": "incident-management/notifications/overview.mdx", "text": "Each user can have up to 20 contact methods.", "needs": ["notify.contact_methods"] },
-  { "page": "incident-management/maintenance/overview.mdx", "text": "A **maintenance window** is a time range during which monitors with matching tags don't page.", "needs": ["maintenance.windows"] }
+  { "page": "incident-management/maintenance/overview.mdx", "text": "A **maintenance window** is a time range during which monitors with matching tags don't page.", "needs": ["maintenance.windows"] },
+  {"page": "incident-management/services/overview.mdx", "text": "Health is the worse of its incidents and its monitors:", "needs": ["service.health_rollup"]},
+  {"page": "incident-management/services/overview.mdx", "text": "maintenance holds paging, never the status: a forgotten window cannot hide a real outage. Only a window whose end is still in the future counts.", "needs": ["service.health_rollup"]},
+  {"page": "incident-management/services/overview.mdx", "text": "otherwise everyone on the first level of its escalation policy", "needs": ["service.health_rollup", "escalation.policies"]},
+  {"page": "incident-management/services/overview.mdx", "text": "uptime, the share of that time with no open incident on the service.", "needs": ["service.metrics"]},
+  {"page": "incident-management/services/reference.mdx", "text": "`GET /service` answers `{ \"data\": [...], \"total\": N, \"next_cursor\": \"...\" }`.", "needs": ["service.health_rollup"]},
+  {"page": "incident-management/services/reference.mdx", "text": "the share of the window with no open incident on the service.", "needs": ["service.metrics"]},
+  {"page": "integrations/mcp.mdx", "text": "A service's incidents, mean time to acknowledge and resolve, and uptime over a window", "needs": ["service.metrics", "service.mcp_tools"]}
 ]

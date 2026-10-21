@@ -310,9 +310,10 @@ These tools group monitors into services and decide which failures open incident
 
 | Tool | What it does | Access |
 |---|---|---|
-| `list_services`, `get_service` | Lists your services with their incident settings and monitor counts, or shows one with its escalation policy, creation mode, default severity, reopen window, auto-resolve and auto-publish page. | Read |
+| `list_services`, `get_service` | Lists your services with their health, who is on call now, incident settings and monitor counts, filtered by text, team, tag or health and paged with `next_cursor`; or shows one with the same plus its team, tags, on-call schedule, escalation policy, creation mode, default severity, reopen window, auto-resolve and auto-publish page. | Read |
+| `get_service_metrics` | A service's incidents, mean time to acknowledge and resolve, and uptime over a window (the last 30 days by default). | Read |
 | `create_service` | Creates a service. Fails with `409` at the account's service limit. | Write |
-| `update_service` | Changes a service's settings. Omitted fields stay unchanged; `null` clears the description, escalation policy or auto-publish page. Switching to `auto` lets failing monitors open incidents and page. | Write |
+| `update_service` | Changes a service's settings. Omitted fields stay unchanged; `null` clears the description, escalation policy, auto-publish page, team or on-call schedule. Switching to `auto` lets failing monitors open incidents and page. | Write |
 | `list_service_monitors` | Lists every monitor a service groups, of every type, with its status and whether it counts as healthy. | Read |
 | `link_service_monitor` | Adds one monitor to a service and leaves its other monitors alone. A monitor in another service fails with `409` unless `move` is true. | Write |
 | `unlink_service_monitor` | Removes one monitor from a service. Fails with `404` when the monitor is not on it. | Write, asks first |

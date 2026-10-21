@@ -23601,33 +23601,97 @@
         "tags": [
           "Services"
         ],
-        "summary": "List services for the account.",
+        "summary": "List services for the account, with their health.",
         "operationId": "list_services",
         "parameters": [
           {
             "name": "limit",
             "in": "query",
-            "description": "Page size",
+            "description": "Page size, 1 to 100 (default 50); larger values are clamped.",
             "required": false,
             "schema": {
               "type": "integer",
-              "format": "int32"
+              "format": "int64"
             }
           },
           {
             "name": "offset",
             "in": "query",
-            "description": "Page offset",
+            "description": "Deprecated: rows to skip. Use `cursor`; the two cannot be combined.",
             "required": false,
             "schema": {
               "type": "integer",
-              "format": "int32"
+              "format": "int64"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page, with the same filters and sort.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Matches name, description or team, case-insensitively.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team",
+            "in": "query",
+            "description": "Only services owned by this team (case-insensitive).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Only services carrying this tag (case-insensitive).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Comma-separated health statuses: `operational`, `degraded`, `partial_outage`, `major_outage`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "`-created_at` (default), `created_at`, `name`, `-name`, `status` (worst first) or\n`-last_incident_at`.",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Page of services"
+            "description": "Page of services: `data` is the array, `total` counts every match and `next_cursor` fetches the next page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServicePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown sort or status, a cursor from another sort, or cursor with offset"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -23676,7 +23740,7 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Escalation policy or auto-publish status page not found"
+            "description": "Escalation policy, on-call schedule or auto-publish status page not found"
           },
           "409": {
             "description": "The account has as many services as it may (`service_limit_reached`)"
@@ -23697,7 +23761,7 @@
         "tags": [
           "Services"
         ],
-        "summary": "Get a service by ID.",
+        "summary": "Get a service by ID, with its health.",
         "operationId": "get_service",
         "parameters": [
           {
@@ -23784,7 +23848,7 @@
             "description": "Missing or invalid authentication"
           },
           "404": {
-            "description": "Service, escalation policy or auto-publish status page not found"
+            "description": "Service, escalation policy, on-call schedule or auto-publish status page not found"
           },
           "500": {
             "description": "Internal server error"
@@ -23823,6 +23887,78 @@
           },
           "403": {
             "description": "Only an admin may delete this"
+          },
+          "404": {
+            "description": "Service not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/service/{service_id}/metrics": {
+      "get": {
+        "tags": [
+          "Services"
+        ],
+        "operationId": "service_metrics",
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "path",
+            "description": "Service identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Inclusive start, RFC 3339. Defaults to 30 days before to.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Exclusive end, RFC 3339. Defaults to now. Maximum window is 366 days.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incidents opened in the window (merged ones left out) with MTTA and MTTR in seconds, and uptime: the share of the window with no open incident on the service",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceMetricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid time range"
+          },
+          "401": {
+            "description": "Missing authentication"
+          },
+          "403": {
+            "description": "Missing services read scope"
           },
           "404": {
             "description": "Service not found"
@@ -37272,6 +37408,31 @@
                 "description": "Default `unless_acknowledged`."
               }
             ]
+          },
+          "owner_team": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "At most 256 characters."
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "At most 20 tags of 256 characters; blanks and repeats are dropped."
+          },
+          "on_call_schedule_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "An on-call schedule in the account (404 otherwise)."
           }
         }
       },
@@ -53881,6 +54042,114 @@
           "bars"
         ]
       },
+      "ServiceHealth": {
+        "type": "object",
+        "required": [
+          "status",
+          "in_maintenance",
+          "open_incident_count",
+          "failing_monitor_count",
+          "on_call_now"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ServiceHealthStatus"
+          },
+          "in_maintenance": {
+            "type": "boolean",
+            "description": "A maintenance window naming this service is running now. It holds paging, never the status."
+          },
+          "open_incident_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failing_monitor_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Linked monitors failing now; paused ones are left out."
+          },
+          "last_incident_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the newest incident on the service opened."
+          },
+          "on_call_now": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceOnCall"
+            },
+            "description": "The service's on-call schedule, else every user and schedule on the policy's first level."
+          }
+        }
+      },
+      "ServiceHealthStatus": {
+        "type": "string",
+        "description": "The worst of incident and monitor state. Maintenance never changes it.",
+        "enum": [
+          "operational",
+          "degraded",
+          "partial_outage",
+          "major_outage"
+        ]
+      },
+      "ServiceMetricsResponse": {
+        "type": "object",
+        "required": [
+          "service_id",
+          "from",
+          "to",
+          "total_incidents",
+          "open_incidents",
+          "resolved_incidents",
+          "acknowledged_incidents",
+          "mtta",
+          "mttr",
+          "uptime"
+        ],
+        "properties": {
+          "service_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "total_incidents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Incidents opened in the window, merged ones left out."
+          },
+          "open_incidents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "resolved_incidents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "acknowledged_incidents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "mtta": {
+            "$ref": "#/components/schemas/IncidentDurationMetrics"
+          },
+          "mttr": {
+            "$ref": "#/components/schemas/IncidentDurationMetrics"
+          },
+          "uptime": {
+            "$ref": "#/components/schemas/ServiceUptime"
+          }
+        }
+      },
       "ServiceMonitorRef": {
         "type": "object",
         "required": [
@@ -53968,6 +54237,75 @@
           "email"
         ]
       },
+      "ServiceOnCall": {
+        "type": "object",
+        "description": "One person on call for a service right now.",
+        "required": [
+          "user_id"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "schedule_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The schedule that puts them on call; absent for a user named on the policy directly."
+          },
+          "schedule_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the schedule hands off; absent for a direct user or past 90 days."
+          }
+        }
+      },
+      "ServicePage": {
+        "type": "object",
+        "description": "One page of services: `data` stays the bare array.",
+        "required": [
+          "data",
+          "total"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Services matching the filters, across every page."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass back as `cursor` for the next page; `null` on the last."
+          }
+        }
+      },
       "ServiceResponse": {
         "type": "object",
         "required": [
@@ -54047,6 +54385,66 @@
                 "description": "Prefills Publish and words auto-published incidents."
               }
             ]
+          },
+          "owner_team": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The team that owns the service; filter the list with `team`."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Free-form labels; filter the list with `tag`."
+          },
+          "on_call_schedule_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Who is on call for this service; without it, the escalation policy's first level."
+          },
+          "health": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ServiceHealth",
+                "description": "The roll-up of incidents, monitors, maintenance and on call. On the list and get routes."
+              }
+            ]
+          }
+        }
+      },
+      "ServiceUptime": {
+        "type": "object",
+        "required": [
+          "incident_seconds",
+          "measured_seconds"
+        ],
+        "properties": {
+          "percentage": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Share of the window with no open incident on the service; null for an empty window."
+          },
+          "incident_seconds": {
+            "type": "number",
+            "format": "double",
+            "description": "Seconds with at least one open incident."
+          },
+          "measured_seconds": {
+            "type": "number",
+            "format": "double",
+            "description": "Seconds measured: the window after the service was created, up to now."
           }
         }
       },
@@ -61329,6 +61727,31 @@
                 "$ref": "#/components/schemas/AutoResolve"
               }
             ]
+          },
+          "owner_team": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`null` clears it."
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Replaces the tags; `[]` clears them."
+          },
+          "on_call_schedule_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "`null` clears it, so the policy's first level is on call."
           }
         }
       },

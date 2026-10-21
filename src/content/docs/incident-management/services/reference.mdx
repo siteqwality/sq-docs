@@ -1,7 +1,7 @@
 ---
 title: Services reference
 description: Service fields, broadcast target types and every /service endpoint.
-last_verified: 2026-10-21
+last_verified: 2026-10-22
 owner: jj
 ---
 
@@ -22,16 +22,21 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 | `default_incident_severity` | `minor`, `major`, `critical` | `minor` | Severity of incidents the service opens automatically, and of manual incidents opened on it without a `severity`. |
 | `auto_publish_to_status_page_id` | UUID | none | Puts automatic incidents on this status page and emails its subscribers. `null` on update clears it. |
 | `public_incident_template` | object | none | `{ "title", "message", "resolved_message" }`, each optional: the public title, first public update and resolved update for this service's incidents on a status page. Values are trimmed and blank ones dropped. The title is at most 512 characters and each message 5,000 (`400` otherwise). Leaving it out keeps it; `null` clears it. Omitted from responses when empty. |
+| `owner_team` | string | none | The owning team, at most 256 characters. Trimmed; blank stores none. `null` on update clears it. |
+| `tags` | string array | `[]` | Up to 20 labels of 256 characters; blanks and repeats are dropped. An update replaces the list; `[]` clears it. |
+| `on_call_schedule_id` | UUID | none | The [on-call schedule](/incident-management/on-call/overview/) shown as on call for this service. Without one, the first level of the escalation policy is. Must be a schedule in your account (`404` otherwise). `null` on update clears it. |
 | `monitor_count` | integer | | Read-only. Linked monitors of every type. |
+| `health` | object | | Read-only, on `GET /service` and `GET /service/{id}`. See [health](#health). |
 | `created_at` | RFC 3339 | | Read-only. |
 
 ## Endpoints
 
 | Method | Path | What it does |
 |---|---|---|
-| `GET` | `/service` | List services. |
+| `GET` | `/service` | List services with their health. See [listing services](#listing-services). |
 | `POST` | `/service` | Create a service. `409` with code `service_limit_reached` at 100 services. |
 | `GET` | `/service/{id}` | Fetch one service. |
+| `GET` | `/service/{id}/metrics` | Incidents, MTTA, MTTR and uptime. See [metrics](#metrics). |
 | `PUT` | `/service/{id}` | Update the fields you send. |
 | `DELETE` | `/service/{id}` | Delete the service and its broadcast targets, and unlink its monitors. Needs an admin, or an API key with `write:services`: other roles get `403`. |
 | `GET` | `/service/{id}/monitors` | List linked monitors of every type as `{ id, name, monitor_type, status, healthy, paused }`. |
@@ -45,6 +50,56 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 <Aside type="note" title="Scopes">
 Scoped API keys, M2M API clients and AI assistants need `read:services` for the `GET` routes and `write:services` for the rest.
 </Aside>
+
+## Listing services
+
+`GET /service` answers `{ "data": [...], "total": N, "next_cursor": "..." }`. `data` is the page of services, `total` counts every service matching the filters, and `next_cursor` is `null` on the last page.
+
+| Parameter | Notes |
+|---|---|
+| `limit` | 1 to 100, default 50. Larger values are clamped. |
+| `cursor` | `next_cursor` from the previous page. Send the same filters and `sort` with it. |
+| `q` | Text in the name, description or team, case-insensitive. |
+| `team` | Only services of this team, case-insensitive. |
+| `tag` | Only services with this tag, case-insensitive. |
+| `status` | Comma-separated health: `operational`, `degraded`, `partial_outage`, `major_outage`. |
+| `sort` | `-created_at` (default, newest first), `created_at`, `name`, `-name`, `status` (worst health first, then name) or `-last_incident_at` (latest incident first, services without one last). |
+| `offset` | Deprecated. Rows to skip; cannot be combined with `cursor`. |
+
+An unknown `sort` or `status`, a cursor this endpoint did not return for that sort, or `cursor` with `offset` returns `400`.
+
+```bash
+curl "https://api.siteqwality.com/service?status=major_outage,partial_outage&sort=status&limit=20" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+### Health
+
+| Field | Notes |
+|---|---|
+| `status` | `major_outage` (an open critical incident, or every active monitor failing), `partial_outage` (an open major incident, or some monitors failing), `degraded` (an open minor incident) or `operational`. Paused monitors and merged incidents do not count. |
+| `in_maintenance` | `true` while a maintenance window naming the service in its `service_ids` runs and its end is in the future. It never changes `status`. |
+| `open_incident_count` | Open incidents on the service, merged ones left out. |
+| `failing_monitor_count` | Linked monitors failing now, paused ones left out. |
+| `last_incident_at` | When the newest incident on the service opened, or `null`. |
+| `on_call_now` | Who is on call: from `on_call_schedule_id` when set, otherwise every user and schedule on the first level of the escalation policy. Each entry has `user_id`, `user_name`, and for a schedule `schedule_id`, `schedule_name` and `until` (the next handoff). A schedule with nobody on call adds no entry. |
+
+## Metrics
+
+`GET /service/{id}/metrics` takes optional `from` and `to` (RFC 3339; default the 30 days up to now, at most 366 days) and answers:
+
+| Field | Notes |
+|---|---|
+| `total_incidents`, `open_incidents`, `resolved_incidents`, `acknowledged_incidents` | Incidents opened on the service in the window, merged ones left out. |
+| `mtta`, `mttr` | `{ samples, mean_seconds, p50_seconds, p90_seconds }`, the same measures as [`GET /incident/metrics`](/incident-management/incidents/reference/). Empty samples are `null`. |
+| `uptime` | `{ percentage, incident_seconds, measured_seconds }`: the share of the window with no open incident on the service. Only time after the service was created and before now is measured; `percentage` is `null` when none is. |
+
+`400` for a bad range, `404` when the service is not in your account.
+
+```bash
+curl "https://api.siteqwality.com/service/$SERVICE_ID/metrics" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
 
 ## Linking monitors
 

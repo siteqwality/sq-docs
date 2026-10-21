@@ -91,17 +91,21 @@
     "source": "core-rs api/src/middleware/auth.rs"
   },
   "service.health_rollup": {
-    "status": "held",
+    "status": "live",
     "summary": "Service health roll-up (status, in_maintenance, open incidents, failing monitors, on call now) and list paging and filters",
-    "source": "docs/plans/2026-10-12-alerts-incidents-design.md 4.6 (A7.2, wave w22 health lane)"
+    "api": [
+      "GET /service",
+      "GET /service/{service_id}"
+    ],
+    "source": "core-rs api/src/handlers/service/health.rs, common/src/db/service_health.rs"
   },
   "service.metrics": {
-    "status": "held",
+    "status": "live",
     "summary": "GET /service/{id}/metrics: incidents, MTTA, MTTR and uptime",
     "api": [
       "GET /service/{service_id}/metrics"
     ],
-    "source": "docs/plans/2026-10-12-alerts-incidents-design.md 4.6 (A7.2, wave w22 health lane)"
+    "source": "core-rs api/src/handlers/service/metrics.rs"
   },
   "service.broadcast_lifecycle": {
     "status": "held",
