@@ -16,15 +16,17 @@ By the end of this guide you'll have created a manual incident, posted a couple 
 
 <Steps>
 
-1. **Incidents → New incident.**
+1. Go to **Respond → Incidents** and click **Report incident**.
 
 2. Fill in:
    - **Title:** `Investigating elevated 5xx errors on the API`.
-   - **Severity:** `major`.
-   - **Initial message:** `Several monitors reported failures starting around 14:30 UTC. We're investigating.`
-   - **Affected monitors:** select your `prod-api` monitor. Optional, but it drives the status-page banner.
+   - **Severity:** **Major**.
+   - **Service:** optional. A service brings its escalation policy with it.
+   - **Initial Message:** `Several monitors reported failures starting around 14:30 UTC. We're investigating.`
 
-3. Click **Create**.
+3. Click **Report Incident**. The incident opens.
+
+4. Under **Monitors**, click **Add monitor**, pick your `prod-api` monitor and click **Add**. Optional, but it drives the status-page banner.
 
 </Steps>
 
@@ -57,7 +59,9 @@ As you learn more, append updates. Each update is a `(status, message)` pair.
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-Open the incident, scroll to **Updates**, type a message, choose a status, post.
+Open the incident. Under **Post an update**, choose **Public update**, pick the new status (here **Identified**), type the message and click **Post update**.
+
+The composer starts on **Internal note**, which stays with your team and never changes the status.
 
 </TabItem>
 <TabItem label="API">
@@ -112,7 +116,7 @@ When the underlying issue is fixed, resolve.
 
 Either:
 
-- **Post an update** with `status: resolved` and a closing message. This is the recommended path: it captures context.
+- Post a **Public update** with the status **Resolved** and a closing message. This is the recommended path: it captures context.
 - Or click the **Resolve** button for a quick close with no message.
 
 </TabItem>

@@ -23,7 +23,9 @@ The first person to acknowledge an incident that has no lead becomes its `lead` 
 
 ## Add participants
 
-Send exactly one of `user_id`, `schedule_id` or `escalation_policy_id`:
+In the dashboard, open the incident and click **Add participant** under **Participants**. Choose **Person**, **On-call schedule** or **Escalation policy**, pick who to add and their role, leave **Page them** checked to page them now, and click **Add**.
+
+Through the API, send exactly one of `user_id`, `schedule_id` or `escalation_policy_id`:
 
 | You send | Who is added |
 |---|---|
@@ -47,6 +49,8 @@ The response is the incident's full participant list. `GET /incident/{incident_i
 With `page` left at `true`, each added user is paged through their own [notification rules](/incident-management/notifications/how-to/notification-rules/), and the participant's `paged_at` records when. Paging needs the incident to belong to a service and not be resolved; otherwise the request is refused (see Errors). Send `"page": false` to record someone who is already on the call without paging them.
 
 ## Change a role or remove someone
+
+In the dashboard, pick a new role in the person's row under **Participants**, or open the row's actions and choose **Remove**. Through the API:
 
 ```bash
 curl -X PUT https://api.siteqwality.com/incident/$INCIDENT_ID/participants/$USER_ID \

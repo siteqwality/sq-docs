@@ -10,7 +10,7 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 Most incidents are auto-created by monitors. Sometimes they aren't, and you want one anyway. This page covers the patterns where manual creation is the right move, and the cleanest way to do it.
 
 <Aside type="tip" title="Manual incidents page exactly like automatic ones">
-Set `service_id` on the create request and the incident runs the service's escalation policy: same levels, same timeouts, same repeat cycles, same one-click acknowledgement. See [making it page someone](#making-it-page-someone).
+Choose a **Service** when you report the incident (`service_id` in the API) and it runs the service's escalation policy: same levels, same timeouts, same repeat cycles, same one-click acknowledgement. See [making it page someone](#making-it-page-someone).
 </Aside>
 
 ## When to create one manually
@@ -31,6 +31,10 @@ Set `service_id` on the create request and the incident runs the service's escal
 
 Use this for internal-only tracking. Useful if you want the timeline + paging behavior without publishing.
 
+In the dashboard, go to **Respond → Incidents** and click **Report incident**. Give it a **Title**, a **Severity** and an **Initial Message**, then click **Report Incident**.
+
+Through the API:
+
 ```bash
 curl -X POST https://api.siteqwality.com/incident \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
@@ -45,6 +49,10 @@ curl -X POST https://api.siteqwality.com/incident \
 ### Status-page incident (published)
 
 Use this when the outage affects customers and they should know.
+
+In the dashboard, go to **Manage → Status Page** and open the page. On its **Incidents** tab, click **Report Incident**, fill in the **Title**, **Severity** and **Initial Update**, optionally pick the **Affected Monitors**, and click **Report Incident**.
+
+Through the API:
 
 ```bash
 curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident \
@@ -63,7 +71,7 @@ The incident appears immediately on the public page.
 
 ## Publish later, and keep notes internal
 
-An incident you started without a page can go on one later. In the dashboard, open it and click **Publish to Status Page**: pick the page, check the public title and the first public update customers will read, and choose whether to email the page's subscribers. The same panel lists the pages it is on, each with **Unpublish**. Through the API:
+An incident you started without a page can go on one later. In the dashboard, open it and click **Publish to status page**: pick the page, check the public title and the first public update customers will read, and choose whether to email the page's subscribers. The same panel lists the pages it is on, each with **Unpublish**. Through the API:
 
 ```bash
 curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/publish \
@@ -82,7 +90,11 @@ The page shows the public title and public updates only. On an incident's own pa
 
 ## Linking to affected monitors
 
-Even on manual incidents, name the `monitors` if monitors *do* exist for the broken thing. This makes the incident appear as a banner on the matching status-page components, and groups it correctly in dashboards. Each entry takes an optional `impact` (`degraded`, `partial_outage` or `major_outage`):
+Even on manual incidents, name the monitors if monitors *do* exist for the broken thing. This makes the incident appear as a banner on the matching status-page components, and groups it correctly in dashboards.
+
+In the dashboard, open the incident and click **Add monitor** under **Monitors**. Pick the monitor and its impact (**From severity**, **Degraded**, **Partial outage** or **Major outage**), then click **Add**.
+
+Through the API, send `monitors` on the create request. Each entry takes an optional `impact` (`degraded`, `partial_outage` or `major_outage`):
 
 ```json
 {
@@ -97,7 +109,7 @@ The older `affected_http_job_ids` list is deprecated but still accepted. You can
 
 ## Making it page someone
 
-A manual incident only pages when it has a `service_id`, and that [service](/getting-started/concepts/) has an escalation policy attached. Add it at creation:
+A manual incident only pages when it has a service, and that [service](/getting-started/concepts/) has an escalation policy attached. In the dashboard, pick the **Service** in the **Report incident** form. Through the API, send `service_id` at creation:
 
 ```bash
 curl -X POST https://api.siteqwality.com/incident \
@@ -118,7 +130,7 @@ The service's broadcast targets, if it has any, are also notified.
 <Aside type="caution" title="Silent no-paging is the common mistake">
 Two situations produce an incident that pages nobody:
 
-- **No `service_id`.** The incident is created and nothing else happens.
+- **No service** (no `service_id`). The incident is created and nothing else happens.
 - **The service has no escalation policy.** Broadcast targets still fire, but nobody is paged.
 
 A service ID from another account is refused with `404`.
@@ -128,7 +140,9 @@ If a manual incident did not page, check the service first.
 
 ## Move an incident to another service
 
-Filed it under the wrong service? Send `service_id` on `PUT /incident/{incident_id}`: a service id moves the incident there (`404` if it is not in your account), `null` detaches it from any service, and leaving it out keeps it as it is.
+Filed it under the wrong service? Open the incident, click **Edit**, pick the right **Service** (or **None**) and click **Save Changes**.
+
+Through the API, send `service_id` on `PUT /incident/{incident_id}`: a service id moves the incident there (`404` if it is not in your account), `null` detaches it from any service, and leaving it out keeps it as it is.
 
 ```bash
 curl -X PUT https://api.siteqwality.com/incident/$INCIDENT_ID \
