@@ -1,7 +1,7 @@
 ---
 title: Connect AI assistants (MCP)
 description: Ask Claude, ChatGPT, Cursor and other AI assistants about your monitors, incidents and telemetry, and let them take everyday actions for you.
-last_verified: 2026-10-21
+last_verified: 2026-10-22
 owner: jj
 ---
 
@@ -358,6 +358,7 @@ It works only when you signed in through the consent page: API keys cannot switc
 | `403` on an action | The access you approved does not cover it. Revoke it under **AI assistants** in your personal settings and reconnect with read and write, or add the scope to your API key. A `403` can also mean your role does not allow the action, or a plan limit was reached; the message says which. |
 | `404` with `X-SQ-Account` set | The client id is wrong, or you are using an API key. See [Working in a client account](/partners/context-switching/). |
 | The assistant cannot find a tool for what you asked | Ask it to use `find_api_operations`. |
+| `429` | The MCP server allows 300 requests a minute per key or user. Wait for the seconds in `Retry-After`. See [rate limits](/getting-started/account-and-team/#rate-limits). |
 
 ## See also
 

@@ -1,7 +1,7 @@
 ---
 title: Account and team setup
 description: Invite teammates, generate API keys, and set up the things that should exist before anything goes wrong.
-last_verified: 2026-10-18
+last_verified: 2026-10-22
 owner: jj
 ---
 
@@ -76,6 +76,17 @@ Anything you can do in the dashboard, you can do through the API.
 </Steps>
 
 Keys belong to the account, not the user. Rotating a key ends the old one at once, so deploy the new value right away. For long-lived automation, or automation a third party runs, use an [M2M API client](/enterprise/api-clients/), which trades its secret for short-lived tokens.
+
+### Rate limits
+
+Each API key, M2M client and connected app can make 600 requests a minute; the [MCP server](/integrations/mcp/) allows 300 a minute per key or user. Windows are whole clock minutes. Responses to these callers carry the limit and what is left of it:
+
+```http
+RateLimit-Policy: "default";q=600;w=60
+RateLimit: "default";r=412;t=23
+```
+
+`r` is the requests left in this minute and `t` the seconds until it resets. Over the limit, the API answers `429` with `Retry-After` in seconds. All API traffic also shares a limit of 100 requests a second, so spread bulk jobs out. Dashboard sessions have no per-minute limit.
 
 ## Configure billing
 

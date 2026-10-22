@@ -1,7 +1,7 @@
 ---
 title: M2M API clients
 description: OAuth2 client-credentials access with scoped permissions, one-time secrets, rotation, and immediate revocation.
-last_verified: 2026-10-11
+last_verified: 2026-10-22
 owner: jj
 ---
 
@@ -42,7 +42,7 @@ Authentication is a standard OAuth2 client-credentials exchange against the toke
 
    `$CLIENT_ID`, `$CLIENT_SECRET` and `$TOKEN_ENDPOINT` are the `client_id`, `client_secret` and `token_endpoint` from the create response. You get back a standard OAuth2 token response (no `data` envelope) with an `access_token`. Scopes are space-separated.
 
-2. **Call the Site Qwality API with it**, exactly like any other bearer token.
+2. **Call the Site Qwality API with it**, exactly like any other bearer token. Each client can make 600 requests a minute ([rate limits](/getting-started/account-and-team/#rate-limits)).
 
    ```bash
    curl https://api.siteqwality.com/http/jobs \
