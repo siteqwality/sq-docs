@@ -70,6 +70,28 @@ curl -X POST https://api.siteqwality.com/v1/integrations/<integration-id>/routes
 
 It answers `201` with `notification_group_id`, `notification_id`, `group_created` and `monitors_attached` (the monitors that did not alert the group before). It answers `409` when the group already sends to the integration (for Slack, to that channel) or a group or account channel limit is reached, and `422` for a group or monitor that is not in your account. Nothing changes when it refuses. The integration list (`GET /integration`) marks an integration nothing sends to with `"routed": false`.
 
+## Read and change them over the API
+
+The `/v1` API serves integrations, notification channels and notification groups with one list shape and one error format:
+
+| Resource | Routes |
+|---|---|
+| Integrations | `GET /v1/integrations`, and `GET`, `PATCH` and `DELETE` on `/v1/integrations/{id}` |
+| Channels | `GET` and `POST /v1/notifications`, and `GET`, `PATCH` and `DELETE` on `/v1/notifications/{id}` |
+| Groups | `GET` and `POST /v1/notification-groups`, and `GET`, `PATCH` and `DELETE` on `/v1/notification-groups/{id}` |
+
+```bash
+curl "https://api.siteqwality.com/v1/notification-groups?limit=50" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+- Lists come newest first as `{"data": [...], "next_cursor": "..."}`. Send `next_cursor` back as `cursor` for the next page; it is `null` on the last page. `limit` is 1 to 200, 50 by default.
+- A group comes with its channels. Channels and integrations carry their delivery health.
+- `PATCH` takes the fields that create takes. A field you leave out keeps its value, and a field you send replaces it.
+- `DELETE` answers `204`, also when the item is already gone. Deleting an integration that channels, groups or services still use answers `409` unless you add `?force=true`.
+- Errors are `application/problem+json` with `type`, `title`, `status` and `detail`.
+- Reads need `read:notifications`, channel and group changes `write:notifications`, and integration changes `integrations:manage`.
+
 ## Who can change integrations
 
 Each integration holds a credential, so only account admins can add, change or remove one. Members, auditors and viewers can see them.

@@ -28,5 +28,70 @@
     "route": "POST /v1/api-keys/{api_key_id}/roll",
     "source": "core-rs api/src/routes/v1.rs (account::api_keys::roll::roll_api_key)",
     "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "GET /v1/integrations",
+    "source": "core-rs api/src/routes/v1.rs (integrations::list::list_integrations_v1)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "GET /v1/integrations/{integration_id}",
+    "source": "core-rs api/src/routes/v1.rs (integrations::list::get_integration_v1)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "DELETE /v1/integrations/{integration_id}",
+    "source": "core-rs api/src/routes/v1.rs (integrations::delete::remove_integration)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "GET /v1/notifications",
+    "source": "core-rs api/src/routes/v1.rs (notification::list::list_notifications_v1)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "POST /v1/notifications",
+    "source": "core-rs api/src/routes/v1.rs (notification::create::create_notification)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "GET /v1/notifications/{notification_id}",
+    "source": "core-rs api/src/routes/v1.rs (notification::get::get_notification)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "PATCH /v1/notifications/{notification_id}",
+    "source": "core-rs api/src/routes/v1.rs (notification::update::update_notification)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "DELETE /v1/notifications/{notification_id}",
+    "source": "core-rs api/src/routes/v1.rs (notification::delete::delete_notification)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "GET /v1/notification-groups",
+    "source": "core-rs api/src/routes/v1.rs (notification_group::list::list_notification_groups_v1)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "POST /v1/notification-groups",
+    "source": "core-rs api/src/routes/v1.rs (notification_group::create::create_notification_group)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "GET /v1/notification-groups/{notification_group_id}",
+    "source": "core-rs api/src/routes/v1.rs (notification_group::list::get_notification_group_v1)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "PATCH /v1/notification-groups/{notification_group_id}",
+    "source": "core-rs api/src/routes/v1.rs (notification_group::update::update_notification_group)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "DELETE /v1/notification-groups/{notification_group_id}",
+    "source": "core-rs api/src/routes/v1.rs (notification_group::delete::delete_notification_group)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
   }
 ]
