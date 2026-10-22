@@ -23,9 +23,11 @@ Only an account admin can install it.
 
 </Steps>
 
+Connecting a workspace that is already connected updates its integration instead of adding a second one, so its channels and notification groups keep working.
+
 The link to Slack works once, for 10 minutes, and only for the admin who clicked **Add to Slack**. If it expired or was already used, or you canceled on Slack's screen, click **Add to Slack** again.
 
-The app asks for three scopes: `chat:write` to post, `chat:write.public` to post in public channels without joining them, and `commands` for the [`/oncall` command](/incident-management/on-call/reference/#from-slack). A workspace connected before October 22, 2026 has only the first two, so `/oncall` is not available there yet.
+The app asks for three scopes: `chat:write` to post, `chat:write.public` to post in public channels without joining them, and `commands` for the [`/oncall` command](/incident-management/on-call/reference/#from-slack). A workspace connected before October 22, 2026 has only the first two. To add `/oncall` there, click **Add to Slack** again and pick the same workspace.
 
 The install runs only from the dashboard: API keys, API clients and AI assistants cannot install it. Org-wide Enterprise Grid installs are not supported, so install the app into a single workspace.
 
