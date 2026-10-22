@@ -1,7 +1,7 @@
 ---
 title: Client accounts
 description: Create, plan, inspect and remove the client accounts under your partner account, from the console or the API.
-last_verified: 2026-08-06
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -11,48 +11,21 @@ A **client account** is one of your managed clients. You create it, you choose w
 
 In the dashboard, **Manage → Clients** lets you add a client, see every client with its monitor counts, and open one to work inside it. Setting a client's bundle, reading its usage and removing it are API only.
 
-Every endpoint below requires the **Admin** or **Super Admin** role and a session token; machine credentials are refused (see [Roles and access](/partners/overview/#roles-and-access)).
+Managing clients requires the **Admin** or **Super Admin** role. API keys and M2M clients are refused (see [Roles and access](/partners/overview/#roles-and-access)), so the API-only calls below take the dashboard sign-in session of an Admin, shown as `<admin-session-token>`.
 
 ## Create a client
 
-In the dashboard, go to **Manage → Clients** and click **+ Add client**. Fill in the **Client name** and **Contact email**, optionally a **Contact name**, and click **Create client**. Through the API:
-
 <Steps>
 
-1. **Create the account.**
-
-   ```bash
-   curl -X POST https://api.siteqwality.com/partner/accounts \
-     -H "Authorization: Bearer $SESSION_JWT" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "display_name": "Acme Corp",
-       "contact_email": "ops@acme.example",
-       "contact_name": "Ada Lovelace"
-     }'
-   ```
+1. **Create the account.** Go to **Manage → Clients**, click **+ Add client**, fill in the form and click **Create client**.
 
    | Field | Required | Notes |
    |---|---|---|
-   | `display_name` | yes | Your label for the client, up to 128 characters. Not shown to the client and not client-editable. |
-   | `contact_email` | yes | The client's real contact address. Must not be in use by any Site Qwality account, including your other clients, compared case-insensitively. |
-   | `contact_name` | no | Free text, up to 300 characters. |
+   | **Client name** | yes | Your label for the client, up to 128 characters. Not shown to the client and not client-editable. |
+   | **Contact email** | yes | The client's real contact address. Must not be in use by any Site Qwality account, including your other clients, compared case-insensitively. |
+   | **Contact name** | no | Free text, up to 300 characters. |
 
-   The response is the client summary, and its `account_id` is the `$CLIENT_ACCOUNT_ID` used everywhere else:
-
-   ```json
-   {
-     "data": {
-       "account_id": "0f3c9a1e-...",
-       "display_name": "Acme Corp",
-       "contact_email": "ops@acme.example",
-       "created_at": "2026-08-06T09:00:00Z",
-       "suspended": false,
-       "suspended_at": null,
-       "monitors": { "total": 0, "online": 0, "down": 0, "paused": 0 }
-     }
-   }
-   ```
+   The new client appears on the **Clients** page with its account ID under its name. That ID is the `$CLIENT_ACCOUNT_ID` used everywhere else.
 
 2. **Give it a bundle**, or it stays on the free tier. See [Set a client's bundle](#set-a-clients-bundle).
 
@@ -64,24 +37,17 @@ In the dashboard, go to **Manage → Clients** and click **+ Add client**. Fill 
 
 | Does | Does not |
 |---|---|
-| Creates the account, its first user, a default notification group and an email channel pointed at `contact_email` | Send the contact a welcome email, or any email |
+| Creates the account, its first user, a default notification group and an email channel pointed at the contact email | Send the contact a welcome email, or any email |
 | Creates an identity-provider organization so a later invite has somewhere to land | Invite anybody or create a session |
 | Records you as the account's partner | Create a payment method or a billing customer |
 
 To give your client a login, ask us to invite them; they get an ordinary invitation then. You cannot invite them yourself, because [`/account` refuses](/partners/context-switching/#endpoints-that-refuse-the-header) the `X-SQ-Account` header.
 
-The default notification group alerts `contact_email`, so an outage on your client's site reaches your client. To hear first, change that group inside the client account before you build monitors, or add yourself alongside them.
+The default notification group alerts the contact email, so an outage on your client's site reaches your client. To hear first, change that group inside the client account before you build monitors, or add yourself alongside them.
 
 ## List your clients
 
-The **Clients** page lists them, with each client's contact, monitor counts and status. Through the API:
-
-```bash
-curl https://api.siteqwality.com/partner/accounts \
-  -H "Authorization: Bearer $SESSION_JWT"
-```
-
-Clients come back newest first and unpaged, each with the same fields as the create response. A paused monitor counts in `total` and `paused`, and in neither `online` nor `down`.
+The **Clients** page lists them newest first, with each client's account ID, contact, monitor count (and how many are down) and status. A paused monitor counts toward the total but never as down.
 
 Removed clients are absent, so the list is a fair basis for reconciling your invoice.
 
@@ -89,7 +55,7 @@ Removed clients are absent, so the list is a fair basis for reconciling your inv
 
 ```bash
 curl -X PUT https://api.siteqwality.com/partner/accounts/$CLIENT_ACCOUNT_ID/plan \
-  -H "Authorization: Bearer $SESSION_JWT" \
+  -H "Authorization: Bearer <admin-session-token>" \
   -H "Content-Type: application/json" \
   -d '{"bundle": "client_pro"}'
 ```
@@ -122,7 +88,7 @@ The response tells you what changed. Moving a client from `client_standard` to `
 }
 ```
 
-Setting the bundle a client is already on grants nothing, cancels nothing and moves no billing date (`granted` and `cancelled` are both `0`), so a script can re-assert it on every run.
+Setting the bundle a client is already on grants nothing, cancels nothing and moves no billing date (`granted` and `cancelled` are both `0`), so re-sending it is safe.
 
 Only the bundle's own entitlements are added and removed. Anything our staff granted the client stays.
 
@@ -130,7 +96,7 @@ Only the bundle's own entitlements are added and removed. Anything our staff gra
 
 ```bash
 curl https://api.siteqwality.com/partner/accounts/$CLIENT_ACCOUNT_ID/usage \
-  -H "Authorization: Bearer $SESSION_JWT"
+  -H "Authorization: Bearer <admin-session-token>"
 ```
 
 This returns per-product counters in each product's customer-facing unit, matching what the client sees on their own **Usage** page.
@@ -165,7 +131,7 @@ Removal is API only:
 
 ```bash
 curl -X DELETE https://api.siteqwality.com/partner/accounts/$CLIENT_ACCOUNT_ID \
-  -H "Authorization: Bearer $SESSION_JWT"
+  -H "Authorization: Bearer <admin-session-token>"
 ```
 
 Immediately after removal:
@@ -174,59 +140,13 @@ Immediately after removal:
 - the client's checks stop running,
 - the client's users can no longer sign in,
 - the client can no longer be opened with `X-SQ-Account`, and
-- the client disappears from `GET /partner/accounts`.
+- the client disappears from the **Clients** page.
 
 Removal is not erasure: the client's data is retained under the normal retention policy, and this endpoint is not a deletion request under GDPR or any other regime. If a client asks to be erased, contact us.
 
 ## Onboarding many clients at once
 
-There is no batch endpoint; loop over the create endpoint:
-
-```bash
-#!/usr/bin/env bash
-# clients.csv: display_name,contact_email,contact_name
-set -euo pipefail
-
-while IFS=, read -r name email contact; do
-  response=$(curl -sS -w '\n%{http_code}' \
-    -X POST https://api.siteqwality.com/partner/accounts \
-    -H "Authorization: Bearer $SESSION_JWT" \
-    -H "Content-Type: application/json" \
-    -d "$(jq -nc --arg n "$name" --arg e "$email" --arg c "$contact" \
-          '{display_name:$n, contact_email:$e, contact_name:$c}')")
-
-  status=$(tail -n1 <<<"$response")
-  body=$(sed '$d' <<<"$response")
-
-  case "$status" in
-    200) echo "ok      $email $(jq -r '.data.account_id' <<<"$body")" ;;
-    409) echo "skip    $email already exists" ;;
-    402) echo "STOP    out of client slots"; exit 1 ;;
-    429) echo "STOP    rate limited, rerun later"; exit 1 ;;
-    *)   echo "FAIL    $email $status $body"; exit 1 ;;
-  esac
-
-  sleep 1
-done < clients.csv
-```
-
-### Pacing
-
-<Steps>
-
-1. **One at a time, with a pause**, roughly one create per second. Parallel creates gain little and make partial failures harder to read.
-
-2. **Treat `429` as a full stop**, not a retry in a tight loop. Rate limits are shared across the whole API, so hammering through one slows your own dashboard too. Back off and rerun.
-
-3. **Make the loop resumable.** Treat `409` (contact address already in use) as already done and continue, as the script does, so a rerun after any failure is safe.
-
-4. **Stop on `402`.** You are out of client slots, and every later create fails the same way.
-
-5. **Set bundles in a second pass**, after every account exists. `PUT .../plan` is idempotent, so that pass can be rerun on its own.
-
-</Steps>
-
-If you are migrating dozens of clients from another platform and want the monitors seeded too, talk to us before you start.
+There is no bulk import: add each client from **Manage → Clients**, then set its bundle. If you are migrating dozens of clients from another platform and want the monitors seeded too, talk to us before you start.
 
 ## See also
 

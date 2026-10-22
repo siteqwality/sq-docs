@@ -1,17 +1,17 @@
 ---
 title: Working in a client account
 description: One request header puts the entire Site Qwality API and dashboard on one of your client accounts.
-last_verified: 2026-08-06
+last_verified: 2026-10-21
 owner: jj
 ---
 
 import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-To build a client's monitoring, use the ordinary API with one extra header, set to the client's `account_id`:
+To build a client's monitoring, use the ordinary API with one extra header, set to the client's `account_id`. With an [M2M client](/enterprise/api-clients/) token exported as `ACCESS_TOKEN` (this call needs `read:monitors`):
 
 ```bash
 curl https://api.siteqwality.com/http/jobs \
-  -H "Authorization: Bearer $SESSION_JWT" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "X-SQ-Account: $CLIENT_ACCOUNT_ID"
 ```
 

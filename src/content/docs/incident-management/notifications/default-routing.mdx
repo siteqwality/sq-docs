@@ -37,7 +37,7 @@ Signup creates a group named **Default**. It holds one email channel to the addr
 The Default group is the account's *default notification group*: the group new monitors get when you do not choose one.
 
 - **Dashboard:** the create form pre-selects the default group. Clear it, or pick other groups, before you save.
-- **API, MCP, CSV import and Terraform:** when a create omits `group_notification_ids` or sends `null`, the monitor is attached to the default group. This applies to HTTP monitors, heartbeat (cron) monitors, browser checks and DNS record monitors.
+- **API, MCP, CSV import and Terraform:** when a create omits `group_notification_ids` or sends `null`, the monitor is attached to the default group. This applies to HTTP monitors, heartbeat (cron) monitors, browser checks and [DNS record monitors](/uptime-monitoring/dns-record-monitors/overview/).
 
 An explicit empty list, `"group_notification_ids": []`, means "notify nobody", and the monitor is created without groups.
 

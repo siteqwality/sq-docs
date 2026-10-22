@@ -1,24 +1,24 @@
 ---
 title: Monthly client reports
 description: A printable, branded uptime report for a calendar month, ready to send to a client.
-last_verified: 2026-08-06
+last_verified: 2026-10-21
 owner: jj
 ---
 
 import { Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-The report comes from the API; the dashboard has no button for it.
+The report comes from the API; the dashboard has no button for it. With an [M2M client](/enterprise/api-clients/) token that has `read:monitors`, exported as `ACCESS_TOKEN`:
 
 ```bash
 curl "https://api.siteqwality.com/monitors/report?month=2026-07" \
-  -H "Authorization: Bearer $SESSION_JWT" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "X-SQ-Account: $CLIENT_ACCOUNT_ID" \
   -o acme-july.html
 ```
 
 The response is **HTML, not JSON**, styled for paper. Open it in a browser and print it to PDF (the page has a print button); that PDF is what you send.
 
-The `X-SQ-Account` header, set to the client's `account_id`, makes it a client's report. Without it you get your own account's: any account can pull its own monthly report.
+The `X-SQ-Account` header, set to the client's `account_id`, makes it a client's report. API keys cannot use that header, so a client's report needs an M2M token. Without the header you get your own account's report, which a full-access [API key](/getting-started/account-and-team/#generate-api-keys) can also pull (it needs `read:monitors` if you limited its scopes).
 
 ## Choosing the month
 
@@ -68,22 +68,20 @@ If a monitor was failing when it was paused, its outage is measured to its **las
 
 ## Automating it
 
-The endpoint is under the `monitors` scope family, so an [M2M client](/enterprise/api-clients/) with `read:monitors` can pull reports on a schedule. Combine it with `GET /partner/accounts` for every client's report:
+The same M2M token can pull every client's report on a schedule. Copy each client's account ID from **Manage → Clients** into `clients.txt`, one per line:
 
 ```bash
 # One report per client, for last month. $ACCESS_TOKEN is an M2M token with read:monitors.
-for id in $(curl -s https://api.siteqwality.com/partner/accounts \
-              -H "Authorization: Bearer $SESSION_JWT" \
-            | jq -r '.data.clients[].account_id'); do
+while read -r id; do
   curl -s "https://api.siteqwality.com/monitors/report" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "X-SQ-Account: $id" \
     -o "report-$id.html"
   sleep 1
-done
+done < clients.txt
 ```
 
-Listing clients requires an Admin **session**; the report itself works with a session or a scoped M2M token. See [roles and access](/partners/overview/#roles-and-access).
+`GET /partner/accounts` refuses M2M tokens and API keys, so the script cannot list clients itself. See [roles and access](/partners/overview/#roles-and-access).
 
 ## See also
 

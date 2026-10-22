@@ -1,7 +1,7 @@
 ---
 title: Telemetry billing and retention
 description: Per-signal decimal GB, monthly active series, grace limits and data retention.
-last_verified: 2026-10-20
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -38,6 +38,8 @@ The Metrics cardinality view shows active series and expensive labels. Account a
 | Raw points/distributions | 7 days | 15 days |
 | Minute rollups | 45 days | 45 days |
 | Hour rollups | 30 days | 395 days |
+
+Service, endpoint and dependency rollups derived from traces keep the same minute and hour windows; the 395-day hour window comes with a paid traces pack.
 
 A rollup is an aggregate, not an archived raw event. Retention can remove raw detail, exact recomputation inputs and exemplar targets while a longer-lived chart remains.
 

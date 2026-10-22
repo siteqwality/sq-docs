@@ -1,0 +1,60 @@
+---
+title: DNS record monitors
+description: Watch a domain's DNS records at its own authoritative nameservers and get an alert when they change, go missing, or the nameservers stop agreeing.
+last_verified: 2026-10-21
+owner: jj
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+A **DNS record monitor** reads the records you choose on a domain straight from that domain's authoritative nameservers, on a schedule, and alerts you when they differ from the values it expects. The dashboard calls it a **DNS Monitor**.
+
+DNS record monitors and their check interval are plan-gated. See [plan limits](/getting-started/plan-limits/#monitors-and-checks).
+
+## When to use it
+
+- Catch an unauthorized change to the records that route your traffic and mail (`A`, `AAAA`, `CNAME`, `MX`), for example after someone gets into your DNS provider account.
+- Hear when a domain's nameservers (`NS`) change, or when the registrar's delegation stops matching the zone.
+- Watch the `TXT` records that SPF, DKIM and domain verification rely on, and the `CAA` records that decide which certificate authorities may issue for the domain.
+- Watch a domain that has no website. A DNS record monitor does not need an HTTP monitor.
+
+## DNS record monitors and domain expiry checks
+
+| | [Domain expiry check](/uptime-monitoring/dns-checks/overview/) | DNS record monitor |
+|---|---|---|
+| Reads | The domain's registration, from its registry | The domain's records, from its authoritative nameservers |
+| Created | Paired with an HTTP monitor | On its own, for any domain |
+| Runs | Once a day | On the interval you choose |
+| Alerts on | Expiry, registry holds, registrar and nameserver changes | Record changes, missing records, nameservers that disagree, a delegation that does not match the zone, a zone that cannot be read |
+
+Use both for a domain you depend on. When a domain expiry check covers the same domain, the nameserver change alert comes from it alone, and the DNS record monitor still reports a delegation that does not match the zone.
+
+## How it works
+
+**What it watches.** A monitor watches one domain and a list of name and record type pairs inside it. The types are `A`, `AAAA`, `CNAME`, `MX`, `NS`, `TXT` and `CAA`. A new monitor watches the domain's `A`, `AAAA`, `MX`, `NS`, `TXT` and `CAA` records plus the `CNAME` and `A` records of `www`. You can drop any of them and add other names in the domain.
+
+**Where it looks.** Each check finds the domain's nameservers from the parent zone's delegation (the `.com` servers for `example.com`) and asks each of them directly. No resolver cache sits in between, so a change shows up on the next check.
+
+**The baseline.** The first successful check records what the zone says as the baseline, and never alerts. Each later check compares against it. Record order, TTLs and the letter case of names never count as a change; `TXT` values are compared exactly. When a watched name is a `CNAME`, the monitor compares the `CNAME` target, not the addresses behind it. A pair you add later gets its baseline from its first answer.
+
+**Confirming a change.** A change alerts when every nameserver that answers returns the new value. When only some do, at least two must, and for types other than `NS` and `MX` the same value must still be there on the next check. Nameservers that give different answers get an alert of their own.
+
+**One alert per change.** One alert lists every record that changed on that check. It is not repeated while the change stands, and a further change alerts again. If no nameserver answers on two checks in a row, one alert says the zone cannot be read and another says when it resolves again.
+
+**Accepting a change.** An alert never moves the baseline. You move it by accepting the change, from the monitor page or from the link in the alert email. Through the API you can also declare the values you expect before a planned change, so the monitor alerts if the zone ever says anything else.
+
+**Rotating records.** A record that shows three different values within 24 hours is treated as a rotating pool: from then on, only a value never seen before for it alerts. The monitor's **Baseline** table shows why, and **Treat as fixed** switches it back.
+
+## Alerts and incidents
+
+Alerts go to the monitor's notification groups. A new monitor gets your [default group](/incident-management/notifications/default-routing/#the-default-notification-group) unless you choose others. DNS record alerts reach email, webhook and PagerDuty channels only; a channel of another type is skipped, and saving the monitor returns a warning about it. See [alert coverage](/integrations/coverage/).
+
+An alert does not open an incident on its own. To open incidents, link the monitor to a [service](/incident-management/services/overview/#link-monitors) through the API.
+
+## Next steps
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Create a monitor, read its baseline and accept a change." href="/uptime-monitoring/dns-record-monitors/quickstart/" />
+  <LinkCard title="Reference" description="Fields, statuses, alerts, results and baselines." href="/uptime-monitoring/dns-record-monitors/reference/" />
+  <LinkCard title="Domain expiry checks" description="Watch the registration itself, from the registry." href="/uptime-monitoring/dns-checks/overview/" />
+</CardGrid>

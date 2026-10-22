@@ -367,6 +367,34 @@
       "POST /maintenance_windows"
     ]
   },
+  "dns_record.monitors": {
+    "status": "live",
+    "summary": "DNS record monitors: create, list, read, update, pause, delete and read check results",
+    "api": [
+      "POST /dns/record-monitor",
+      "GET /dns/record-monitors",
+      "GET /dns/record-monitor/{monitor_id}",
+      "PUT /dns/record-monitor/{monitor_id}",
+      "DELETE /dns/record-monitor/{monitor_id}",
+      "GET /dns/record-monitor/{monitor_id}/results"
+    ],
+    "source": "core-rs api/src/handlers/dns_record_monitor, cron-executor/src/dns_record_job.rs"
+  },
+  "dns_record.baselines": {
+    "status": "live",
+    "summary": "The first check sets the baseline without alerting; only an accept (hash-checked) or a declare moves it",
+    "api": [
+      "GET /dns/record-monitor/{monitor_id}/baselines",
+      "POST /dns/record-monitor/{monitor_id}/baseline/accept",
+      "POST /dns/record-monitor/{monitor_id}/baseline/declare"
+    ],
+    "source": "core-rs api/src/handlers/dns_record_monitor/accept.rs, cron-executor/src/dns_record_job.rs"
+  },
+  "dns_record.channels": {
+    "status": "live",
+    "summary": "DNS record alerts reach email, webhook and PagerDuty channels; other channel types are skipped",
+    "source": "core-rs common/src/alerting/coverage.rs, cron-executor/src/dns_record_job.rs (build_dns_record_notification)"
+  },
   "notify.phone_call": {
     "status": "absent",
     "summary": "Phone or voice calls. phone_call contact methods are refused and never called",

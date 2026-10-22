@@ -1,0 +1,151 @@
+---
+title: DNS record monitor reference
+description: Every field on a DNS record monitor, its statuses and alerts, check results, baselines, and the endpoints that accept or declare a baseline.
+last_verified: 2026-10-21
+owner: jj
+---
+
+The full request and response schema is in the auto-generated [API Reference](/api-reference/). This page is the readable summary for `POST /dns/record-monitor` and `PUT /dns/record-monitor/{monitor_id}` and the routes beside them.
+
+## Create and update fields
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `domain` | string | required | Create only. The domain to watch, such as `example.com`. Stored lowercase without a trailing dot, at most 253 characters. An account can have one monitor per domain, and the domain cannot be changed later. |
+| `friendly_name` | string | none | Display name. Without one, the domain is shown. |
+| `watched` | object[] | default set | The `{ "name": "...", "type": "..." }` pairs to watch, at most 25. Every `name` must be the domain or a name under it. `type` is uppercase: `A`, `AAAA`, `CNAME`, `MX`, `NS`, `TXT` or `CAA` (`SOA` is accepted but never alerts). Duplicates are merged. On create, left out or `[]` means the default set: the domain's `A`, `AAAA`, `MX`, `NS`, `TXT` and `CAA`, plus `www` `CNAME` and `A`. On update, a list replaces the old one (`[]` restores the default set) and the baselines of pairs you removed are deleted; leaving it out keeps the set. |
+| `interval_seconds` | integer | `3600` | Seconds between checks, from `300` to `86400`, in whole minutes. Your plan sets the [minimum](/getting-started/plan-limits/#monitors-and-checks). |
+| `group_notification_ids` | uuid[] | default group | Notification groups to alert, all in your account. On create, left out or `null` attaches your [default group](/incident-management/notifications/default-routing/#the-default-notification-group) and `[]` notifies no one. On update, a list replaces the groups and leaving it out keeps them. |
+| `service_id` | uuid | none | The [service](/incident-management/services/overview/#link-monitors) this monitor belongs to, which lets its alerts open incidents. On update, `null` unlinks it and leaving it out keeps it. |
+| `http_job_id` | uuid | none | Create only. An HTTP monitor to group this one with. The domain is watched either way. |
+| `paused` | boolean | `false` | Update only. `true` stops the checks. Resuming is refused while the account is at its DNS record monitor limit, or when the interval is below your plan's minimum. |
+
+`DELETE /dns/record-monitor/{monitor_id}` removes the monitor with its baselines and history. In the dashboard, **Action** on the monitor page offers **Edit**, **Pause** and **Delete**.
+
+## Read-only fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | uuid | Monitor ID. |
+| `account_id` | uuid | Owning account. |
+| `created_at` | rfc3339 | When the monitor was created. |
+| `current_status` | enum | See [statuses](#statuses). |
+| `last_run_at` | rfc3339 \| null | When the last check ran. |
+| `last_status_change_at` | rfc3339 \| null | When `current_status` last changed. |
+| `last_failure_reason` | string \| null | Set when the last check could not read the zone. The baseline and earlier values stay as they were. |
+| `last_failure_at` | rfc3339 \| null | When that failed check ran. |
+
+`GET /dns/record-monitors` lists the account's monitors and `GET /dns/record-monitor/{monitor_id}` returns one.
+
+## Statuses
+
+| `current_status` | Dashboard | Meaning |
+|---|---|---|
+| `pending` | Pending | No check has run yet. |
+| `baselined` | Watching | The last check read the zone and found nothing to alert on. |
+| `changed` | Changed | The last check found something it alerted on: a confirmed change, a missing record, nameservers that disagree or a delegation that does not match the zone. It stays `changed` while that remains, until you accept the change or the zone goes back. |
+| `unreachable` | Unreachable | The last check could not read the zone. The alert is sent on the second failed check in a row. |
+
+## Alerts
+
+Every alert names the domain in its headline. Shown here for `example.com`:
+
+| What happened | Headline |
+|---|---|
+| Values of a record were replaced | `example.com: the A records for example.com changed` |
+| A value was added | `example.com: a TXT record was added to example.com` |
+| A value was removed, others remain | `example.com: a MX record was removed from example.com` |
+| A watched record no longer has any value | `example.com: the MX records for example.com are gone` |
+| The nameservers give different answers | `example.com: nameservers disagree about example.com A` |
+| The registrar's delegation and the zone's `NS` records differ | `example.com: the registrar and the zone disagree about its nameservers` |
+| No nameserver answered on two checks in a row | `example.com: the zone cannot be read` |
+| The zone answers again after that alert | `example.com: the zone is resolving again` |
+
+A change alert lists every record that changed on that check, with the old and new values. The email's **Accept this change** link is valid for 24 hours and asks for confirmation before it accepts. Webhooks receive these alerts as the [`dns.record_change`](/integrations/webhooks/#events) event.
+
+## Check results
+
+`GET /dns/record-monitor/{monitor_id}/results` returns checks newest first. `limit` defaults to `50` (at most `200`) and `days` to `30` (`1` to `365`).
+
+| Field | Type | Description |
+|---|---|---|
+| `created_at` | rfc3339 | When the check ran. |
+| `status` | enum | `baselined`, `changed` or `unreachable`, as in [statuses](#statuses). |
+| `changed` | boolean | Something differed on this check (a record, a nameserver's answer or the delegation), whether or not it alerted. |
+| `snapshot` | object[] \| null | What the check saw: one entry per record with `name`, `type`, `rdata` and `ttl`. Present on the first check, when the answer moved and while something differs. On other successful checks it is absent because the answer matched the last stored one. |
+| `snapshot_hash` | string | Identifies the whole answer. Two checks with the same hash saw the same records. |
+| `servers_queried` | string[] | The nameservers asked, as `name (address)`. |
+| `delegation_source` | enum | Where the nameserver list came from. `parent_referral` (**Authoritative**): read live from the parent zone. `rdap_sibling` (**Registry**): taken from the domain expiry check's registry data, which refreshes daily. `recursive` (**Recursive**): taken from a recursive resolver, so a nameserver change can show up late. |
+| `disagreement` | boolean | The nameservers gave different answers for at least one record. |
+| `failure_reason` | string \| null | Why the zone could not be read. |
+| `query_ms` | integer \| null | How long the queries took. |
+
+### How values are written
+
+Values in `rdata` are sorted, and the TTL is shown but never compared.
+
+- Names (owner names and `CNAME`, `NS` and `MX` targets) are lowercase without a trailing dot.
+- `A` and `AAAA` are the address, with IPv6 in its shortest form.
+- `MX` is the preference padded to five digits, then the host: `00010 mx.example.com`.
+- `CAA` is flags, tag and value: `0 issue letsencrypt.org`.
+- `TXT` is the exact text, with a long value's pieces joined into one string.
+
+## Baselines
+
+`GET /dns/record-monitor/{monitor_id}/baselines` returns one entry per watched record that has a baseline.
+
+| Field | Type | Description |
+|---|---|---|
+| `name`, `record_type` | string | The record. |
+| `rdata` | string[] | The expected values. |
+| `rdata_hash` | string | Hash of the expected values, computed as described under [accept a change](#accept-a-change). |
+| `source` | enum | `first_check` (the first answer), `user_accepted` (an accepted change) or `user_declared` (values you declared). |
+| `rotating` | boolean | The record is treated as a rotating pool, so only a value never seen before alerts. `rotating_reason` says why. |
+| `ttl` | integer \| null | TTL when the baseline was taken. Shown only. |
+| `established_at` | rfc3339 | When the baseline was set. |
+| `accepted_at` | rfc3339 \| null | When it was accepted or declared. |
+
+### Accept a change
+
+Accepting writes the latest check's value as the new baseline for each record you name.
+
+```bash
+curl -X POST https://api.siteqwality.com/dns/record-monitor/$MONITOR_ID/baseline/accept \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accept": [
+      { "name": "example.com", "record_type": "TXT", "rdata_hash": "<hash>" }
+    ]
+  }'
+```
+
+`rdata_hash` is the lowercase hex SHA-256 of the name, a zero byte, the type, a zero byte, then each value followed by a zero byte, using the values exactly as the latest check's `snapshot` lists them:
+
+```python
+import hashlib
+
+def rdata_hash(name, record_type, rdata):
+    data = name.encode() + b"\0" + record_type.encode() + b"\0"
+    data += b"".join(value.encode() + b"\0" for value in rdata)
+    return hashlib.sha256(data).hexdigest()
+```
+
+If the record has changed again since that check, the accept is refused and the error gives its current value. After an accept, alerts for that record pause for 15 minutes so the rest of a migration can settle. Accepting or declaring also turns rotating off for that record.
+
+### Declare expected values
+
+Declaring pins a watched record to values you give, before the zone serves them. The next check alerts if the zone says anything else.
+
+```bash
+curl -X POST https://api.siteqwality.com/dns/record-monitor/$MONITOR_ID/baseline/declare \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "example.com",
+    "record_type": "NS",
+    "rdata": ["ns1.example-dns.com", "ns2.example-dns.com"]
+  }'
+```
+
+Write values the way a zone file does (`10 mx.example.com`, `0 issue "letsencrypt.org"`); they are converted to the forms above. `name` must be the domain or a name under it, `rdata` needs at least one value, and a value that cannot be read as that type is refused. Declaring replaces any baseline the record had. The dashboard has no declare form.

@@ -1,0 +1,104 @@
+---
+title: DNS record monitor quickstart
+description: Create a DNS record monitor for a domain, check the baseline its first check captured, and accept a change.
+last_verified: 2026-10-21
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+
+By the end of this guide you'll have a DNS record monitor watching a domain's main records, a baseline from its first check, and a change you have accepted.
+
+## 1. Create the monitor
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. Go to **Observe → Monitors**, open **Add Monitor** and choose **DNS Monitor**.
+
+2. Configure:
+   - **Domain:** `example.com`. It cannot be changed after you save.
+   - **Name:** optional, such as `Production zone`. Without one, the domain is shown.
+   - **Check interval:** `1 hour`. Options marked **(paid)** need a paid plan.
+   - **Records to watch:** keep the default records. To watch another name, such as `mail.example.com`, type it, pick a type and click **Add**.
+   - **Notifications:** leave the **Default** group selected.
+
+3. Click **Submit**. The monitor's page opens.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+
+```bash
+curl -X POST https://api.siteqwality.com/dns/record-monitor \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "domain": "example.com",
+    "friendly_name": "Production zone"
+  }'
+```
+
+With `watched`, `interval_seconds` and `group_notification_ids` left out, the monitor watches the default records every hour and alerts your **Default** group, as in the dashboard. To choose the records, send `watched`; see the [reference](/uptime-monitoring/dns-record-monitors/reference/#create-and-update-fields). The response carries the monitor's `id`; the steps below use it as `$MONITOR_ID`.
+
+</TabItem>
+</Tabs>
+
+## 2. Check the baseline
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+The status reads **Pending** until the first check runs, then **Watching**. The **Baseline** table lists each watched record the domain publishes, with its **Expected** value and the source `first check`. **Recent checks** lists every check, the nameservers asked and how long the query took.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+curl https://api.siteqwality.com/dns/record-monitor/$MONITOR_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+`current_status` is `pending` until the first check runs, then `baselined`. The baseline itself:
+
+```bash
+curl https://api.siteqwality.com/dns/record-monitor/$MONITOR_ID/baselines \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+Each entry has the record's `name`, `record_type`, expected `rdata` and `"source": "first_check"`. Check history is at `GET /dns/record-monitor/{monitor_id}/results`, newest first.
+
+</TabItem>
+</Tabs>
+
+A watched record the domain does not publish gets no baseline and never alerts. If `last_failure_reason` is set (a banner on the monitor page), the last check could not read the zone, and the result's `failure_reason` (the **Note** column) says why.
+
+## 3. Accept a change
+
+To see the whole loop, add a value to a watched record with your DNS provider, for example a `TXT` record `sq-test=1` on `example.com`. Within a check or two, the monitor's email, webhook and PagerDuty channels get an alert headed `example.com: a TXT record was added to example.com`, and the status reads **Changed**.
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+In the **Baseline** table, the `TXT` row shows the new value under **Observed**. Click **Accept**. The alert email's **Accept this change** link does the same after a confirmation page.
+
+</TabItem>
+<TabItem label="API">
+
+`POST /dns/record-monitor/{monitor_id}/baseline/accept` takes the record's name, type and a hash of the value you are accepting. See [accept a change](/uptime-monitoring/dns-record-monitors/reference/#accept-a-change) for the body and how to compute the hash.
+
+</TabItem>
+</Tabs>
+
+The status returns to **Watching** on the next check. Remove the test value when you are done, and accept that change the same way.
+
+## What's next
+
+<LinkCard title="DNS record monitor reference" description="Fields, statuses, alerts, results and baselines." href="/uptime-monitoring/dns-record-monitors/reference/" />
+<LinkCard title="Alert coverage" description="Which channel types DNS record alerts reach." href="/integrations/coverage/" />
+<LinkCard title="Services" description="Link the monitor to a service so its alerts open incidents." href="/incident-management/services/overview/#link-monitors" />

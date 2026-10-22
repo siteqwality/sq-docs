@@ -1,7 +1,7 @@
 ---
 title: Customer audit log
 description: Every change made through the dashboard, the API or an AI assistant, with who made it, readable for the last 90 days.
-last_verified: 2026-10-19
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -86,31 +86,13 @@ An accepted, verified Slack action uses `via: "slack"`. Both record the member w
 
 Acknowledging a monitor outage is recorded in the audit log, and the acknowledgment also appears in the monitor's alert history. See [Acknowledge a monitor outage](/incident-management/notifications/how-to/acknowledge-outages/).
 
-## Query it
+## Filter and export
 
-```bash
-curl -G https://api.siteqwality.com/account/audit_log \
-  -H "Authorization: Bearer $SESSION_JWT" \
-  --data-urlencode "action=http.job" \
-  --data-urlencode "actor_type=m2m" \
-  --data-urlencode "since=2026-07-15T00:00:00Z" \
-  --data-urlencode "limit=200"
-```
+In **Settings → Audit log**, narrow the list with **Actor type**, an **Action prefix** such as `http.job`, and a **Start (UTC)** and **End (UTC)** range, then click **Apply**. An entry's details also have buttons that show every change to the same resource, or every event with the same action.
 
-The endpoint needs a super admin, admin or auditor **session**. API keys and M2M clients are refused. There is no programmatic export for SIEM ingestion.
+An action prefix matches exactly or by dot-prefix: `http.job` also matches `http.job.regions`, never `http.jobs`. Entries are newest first and the page loads at most 500; if you see 500, narrow the range to reach older entries. **Export CSV** saves the loaded entries.
 
-| Param | Default | Notes |
-|---|---|---|
-| `actor_user_id` | none | Exact UUID. |
-| `actor_api_key_id` | none | Exact UUID; narrows to one API key's actions. |
-| `actor_type` | none | One of the actor types above. |
-| `action` | none | Exact match **or dot-prefix**: `http.job` also matches `http.job.regions`, never `http.jobs`. |
-| `target_kind` | none | Exact match. |
-| `target_id` | none | Exact UUID. |
-| `since`, `until` | last 90 days | RFC 3339. |
-| `limit` | 100 | Clamped to 1..1000. |
-
-Entries come back newest first, with no cursor pagination: to reach older entries, move the `since` and `until` window. If a query returns exactly `limit` rows, assume there are more and narrow the range.
+The log is read in the dashboard only: API keys and M2M clients cannot read it, so there is no programmatic export for SIEM ingestion.
 
 ## AI assistants
 
@@ -120,11 +102,11 @@ An assistant's changes are logged like any other, and each entry answers three q
 - **Through which assistant:** `connected_app.name`, for example `Claude`.
 - **How:** `via: "mcp"` and the tool it used, for example `pause_monitor`. An API key used through MCP keeps `actor_type: api_key` and gets the same `via` and `mcp_tool`.
 
-Connecting an assistant is logged too: an `oauth.authorize` entry records who allowed or refused which app, with the scopes granted, and an `account.connected_apps` `DELETE` records who disconnected it. To see everything assistants did, filter on `actor_type=connected_app`.
+Connecting an assistant is logged too: an `oauth.authorize` entry records who allowed or refused which app, with the scopes granted, and an `account.connected_apps` `DELETE` records who disconnected it. To see everything assistants did, set **Actor type** to **AI assistant**.
 
 ## The 90-day read window
 
-Reads are clamped to the **last 90 days**. A `since` older than that is silently pulled forward, and omitting `since` gives you exactly 90 days.
+The log shows the **last 90 days**. A start date older than that is pulled forward to the limit.
 
 The window is a read limit, not a retention policy: **older rows are not deleted**, but no retention beyond 90 days is promised either. If you must keep entries beyond 90 days, save them regularly with **Export CSV** on the audit log page.
 

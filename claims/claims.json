@@ -42,5 +42,9 @@
   {"page": "incident-management/services/reference.mdx", "text": "the share of the window with no open incident on the service.", "needs": ["service.metrics"]},
   {"page": "integrations/mcp.mdx", "text": "A service's incidents, mean time to acknowledge and resolve, and uptime over a window", "needs": ["service.metrics", "service.mcp_tools"]},
   { "page": "incident-management/maintenance/overview.mdx", "text": "A **maintenance window** is a time range during which monitors with matching tags, or the monitors of chosen services, don't page.", "needs": ["maintenance.windows", "service.maintenance_by_service"] },
-  { "page": "incident-management/maintenance/overview.mdx", "text": "Ending a window early releases what it held.", "needs": ["service.maintenance_by_service"] }
+  { "page": "incident-management/maintenance/overview.mdx", "text": "Ending a window early releases what it held.", "needs": ["service.maintenance_by_service"] },
+  { "page": "uptime-monitoring/dns-record-monitors/overview.mdx", "text": "The first successful check records what the zone says as the baseline, and never alerts.", "needs": ["dns_record.baselines"] },
+  { "page": "uptime-monitoring/dns-record-monitors/overview.mdx", "text": "An alert never moves the baseline.", "needs": ["dns_record.baselines"] },
+  { "page": "uptime-monitoring/dns-record-monitors/overview.mdx", "text": "DNS record alerts reach email, webhook and PagerDuty channels only", "needs": ["dns_record.channels"] },
+  { "page": "uptime-monitoring/dns-record-monitors/reference.mdx", "text": "If the record has changed again since that check, the accept is refused and the error gives its current value.", "needs": ["dns_record.baselines"] }
 ]

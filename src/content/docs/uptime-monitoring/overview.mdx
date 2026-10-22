@@ -1,6 +1,6 @@
 ---
 title: Uptime monitoring
-description: Five check types (HTTP, SSL/TLS, domain expiry, cron heartbeats, and full-browser synthetic) running on a schedule, with HTTP checks from the locations you choose.
+description: Six check types (HTTP, SSL/TLS, domain expiry, DNS records, cron heartbeats, and full-browser synthetic) running on a schedule, with HTTP checks from the locations you choose.
 last_verified: 2026-10-11
 owner: jj
 ---
@@ -14,6 +14,7 @@ Every uptime monitor in Site Qwality follows the same lifecycle: configure → r
 | [HTTP](/uptime-monitoring/http-checks/overview/) | A URL responds with the expected status, body, and latency | Websites, APIs, webhook receivers |
 | [SSL/TLS](/uptime-monitoring/ssl-tls-checks/overview/) | A certificate's expiry date | Anything served over HTTPS |
 | [Domain expiry](/uptime-monitoring/dns-checks/overview/) | A domain's registration at the registry: expiry date, registry holds, registrar and nameserver changes | Any domain you would lose if a renewal failed |
+| [DNS record](/uptime-monitoring/dns-record-monitors/overview/) | A domain's records at its authoritative nameservers: changes, missing records, nameservers that disagree | Catching unplanned changes to web, mail and nameserver records |
 | [Cron heartbeat](/uptime-monitoring/cron-checks/overview/) | A scheduled job *pinged* on time | Backups, ETL, batch jobs |
 | [Browser](/uptime-monitoring/browser-checks/overview/) | A full Playwright script passes in a real Chromium | Login flows, checkout, multi-page journeys |
 
@@ -22,6 +23,7 @@ Every uptime monitor in Site Qwality follows the same lifecycle: configure → r
 - **You have a URL that should be `200 OK`.** Use [HTTP checks](/uptime-monitoring/http-checks/overview/). Each one also gets a paired TLS check (cert expiry) and domain expiry check (domain registration) unless you turn them off.
 - **You only care about cert expiry.** [SSL/TLS checks](/uptime-monitoring/ssl-tls-checks/overview/) always pair with an HTTP monitor, so create one for the host and keep **Monitor TLS/SSL** on.
 - **You want to hear before a domain registration lapses.** Enable the [domain expiry check](/uptime-monitoring/dns-checks/overview/) on an HTTP monitor for that domain.
+- **You want to know when a domain's DNS records change.** Create a [DNS record monitor](/uptime-monitoring/dns-record-monitors/overview/) for the domain. It runs on its own, without an HTTP monitor.
 - **You have a cron job that should run every N minutes.** Use a [cron heartbeat](/uptime-monitoring/cron-checks/overview/). Your job pings Site Qwality at the end of each successful run, and Site Qwality alerts when it doesn't.
 - **You need to validate a multi-step user flow.** Use [browser checks](/uptime-monitoring/browser-checks/overview/). You write a Playwright script and Site Qwality runs it on schedule, capturing a HAR and a video of every run.
 
@@ -50,10 +52,11 @@ Checks do not come from fixed IP addresses. To let them through a firewall or bo
 | Cron heartbeat | n/a (driven by your job's ping cadence) |
 | Browser | 5 min |
 | TLS, domain expiry (paired with HTTP) | daily, not configurable |
+| DNS record | 5 min (the minimum depends on your [plan](/getting-started/plan-limits/#monitors-and-checks)) |
 
 ### Tags
 
-Every monitor accepts a `tags: string[]` field. Use tags consistently (`service:api`, `env:prod`, `team:platform`) and you can:
+HTTP, cron and browser monitors accept a `tags: string[]` field. Use tags consistently (`service:api`, `env:prod`, `team:platform`) and you can:
 
 - Match [maintenance windows](/incident-management/maintenance/overview/) to silence by tag.
 - Filter dashboards and alerts by tag.
@@ -69,6 +72,7 @@ Beyond tags, you can attach a monitor to a [service](/incident-management/servic
   <LinkCard title="HTTP checks" description="The most common monitor. Request a URL, assert on the response." href="/uptime-monitoring/http-checks/overview/" />
   <LinkCard title="SSL/TLS checks" description="Track cert expiry on its own or paired with HTTP." href="/uptime-monitoring/ssl-tls-checks/overview/" />
   <LinkCard title="Domain expiry checks" description="Read the registration from the registry and alert before it lapses." href="/uptime-monitoring/dns-checks/overview/" />
+  <LinkCard title="DNS record monitors" description="Watch a domain's records at its nameservers and alert when they change." href="/uptime-monitoring/dns-record-monitors/overview/" />
   <LinkCard title="Cron checks" description="Receive heartbeats from your scheduled jobs." href="/uptime-monitoring/cron-checks/overview/" />
   <LinkCard title="Browser checks" description="Real Chromium running your Playwright script." href="/uptime-monitoring/browser-checks/overview/" />
 </CardGrid>

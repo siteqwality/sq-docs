@@ -211,7 +211,7 @@ Access is granted per area, as `read:<area>` and `write:<area>`. On the consent 
 |---|---|---|
 | Monitors | `read:monitors`, `write:monitors` | HTTP, SSL/TLS, domain expiry, cron and browser checks |
 | Incidents | `read:incidents`, `write:incidents` | Incidents (including those on status pages), escalation policies, on-call schedules, maintenance windows |
-| Notifications | `read:notifications`, `write:notifications` | Notification channels and groups, and reading integrations |
+| Notifications | `read:notifications`, `write:notifications` | Notification channels and groups, delivery history, and reading integrations |
 | Status Pages | `read:status_pages`, `write:status_pages` | Status pages with their monitors, layout, maintenance, subscribers, branding and custom domain |
 | Logs | `read:logs`, `write:logs` | Log search, parsers, saved views |
 | Metrics | `read:metrics`, `write:metrics` | Metric queries and saved views |
@@ -236,6 +236,7 @@ Assistants pick the tool themselves. **Write** tools need the matching `write:` 
 | `get_monitor` | Shows one monitor's settings and state. | Read |
 | `get_recent_checks` | Shows a monitor's latest check results, including the failing step of a browser check. | Read |
 | `get_alert_history` | Shows a monitor's recent outages, the alerts each one sent and who acknowledged it. | Read |
+| `list_notification_history` | Shows the account's delivery history, newest first: every alert sent in the last 90 days across monitors and channels, and whether it arrived, failed or was skipped, and why. See [check what was sent](/incident-management/notifications/how-to/delivery-history/). | Read |
 | `acknowledge_monitor_outage` | Acknowledges a monitor's open outage (or the one named by `transition_id`), recording who is on it and, by default, stopping its repeat alerts. See [acknowledge a monitor outage](/incident-management/notifications/how-to/acknowledge-outages/). | Write |
 | `list_check_locations` | Lists the locations a check can run from, with the ids to use when creating or updating a monitor. | Read |
 | `create_http_monitor` | Creates an HTTP monitor that alerts your account's default notification group. | Write |
@@ -310,6 +311,18 @@ These tools group monitors into services and decide which failures open incident
 | `list_service_monitors` | Lists every monitor a service groups, of every type, with its status and whether it counts as healthy. | Read |
 | `link_service_monitor` | Adds one monitor to a service and leaves its other monitors alone. A monitor in another service is refused unless `move` is true. | Write |
 | `unlink_service_monitor` | Removes one monitor from a service. | Write, asks first |
+
+### On-call
+
+These tools use the Incidents scopes. See [on-call schedules](/incident-management/on-call/overview/).
+
+| Tool | What it does | Access |
+|---|---|---|
+| `get_on_call_now` | Shows who a schedule has on call now (or at another time), whether through a layer or an override, until when, and who is next. | Read |
+| `list_on_call_shifts` | Shows a schedule's shifts over a range (the next 14 days by default, at most 90), with overrides applied and gaps included. | Read |
+| `find_on_call_shifts` | Shows who is on call on every schedule now, or one member's shifts over a range. | Read |
+| `get_on_call_load_report` | Shows the [on-call report](/incident-management/on-call/reference/#on-call-report) (the last 30 days by default, at most 90): each member's shifts, time on call, time covered by overrides, time outside business hours and pages, and each schedule's covered time and gaps. | Read |
+| `edit_on_call_layer` | Changes a layer's members and their order, rotation, handoff, zone, covered windows or end, keeping its id. Omitted fields stay as they are, and the old rotation is kept as history. See [edit a layer](/incident-management/on-call/reference/#edit-a-layer). | Write |
 
 ### Everything else
 

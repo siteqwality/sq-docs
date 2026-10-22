@@ -11,7 +11,7 @@ A **domain expiry check** reads your domain's registration record from its regis
 
 The API and the dashboard call these **DNS checks** (`monitor_dns`, `/dns/job/...`). The name is historical: the thing monitored is the domain registration.
 
-The check does not query any nameserver, so it cannot confirm that your domain resolves, that an A record points where you expect, or that any resolver answers. Record-level DNS monitoring is a separate monitor type (**DNS Monitor** in the dashboard).
+The check does not query any nameserver, so it cannot confirm that your domain resolves, that an A record points where you expect, or that any resolver answers. For that, use a [DNS record monitor](/uptime-monitoring/dns-record-monitors/overview/) (**DNS Monitor** in the dashboard).
 
 ## When to use it
 

@@ -31,7 +31,7 @@ An email channel whose address hard-bounced or complained after its last deliver
 
 ### Warnings when you save a monitor
 
-Creating or updating an HTTP, heartbeat or DNS record monitor still succeeds when one of its notification groups holds a channel its alerts cannot reach. The response carries a `warnings` array beside `data`, one entry per channel and alert source:
+Creating or updating an HTTP, heartbeat or [DNS record monitor](/uptime-monitoring/dns-record-monitors/overview/) still succeeds when one of its notification groups holds a channel its alerts cannot reach. The response carries a `warnings` array beside `data`, one entry per channel and alert source:
 
 ```json
 "warnings": [

@@ -96,7 +96,7 @@ Every linked monitor type counts, and the incident counts as recovered when ever
 | HTTP, heartbeat, browser check | Its check goes down. | Its check is up again. |
 | TLS certificate | The certificate has expired. A check that cannot reach the site keeps the last known expiry date, so a blip neither opens nor resolves anything. | A valid certificate is read. |
 | Domain registration | The registration has expired, on the same rule as TLS. | The registry reports a later expiry date. |
-| DNS records | A change alert is sent, or the zone becomes unreadable (after two failed checks in a row). | A check matches the baseline again, for example after you accept the change. |
+| [DNS records](/uptime-monitoring/dns-record-monitors/overview/) | A change alert is sent, or the zone becomes unreadable (after two failed checks in a row). | A check matches the baseline again, for example after you accept the change. |
 | Page speed | The performance score drops below the job's threshold. | The score is back at or above the threshold. |
 
 ### Reopen window

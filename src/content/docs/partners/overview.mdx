@@ -1,7 +1,7 @@
 ---
 title: Partner program
 description: Manage monitoring for many clients from one account, on one contract and one invoice, with the parts your clients see carrying your brand.
-last_verified: 2026-08-06
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -64,7 +64,7 @@ Your clients rarely see the dashboard, because you are the one signing in. The s
 
 Everything under `/partner` requires the **Admin** or **Super Admin** role on your own account. A Member, Viewer or Auditor on your account can work inside a client (if you send them there) but cannot create, re-plan or remove clients.
 
-[API keys](/getting-started/account-and-team/#generate-api-keys) and [M2M clients](/enterprise/api-clients/) carry no role, so they resolve to Member and cannot use any `/partner` endpoint: manage clients from a signed-in session. An M2M client **can** work inside a client account with the `X-SQ-Account` header; an API key [cannot](/partners/context-switching/#which-credentials-may-switch).
+[API keys](/getting-started/account-and-team/#generate-api-keys) and [M2M clients](/enterprise/api-clients/) carry no role, so they resolve to Member and cannot use any `/partner` endpoint: manage clients while signed in to the dashboard. An M2M client **can** work inside a client account with the `X-SQ-Account` header; an API key [cannot](/partners/context-switching/#which-credentials-may-switch).
 
 ## Billing
 
