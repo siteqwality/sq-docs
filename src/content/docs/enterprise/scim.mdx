@@ -5,27 +5,25 @@ last_verified: 2026-10-16
 owner: jj
 ---
 
-import { Aside, Steps } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
 
 SCIM provisions and deprovisions people from your identity provider into Site Qwality. Roles travel with them. The mapping is exact-string, case-sensitive, and fail-soft: an unknown name becomes Member rather than rejecting the user.
 
-This page is the contract. If a string is not in the table below, it is not a Site Qwality role.
+Requires an Enterprise plan. See [plan limits](/getting-started/plan-limits/).
 
 ## Set up the connection
 
 <Steps>
 
-1. In Site Qwality open **Settings → SCIM provisioning** (a Super Admin). Create a connection. Copy the **SCIM base URL** and the **bearer token**. The token is shown once.
+1. As a Super Admin, open **Settings → SCIM provisioning** in Site Qwality and create a connection. Copy the **SCIM base URL** and the **bearer token** (shown once).
 
 2. In your identity provider (Okta, Entra ID, OneLogin, JumpCloud, and so on) create a SCIM 2.0 application. Paste the base URL and token.
 
-3. Map groups or roles in the IdP to the Site Qwality role IDs in the table below. Stytch is the SCIM endpoint we expose, so the value the IdP sends must be the Stytch `role_id`, not a display label.
+3. Map groups or roles in the IdP to the Site Qwality role IDs in the table below. The IdP must send the `role_id`, not a display label.
 
 4. Push one test user, then check **Settings → Users**. They should appear with the mapped role. If the role looks wrong, the IdP is sending a string that is not in the table.
 
 </Steps>
-
-SCIM is included with Enterprise, and only a **Super Admin** can set it up. Creating a connection or rotating its token returns `403` without Enterprise. Reading and deleting the connection stay open, so an account whose Enterprise ended can still remove it.
 
 ## Role IDs the IdP must send
 
@@ -40,7 +38,7 @@ Send one of these strings as the member's role. They are the same IDs you pick i
 | `viewer` | Viewer | Read-only. Can still acknowledge and resolve incidents if they are on call. |
 | `auditor` | Auditor | Read-only, plus the [audit log](/enterprise/audit-log/). |
 
-`owner` is a retired alias for Super Admin. Existing grants still work. Do not assign `owner` to new people.
+`owner` is a retired alias for Super Admin. Existing grants still work; do not assign it to new people.
 
 If a member has more than one of these roles, Site Qwality keeps the **first** one in that list that appears on the member. Extra roles are ignored.
 
@@ -53,16 +51,13 @@ These do **not** map and fall through to Member:
 - Display names (`Super Admin`, `Admin`, `Viewer`)
 - Okta/Entra group names (`Engineering`, `On-Call`)
 - Empty role lists
+- Near misses such as `SuperAdmin`, `super-admin` and `admins`
 
-The user is still created. They land as Member. A Super Admin can raise the role later in **Settings → Users**, or you can fix the IdP mapping and push the user again.
-
-<Aside type="caution">
-Do not invent role IDs. `SuperAdmin`, `super-admin`, and `admins` are all unknown names and become Member.
-</Aside>
+The user is still created, as Member. A Super Admin can raise the role in **Settings → Users**, or you can fix the IdP mapping and push the user again.
 
 ## Who cannot be removed
 
-Two people are protected. The IdP cannot take the account down by deleting them.
+Two people are protected, so the IdP cannot take the account down by deleting them.
 
 | Who | Dashboard | SCIM deprovision |
 |---|---|---|
@@ -75,9 +70,7 @@ Always keep at least two Super Admins if you manage roles from the directory. Ma
 
 ## Invites still work
 
-SCIM does not replace [invites](/getting-started/account-and-team/). You can still invite one person or paste up to 25 emails at once from **Settings → Users**. A pending invite counts toward the seat limit immediately (Enterprise has none, so this matters only after it ends; see [Plan limits](/getting-started/plan-limits/)). An expired invite (14 days) stops counting and can be resent or replaced.
-
-If SCIM later pushes the same email, Site Qwality attaches the directory member to the existing user rather than creating a duplicate.
+SCIM does not replace [invites](/getting-started/account-and-team/): you can still invite people from **Settings → Users**. If SCIM later pushes the same email, Site Qwality attaches the directory member to the existing user rather than creating a duplicate.
 
 ## See also
 

@@ -5,7 +5,7 @@ last_verified: 2026-10-11
 owner: jj
 ---
 
-import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 Every uptime monitor in Site Qwality follows the same lifecycle: configure → run on schedule → emit results → trigger notifications on state change. What differs is *what* the monitor checks.
 
@@ -19,9 +19,9 @@ Every uptime monitor in Site Qwality follows the same lifecycle: configure → r
 
 ## Picking the right check
 
-- **You have a URL that should be `200 OK`.** Use [HTTP checks](/uptime-monitoring/http-checks/overview/). You can also opt-in to a paired TLS check (cert expiry) and domain expiry check (domain registration) on the same monitor.
-- **You only care about cert expiry, not whether the site is up.** Use [SSL/TLS checks](/uptime-monitoring/ssl-tls-checks/overview/). Otherwise, just enable the TLS sub-check on your HTTP monitor.
-- **You want to hear before a domain registration lapses.** Enable the [domain expiry check](/uptime-monitoring/dns-checks/overview/) on an HTTP monitor for that domain. It reads the registration from the registry, so it also catches a registry hold, a registrar change, and a nameserver change.
+- **You have a URL that should be `200 OK`.** Use [HTTP checks](/uptime-monitoring/http-checks/overview/). You can also opt in to a paired TLS check (cert expiry) and domain expiry check (domain registration) on the same monitor.
+- **You only care about cert expiry, not whether the site is up.** Use [SSL/TLS checks](/uptime-monitoring/ssl-tls-checks/overview/). Otherwise, enable the TLS sub-check on your HTTP monitor.
+- **You want to hear before a domain registration lapses.** Enable the [domain expiry check](/uptime-monitoring/dns-checks/overview/) on an HTTP monitor for that domain.
 - **You have a cron job that should run every N minutes.** Use a [cron heartbeat](/uptime-monitoring/cron-checks/overview/). Your job pings Site Qwality at the end of each successful run, and Site Qwality alerts when it doesn't.
 - **You need to validate a multi-step user flow.** Use [browser checks](/uptime-monitoring/browser-checks/overview/). You write a Playwright script and Site Qwality runs it on schedule, capturing a HAR + video on failure.
 
@@ -29,28 +29,27 @@ Every uptime monitor in Site Qwality follows the same lifecycle: configure → r
 
 ### Check locations
 
-HTTP checks can run from **24 check locations across 18 countries and territories**, on AWS, Google Cloud and Microsoft Azure. Each location is a provider and region combination, so a city can have more than one option. The live list is on the [locations page](https://siteqwality.com/locations/), and `GET /check-locations` returns it to API clients (see [check locations](/uptime-monitoring/http-checks/reference/#check-locations) in the HTTP reference).
+HTTP checks can run from **24 check locations across 18 countries and territories**, on AWS, Google Cloud and Microsoft Azure. Each location is a provider and region combination, so a city can have more than one option. The live list is on the [locations page](https://siteqwality.com/locations/); for API clients, see [check locations](/uptime-monitoring/http-checks/reference/#check-locations) in the HTTP reference.
 
-- **Default.** A monitor with `check_regions` unset or empty runs from `aws-us-east-1` (Virginia, AWS).
-- **Plans.** The free plan allows one location per monitor. Paid plans can select any number. Selecting more than one without a paid uptime plan returns `403` with `multi_region_requires_paid_plan`, on HTTP and browser checks.
-- **Billing.** Each location a check runs from counts as one check toward your monthly check volume. A monitor checked from three locations every minute uses three checks a minute.
-- **Default.** A new HTTP monitor runs from `aws-us-east-1` unless you choose. On a paid uptime plan it starts on two locations on different cloud providers and alerts only when both fail, as long as the account's projected checks stay within half of its monthly quota. The form shows the choice and the checks it uses; see [default locations](/uptime-monitoring/http-checks/reference/#default-locations).
-- **Other check types.** Browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1` only. Location selection applies to HTTP checks.
+- **Default.** A new HTTP monitor runs from `aws-us-east-1` (Virginia, AWS) unless you choose. On a paid uptime plan, when the extra checks fit the account's quota, it starts on two locations on different cloud providers and alerts only when both fail; see [default locations](/uptime-monitoring/http-checks/reference/#default-locations).
+- **Plans.** More than one location per monitor needs a paid uptime plan.
+- **Billing.** Each location a check runs from counts as one check toward your monthly check volume.
+- **Other check types.** Browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1` only.
 
-Start with a location near your users. Add another cloud provider when you want to compare network paths, and choose locations on other continents to cover a global audience. The dashboard groups locations by continent and lets you search by city, country code, provider or location id. Adding locations to the available list does not change an existing monitor: only its selected locations run.
+Start with a location near your users. Add another cloud provider when you want to compare network paths, and choose locations on other continents to cover a global audience.
 
-Every selected location runs on each scheduled tick, and the results are evaluated together. `min_healthy_regions` sets how many of them must pass for the monitor to count as healthy. A location that cannot return a result in a run (because its provider is unreachable, for example) is left out of that run instead of counting as a failure, and a run where the only answer of several locations is a failure is inconclusive. See [location quorum](/uptime-monitoring/http-checks/how-to/confirmation-threshold/#2-location-quorum) for the details.
+Every selected location runs on each scheduled tick, and `min_healthy_regions` sets how many of them must pass for the monitor to count as healthy. See [location quorum](/uptime-monitoring/http-checks/how-to/confirmation-threshold/#2-location-quorum) for the details.
 
 Checks do not come from fixed IP addresses. To let them through a firewall or bot protection, see [allowlisting our checks](/uptime-monitoring/http-checks/allowlisting/).
 
 ### Schedules
 
-| Check type | Minimum interval (free) | Minimum interval (paid) |
-|---|---|---|
-| HTTP | 60 s | 30 s |
-| Cron heartbeat | n/a | n/a (driven by your job's ping cadence) |
-| Browser | 5 min | 5 min |
-| TLS, domain expiry (paired with HTTP) | daily, not configurable | daily, not configurable |
+| Check type | Minimum interval |
+|---|---|
+| HTTP | 30 s (intervals under 5 minutes need a paid uptime plan) |
+| Cron heartbeat | n/a (driven by your job's ping cadence) |
+| Browser | 5 min |
+| TLS, domain expiry (paired with HTTP) | daily, not configurable |
 
 ### Tags
 
@@ -62,7 +61,7 @@ Every monitor accepts a `tags: string[]` field. Use tags consistently (`service:
 
 ### Services (logical grouping)
 
-Beyond tags, you can attach a monitor to a *service* (`service_id`). Services are higher-level groupings. See **Services** in the dashboard.
+Beyond tags, you can attach a monitor to a [service](/incident-management/services/overview/) (`service_id`), a higher-level grouping.
 
 ## See also
 

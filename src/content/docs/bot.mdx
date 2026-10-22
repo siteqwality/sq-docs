@@ -34,7 +34,7 @@ Checks run from [check locations](/uptime-monitoring/overview/#check-locations) 
 
 ## Verifying a request
 
-Anyone can copy a User-Agent. A signature cannot be copied. Site Qwality signs check requests with Web Bot Auth, which uses HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)) and Ed25519 keys. Our public keys are published at:
+Anyone can copy a User-Agent, but not a signature. Site Qwality signs check requests with Web Bot Auth, which uses HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)) and Ed25519 keys. Our public keys are published at:
 
 ```
 https://bot.siteqwality.com/.well-known/http-message-signatures-directory
@@ -44,7 +44,7 @@ A request came from Site Qwality when its `Signature` verifies against one of th
 
 ## robots.txt
 
-Site Qwality Monitor does not read robots.txt, because it never crawls: every request goes to a URL a customer chose to monitor. If we add a feature that crawls, it will follow robots.txt, and this page will say so before it ships.
+Site Qwality Monitor does not read robots.txt, because it never crawls: every request goes to a URL a customer chose to monitor.
 
 ## Allowing or blocking it
 
@@ -52,4 +52,4 @@ Site Qwality Monitor does not read robots.txt, because it never crawls: every re
 - **To block it**, match the `X-Site-Qwality-Check` header or the User-Agent in your firewall.
 - **To have checks stopped**, or to report a monitor that misbehaves, email [hello@siteqwality.com](mailto:hello@siteqwality.com) with the affected domain.
 
-This page covers HTTP checks. Browser checks, which run a full Chrome browser, are not signed yet.
+This page covers HTTP checks. Browser checks, which run a full Chrome browser, are not signed.

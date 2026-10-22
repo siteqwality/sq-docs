@@ -5,7 +5,7 @@ last_verified: 2026-10-14
 owner: jj
 ---
 
-import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, LinkCard } from '@astrojs/starlight/components';
 
 The Jira Service Management (Opsgenie) integration creates an alert through the Alerts API of Jira Service Management, or of Opsgenie, when a monitor goes down and closes that same alert when the monitor recovers. Pairing is done through the alert **alias**, which Site Qwality derives from the monitor and the outage. In the API and in channel details the type is still called `opsgenie`.
 
@@ -35,7 +35,7 @@ The same alerts live on three hosts, and a key only works on its own:
 
 The dashboard picks Jira Service Management unless you choose otherwise. Atlassian stops Opsgenie on 5 April 2027, and the Opsgenie choices go away then. A key sent to the wrong host is refused and recorded as rejected.
 
-The endpoint is set when you add the integration. To change it, add the integration again with the other endpoint and move your channels to it. Integrations added before the endpoint choice existed have `external_ref: null` and send to Opsgenie US, as they always have.
+The endpoint is set when you add the integration. To change it, add the integration again with the other endpoint and move your channels to it. An integration with `external_ref: null` sends to Opsgenie US.
 
 ## Connect it
 
@@ -58,15 +58,11 @@ curl -X POST https://api.siteqwality.com/integration/opsgenie \
 |---|---|---|
 | `friendly_name` | yes | Up to 256 characters. |
 | `api_key` | yes | The API integration's key. |
-| `endpoint` | no | `jsm`, `opsgenie_us` or `opsgenie_eu`. Omitted means `opsgenie_us`, so Jira Service Management customers must send `"jsm"`. Any other value is a 422. |
+| `endpoint` | no | `jsm`, `opsgenie_us` or `opsgenie_eu`. Omitted means `opsgenie_us`, so Jira Service Management customers must send `"jsm"`. |
 
-The name and key must be non-empty. The key is not verified at save time.
-
-The API key is a secret. `GET /integration` never returns it: `opsgenie_api_key` shows it as `****` followed by its last four characters (just `****` when it is shorter than 16 characters). The endpoint is not a secret: it comes back as `external_ref.endpoint`.
+The key is not verified at save time. It never reads back in full; the endpoint reads back as `external_ref.endpoint`.
 
 ## Add it to a notification group
-
-Integrations deliver nothing on their own. Alerts reach one once it is a channel in a notification group that your monitors use.
 
 <Steps>
 
@@ -90,8 +86,6 @@ curl -X POST https://api.siteqwality.com/notification \
     "details": { "opsgenie_integration_id": "<opsgenie-integration-id>" }
   }'
 ```
-
-`opsgenie_integration_id` is the only field. There is no per-channel priority setting; see [priority](#priority) below.
 
 ## Create and close
 
@@ -119,19 +113,17 @@ Priority is fixed and not configurable per channel:
 | Recovery (close) | none sent |
 | Domain expiry warning | `P3` |
 
-<Aside type="caution" title="Domain expiry alerts do not auto-close">
-Domain and DNS expiry warnings are **create-only**: no recovery event exists for them. They key on the DNS job plus the expiry date (`sq-dns-expiry-<job-id>-YYYY-MM-DD`), so repeated warnings for the same date collapse into one alert, but nothing ever closes it.
+### Domain expiry alerts do not auto-close
 
-Close those alerts yourself. Renewing the domain does not close them, and since renewal moves the expiry date, the next warning creates a **new** alert while the old one stays open.
-</Aside>
+Domain and DNS expiry warnings are **create-only**: they key on the DNS job plus the expiry date (`sq-dns-expiry-<job-id>-YYYY-MM-DD`), so repeated warnings for the same date collapse into one alert, but nothing ever closes it. Close those alerts yourself. Renewing the domain does not close them, and since renewal moves the expiry date, the next warning creates a **new** alert while the old one stays open.
 
 ## Delivery behavior
 
-Each attempt waits up to 10 seconds for an answer, and a redirect is never followed. A failed send is tried up to 3 times in quick succession, which is safe because the alias makes the call idempotent; no attempt starts so close to the run's time limit that it could not finish. A 4xx answer other than 408 or 429 means the service refused the event: it is recorded as rejected and not retried. Any other failure fails the event, and it is run up to two more times. If those fail too, the alert is dropped with no record in alert history, so pair this channel with a second one for anything you cannot afford to miss.
+An event the service refuses is recorded as rejected and not retried. Other failures are retried, and if every attempt fails, the alert is dropped with no record in alert history, so pair this channel with a second one for anything you cannot afford to miss. See [delivery guarantees](/incident-management/notifications/channels/#delivery-guarantees-by-channel).
 
 ## Limitations
 
-- These channels fire for **HTTP monitors, browser checks, domain expiry warnings, log, metric and trace alert rules, and RUM issues**. Heartbeat (cron) monitors, TLS expiry warnings, page speed alerts and DNS record changes do not reach these channels today: a channel on a group used by those sources is skipped. See the [coverage table](/integrations/coverage/#opsgenie).
+- Heartbeat (cron) monitors, TLS expiry warnings, page speed alerts and DNS record changes do not reach these channels. See the [coverage table](/integrations/coverage/#opsgenie).
 - Incidents and escalation policies do not page through Jira Service Management or Opsgenie.
 
 ## See also

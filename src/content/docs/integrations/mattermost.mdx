@@ -5,9 +5,9 @@ last_verified: 2026-08-02
 owner: jj
 ---
 
-import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, LinkCard } from '@astrojs/starlight/components';
 
-The Mattermost integration posts to a channel through an incoming webhook, using Mattermost's Slack-compatible attachment format. It works with self-hosted and Cloud instances alike, since the webhook URL is yours.
+The Mattermost integration posts to a channel through an incoming webhook, using Mattermost's Slack-compatible attachment format. It works with self-hosted and Cloud instances.
 
 ## What you need
 
@@ -37,15 +37,9 @@ curl -X POST https://api.siteqwality.com/integration/mattermost \
   }'
 ```
 
-The request field is `url`; the stored field is `mattermost_webhook_url`. Both fields are required. The URL must use `https` on a public host, or the save is refused with a `400`. It is not test-sent at save time.
-
-<Aside type="note" title="The webhook URL does not read back">
-`GET /integration` shows the Mattermost webhook URL as its scheme and host only, such as `https://your-mattermost.example.com/****`, and delivery records show only the host. Keep your own copy if you need it again. To change it, add a new integration and delete the old one.
-</Aside>
+The URL must use `https` on a public host. It is not test-sent at save time, and it never reads back in full, so keep your own copy; to change it, add a new integration and delete the old one.
 
 ## Add it to a notification group
-
-Integrations deliver nothing on their own. Alerts reach one once it is a channel in a notification group that your monitors use.
 
 <Steps>
 
@@ -82,15 +76,11 @@ Messages post as `Site Qwality` with a Slack-style attachment: a colored bar, a 
 
 ## Delivery behavior
 
-<Aside type="caution" title="A failed send is not retried later">
-Mattermost rides the shared platform-webhook transport. Each attempt waits up to 10 seconds, and a redirect is never followed. An answer no retry can change (`400`, `401`, `403`, `404`, `410` or a redirect) is recorded once as rejected, with the reason, and not retried. Any other error answer, or a connection that could not be made, is tried up to 3 times in quick succession and then recorded as failed. A send that times out after the request went out may have arrived, so it is not sent again: it is recorded as failed with that note. The attempts stop before the send's time limit, so the outcome is always recorded, but nothing is retried later.
-
-If Mattermost is your only alerting path for something that matters, pair it with a second channel.
-</Aside>
+A failed send can get up to 3 attempts in quick succession but is never retried later, and the outcome is always recorded. If Mattermost is your only alerting path for something that matters, pair it with a second channel. See [delivery guarantees](/incident-management/notifications/channels/#delivery-guarantees-by-channel).
 
 ## Limitations
 
-Mattermost channels fire for **HTTP monitors, browser checks, domain expiry warnings, log, metric and trace alert rules, and RUM issues**. Heartbeat (cron) monitors, TLS expiry warnings, page speed alerts and DNS record changes do not reach Mattermost today: a Mattermost channel on a group used by those sources is skipped. Incidents and escalations do not use Mattermost. See the [coverage table](/integrations/coverage/#mattermost).
+Heartbeat (cron) monitors, TLS expiry warnings, page speed alerts and DNS record changes do not reach Mattermost. See the [coverage table](/integrations/coverage/#mattermost).
 
 ## See also
 

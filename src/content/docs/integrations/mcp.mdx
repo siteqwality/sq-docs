@@ -15,8 +15,6 @@ The server URL is:
 https://mcp.siteqwality.com/mcp
 ```
 
-It is available on every plan, including Free. Plan limits and usage quotas apply exactly as they do in the dashboard.
-
 ## How signing in works
 
 <Steps>
@@ -114,8 +112,6 @@ Available on the web for ChatGPT Plus, Pro, Business, Enterprise and Edu.
 4. In a chat, pick **Developer mode** from the **+** menu and select Site Qwality.
 
 </Steps>
-
-By default ChatGPT asks you to confirm each write action before it runs.
 
 </TabItem>
 <TabItem label="Codex CLI">
@@ -225,15 +221,13 @@ Access is granted per area, as `read:<area>` and `write:<area>`. On the consent 
 | Services | `read:services`, `write:services` | Services and the escalation policy each one routes to |
 | User notification settings | `read:users`, `write:users` | Each user's contact methods and notification rules |
 
-Services and user notification settings are available to assistants that connect with an API key. The consent page does not offer them yet, so an assistant that signs in with OAuth cannot reach them.
-
-Adding, changing or removing an integration needs the separate `integrations:manage` permission. You can tick it on an API key; the consent page never offers it.
+The consent page does not offer the Services and User notification settings scopes, so only an assistant that connects with an API key can reach them. Nor does it offer `integrations:manage`, the scope for adding, changing or removing an integration; tick it on an API key.
 
 Session replay content is never available to an assistant, whatever it is granted: it stays with the people allowed to [watch replays](/observability/replay/reference/#who-can-watch-a-replay).
 
 ## What you can ask for
 
-Assistants pick the right tool themselves; you just ask. **Write** tools need the matching `write:` scope.
+Assistants pick the tool themselves. **Write** tools need the matching `write:` scope.
 
 | Tool | What it does | Access |
 |---|---|---|
@@ -242,7 +236,7 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 | `get_monitor` | Shows one monitor's settings and state. | Read |
 | `get_recent_checks` | Shows a monitor's latest check results, including the failing step of a browser check. | Read |
 | `get_alert_history` | Shows a monitor's recent outages, the alerts each one sent and who acknowledged it. | Read |
-| `acknowledge_monitor_outage` | Acknowledges a monitor's outage, recording who is on it and, by default, stopping its repeat alerts. Takes `monitor_id` and an optional `transition_id`; without one it acknowledges the open outage. The first acknowledgment stands, and an outage that has ended is refused. See [acknowledge a monitor outage](/incident-management/notifications/how-to/acknowledge-outages/). | Write |
+| `acknowledge_monitor_outage` | Acknowledges a monitor's open outage (or the one named by `transition_id`), recording who is on it and, by default, stopping its repeat alerts. See [acknowledge a monitor outage](/incident-management/notifications/how-to/acknowledge-outages/). | Write |
 | `list_check_locations` | Lists the locations a check can run from, with the ids to use when creating or updating a monitor. | Read |
 | `create_http_monitor` | Creates an HTTP monitor that alerts your account's default notification group. | Write |
 | `update_http_monitor` | Changes an HTTP monitor's settings. | Write |
@@ -254,7 +248,7 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 | `acknowledge_incident`, `resolve_incident` | Acknowledges or resolves an incident. API-key and M2M acknowledgment needs `acknowledged_by`; sessions act as their own member. Resolve accepts a message and `notify_subscribers`. | Write |
 | `create_incident` | Opens an incident, optionally linked to a service and published on a status page. A service's configured policy pages responders. | Write |
 | `update_incident` | Changes title, severity or service. Omitted fields stay unchanged; `service_id: null` detaches the service. Moving service or increasing severity can start paging. | Write |
-| `reopen_incident` | Reopens a resolved incident, restarting its escalation and posting a public reopening on linked pages. Open and merged incidents return `409`. | Write |
+| `reopen_incident` | Reopens a resolved incident, restarting its escalation and posting a public reopening on linked pages. Open and merged incidents are refused. | Write |
 | `post_incident_update` | Adds an update to an incident. A public update (the default) shows on its status pages and can change its status: `resolved` resolves it. It emails subscribers when posted through a named page the incident is on, or with `notify_subscribers`. An internal note stays in the app. Moving public status backwards needs `force: true`. | Write |
 | `publish_incident` | Puts an incident on a status page with a public title and first update, and emails the page's subscribers unless told not to. | Write |
 | `unpublish_incident` | Takes an incident off a status page. Nothing is emailed and the incident is kept. | Write, asks first |
@@ -273,7 +267,7 @@ Assistants pick the right tool themselves; you just ask. **Write** tools need th
 
 ### Status pages
 
-These tools manage status pages end to end. They use the Status Pages scopes, except the four incident tools (`list_status_page_incidents`, `publish_incident`, `update_status_page_incident` and `delete_status_page_incident`), which use the Incidents scopes.
+These tools use the Status Pages scopes, except the four incident tools (`list_status_page_incidents`, `publish_incident`, `update_status_page_incident` and `delete_status_page_incident`), which use the Incidents scopes.
 
 | Tool | What it does | Access |
 |---|---|---|
@@ -287,7 +281,6 @@ These tools manage status pages end to end. They use the Status Pages scopes, ex
 | `add_status_page_monitor`, `update_status_page_monitor` | Adds a monitor or heartbeat to a page, or changes its page name or SLA target. | Write |
 | `remove_status_page_monitor` | Takes a monitor or heartbeat off a page. It keeps running. | Write, asks first |
 | `list_status_page_incidents` | Lists the incidents shown on a page. | Read |
-| `publish_incident` | Shows an existing incident on a page. | Write |
 | `update_status_page_incident` | Changes a page incident's title or severity. Its status changes through `post_incident_update` or `resolve_incident`. | Write |
 | `delete_status_page_incident` | Deletes an incident shown on a page. | Write, asks first |
 | `list_status_page_maintenances`, `get_status_page_maintenance` | Lists a page's maintenance windows, or shows one. | Read |
@@ -310,13 +303,13 @@ These tools group monitors into services and decide which failures open incident
 
 | Tool | What it does | Access |
 |---|---|---|
-| `list_services`, `get_service` | Lists your services with their health, who is on call now, incident settings and monitor counts, filtered by text, team, tag or health and paged with `next_cursor`; or shows one with the same plus its team, tags, on-call schedule, escalation policy, creation mode, default severity, reopen window, auto-resolve and auto-publish page. | Read |
+| `list_services`, `get_service` | Lists your services with their health, who is on call now, incident settings and monitor counts, filtered by text, team, tag or health; or shows one with the same plus its team, tags, on-call schedule, escalation policy, creation mode, default severity, reopen window, auto-resolve and auto-publish page. | Read |
 | `get_service_metrics` | A service's incidents, mean time to acknowledge and resolve, and uptime over a window (the last 30 days by default). | Read |
-| `create_service` | Creates a service. Fails with `409` at the account's service limit. | Write |
+| `create_service` | Creates a service. | Write |
 | `update_service` | Changes a service's settings. Omitted fields stay unchanged; `null` clears the description, escalation policy, auto-publish page, team or on-call schedule. Switching to `auto` lets failing monitors open incidents and page. | Write |
 | `list_service_monitors` | Lists every monitor a service groups, of every type, with its status and whether it counts as healthy. | Read |
-| `link_service_monitor` | Adds one monitor to a service and leaves its other monitors alone. A monitor in another service fails with `409` unless `move` is true. | Write |
-| `unlink_service_monitor` | Removes one monitor from a service. Fails with `404` when the monitor is not on it. | Write, asks first |
+| `link_service_monitor` | Adds one monitor to a service and leaves its other monitors alone. A monitor in another service is refused unless `move` is true. | Write |
+| `unlink_service_monitor` | Removes one monitor from a service. | Write, asks first |
 
 ### Everything else
 
@@ -342,7 +335,7 @@ If you manage [client accounts](/partners/client-accounts/), an assistant can wo
 X-SQ-Account: <client account id>
 ```
 
-It works when you signed in through the consent page. API keys cannot switch accounts. See [Working in a client account](/partners/context-switching/) for what the header changes and why a wrong id returns `404`.
+It works only when you signed in through the consent page: API keys cannot switch accounts. See [Working in a client account](/partners/context-switching/).
 
 ## Troubleshooting
 

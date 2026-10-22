@@ -7,13 +7,13 @@ owner: jj
 
 import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
 
-This guide configures logs. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+This guide covers logs. Replace `YOUR_INGEST_KEY` with your key.
 
 <BeforeYouStart />
 
 ## 1. Store the Worker secret
 
-Enter the ingest key at the prompt. Keep service and environment in Worker vars. This example sends logs through the JSON adapter without a Node.js SDK.
+Enter the ingest key at the prompt. Keep service and environment in Worker vars. This example sends logs to the JSON adapter without an SDK.
 
 ```bash
 npx wrangler secret put SQ_INGEST_KEY
@@ -21,7 +21,7 @@ npx wrangler secret put SQ_INGEST_KEY
 
 ## 2. Send a bounded server-side log
 
-waitUntil extends the request lifetime but is not a durable queue. Batch and use a durable queue with bounded retries for production. Avoid logging full URLs, authorization headers or personal data. To export platform logs instead, use the Cloudflare Logpush guide.
+`waitUntil` extends the request lifetime but is not a durable queue; in production, batch and use a durable queue with bounded retries. Avoid logging full URLs, authorization headers or personal data. To export platform logs instead, use [Cloudflare Logpush](/observability/platforms/cloudflare-logpush/).
 
 ```javascript
 export default {
@@ -51,14 +51,13 @@ npx wrangler deploy
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
 Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
 - [Pipelines, access and privacy](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream Cloudflare Workers documentation](https://developers.cloudflare.com/workers/runtime-apis/context/)

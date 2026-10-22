@@ -7,13 +7,13 @@ owner: jj
 
 import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
 
-This guide configures logs, traces, metrics. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+This guide covers logs, traces and metrics. Replace `YOUR_INGEST_KEY` with your key.
 
 <BeforeYouStart />
 
 ## 1. Create the namespace and Secret
 
-Restrict Secret access and do not commit ingest-key.txt. The daemonset reads pod logs and host metrics. Applications send OTLP to its private Service.
+Restrict Secret access and do not commit `ingest-key.txt`. The daemonset reads pod logs and host metrics, and applications send OTLP to its private Service.
 
 ```bash
 kubectl create namespace observability
@@ -23,7 +23,7 @@ kubectl -n observability create secret generic siteqwality-ingest --from-file=ke
 
 ## 2. Save values.yaml
 
-Presets add filelog/k8s/host receivers and their RBAC. Keep resource identity from each application or Kubernetes labels rather than stamping every pod with the Collector name. Review the rendered chart for permissions, ports and resource limits.
+Presets add the filelog, Kubernetes and host receivers with their RBAC. Take resource identity from each application or Kubernetes labels rather than stamping every pod with the Collector name. Review the rendered chart for permissions, ports and resource limits.
 
 ```yaml
 mode: daemonset
@@ -89,7 +89,7 @@ config:
 
 ## 3. Install the chart and configure your application
 
-Pin the chart and image versions after validating them in your cluster. Use OTEL_EXPORTER_OTLP_ENDPOINT=http://siteqwality-collector.observability.svc.cluster.local:4318 with http/protobuf. Keep the Service private. Test pod log parsing, namespace labels and service.name before increasing traffic.
+Pin the chart and image versions after validating them in your cluster. In your application, use `OTEL_EXPORTER_OTLP_ENDPOINT=http://siteqwality-collector.observability.svc.cluster.local:4318` with `http/protobuf`. Test pod log parsing, namespace labels and `service.name` before increasing traffic.
 
 ```bash
 helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
@@ -100,14 +100,13 @@ kubectl -n observability get pods,svc
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
 Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
 - [Pipelines, access and privacy](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream Kubernetes documentation](https://opentelemetry.io/docs/platforms/kubernetes/helm/collector/)

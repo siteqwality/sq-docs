@@ -11,24 +11,16 @@ The wire-level schema is in the auto-generated [API Reference](/api-reference/).
 
 ## The check and a run of the check are different objects
 
-A domain check is served as two shapes, and they answer two different questions. Getting them confused is the single easiest way to misread this API.
-
 | Object | Endpoint | Answers |
 |---|---|---|
 | `DnsJob` | `GET /dns/job/{dns_job_id}` | What do we currently believe about this registration? |
 | `DnsJobResult` | `GET /dns/job/{dns_job_id}/results` | What did one particular run observe? |
 
-They agree on every successful run and diverge the moment a run fails.
+They agree on every successful run and diverge when a run fails.
 
-A failed run learned nothing, so **its result row records nothing**: `expiry_date`, `domain_status`, `registrar` and `nameservers` are all `null`, and `failure_reason` says why. History has to be able to say "we could not read the registry that day" rather than repeating the previous answer as though it had been confirmed.
+A failed run's **result records nothing**: `expiry_date`, `domain_status`, `registrar` and `nameservers` are all `null`, and `failure_reason` says why.
 
-The job row does the opposite. It **keeps** the values the last successful run recorded, moves `current_status` to `unknown`, and sets `last_failure_reason` and `last_failure_at`. That is deliberate: clearing the date over a rate limit or a timeout would throw away a good date, blank the registrar and nameserver baseline (so the next successful run would read as a first observation and swallow a real registrar change), and re-arm every alert rung, producing a duplicate 30-day warning on recovery.
-
-<Aside type="caution" title="On the job, `last_failure_reason` marks the registry fields as last known">
-A non-null `last_failure_reason` on a `DnsJob` means `expiry_date`, `domain_status`, `grace_states`, `registrar` and `nameservers` are the **last known** values, not current facts. `last_failure_at` says how old they are. Both are cleared by the next run that reads the registry successfully, so "the last check worked" stays readable rather than becoming a permanent scar from one old blip.
-
-The one value that does not work this way is `registry_publishes_no_expiry`, which is a permanent state of the TLD rather than a failed lookup. See [Failure reasons](#failure-reasons).
-</Aside>
+The **job keeps** the values the last successful run recorded, moves `current_status` to `unknown`, and sets `last_failure_reason` and `last_failure_at` until the next successful run. So a failed run never blanks the registrar and nameserver baseline or re-arms an alert rung.
 
 ## Object: `DnsJob`
 
@@ -39,25 +31,25 @@ Current best knowledge about the registration.
 | `id` | uuid | Domain check ID. |
 | `account_id` | uuid | Owning account. |
 | `http_job_id` | uuid | The HTTP check this was paired with. |
-| `current_status` | enum | See [Status](#status). Starts at `unknown` before the first run, and returns to `unknown` when a run fails. |
+| `current_status` | enum | See [Status](#status). `unknown` before the first run and after a failed run. |
 | `domain` | string | The **registrable** domain derived from the HTTP check's URL (`https://www.example.com/path` becomes `example.com`). |
-| `expiry_date` | rfc3339 \| null | The registration expiry currently in force, whichever leg of the [lookup chain](#where-the-expiry-date-comes-from) produced it. `null` when nothing has produced one: before the first run, and on a TLD that publishes none and has no manual date set. |
-| `expiry_source` | string \| null | Where `expiry_date` came from: `rdap`, `whois`, `whoxy`, or `manual`. `null` whenever `expiry_date` is `null`. Read this before treating a date as authoritative: `rdap` and `whois` are the registry's own answer, `whoxy` is a commercial aggregator, and `manual` is a date somebody at your company typed. |
-| `manual_expiry_date` | rfc3339 \| null | The renewal date you entered yourself, via [`PUT /dns/job/{dns_job_id}`](#endpoints). `null` when none is set. Customer-maintained: nothing updates it on renewal. See [Manual renewal dates](#manual-renewal-dates). |
-| `registry_publishes_expiry` | bool | `false` on the TLDs established to publish no expiry date to anybody. This is the flag to key "offer a manual renewal date" off. `true` for every TLD not on [that list](/uptime-monitoring/dns-checks/overview/#when-the-registry-publishes-no-expiry-date), including any we have not examined, so a `true` here is not a promise that a date will arrive. |
-| `domain_status` | string[] \| null | EPP status codes, in RFC 8056 form: lowercase with spaces, so `auto renew period`, not `autoRenewPeriod`. |
-| `grace_states` | string[] | The subset of `domain_status` that means the registration is in trouble. See [Registry states that alert](#registry-states-that-alert). Derived server-side, never `null`, and `[]` when there is nothing wrong. This is the field to key "needs attention" off, not the date. |
+| `expiry_date` | rfc3339 \| null | The registration expiry currently in force, from whichever [source](#where-the-expiry-date-comes-from) produced it. `null` before the first run, and on a TLD that publishes none and has no manual date set. |
+| `expiry_source` | string \| null | Where `expiry_date` came from: `rdap`, `whois`, `whoxy`, or `manual`. See [where the expiry date comes from](#where-the-expiry-date-comes-from). `null` whenever `expiry_date` is `null`. |
+| `manual_expiry_date` | rfc3339 \| null | The renewal date you entered via [`PUT /dns/job/{dns_job_id}`](#endpoints). `null` when none is set. Nothing updates it on renewal. See [Manual renewal dates](#manual-renewal-dates). |
+| `registry_publishes_expiry` | bool | `false` on the TLDs established to publish no expiry date; key "offer a manual renewal date" off this flag. `true` for every TLD not on [that list](/uptime-monitoring/dns-checks/overview/#when-the-registry-publishes-no-expiry-date), including any we have not examined, so `true` is not a promise that a date will arrive. |
+| `domain_status` | string[] \| null | EPP status codes in RFC 8056 form: lowercase with spaces, so `auto renew period`, not `autoRenewPeriod`. |
+| `grace_states` | string[] | The subset of `domain_status` that means the registration is in trouble. See [Registry states that alert](#registry-states-that-alert). Never `null`; `[]` when nothing is wrong. Key "needs attention" off this field, not the date. |
 | `registrar` | string \| null | Sponsoring registrar. |
 | `nameservers` | string[] \| null | Nameserver set, lowercased and sorted. |
 | `last_run_at` | rfc3339 \| null | When the check last ran, successfully or not. |
 | `last_status_change_at` | rfc3339 \| null | When `current_status` last transitioned. |
-| `last_failure_reason` | string \| null | Why the last run produced no registration record, if it produced none. See [Failure reasons](#failure-reasons). Non-null means the registry fields above are last known rather than current, with one exception: `registry_publishes_no_expiry` is a **state**, not a failure, and must not be rendered as a broken check. Cleared by the next run that reads a record. |
-| `last_failure_at` | rfc3339 \| null | When that failure happened. |
+| `last_failure_reason` | string \| null | Why the last run produced no registration record. See [Failure reasons](#failure-reasons). Non-null means the registry fields above (`expiry_date`, `domain_status`, `grace_states`, `registrar`, `nameservers`) are last known rather than current, except `registry_publishes_no_expiry`, which is a **state**, not a failure. Cleared by the next run that reads a record. |
+| `last_failure_at` | rfc3339 \| null | When that failure happened. Cleared with `last_failure_reason`. |
 | `created_at` | rfc3339 | When the check was provisioned. |
 
 ## Object: `DnsJobResult`
 
-One row per run, kept as history. Every field describes **that run**, so a failed run carries a `failure_reason` and nulls, never the previous answer.
+One row per run. Every field describes **that run**.
 
 | Field | Type | Description |
 |---|---|---|
@@ -67,18 +59,18 @@ One row per run, kept as history. Every field describes **that run**, so a faile
 | `created_at` | rfc3339 | When the run happened. |
 | `status` | enum | See [Status](#status). Always `unknown` when `failure_reason` is set. |
 | `failure_reason` | string \| null | Set when this run could not read the registry. See [Failure reasons](#failure-reasons). |
-| `expiry_date` | rfc3339 \| null | The expiry date this run observed. `null` on a failed run, and `null` when a leg answered but published no expiration event. A manual renewal date is not an observation, so it never appears here. |
+| `expiry_date` | rfc3339 \| null | The expiry date this run observed. `null` on a failed run, and when a source answered but published no expiration event. A manual renewal date never appears here. |
 | `domain_status` | string[] \| null | EPP status codes this run observed, RFC 8056 form. `null` on a failed run. |
 | `grace_states` | string[] | Derived from this run's `domain_status`. Never `null`; `[]` on a failed run. |
 | `registrar` | string \| null | Sponsoring registrar this run observed. `null` on a failed run. |
 | `nameservers` | string[] \| null | Nameservers this run observed, lowercased and sorted. `null` on a failed run. |
-| `rdap_origin` | string \| null | Which RDAP endpoint served this run: `iana` when it came from IANA's bootstrap registry, `override` when it came from the two hardcoded entries (`.io` and `.co`). `null` on a failed run, and `null` when the RDAP leg was not the one that answered. |
+| `rdap_origin` | string \| null | Which RDAP endpoint served this run: `iana` for IANA's bootstrap registry, `override` for the two hardcoded entries (`.io` and `.co`). `null` on a failed run, and when RDAP was not the source that answered. |
 
-The registry fields are kept per run so history can answer "what did the registry say on the day this broke". The [registry state](#registry-states-that-alert) and change alerts are decided by comparing a run's observation against what the job already knew, which is why a failed run never fires one.
+A failed run never fires a [registry state](#registry-states-that-alert) or change alert, because those compare a run's observation against what the job already knew.
 
 ## Object: `DnsOverview`
 
-The monitor overview, `GET /http/job/{job_id}/overview`, embeds a compact domain summary as its `dns` key. This is what the dashboard's Domain tile reads. It is absent when the HTTP check has no domain monitoring turned on.
+The monitor overview, `GET /http/job/{job_id}/overview`, embeds a compact domain summary as its `dns` key. It is absent when the HTTP check has no domain monitoring turned on.
 
 | Field | Type | Description |
 |---|---|---|
@@ -96,11 +88,9 @@ The monitor overview, `GET /http/job/{job_id}/overview`, embeds a compact domain
 |---|---|
 | `good` | There is an expiry date and it is in the future. |
 | `expired` | There is an expiry date and it has passed. |
-| `unknown` | No usable expiry date. Three different situations produce it: the check has not run yet, the lookup failed, or **the TLD publishes no expiry date at all**. Read the failure reason to tell them apart: `null` before the first run, `registry_publishes_no_expiry` for the third case, and one of the [other reasons](#failure-reasons) for a real failure. The field is `failure_reason` on a result and `last_failure_reason` on the check itself. |
+| `unknown` | No usable expiry date: the check has not run yet, the lookup failed, or **the TLD publishes no expiry date at all**. The failure reason tells them apart: `null` before the first run, `registry_publishes_no_expiry` for the third case, and one of the [other reasons](#failure-reasons) for a real failure. It is `failure_reason` on a result and `last_failure_reason` on the check. |
 
-<Aside type="caution" title="A registry hold does not change the status">
-A domain in `auto renew period`, `redemption period` or `pending delete` still reports `good`, because its expiry date genuinely is in the future. The registry state is delivered as an **alert**, not as a status. Anything that keys "is this domain healthy" off `current_status` alone will call a domain in a deletion window healthy. The [overview](/uptime-monitoring/dns-checks/overview/#signal-2-registry-status-alerts) explains why.
-</Aside>
+**A registry hold does not change the status.** A domain in `auto renew period`, `redemption period` or `pending delete` still reports `good`, because its expiry date is in the future; the registry state arrives as an [alert](#alert-reasons). Anything that keys "is this domain healthy" off `current_status` alone will call a domain in a deletion window healthy. The [overview](/uptime-monitoring/dns-checks/overview/#signal-2-registry-status-alerts) explains why.
 
 ## Registry states that alert
 
@@ -123,28 +113,16 @@ Recorded when a run ends with no expiry date. The check reports `unknown` in eve
 
 | Reason | Meaning | Retried |
 |---|---|---|
-| `registry_publishes_no_expiry` | **Not a failure.** This TLD publishes no expiry date to anybody, under any protocol, by registry policy. The chain was walked and there is nothing to find. Set a [manual renewal date](#manual-renewal-dates) instead. | No, and there is nothing to retry |
-| `no_rdap_endpoint` | No RDAP service is listed for the TLD, in IANA's bootstrap registry or our overrides. On its own this does not end a run: it [advances the chain](#where-the-expiry-date-comes-from) to port-43 WHOIS. It is recorded only when no later leg had a record either. | No |
-| `registry_no_record` | The source returned 404 for this name. Like the row above, this advances the chain rather than ending the run, and is recorded only when nothing later had a record. **It is not proof the domain is unregistered**: registries also answer 404 for a subdomain of a live domain, and RFC 7480 permits a 404 in place of admitting to rate limiting. | No |
-| `rate_limited` | The source returned 429. Unexpected at this volume and worth reporting if it persists. | Yes, against the same leg |
-| `transport_error` | The request failed or timed out. The per-request timeout is 10 seconds. | Yes, against the same leg |
-| `malformed_response` | The source answered with something that would not parse. | Yes, against the same leg |
+| `registry_publishes_no_expiry` | **Not a failure.** This TLD publishes no expiry date to anybody, under any protocol, by registry policy. Set a [manual renewal date](#manual-renewal-dates) instead. | No |
+| `no_rdap_endpoint` | No RDAP service is listed for the TLD, in IANA's bootstrap registry or our overrides. This [advances the chain](#where-the-expiry-date-comes-from) to port-43 WHOIS and is recorded only when no later source had a record either. | No |
+| `registry_no_record` | The source returned 404 for this name. Like the row above, this advances the chain and is recorded only when nothing later had a record. **It is not proof the domain is unregistered**: registries also answer 404 for a subdomain of a live domain, and RFC 7480 permits a 404 in place of admitting to rate limiting. | No |
+| `rate_limited` | The source returned 429. Worth reporting if it persists. | Yes, against the same source |
+| `transport_error` | The request failed or timed out. The per-request timeout is 10 seconds. | Yes, against the same source |
+| `malformed_response` | The source answered with something that would not parse. | Yes, against the same source |
 
-<Aside type="caution" title="`registry_publishes_no_expiry` must not be rendered as a broken check">
-It is the one value in this table that is a **state**. A `.de` domain is not failing, is not degraded, and is not waiting on anything: its registry does not publish the date, and it never will. Anything that paints a red badge, opens an incident, or fires an alert on a non-null `last_failure_reason` will be wrong about every domain on those ten TLDs, permanently.
-
-Key the "something is wrong" treatment off the other five values, and key an "enter a renewal date" prompt off `registry_publishes_expiry` being `false`.
-</Aside>
-
-<Aside type="note" title="A transport failure does not walk the whole chain">
-The three retryable reasons above stay on the leg that produced them. Only "no endpoint for this TLD" and "no record for this name" move the run to the next source, so a registry having a bad afternoon costs one request, not three requests against three providers for every domain on that TLD.
-</Aside>
-
-<Aside type="note" title="Where a failure reason shows up">
-A failed run still records a result row and still updates `last_run_at`. Which field carries the reason depends on which object you are reading: it is `failure_reason` on the [result](#object-dnsjobresult), which is that run's own verdict, and `last_failure_reason` on the [job](#object-dnsjob), which persists until a run succeeds. The two carry the same set of values above.
+`registry_publishes_no_expiry` is the one **state** in this table. A red badge, incident or alert keyed off a non-null `last_failure_reason` will be wrong about every domain on those ten TLDs, permanently. Key the "something is wrong" treatment off the other five values, and key an "enter a renewal date" prompt off `registry_publishes_expiry` being `false`.
 
 A retryable failure is retried on the schedule, and each attempt records its own result row, so a bad afternoon at a registry can leave several `unknown` rows in the history for one day.
-</Aside>
 
 ## Alert reasons
 
@@ -160,7 +138,7 @@ Every alert carries a stable `reason` slug. This is the field to switch on in a 
 
 ## Webhook payload
 
-A webhook channel on the parent HTTP check's notification group receives a POST with a JSON body of this shape. The four original keys keep their exact names and meaning; `reason`, `headline` and `detail` were added in August 2026 and are additive.
+A webhook channel on the parent HTTP check's notification group receives a POST with a JSON body of this shape.
 
 ```json
 {
@@ -182,13 +160,9 @@ A webhook channel on the parent HTTP check's notification group receives a POST 
 | `monitor_name` | The **parent HTTP check's** friendly name. |
 | `domain` | The registrable domain being monitored. |
 | `expiry_date` | `YYYY-MM-DD`, not RFC 3339. The literal string `"unknown"` when the registry publishes no expiry, which is a real case for registrar and nameserver change alerts. |
-| `reason` | One of the [alert reason slugs](#alert-reasons). |
-| `headline` | One short sentence, always naming the domain. |
+| `reason` | One of the [alert reason slugs](#alert-reasons). A stable identifier: branch on this. |
+| `headline` | One short sentence, always naming the domain. Customer-facing prose that will be reworded, so do not branch on it. |
 | `detail` | The explanatory sentence beneath the headline. Written for a human, not parsed. |
-
-<Aside type="caution" title="Switch on `reason`, not on `headline`">
-`headline` and `detail` are customer-facing prose and will be reworded. `reason` is a stable identifier and is what a consumer should branch on.
-</Aside>
 
 ## Where the expiry date comes from
 
@@ -201,15 +175,11 @@ Three sources, tried in order, and named by [`expiry_source`](#object-dnsjob) on
 | `whoxy` | A commercial registration database. Catches registries that refuse our connections and formats we would otherwise hand-parse. | Neither of the above produced a record. |
 | `manual` | A date you entered. See [Manual renewal dates](#manual-renewal-dates). | It is set. |
 
-RDAP is contractually mandatory for gTLDs and entirely optional for ccTLDs, which is the whole reason for legs 2 and 3: IANA's bootstrap file lists an RDAP service for roughly 1,200 of the 1,438 TLDs in the root, and reading RDAP alone meant a `.me` domain got no expiry check at all.
-
-The chain advances only on "no endpoint for this TLD" and "no record for this name". Every other outcome stops the run and is retried against the same leg. See the [failure reasons](#failure-reasons).
+The chain advances only on "no endpoint for this TLD" and "no record for this name". Every other outcome stops the run and is retried against the same source. See the [failure reasons](#failure-reasons).
 
 `rdap` and `whois` are both the registry's own answer and are equally authoritative. `whoxy` is a third party's copy, so a `whoxy` date is worth a second look before you act on it as fact.
 
-<Aside type="note" title="Why the date can differ by a day from your registrar">
-On the RDAP leg, Site Qwality deliberately does not follow the `related` link to the registrar's RDAP server, which publishes a second, different expiry (often a day earlier) and which some registrars omit entirely. Following it would trade one deterministic date for an ambiguous one, so a one-day difference against your registrar's control panel is expected and is not a bug.
-</Aside>
+On the RDAP leg, Site Qwality does not follow the `related` link to the registrar's RDAP server, which publishes a second, different expiry (often a day earlier) and which some registrars omit entirely. A one-day difference against your registrar's control panel is expected.
 
 ## Manual renewal dates
 
@@ -231,28 +201,26 @@ curl -X PUT https://api.siteqwality.com/dns/job/$DNS_JOB_ID \
 
 Both forms return the updated [`DnsJob`](#object-dnsjob).
 
-With a date set, the check behaves exactly as it would on a registry date: the ladder fires at 90, 60, 30 and 7 days and then on the lapse, each rung once per date. `expiry_source` reads `manual`. `registry_publishes_expiry` stays `false`, because it describes the TLD rather than your domain.
+With a date set, the check behaves as it would on a registry date: the ladder fires at 90, 60, 30 and 7 days and then on the lapse, each rung once per date. `expiry_source` reads `manual`. `registry_publishes_expiry` stays `false`, because it describes the TLD rather than your domain.
 
 <Aside type="danger" title="Nothing updates a manual date when you renew">
-This field is customer-maintained, and there is no registry answer to reconcile it against. That is the entire reason it exists.
-
-Renew the domain and the date sits there unchanged, so the ladder counts down through a renewal you already paid for, warns you four times, and then reports the domain expired while it is fine. Update the date as part of the renewal, in the same runbook step.
+Renew the domain and the date stays unchanged, so the ladder warns you four times about a renewal you already paid for and then reports the domain expired. Update the date as part of the renewal, in the same runbook step.
 </Aside>
 
 ## Notification channels
 
 Domain alerts fan out through the **parent HTTP check's** notification groups, and every channel type receives them: email, SMS, Slack, webhook, Telegram, Discord, Microsoft Teams, Google Chat, Mattermost, PagerDuty, Jira Service Management (Opsgenie), Pushover and Pushbullet.
 
-DNS record change alerts are narrower: they reach only email, webhook and PagerDuty channels, and other types are skipped. See [which alerts reach which channels](/integrations/coverage/).
+DNS record change alerts reach fewer channels. See [which alerts reach which channels](/integrations/coverage/).
 
-Maintenance windows do not suppress domain alerts, deliberately. A renewal deadline does not pause for scheduled work.
+Maintenance windows do not suppress domain alerts.
 
 ## Cadence and lifecycle
 
 | Property | Value |
 |---|---|
 | Schedule | Once a day, with a flexible window of up to 4 hours |
-| Configurable | No. There is no interval field on a domain check. |
+| Configurable | No |
 | Alert thresholds | Fixed at 90, 60, 30 and 7 days plus the lapse itself. Not configurable. |
 | Enable | `PUT /http/job/{job_id}` with `monitor_dns: true`, or the toggle on the HTTP check |
 | Disable | The same with `monitor_dns: false`. This deletes the domain check and its schedule. |
@@ -265,7 +233,7 @@ You create a domain check implicitly, by setting `monitor_dns: true` on an HTTP 
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/dns/job/{dns_job_id}` | Fetch the check and its current knowledge. Returns a [`DnsJob`](#object-dnsjob). |
-| `PUT` | `/dns/job/{dns_job_id}` | Set or clear the [manual renewal date](#manual-renewal-dates). Body is `{ "manual_expiry_date": "2027-03-01T00:00:00Z" }`, or `{ "manual_expiry_date": null }` to clear it. Returns the updated [`DnsJob`](#object-dnsjob). |
+| `PUT` | `/dns/job/{dns_job_id}` | Set or clear the [manual renewal date](#manual-renewal-dates). Returns the updated [`DnsJob`](#object-dnsjob). |
 | `GET` | `/dns/job/{dns_job_id}/recent` | The single most recent result. Returns a [`DnsJobResult`](#object-dnsjobresult). |
 | `GET` | `/dns/job/{dns_job_id}/results?limit=50` | Recent results, newest first. `limit` defaults to 50 and is clamped to 200. |
 | `GET` | `/http/job/{job_id}/overview` | The parent HTTP check's overview, whose `dns` key carries a [`DnsOverview`](#object-dnsoverview). |

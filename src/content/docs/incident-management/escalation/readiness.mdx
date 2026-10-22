@@ -5,7 +5,7 @@ last_verified: 2026-10-20
 owner: jj
 ---
 
-import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
+import { LinkCard, Steps } from '@astrojs/starlight/components';
 
 An escalation policy can look complete and still page nobody: a level with no targets, a schedule with a gap, or a user whose only rule points at an SMS number nobody verified. The readiness check finds these before an incident does. It judges each level as if an incident opened now, once for `high` urgency (`critical` and `major` incidents) and once for `low` (`minor` incidents).
 
@@ -16,18 +16,18 @@ A user is reachable at a level when one of their [notification rules](/incident-
 - it is an email, SMS or Slack DM method (phone calls are not delivered);
 - its details are valid;
 - for SMS, the number is verified;
-- for email, the address has never bounced permanently or been reported as spam (Site Qwality's mail provider stops sending to such addresses);
+- for email, the address has never bounced permanently or been reported as spam;
 - for SMS, the account still has SMS left in its monthly quota or purchased credits.
 
 A rule whose `delay_minutes` is as long as the level's `timeout_minutes` or longer does not count: it fires after the level has already moved on.
 
-The escalation engine uses the same definition when it pages. A rule that cannot page is skipped, and the skip is recorded on the incident.
+Paging uses the same definition: a rule that cannot page is skipped, and the skip is recorded on the incident.
 
 ## The sign-in email fallback
 
-A user who is targeted but has no rule that can page for the incident's urgency is not silently skipped. Site Qwality sends the page to the email they sign in with instead, and records an `escalation_fallback_email` event on the incident. This covers a user with no rule for the urgency at all, and a user whose every rule failed the checks above. A user whose rules can page, even after a delay, gets no fallback.
+A targeted user with no rule that can page for the incident's urgency (no rule for it at all, or every rule failing the checks above) is paged at the email they sign in with instead, and the incident records an `escalation_fallback_email` event. A user whose rules can page, even after a delay, gets no fallback.
 
-The fallback is a safety net, not a setup. The readiness check reports it as `fallback_email` so you can fix the rules. If the sign-in address has bounced too, nothing goes out and the user is `unreachable`.
+The readiness check reports the fallback as `fallback_email` so you can fix the rules. If the sign-in address has bounced too, nothing goes out and the user is `unreachable`.
 
 ## In the dashboard
 
@@ -41,7 +41,7 @@ The fallback is a safety net, not a setup. The readiness check reports it as `fa
 
 </Steps>
 
-The panel checks again after you add, remove or reorder a level. Choose **Check again** after changing someone's rules or contact methods.
+The panel rechecks after you add, remove or reorder a level. After changing someone's rules or contact methods, choose **Check again**.
 
 ## With the API
 
@@ -145,7 +145,6 @@ Both calls only read, so an API key with `read:incidents` and a user with the vi
 | Status | When |
 |---|---|
 | `400` | The POST names no levels or more than 20, a level has more than 50 users and schedules, a `timeout_minutes` is outside `1` to `1440`, or a target user or schedule is not in your account. |
-| `401` | Missing or invalid authentication. |
 | `404` | The GET names a policy that is not in your account. |
 
 ## Statuses
@@ -194,9 +193,7 @@ Every problem comes back once in `warnings`, in level order, with a sentence in 
 | `delayed_past_timeout` | A user's rule, or every rule they have, waits as long as the level or longer. |
 | `nobody_reachable` | No target on the level is reachable for the urgency before the timeout. |
 
-<Aside type="note" title="What the check cannot see">
-It judges the schedule as it stands now, so a rotation gap next week does not show until it starts. A phone number that replied STOP is found only when an SMS is sent to it.
-</Aside>
+The check judges schedules as they stand now, so a rotation gap next week does not show until it starts. A phone number that replied STOP is found only when an SMS is sent to it.
 
 ## See also
 

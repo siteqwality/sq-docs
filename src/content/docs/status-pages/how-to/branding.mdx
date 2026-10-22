@@ -5,13 +5,9 @@ last_verified: 2026-10-15
 owner: jj
 ---
 
-import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
-A status page has a light and a dark theme, and visitors can switch between them. Branding covers both: colors that stay readable in each theme, a logo per theme, header and footer text, and custom CSS. Every field is listed in the [reference](/status-pages/reference/#branding).
-
-<Aside type="note">
-Every branding field is free on every plan, including removing the "Powered by Site Qwality" badge.
-</Aside>
+A status page has a light and a dark theme, and visitors can switch between them. Branding covers both. Every field is listed in the [reference](/status-pages/reference/#branding).
 
 ## Colors
 
@@ -24,7 +20,7 @@ Every branding field is free on every plan, including removing the "Powered by S
 
 2. Under **Theme**, set the **Primary Color** (the page title and the subscribe heading) and the **Accent Color** (links, the Subscribe button, focus rings and the response time line). With no accent color, the primary color is used for both.
 
-3. Check the **Preview** at the top of the tab. It draws the page in both themes with the colors the page will actually use.
+3. Check the **Preview** at the top of the tab. It shows both themes with the colors the page will use.
 
 4. Click **Save Settings**.
 
@@ -43,7 +39,7 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/branding \
 </TabItem>
 </Tabs>
 
-The page keeps your colors readable. In each theme it uses a color as given when it meets WCAG 2.2 AA against the page's backgrounds (4.5:1 for text, 3:1 for focus rings and the chart line), and otherwise the nearest lighter or darker shade of the same hue that does. A bright yellow accent, for example, shows as a deep olive in the light theme and as itself in the dark one. No color reaches 4.5:1 on both backgrounds, so most brand colors shift in one theme. When you pick a color that will be shifted, the dashboard shows its contrast ratio and the shade the page uses instead.
+In each theme the page uses a color as given when it meets WCAG 2.2 AA, and otherwise the nearest readable shade of the same hue, so most brand colors shift in one theme: a bright yellow accent shows as a deep olive in the light theme and as itself in the dark one. When you pick a color that will be shifted, the dashboard shows its contrast ratio and the shade the page uses instead. The thresholds are in [Colors and contrast](/status-pages/reference/#colors-and-contrast).
 
 ## Logos for light and dark
 
@@ -53,7 +49,9 @@ In the dashboard, use **Upload** next to each image under **Images**. Through th
 
 ## Clear a field
 
-A save changes only the fields it sends. To remove a value, send `null`:
+In the dashboard, empty a text field and save, use **Reset** next to a color, or **Remove** next to an image. Images save as soon as they upload or are removed; the other fields save with **Save Settings**.
+
+Through the API, a save changes only the fields it sends. Send `null` (or blank text) to clear one:
 
 ```bash
 curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/branding \
@@ -62,9 +60,7 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/branding \
   -d '{ "footer_text": null, "accent_color": null, "logo_dark_s3_key": null }'
 ```
 
-Each field goes back to its default: no footer text, the primary color as the accent, and the light logo in both themes. Clearing an image key also deletes its file. Fields you leave out keep their values, and blank text clears a field just like `null`.
-
-In the dashboard, empty a text field and save, use **Reset** next to a color, or **Remove** next to an image. Images save as soon as they upload or are removed; the other fields save with **Save Settings**.
+Each field goes back to its default: here no footer text, the primary color as the accent, and the light logo in both themes. Clearing an image key also deletes its file.
 
 ## Custom CSS
 
@@ -152,6 +148,4 @@ The page draws from CSS custom properties. Set them in `:root` for the light the
 .dark { --sq-page: #0d1117; --sq-panel: #161b22; }
 ```
 
-<Aside type="caution">
-Values you set in custom CSS are used exactly as written; only the primary and accent color fields are adjusted for contrast. Check both themes after a change. The "Powered by Site Qwality" badge has no hook: to remove it, turn on the white-label footer (free on every plan).
-</Aside>
+Values you set in custom CSS are used exactly as written; only the primary and accent color fields are adjusted for contrast, so check both themes after a change. The "Powered by Site Qwality" badge has no hook: to remove it, turn on **White-label footer**.

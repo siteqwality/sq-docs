@@ -7,13 +7,13 @@ owner: jj
 
 import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
 
-This guide configures logs. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+This guide covers logs. Replace `YOUR_INGEST_KEY` with your key.
 
 <BeforeYouStart />
 
 ## 1. Save fluent-bit.yaml
 
-Choose the multiline parser for your actual format. The tail source wraps unparsed lines in log; the adapter recognizes that field. Mount storage.path persistently and bound disk use. Fluent Bit forward protocol is not an HTTP ingest format; use this HTTP output.
+Choose the multiline parser for your format. The tail input wraps unparsed lines in `log`, which the adapter recognizes. Mount `storage.path` persistently and bound its disk use. Use this HTTP output; the Fluent Bit forward protocol is not accepted.
 
 ```yaml
 service:
@@ -46,7 +46,7 @@ pipeline:
 
 ## 2. Validate, then start
 
-Write a fresh line to the configured file. Check exporter errors and Logs. Keep batches below 4,000,000 wire bytes; a record can be truncated by per-record limits.
+Write a fresh line to the configured file, then check exporter errors and Logs. Keep batches below 4,000,000 wire bytes; per-record limits can truncate a record.
 
 ```bash
 fluent-bit --dry-run --config fluent-bit.yaml
@@ -55,14 +55,13 @@ fluent-bit --config fluent-bit.yaml
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
 Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
 - [Pipelines, access and privacy](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream Fluent Bit documentation](https://docs.fluentbit.io/manual/pipeline/outputs/http)

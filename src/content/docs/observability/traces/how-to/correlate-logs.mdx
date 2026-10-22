@@ -7,7 +7,7 @@ owner: jj
 
 ## Backend logs and exemplars
 
-Attach the active OpenTelemetry trace ID and span ID to log records through a logger integration. OTLP log records have dedicated trace/span fields; custom JSON accepts supported `trace_id`/`span_id` fields. IDs must be valid and nonzero. Matching a service name or timestamp alone does not prove a log belongs to a trace.
+Attach the active OpenTelemetry trace ID and span ID to log records through a logger integration. OTLP log records have dedicated trace/span fields; custom JSON accepts supported `trace_id`/`span_id` fields. IDs must be valid and nonzero; a matching service name or timestamp alone does not link a log to a trace.
 
 Open a recorded trace and its correlated Logs, Errors, metrics or browser context. Links retain the selected time window and signal permissions. An exemplar refers to a real recorded sample; an expired, unsampled or restricted target is shown as unavailable. Trace and log retention can differ.
 
@@ -19,4 +19,4 @@ For cross-origin requests, allow the intended frontend origin and the `tracepare
 
 The trace sample rate setting (`capture.network.trace_sample_rate`) needs RUM SDK 2.3.0 or later. Earlier versions mark every propagated request as sampled. See the [RUM quickstart](/observability/rum/quickstart/) for the install path.
 
-Replay links also require a retained replay, consent/sampling eligibility and replay access. Correlation does not enable recording or grant another user's data access. Synthetic checks and browser checks use their own configured propagation behavior.
+Replay links also require a retained replay, consent and sampling eligibility, and replay access; correlation does not enable recording or grant data access. Synthetic checks and browser checks use their own configured propagation.

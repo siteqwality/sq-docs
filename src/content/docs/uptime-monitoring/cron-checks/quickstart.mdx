@@ -5,7 +5,7 @@ last_verified: 2026-05-03
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 By the end of this guide you'll have a cron check expecting a ping every 24 hours, your job sending the ping, and a verified failure → alert path.
 
@@ -91,10 +91,6 @@ async function ping() {
 await doBackup();
 await ping();
 ```
-
-<Aside type="tip">
-Ping at the **end** of the job, after work succeeds. Pinging at the start gives you a "the job started" signal, but masks the case where the job started and then crashed. Most users want the success-confirming variant.
-</Aside>
 
 ## 3. Verify the heartbeat lands
 

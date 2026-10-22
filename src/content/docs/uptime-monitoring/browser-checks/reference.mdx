@@ -5,8 +5,6 @@ last_verified: 2026-10-14
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
 The full request schema is in the auto-generated [API Reference](/api-reference/). Cheat sheet below.
 
 ## Object: `BrowserCheck`
@@ -20,7 +18,7 @@ The full request schema is in the auto-generated [API Reference](/api-reference/
 | `check_regions` | string[] | `["aws-us-east-1"]` | Locations to run from. Browser checks run from `aws-us-east-1` only; see [supported locations](#supported-locations). |
 | `min_healthy_regions` | int | `1` | Required healthy locations for overall status. At least `1`, at most the number of `check_regions`. |
 | `rerun_on_failure` | bool \| null | `null` | Rerun a failed run once from the same location before counting it. See [rerun and confirmation](#rerun-and-confirmation). The dashboard turns it on for new checks. |
-| `confirmation_threshold` | int \| null | `null` | Failed runs in a row needed before the check goes `failed` and alerts, `1` to `10`. `null` or `1` alerts on the first failure. |
+| `confirmation_threshold` | int \| null | `null` | Failed runs in a row needed before the check goes `failed` and alerts, `1` to `10` (`400` outside that range). `null` or `1` alerts on the first failure. |
 | `group_notification_ids` | uuid[] | default group | Notification groups; cap of 10. On create, omitting it (or sending `null`) attaches your account's [default group](/incident-management/notifications/default-routing/#the-default-notification-group); `[]` notifies no one. |
 | `state` | enum | `active` | `active` or `paused`. Paused checks don't run. |
 | `tags` | string[] | `[]` | Free-form labels for filtering and maintenance windows. |
@@ -30,13 +28,9 @@ The full request schema is in the auto-generated [API Reference](/api-reference/
 
 ## Rerun and confirmation
 
-With `rerun_on_failure: true`, a failed run is held back and the same script runs once more from the same location, usually within a minute. Only the rerun's result counts, so a one-off blip never alerts. A rerun is billed in browser check minutes like any run, so a failing check can use up to twice its usual minutes. A rerun is skipped when the minutes are used up or the check was paused, and the next failed run then counts without one. A check already `failed` is not rerun.
+With `rerun_on_failure: true`, a failed run is held back and the same script runs once more from the same location, usually within a minute. Only the rerun's result counts, so a one-off blip never alerts. A rerun uses browser check minutes like any run, so a failing check can use up to twice its usual minutes. A rerun is skipped when the check was paused, and a check already `failed` is not rerun.
 
-`confirmation_threshold` counts the failures that stand after any rerun: the check goes `failed` only after that many in a row (per location, judged against `min_healthy_regions`). Recovery is immediate. A check created through the API without these fields, and every check made before they existed, keeps the old behavior: no rerun and an alert on the first failure.
-
-| Request | Result |
-|---|---|
-| `confirmation_threshold` outside 1 to 10 | `400`. |
+`confirmation_threshold` counts the failures that stand after any rerun: the check goes `failed` only after that many in a row (per location, judged against `min_healthy_regions`). Recovery is immediate.
 
 ## Supported locations
 
@@ -46,11 +40,8 @@ With `rerun_on_failure: true`, a failed run is held back and the same script run
 | A retired id: `aws-us-east-2` or `aws-us-west-1` | Accepted and replaced with `aws-us-east-1`. |
 | A location that cannot run browser checks | `400`. |
 | An id that does not exist | `400` with `Invalid check_regions <value>`. |
-| More than one location without a paid uptime plan | `403` with `multi_region_requires_paid_plan`. |
 
-<Aside type="caution" title="HTTP checks have more locations than browser checks">
-`GET /check-locations` lists every location, and each one's `capabilities` says which check types it can run. Browser checks need `browser`, which only `aws-us-east-1` has. See [location](/uptime-monitoring/browser-checks/overview/#location) for the full behavior, and [check locations](/uptime-monitoring/http-checks/reference/#check-locations) for HTTP checks.
-</Aside>
+`GET /check-locations` lists every location, and each one's `capabilities` says which check types it can run. Browser checks need `browser`, which only `aws-us-east-1` has. HTTP checks have more; see [check locations](/uptime-monitoring/http-checks/reference/#check-locations).
 
 ## The script API
 
@@ -89,7 +80,7 @@ const url = page.url();
 
 ### Common assertion patterns
 
-Browser checks don't have a separate assertion DSL. Assertions are just JavaScript that throws.
+There is no separate assertion DSL: an assertion is JavaScript that throws.
 
 ```javascript
 // Wait for an element
@@ -128,17 +119,17 @@ await step('Submit form', async () => {
 
 For every result:
 
-| Artifact | Stored as | API endpoint |
+| Artifact | Format | API endpoint |
 |---|---|---|
-| Step results | Inline JSON in the result row | `GET /browser_check/{id}/results` |
-| Screenshots | Per-step PNGs in S3 | embedded in step results |
-| HAR file | Full network capture, S3 | `GET /browser_check/{id}/results/{result_id}/artifact_url` |
-| Video | 1280×720 MP4 of the run, S3 | same artifact_url endpoint |
-| Web vitals | Inline JSON: `{lcp_ms, fcp_ms, cls, ttfb_ms}` | `GET /browser_check/{id}/vitals` |
-| Console errors | Inline JSON array | embedded in result |
+| Step results | JSON | `GET /browser_check/{id}/results` |
+| Screenshots | Per-step PNGs | embedded in step results |
+| HAR file | Full network capture | `GET /browser_check/{id}/results/{result_id}/artifact_url` |
+| Video | 1280×720 MP4 of the run | same artifact_url endpoint |
+| Web vitals | JSON: `{lcp_ms, fcp_ms, cls, ttfb_ms}` | `GET /browser_check/{id}/vitals` |
+| Console errors | JSON array | embedded in result |
 | Trace IDs | Trace IDs of the `traceparent` headers added to outgoing requests; they resolve only for backends that send traces to Site Qwality | embedded in result |
 
-The HAR and video URLs are presigned, expire in 1 hour, and are S3-direct (no proxying through Site Qwality's API).
+The HAR and video URLs are presigned and expire in 1 hour.
 
 ## Endpoints
 

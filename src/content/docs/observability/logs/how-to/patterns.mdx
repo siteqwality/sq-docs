@@ -5,6 +5,6 @@ last_verified: 2026-10-18
 owner: jj
 ---
 
-Open Logs, select the service/environment and time window, then use Patterns in the analysis controls. Patterns group similar received messages and show counts and examples. They help find repeated failures or new message shapes; they are not an alert delivery mechanism.
+Open Logs, select the service/environment and time window, then use Patterns in the analysis controls. Patterns group similar received messages and show counts and examples. They help find repeated failures or new message shapes.
 
-The current API is `GET /logs/v2/patterns`. Keep the selected query/window and inspect partial or retention metadata. A pattern sample can be absent after retention or under access restrictions. Narrow a broad query before increasing limits. Use [query syntax](/observability/query/) and [pipelines](/observability/pipelines/) when you need stable structured fields rather than message clustering.
+The API is `GET /logs/v2/patterns`. A pattern sample can be absent after retention or under access restrictions. Narrow a broad query before increasing limits. Use [query syntax](/observability/query/) and [pipelines](/observability/pipelines/) when you need stable structured fields rather than message clustering.

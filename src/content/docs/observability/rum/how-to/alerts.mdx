@@ -3,11 +3,11 @@ title: Alert on browser errors
 description: Configure issue lifecycle and threshold alerts using existing Site Qwality notification groups.
 ---
 
-Use issue alerts to detect a new bug, a resolved bug returning, or a sharp increase in an existing issue. Threshold and metric rules evaluate a time window. Delivery uses your existing Site Qwality notification groups and channels, with existing plan limits.
+Use issue alerts to detect a new bug, a resolved bug returning, or a sharp increase in an existing issue. Threshold and metric rules evaluate a time window. Delivery uses your Site Qwality notification groups and channels.
 
 ## Create a rule
 
-In Alerts, create a rule with type **RUM**, select your application, and choose a trigger. Add filters and a notification group, then save the enabled rule. Capturing errors does not automatically create a notification rule. Viewers and read-only impersonation sessions cannot change rules or issue status.
+In Alerts, create a rule with type **RUM**, select your application, and choose a trigger. Add filters and a notification group, then save the enabled rule. Capturing errors does not create a notification rule by itself. Viewers cannot change rules or issue status.
 
 ## Choose a trigger
 
@@ -31,7 +31,7 @@ Open issues auto-resolve after the application's configured inactive period, def
 
 ## API example
 
-Use the existing `/alert-rules` API with `kind: "rum"`:
+Use the `/alert-rules` API with `kind: "rum"`:
 
 ```json
 {
@@ -49,16 +49,16 @@ Use the existing `/alert-rules` API with `kind: "rum"`:
 }
 ```
 
-Replace the application ID and add your notification-group IDs. Event triggers are `new_issue`, `regression` and `escalating`, with no measure. For `threshold`, set `measure` to `events`, `users` or `sessions_pct`. For `metric`, use `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `sessions_with_errors_pct` or `failed_request_pct`. Existing window, comparison and pending-duration fields apply to evaluated rules. Percent measures use a 0–100 scale; LCP and INP use milliseconds, and CLS is unitless. The threshold measure `sessions_pct` compares matching error sessions with all application sessions in the window. The metric `sessions_with_errors_pct` applies Analytics filters to the measured view population.
+Replace the application ID and add your notification-group IDs. Event triggers are `new_issue`, `regression` and `escalating`, with no measure. For `threshold`, set `measure` to `events`, `users` or `sessions_pct`. For `metric`, use `p75_lcp_ms`, `p75_inp_ms`, `p75_cls`, `sessions_with_errors_pct` or `failed_request_pct`. The alert-rule window, comparison and pending-duration fields apply to threshold and metric rules. Percent measures use a 0–100 scale; LCP and INP use milliseconds, and CLS is unitless. The threshold measure `sessions_pct` compares matching error sessions with all application sessions in the window. The metric `sessions_with_errors_pct` applies Analytics filters to the measured view population.
 
-`POST /alert-rules/{id}/test` evaluates threshold and metric rules without sending notifications. Lifecycle rules (`new_issue`, `regression`, `escalating`) return no evaluation value and do not simulate an issue event or send a test notification. Verify notification-channel setup separately.
+`POST /alert-rules/{id}/test` evaluates threshold and metric rules without sending notifications. Lifecycle rules return no evaluation value and send no test notification, so verify notification channels separately.
 
-Scoped API keys and M2M callers need both `write:logs` and `write:rum` for RUM rule changes, and both `read:logs` and `read:rum` for reads and evaluation tests. This reflects the existing alert-rule API scope plus RUM resource authorization. Application and notification groups must belong to your account.
+Scoped API keys and M2M callers need both `write:logs` and `write:rum` for RUM rule changes, and both `read:logs` and `read:rum` for reads and evaluation tests.
 
 ## Delivery and catch-up
 
 Lifecycle delivery uses these webhook event names: `rum.issue.created`, `rum.issue.regressed` and `rum.issue.escalating`. Evaluated rules emit `rum.alert.firing` and `rum.alert.resolved`.
 
-Initial catch-up reconstructs issue counts and activity without sending historical notifications. Lifecycle notifications require a triggering occurrence in the tick's recent two-minute window and after the rule was created. An outage longer than that window does not replay missed notifications. Previously pending deliveries can retry. Delivery is at least once, so receivers should tolerate duplicates.
+Initial catch-up rebuilds issue counts without sending historical notifications. A lifecycle notification needs an occurrence after the rule was created, and notifications missed during an outage longer than two minutes are not replayed. Delivery is at least once, so receivers should tolerate duplicates.
 
-Quiet, ignored and suppressed issues have distinct meanings. Missing notifications can also mean the filter did not match, the action interval has not elapsed, the account is inactive, or the scheduler has not been enabled. Check the rule and notification group before changing collection settings.
+If a notification is missing, check whether the issue is ignored or suppressed, the filter matched, the action interval has elapsed and the account is active, before changing collection settings.

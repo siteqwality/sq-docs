@@ -7,13 +7,13 @@ owner: jj
 
 import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
 
-This guide configures a signed logs drain and a traces drain. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+This guide sets up a signed logs drain and a traces drain. Replace `YOUR_INGEST_KEY` with your key.
 
 <BeforeYouStart />
 
 ## 1. Create a signed Logs drain
 
-Add a Logs drain in Vercel Team Settings, Drains, and select projects/environments. Copy its signature verification secret into Usage and settings, Collection, Vercel log drain. Site Qwality requires x-vercel-signature using HMAC-SHA1 over the exact request bytes, even though Vercel calls signing optional. Save the secret before testing the drain.
+Add a Logs drain in Vercel Team Settings, Drains, and select projects/environments. Copy its signature verification secret into Usage and settings, Collection, Vercel log drain. Site Qwality requires `x-vercel-signature` (HMAC-SHA1 over the exact request bytes) even though Vercel calls signing optional, so save the secret before testing the drain.
 
 ```text
 Destination: https://otlp.siteqwality.com/v1/vercel
@@ -25,7 +25,7 @@ X-Env: production
 
 ## 2. Create a separate OTLP Traces drain
 
-Choose Traces as the drain data type. The log-drain signing requirement applies to /v1/vercel; traces use the normal OTLP authorization contract. Drain availability depends on your Vercel plan.
+Choose Traces as the drain data type. Signing applies only to `/v1/vercel`; traces use normal OTLP authorization. Drain availability depends on your Vercel plan.
 
 ```text
 Destination: https://otlp.siteqwality.com/v1/traces
@@ -35,7 +35,7 @@ Authorization: Bearer YOUR_INGEST_KEY
 
 ## 3. Generate and verify
 
-Do not send Speed Insights, Web Analytics or Audit Log envelopes to the log adapter. Never put the ingest key in NEXT_PUBLIC_* variables.
+Do not send Speed Insights, Web Analytics or Audit Log envelopes to the log adapter. Never put the ingest key in `NEXT_PUBLIC_*` variables.
 
 ```text
 Redeploy the project, make a request, and emit a server log. Check the Vercel drain test result and the Site Qwality explorer.
@@ -43,14 +43,13 @@ Redeploy the project, make a request, and emit a server log. Check the Vercel dr
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
 Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
 - [Pipelines, access and privacy](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream Vercel documentation](https://vercel.com/docs/drains/using-drains)

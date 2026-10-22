@@ -5,31 +5,27 @@ last_verified: 2026-10-20
 owner: jj
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
-Most incidents are auto-created by monitors. Sometimes they aren't, and you want one anyway. This page covers the patterns where manual creation is the right move, and the cleanest way to do it.
-
-<Aside type="tip" title="Manual incidents page exactly like automatic ones">
-Choose a **Service** when you report the incident (`service_id` in the API) and it runs the service's escalation policy: same levels, same timeouts, same repeat cycles, same one-click acknowledgment. See [making it page someone](#making-it-page-someone).
-</Aside>
+Most incidents are opened by monitors. A manual incident with a **Service** pages exactly like one: see [making it page someone](#making-it-page-someone).
 
 ## When to create one manually
 
-- **A third-party dependency broke something user-visible.** Stripe is degraded, AWS is throttling, your CDN is intermittently 502-ing. Your monitors might be showing a partial signal, but you have first-hand evidence.
-- **A bug surfaced in production that no monitor catches.** UI broken for a specific browser, auth flow broken only for SSO users.
-- **Coordinating a multi-team outage.** One canonical incident beats five Slack threads.
-- **Pre-announced maintenance went sideways.** A deploy you'd protected with a [maintenance window](/incident-management/maintenance/overview/) actually broke something. The maintenance window suppressed the auto-incident, so create one manually.
+- **A third-party dependency broke something user-visible**: Stripe is degraded, AWS is throttling, your CDN is intermittently returning 502s.
+- **A bug surfaced in production that no monitor catches**: UI broken for a specific browser, auth flow broken only for SSO users.
+- **Coordinating a multi-team outage** in one canonical incident.
+- **Planned maintenance went sideways.** A deploy you protected with a [maintenance window](/incident-management/maintenance/overview/) broke something. The window suppressed the auto-incident, so create one manually.
 
 ## When *not* to
 
-- Don't manually create an incident for an outage a monitor will catch in 60 seconds anyway. The auto-incident will be cleaner, since it has fewer race conditions with `responder_status` and the monitor list.
-- Don't create an incident as a stand-in for a Slack message. If you don't intend to publish it on a status page or trigger paging, just message the team directly.
+- Don't manually create an incident for an outage a monitor will catch in 60 seconds. The auto-incident will be cleaner.
+- Don't create an incident as a stand-in for a Slack message. If you don't intend to publish it on a status page or trigger paging, message the team directly.
 
 ## Two flavors of manual incident
 
 ### Standalone incident (no status page)
 
-Use this for internal-only tracking. Useful if you want the timeline + paging behavior without publishing.
+Use this for internal tracking: you get the timeline and paging without publishing.
 
 In the dashboard, go to **Respond → Incidents** and click **Report incident**. Give it a **Title**, a **Severity** and an **Initial Message**, then click **Report Incident**.
 
@@ -67,7 +63,7 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident \
   }'
 ```
 
-The incident appears immediately on the public page.
+The incident appears immediately on the public page. Creating it through `POST /status_page/{id}/incident` also emails the page's confirmed subscribers.
 
 ## Publish later, and keep notes internal
 
@@ -90,7 +86,7 @@ The page shows the public title and public updates only. On an incident's own pa
 
 ## Linking to affected monitors
 
-Even on manual incidents, name the monitors if monitors *do* exist for the broken thing. This makes the incident appear as a banner on the matching status-page components, and groups it correctly in dashboards.
+If monitors exist for the broken thing, add them. The incident then shows as a banner on the matching status-page components and groups correctly in dashboards.
 
 In the dashboard, open the incident and click **Add monitor** under **Monitors**. Pick the monitor and its impact (**From severity**, **Degraded**, **Partial outage** or **Major outage**), then click **Add**.
 
@@ -105,7 +101,7 @@ Through the API, send `monitors` on the create request. Each entry takes an opti
 }
 ```
 
-The older `affected_http_job_ids` list is deprecated but still accepted. You can add, re-grade and remove monitors after creation too: see [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/).
+You can add, re-grade and remove monitors after creation too: see [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/).
 
 ## Making it page someone
 
@@ -125,24 +121,13 @@ curl -X POST https://api.siteqwality.com/incident \
 
 From there it behaves exactly like a monitor-opened incident: level 1 of the service's policy fires immediately, the timeout is scheduled, and acknowledging (from the dashboard, the API, or a paged responder's [email or SMS link](/incident-management/incidents/how-to/one-click-actions/)) cancels the escalation.
 
-The service's broadcast targets, if it has any, are also notified.
-
-<Aside type="caution" title="Silent no-paging is the common mistake">
-Two situations produce an incident that pages nobody:
-
-- **No service** (no `service_id`). The incident is created and nothing else happens.
-- **The service has no escalation policy.** Broadcast targets still fire, but nobody is paged.
-
-A service ID from another account is refused with `404`.
-
-If a manual incident did not page, check the service first.
-</Aside>
+The service's broadcast targets, if it has any, are also notified, even when the service has no escalation policy. An incident with no service creates the record and nothing else. If a manual incident did not page, check that it has a service and that the service has an escalation policy.
 
 ## Move an incident to another service
 
-Filed it under the wrong service? Open the incident, click **Edit**, pick the right **Service** (or **None**) and click **Save Changes**.
+Open the incident, click **Edit**, pick the right **Service** (or **None**) and click **Save Changes**.
 
-Through the API, send `service_id` on `PUT /incident/{incident_id}`: a service id moves the incident there (`404` if it is not in your account), `null` detaches it from any service, and leaving it out keeps it as it is.
+Through the API, send `service_id` on `PUT /incident/{incident_id}`. `null` detaches the incident from any service.
 
 ```bash
 curl -X PUT https://api.siteqwality.com/incident/$INCIDENT_ID \
@@ -151,9 +136,9 @@ curl -X PUT https://api.siteqwality.com/incident/$INCIDENT_ID \
   -d '{ "service_id": "<new-service-id>" }'
 ```
 
-Moving an open incident cancels the old service's escalation and starts the new service's [escalation policy](/incident-management/escalation/overview/) at level one. The new policy only starts while the incident is still `triggered`: an acknowledged incident does not start paging again. The move is recorded as a service-changed [broadcast event](/incident-management/services/overview/#broadcast-targets).
+Moving an open incident cancels the old service's escalation and starts the new service's [escalation policy](/incident-management/escalation/overview/) at level one, but only while the incident is still `triggered`: an acknowledged incident does not start paging again. The move is recorded as a service-changed [broadcast event](/incident-management/services/overview/#broadcast-targets).
 
-An auto-created incident cannot move onto a service that already has an open auto-created incident: the request returns `409` with `data.conflict` set to `open_auto_incident_exists`. Merge the two incidents instead, see [merge incidents](/incident-management/incidents/how-to/merge-incidents/).
+An auto-created incident cannot move onto a service that already has an open auto-created incident. Merge the two instead: see [merge incidents](/incident-management/incidents/how-to/merge-incidents/).
 
 ## Severity guidance for manual incidents
 
@@ -163,20 +148,11 @@ An auto-created incident cannot move onto a service that already has an open aut
 | Login broken for a subset of users | `major` |
 | Full outage, billing affected, security event | `critical` |
 
-Severity drives display order, color, and filters. It also picks the **urgency** used when paging: `critical` and `major` page at high urgency, `minor` at low. Each targeted responder's own [notification rules](/incident-management/notifications/overview/#notification-rules) for that urgency decide which of their contact methods fire, so a `minor` incident can legitimately reach a different set of devices than a `critical` one. Raising a `minor` incident to `major` or `critical` pages the current escalation level again.
+Severity drives display order, color and filters, and picks the paging urgency that each responder's [notification rules](/incident-management/notifications/how-to/notification-rules/) act on. See [severity guidance](/incident-management/incidents/overview/#severity-guidance).
 
 ## Following up
 
-After resolving, especially for `major` and `critical` incidents, open the incident's **Post-incident** tab:
-
-- Start a postmortem. It is drafted from the incident's timeline, so you only write the analysis.
-- Add action items with an owner and a due date. Owners get one email if an item is still open after its due date, and every open item shows on the **Follow-ups** tab of the Incidents page.
-
-See [write a postmortem and track follow-ups](/incident-management/incidents/how-to/postmortems/).
-
-<Aside type="tip">
-The full update history is preserved on the incident object. `GET /incident/{id}` returns it sorted chronologically.
-</Aside>
+After resolving, especially for `major` and `critical` incidents, open the incident's **Post-incident** tab to start a postmortem (drafted from the timeline) and add action items. See [write a postmortem and track follow-ups](/incident-management/incidents/how-to/postmortems/).
 
 ## See also
 

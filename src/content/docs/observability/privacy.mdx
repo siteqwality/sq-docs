@@ -9,29 +9,29 @@ owner: jj
 
 Keep ingest keys in server secret stores and restrict them by signal. A read-only key queries the selected account and scopes; it does not send telemetry. Member service/environment/signal allowlists apply to explorers, details, saved views, exports and correlation. Owners/admins can manage restrictions in [Telemetry settings](https://app.siteqwality.com/account/telemetry). API keys and machine clients use their own scopes; do not assume they inherit a person's member allowlist.
 
-A saved view does not grant additional data access. A link to a restricted service or trace remains restricted. Permission changes can clear loaded data and invalidate paging. Read audit records contain query hashes and bounded metadata rather than a license to expose raw payloads.
+Saved views and links grant no extra access: a link to a restricted service or trace stays restricted. Permission changes can clear loaded data and invalidate paging. Read audit records hold query hashes and bounded metadata, not raw payloads.
 
 ## Exports
 
-Use the explorer Download/Export controls. Inline exports are bounded to **10,000 rows and 4 MiB compressed**. An oversized export returns `export_too_large`; narrow the range/filter or choose a supported asynchronous export. Asynchronous exports page through at most 10,000,000 rows and report truncation at the cap. Work is bounded by a 900-second runtime budget; a stale or failed job is not a completed artifact. Large exports are not an unbounded API dump.
+Use the explorer Download/Export controls. Inline exports are bounded to **10,000 rows and 4 MiB compressed**; for more, narrow the range or filter, or choose an asynchronous export. Asynchronous exports page through at most 10,000,000 rows, report truncation at the cap and run within a 900-second budget.
 
-`POST /telemetry/exports` creates supported export work. `GET /telemetry/exports` lists your jobs and `GET /telemetry/exports/{id}` reports state. Keep the returned ID after a timeout rather than creating duplicates. Completed artifacts expire after 24 hours. Download only when the job is ready and a nonexpired URL is returned. Download URLs are credentials; do not publish them. Access is rechecked and erasure can invalidate a job or artifact. An export is scoped to the creator's allowed data and is not a way around retention, read limits or restrictions. Use the exact format and source selector offered by the current explorer.
+`POST /telemetry/exports` creates an export job, `GET /telemetry/exports` lists your jobs and `GET /telemetry/exports/{id}` reports its state. After a timeout, keep the returned ID rather than creating a duplicate. Download once the job is ready and returns a URL; completed artifacts expire after 24 hours. Download URLs are credentials, so do not publish them. An export covers only data its creator may read and does not bypass retention or restrictions. Access is rechecked, and erasure can invalidate a job or artifact.
 
 ## Erasure
 
-Open [Telemetry privacy](https://app.siteqwality.com/account/telemetry/privacy). The existing form supports account, service/environment, attribute and trace scopes with selected signals and an optional bounded time range. Confirm the scope carefully. Use a stable client-generated request UUID and retain it across ambiguous retries.
+In [Telemetry privacy](https://app.siteqwality.com/account/telemetry/privacy), choose an account, service/environment, attribute or trace scope, the signals and an optional time range. Confirm the scope carefully.
 
 ```text
 POST /telemetry/deletion-requests
 GET /telemetry/deletion-requests/{id}
 ```
 
-The create body contains `id`, `kind`, optional `signals`, `service`, `env`, `attribute_key`, `attribute_value`, `trace_ids`, `from` and `to`, as appropriate for the selected kind. Account erasure and account closure coordinate collection and readers. Do not recreate deleted data by replaying an old sender buffer.
+The create body contains `id`, `kind`, optional `signals`, `service`, `env`, `attribute_key`, `attribute_value`, `trace_ids`, `from` and `to`, as appropriate for the selected kind. Generate `id` once and reuse it across ambiguous retries. Do not recreate deleted data by replaying an old sender buffer.
 
-A request is asynchronous. The API returns `status`, `step`, target/due times, `completed_at`, backup retention and a bounded `blocked_reason` when needed. The operational target is 24 hours with a seven-day due limit; these are not proof of completion. **Only a completed status confirms the applicable deletion work finished.** Pending storage deletions, spill cleanup, missing series identity or remaining exports can keep a request blocked. Escalate overdue work to support with the request ID.
+A request runs asynchronously. The API returns `status`, `step`, target and due times, `completed_at`, backup retention and a `blocked_reason` when needed. The target is 24 hours with a seven-day due limit. **Only a completed status confirms the deletion finished.** Pending storage deletions or remaining exports can keep a request blocked; escalate overdue work to support with the request ID.
 
-The executor covers applicable roots, dependent series/points, issue metadata, exports and spill within the selected scope. Aggregates without personal values, audit records and already counted billing totals can remain. Backups follow their separate **35-day retention**; this API does not promise immediate backup removal. Downloaded customer copies are outside server-side deletion. See [retention](/observability/billing/) and [pipeline redaction](/observability/pipelines/) to reduce future collection.
+Erasure covers the matching data, its dependent series and points, issue metadata and exports within the selected scope. Aggregates without personal values, audit records and already counted billing totals can remain. Backups follow their separate **35-day retention**; this API does not promise their immediate removal. Copies you downloaded are outside server-side deletion. To reduce future collection, see [retention](/observability/billing/) and [pipeline redaction](/observability/pipelines/).
 
 ## Browser correlation and CORS
 
-Trace propagation is opt-in and should target only controlled URL prefixes. Use the current [RUM correlation guide](/observability/traces/how-to/correlate-logs/). A server ingest key never belongs in a browser, public RUM token, query string or cross-origin request header. Limit CORS to intended origins and allow `traceparent`/`tracestate` where propagation requires them. Enabling tracing does not grant replay consent or bypass replay access.
+Trace propagation is opt-in and should target only URL prefixes you control; see the [RUM correlation guide](/observability/traces/how-to/correlate-logs/). A server ingest key never belongs in a browser, public RUM token, query string or cross-origin request header. Limit CORS to intended origins and allow `traceparent`/`tracestate` where propagation needs them. Tracing does not grant replay consent or bypass replay access.

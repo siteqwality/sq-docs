@@ -5,17 +5,15 @@ last_verified: 2026-10-16
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, LinkCard } from '@astrojs/starlight/components';
 
-Notification rules are how each user tells Site Qwality "for high-urgency pages, reach me this way; for low-urgency, this way." They are personal, and they apply to incident pages only: an escalation policy pages you, and your rules decide which [contact methods](/incident-management/notifications/how-to/contact-methods/) fire and when. Monitor alerts go to notification groups and never read these rules (see [who gets notified](/incident-management/notifications/default-routing/)).
-
-The mental model: **stack rules at increasing `delay_minutes` for personal escalation**.
+Notification rules are personal, and they apply to incident pages only: an escalation policy pages you, and your rules decide which [contact methods](/incident-management/notifications/how-to/contact-methods/) fire and when. Monitor alerts go to notification groups and never read these rules (see [who gets notified](/incident-management/notifications/default-routing/)).
 
 ## What you start with
 
 A new user (sign-up, accepted invite or SCIM) starts with their sign-in email as a verified contact method and two rules on it: one `high` and one `low`, both with `delay_minutes: 0`. So they are paged by email at both urgencies until they change it.
 
-When you add a contact method and have no rule for an urgency (for example, you deleted your `low` rule), Site Qwality creates that rule on the new method with no delay. For an SMS number this happens when you verify it.
+Adding a contact method when you have no rule for an urgency creates one for you (see [rules created for you](/incident-management/notifications/how-to/contact-methods/#rules-created-for-you)).
 
 In the dashboard, rules are under your personal settings: open the menu under your name (bottom left), choose **Notifications**, then **Paging rules**. Each rule shows as a step in the **High urgency** or **Low urgency** column, in delay order.
 
@@ -27,17 +25,13 @@ A rule has an `urgency`, a `contact_method_id`, a `delay_minutes` and a `positio
 - **`delay_minutes`** is how long after you are paged the rule fires, `0` to `1440`, default `0`. When a delayed rule fires, Site Qwality first checks that the incident is still triggered, nobody has acknowledged it, and the rule still exists; otherwise it does not send.
 - **`position`** is sort order within the urgency. It does not stagger anything: every matching rule fires in the same pass, each after its own delay.
 
-A user with no rule for the incident's urgency, or whose rules all fail (an unverified SMS number, an email address that bounced, no SMS left on the account), is paged at their sign-in email instead. The incident records an `escalation_fallback_email` event. See [the sign-in email fallback](/incident-management/escalation/readiness/#the-sign-in-email-fallback).
-
-<Aside type="caution" title="Verify SMS numbers first">
-A rule cannot use an SMS number until it is verified. Creating or updating a rule with an unverified SMS method returns `409` with code `contact_method_unverified`: "Verify this phone number before using it in a notification rule." See [verify a contact method](/incident-management/notifications/how-to/contact-methods/#verify-a-contact-method). Email and Slack DM methods can be used straight away.
-</Aside>
+A user with no rule for the incident's urgency, or whose rules all fail (an unverified SMS number, an email address that bounced), is paged at their sign-in email instead. The incident records an `escalation_fallback_email` event. See [the sign-in email fallback](/incident-management/escalation/readiness/#the-sign-in-email-fallback).
 
 ## Recommended high-urgency stack
 
-Three rules at increasing delays: SMS at 0 minutes, Slack DM at 5, email at 15. Your starting `high` rule on your sign-in email is the third one; move it to 15 minutes instead of adding another.
+Three rules at increasing delays: SMS at 0 minutes, Slack DM at 5, email at 15. An SMS is tried once, so the later rules catch a message that did not arrive. Your starting `high` rule on your sign-in email is the third one; move it to 15 minutes instead of adding another.
 
-Add and [verify](/incident-management/notifications/how-to/contact-methods/#verify-a-contact-method) the SMS number and the Slack DM first. Then, under **Paging rules**:
+Add the SMS number and the Slack DM first. A rule cannot use an SMS number until it is [verified](/incident-management/notifications/how-to/contact-methods/#verify-a-contact-method); email and Slack DM methods can be used straight away. Then, under **Paging rules**:
 
 <Steps>
 
@@ -100,7 +94,7 @@ Deleting your `low` rule does not stop low-urgency pages: with no rule, they go 
 
 ## How the stack interacts with escalation
 
-Escalation policy timeouts and personal-rule delays are **independent timers**. An escalation timeout fires within a few seconds of its time; a delayed rule can fire up to about a minute after its delay. If your escalation policy fires a level at minute 0 and you have rules at 0/5/15 min:
+Escalation policy timeouts and personal-rule delays are **independent timers**. If your escalation policy fires a level at minute 0 and you have rules at 0/5/15 min:
 
 | Time | Event |
 |---|---|
@@ -110,16 +104,6 @@ Escalation policy timeouts and personal-rule delays are **independent timers**. 
 | 15 min | Your rule at 15 min fires (email). |
 
 You'll keep getting your full personal stack even after escalation has moved on. Acknowledging the incident at any point stops everything.
-
-## Tips
-
-- **Don't put SMS at high delay.** SMS is the fastest signal; reserve it for `delay_minutes: 0`.
-- **Pair SMS with a second method.** An SMS is tried once, so a later Slack DM or email catches a message that did not arrive.
-- **Email is the catcher's mitt.** A 15-minute email rule means "if I missed everything, at least the message is in my inbox."
-
-<Aside type="tip">
-A `slack_dm` contact method is quieter than SMS but more visible than email, a good middle option for "I want to know but don't need to wake up."
-</Aside>
 
 ## See also
 

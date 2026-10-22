@@ -5,9 +5,7 @@ last_verified: 2026-10-11
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
-A dashboard holds up to 100 widgets. Each has a `type` and a type-specific `config`. This page lists every type and every option. Option names are the keys in the [dashboard JSON](/dashboards/reference/#json-export-format).
+A dashboard holds up to 100 widgets. Each has a `type` and a type-specific `config`. Option names are the keys in the [dashboard JSON](/dashboards/reference/#json-export-format).
 
 Five widgets chart query results: Time series, Query value, Top list, Table and Pie. They share one query model, covered in [queries, formulas and variables](/dashboards/queries/). The monitoring, logs, traces and RUM widgets read purpose-built data and take `filters` instead of queries. Note and Section hold text and layout.
 
@@ -25,9 +23,8 @@ Five widgets chart query results: Time series, Query value, Top list, Table and 
 
 ## Widget states
 
-Each widget draws its own state, so one failure never blanks the board.
+Each widget draws its own state.
 
-- **Loading.** A skeleton shows until data arrives.
 - **Error.** The widget shows a message and a **Retry** button. A query that takes longer than 15 seconds shows as a timeout.
 - **No data.** An empty result is labeled **No data**. It is never drawn as zero.
 - **Denied.** A widget you cannot use, because of your plan or a missing RUM application, says so.
@@ -49,7 +46,7 @@ Each widget has a menu that appears on hover and focus:
 | Export CSV | Downloads the widget's data. |
 | Remove | Deletes the widget from the draft. |
 
-Edit, Duplicate and Remove change the dashboard, so they are for people who can edit it.
+Edit, Duplicate and Remove need edit access.
 
 ## Which widgets use the time range
 
@@ -63,7 +60,7 @@ A few widgets differ:
 
 ## Charts
 
-All five chart widgets take `queries` (up to 10) and `formulas` (up to 5). Values in Query value, Top list, Table and Pie reduce over the whole window with the measure's aggregation, never the last bucket.
+All five chart widgets take `queries` (up to 10) and `formulas` (up to 5). Query value, Top list, Table and Pie reduce over the whole window; see [buckets](/dashboards/data-sources/#buckets).
 
 ### Time series (`timeseries`)
 
@@ -84,7 +81,7 @@ A line, area or bar chart on a real time axis. Gaps in the data stay gaps. The a
 | `overlays` | any of `incidents`, `downtime` | Marks incidents or downtime on the chart. See below. |
 | `palette` | `categorical`, `cool`, `warm`, `status` | Series colors. |
 
-The crosshair is shared across the dashboard, so hovering one chart marks the same moment on all of them. Turn it off with the crosshair setting in **Settings**. Drag across a chart to zoom the dashboard's time range in.
+The crosshair is shared across the dashboard, so hovering one chart marks the same moment on all of them. Turn it off with the crosshair setting in **Settings**.
 
 **Overlays.** `incidents` marks incidents that overlap the window. If the widget filters on `service` or `status_page`, only matching incidents show. `downtime` marks failed windows of the monitors the widget's monitor filters select, up to 200 events.
 
@@ -213,8 +210,6 @@ The newest matching log lines.
 | `columns` | any of `level`, `source`, `host`, `env`, `version`, `trace_id` | Extra columns. |
 | `limit` | max 200 | Lines shown. |
 
-Not available on shared dashboards.
-
 ### Trace list (`trace_list`)
 
 Traces with root service, root operation, start, duration, span count and error count.
@@ -224,8 +219,6 @@ Traces with root service, root operation, start, duration, span count and error 
 | `filters` | traces fields | Which traces to show. |
 | `sort` | `recent`, `duration`, `errors` | Order. |
 | `limit` | max 100 | Rows shown. |
-
-Not available on shared dashboards.
 
 ### Web Vitals (`rum_vitals`)
 
@@ -257,19 +250,13 @@ A full-width, collapsible row. Widgets below a section belong to it until the ne
 | `collapsed` | bool | Hides the section's widgets. |
 | `children` | widgets | Filled only while collapsed. They keep their layout and return when you expand the section. |
 
-A section is always 12 columns wide and 1 row tall. Sections cannot contain sections.
-
-<Aside type="note">
-When you collapse a section, its widgets leave the top level of the document and sit in `config.children`. Expanding puts them back and pushes later widgets down.
-</Aside>
+A section is always 12 columns wide and 1 row tall. Sections cannot contain sections. Expanding a section pushes later widgets down.
 
 ## Layout and editing
 
 - **Grid.** 12 columns at 1200 px and wider. Below 768 px widgets stack full width in reading order, and dragging is off.
 - **Add.** The add-widget tray has search and categories. Click a widget or drag it in.
-- **Move and resize.** Drag a widget to move it, and drag its corner to resize it.
-- **Copy and paste.** `Cmd+C` and `Cmd+V` on a focused widget copy it between dashboards.
-- **Undo and redo.** `Cmd+Z` and `Shift+Cmd+Z`.
+- **Shortcuts.** Copy, paste, undo and redo are in the [keyboard shortcuts](/dashboards/reference/#keyboard-shortcuts).
 - **Editor.** The widget editor is a full-height drawer with a live preview on top. It has a visualization picker, a query builder, formulas and display options per type.
 
 ## See also

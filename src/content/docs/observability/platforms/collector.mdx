@@ -10,7 +10,7 @@ import Snippet from '../../../../components/Snippet.astro';
 import config from '../../../../../examples/collector/collector.yaml?raw';
 import run from '../../../../../examples/collector/run.sh?raw';
 
-This guide configures logs, traces, metrics. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+This guide covers logs, traces and metrics. Replace `YOUR_INGEST_KEY` with your key.
 
 <BeforeYouStart />
 
@@ -22,13 +22,13 @@ Install the Collector contrib distribution. This example binds local OTLP/HTTP o
 
 ## 2. Start the Collector
 
-A memory queue survives transient failures, not process loss. Use the file_storage extension and a persistent sending queue for host restart durability. Keep batches within the receiver byte limits; record counts alone do not bound large records.
+A memory queue survives transient failures, not process loss; for host restart durability, use the `file_storage` extension and a persistent sending queue. Keep batches within the [receiver byte limits](/observability/ingest/#content-types-and-compression).
 
 <Snippet code={run} lang="bash" />
 
 ## 3. Point your application at the local Collector
 
-No cloud ingest key belongs in the application when the Collector owns it. Enable the relevant SDK exporters. The Collector appends /v1/logs, /v1/traces and /v1/metrics to its cloud endpoint.
+The Collector holds the ingest key, so the application needs none. Enable the SDK exporters you use. The Collector appends `/v1/logs`, `/v1/traces` and `/v1/metrics` to its cloud endpoint.
 
 ```bash
 export OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
@@ -37,14 +37,13 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
 Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
 - [Pipelines, access and privacy](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream OpenTelemetry Collector documentation](https://opentelemetry.io/docs/collector/configuration/)

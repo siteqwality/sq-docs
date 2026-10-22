@@ -7,7 +7,7 @@ owner: jj
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 
-The basic pattern is one line of curl, but production cron jobs need a bit more thought. Here's the playbook.
+The basic pattern is one line of curl. Production cron jobs need a few more precautions.
 
 ## 1. Always ping at the end, after success
 
@@ -45,7 +45,7 @@ except requests.RequestException:
 
 ## 3. Use timeouts and limited retries
 
-The ping endpoint is fast (~50ms p95) but can briefly fail during deploys.
+The ping endpoint can briefly fail, so:
 
 - **Timeout:** 10 seconds is plenty.
 - **Retries:** 2 or 3 with brief backoff. Don't retry indefinitely, since that wedges the job.
@@ -80,7 +80,7 @@ curl -H "X-Backup-Host: $(hostname)" \
      "$PING_URL"
 ```
 
-Useful when you've got 20 backup jobs across regions all sharing one check (you usually shouldn't, but sometimes you do).
+Useful when several jobs share one check.
 
 ## 7. Don't conflate cron checks with pipeline status
 
@@ -89,8 +89,6 @@ A cron check answers "did this job run on schedule?" It's not a substitute for a
 - Use **HTTP checks** against a `/health` endpoint your app exposes.
 - Use **metrics** with alert thresholds for queue depth, error rate, etc.
 - Use **logs** for the audit trail of what the job actually did.
-
-The cron check is purely "did the ping arrive in time". Keep it pure.
 
 <Aside type="tip">
 A common pattern: wrap your cron job in a script that `set -e`s, runs the work, and pings at the end. Keep the ping in the wrapper, not in the job's own code, so swapping out the monitoring tool doesn't require touching app code.

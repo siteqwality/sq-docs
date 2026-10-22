@@ -5,9 +5,9 @@ last_verified: 2026-10-15
 owner: jj
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
-Every status page publishes a few public files next to the page itself. They update within a minute of any change on the page, and nothing needs turning on.
+Every status page publishes a few public files. They update within a minute of any change on the page, and nothing needs turning on. A status page's **Share** tab in the dashboard lists every address and snippet below, ready to copy.
 
 All of them live under one address, built from the two ids in your page's URL (`https://statuspage.siteqwality.com/<account-id>/<page-id>`):
 
@@ -15,7 +15,7 @@ All of them live under one address, built from the two ids in your page's URL (`
 https://statuspagecdn.siteqwality.com/v1/pages/<account-id>/<page-id>/
 ```
 
-Use the ids in lower case. In the dashboard, a status page's **Share** tab lists every address and snippet below, ready to copy.
+Use the ids in lower case.
 
 | File | What it is |
 |---|---|
@@ -28,11 +28,9 @@ If the page has a live [custom domain](/status-pages/how-to/custom-domain/), the
 
 ## Follow incidents in a feed reader
 
-Paste the `incidents.rss` or `incidents.atom` address into any feed reader, Slack's RSS app or a similar tool. The public status page also links both feeds at the bottom, next to the email form, and announces them to browsers and readers that look for feeds.
+Paste the `incidents.rss` or `incidents.atom` address into any feed reader, Slack's RSS app or a similar tool. The public status page also links both feeds next to the email form at the bottom, and announces them to browsers and readers that look for feeds.
 
-Each incident is one item, with every update in it, newest first. An incident moves to the top of the feed when it gets a new update or is resolved, so a reader shows it again. The feed holds open incidents and the latest 30.
-
-Links in the feed go to the incident on your page. On a page with a [custom domain](/status-pages/how-to/custom-domain/), they use the domain: `https://status.example.com/incidents/<incident-id>`.
+Each incident is one item, with every update in it, newest first. An incident moves to the top of the feed when it gets a new update or is resolved, so a reader shows it again. The feed holds open incidents and the latest 30. Links in the feed go to the incident on your page.
 
 ## Read the status as JSON
 
@@ -86,13 +84,9 @@ One script tag shows a small card in a corner of your site while the page has an
 - The card shows the incident title, its latest update and a link to the incident on your page.
 - Add `data-position="bottom-right"` to move it from the bottom left.
 - A visitor can dismiss it. It comes back when the incident gets a new update, or in a new browser session.
-- It checks again every minute while the tab is visible, follows the visitor's light or dark setting and keeps its styles inside a shadow root, so your site's CSS and the card never affect each other.
+- It checks again every minute while the tab is visible and follows the visitor's light or dark setting. Your site's CSS and the card never affect each other.
 
-<Aside type="note">
-If your page has a custom domain, load the script from it (`https://status.example.com/v1/embed.js`); it then reads the status from your domain too.
-
-If your site sends a Content Security Policy, allow the host you load the script from (`https://statuspagecdn.siteqwality.com` or your custom domain) in both `script-src` and `connect-src`.
-</Aside>
+If your page has a custom domain, load the script from it (`https://status.example.com/v1/embed.js`); it then reads the status from your domain too. If your site sends a Content Security Policy, allow the host you load the script from in both `script-src` and `connect-src`.
 
 ## See also
 

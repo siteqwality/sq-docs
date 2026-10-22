@@ -5,7 +5,7 @@ last_verified: 2026-10-14
 owner: jj
 ---
 
-import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, LinkCard } from '@astrojs/starlight/components';
 
 The PagerDuty integration posts to the **Events API v2**. A monitor going down triggers a PagerDuty incident; the same monitor recovering resolves it automatically, because both events carry the same dedup key.
 
@@ -44,21 +44,17 @@ curl -X POST https://api.siteqwality.com/integration/pagerduty \
 |---|---|---|
 | `friendly_name` | yes | Up to 256 characters. |
 | `routing_key` | yes | The Events API v2 integration key. |
-| `region` | no | `us` (default) or `eu`. Any other value is a 422. |
+| `region` | no | `us` (default) or `eu`. |
 
-The name and key must be non-empty. The key is not validated against PagerDuty at save time, so a typo surfaces as a failed notification later, not as an error here.
-
-The routing key is a secret: `GET /integration` never returns it. `pagerduty_routing_key` shows it as `****` followed by its last four characters (just `****` when it is shorter than 16 characters). The region is not a secret: it comes back as `external_ref.region`.
+The key is not validated against PagerDuty at save time, so a typo surfaces as a failed notification later. It never reads back in full; the region reads back as `external_ref.region`.
 
 ## Region
 
 PagerDuty keeps US and EU accounts apart, and a key only works in its own region. Choose the region of your PagerDuty account: EU accounts sign in at `*.eu.pagerduty.com`. US events go to `events.pagerduty.com`, EU events to `events.eu.pagerduty.com`. A key sent to the wrong region is refused by PagerDuty and recorded as rejected.
 
-The region is set when you add the integration. To change it, add the integration again with the other region and move your channels to it. Integrations added before the region choice existed have `external_ref: null` and send to US, as they always have.
+The region is set when you add the integration. To change it, add the integration again with the other region and move your channels to it. An integration with `external_ref: null` sends to US.
 
 ## Add it to a notification group
-
-Integrations deliver nothing on their own. Alerts reach one once it is a channel in a notification group that your monitors use.
 
 <Steps>
 
@@ -109,21 +105,17 @@ Because the key includes the state transition, a *second* outage of the same mon
 
 Summaries longer than 1024 characters are truncated to fit the Events API limit.
 
-<Aside type="caution" title="Domain expiry alerts do not auto-close">
-DNS and domain-expiry warnings are **trigger-only**: there is no recovery event for them, so they key on the DNS job plus the expiry date (`sq-dns-expiry-<job-id>-YYYY-MM-DD`). Repeated warnings about the same expiry date collapse into one PagerDuty incident, but nothing ever resolves it.
+### Domain expiry alerts do not auto-close
 
-You have to close those incidents in PagerDuty yourself. Renewing the domain does not close them, and because renewal changes the expiry date, the next warning opens a **new** incident while the old one stays open.
-
-Expiry warnings always send at severity `warning`, ignoring the channel's configured severity.
-</Aside>
+DNS and domain-expiry warnings are **trigger-only**: they key on the DNS job plus the expiry date (`sq-dns-expiry-<job-id>-YYYY-MM-DD`), so repeated warnings about the same date collapse into one PagerDuty incident, but nothing ever resolves it. Close those incidents in PagerDuty yourself. Renewing the domain does not close them, and because renewal changes the expiry date, the next warning opens a **new** incident while the old one stays open. Expiry warnings always send at severity `warning`, ignoring the channel's configured severity.
 
 ## Delivery behavior
 
-Each attempt waits up to 10 seconds for PagerDuty to answer, and a redirect is never followed. A failed send is tried up to 3 times in quick succession, which is safe because the dedup key makes the call idempotent; no attempt starts so close to the run's time limit that it could not finish. A 4xx answer other than 408 or 429 means PagerDuty refused the event: it is recorded as rejected and not retried. Any other failure fails the event, and it is run up to two more times. If those fail too, the alert is dropped with no record in alert history, so pair PagerDuty with a second channel for anything you cannot afford to miss.
+An event PagerDuty refuses is recorded as rejected and not retried. Other failures are retried, and if every attempt fails, the alert is dropped with no record in alert history, so pair PagerDuty with a second channel for anything you cannot afford to miss. See [delivery guarantees](/incident-management/notifications/channels/#delivery-guarantees-by-channel).
 
 ## Limitations
 
-- PagerDuty channels fire for **HTTP monitors, browser checks, heartbeat (cron) monitors, domain expiry warnings, DNS record changes, log, metric and trace alert rules, and RUM issues**. TLS expiry warnings and page speed alerts do not reach PagerDuty today: a PagerDuty channel attached to a group used by those sources is skipped. See the [coverage table](/integrations/coverage/#pagerduty).
+- TLS expiry warnings and page speed alerts do not reach PagerDuty. See the [coverage table](/integrations/coverage/#pagerduty).
 - Incidents and escalation policies do not page through PagerDuty. The integration sends monitor and alert-rule events only.
 
 ## See also

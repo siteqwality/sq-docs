@@ -7,7 +7,7 @@ owner: jj
 
 Every query reads one **source**. A source has **measures** (what you compute) and **fields** (what you filter, group and build variables on).
 
-The editor and the API read the same list. `GET /dashboards/catalog` returns it, so the tables below always match what the query builder offers.
+`GET /dashboards/catalog` returns the same list the query builder offers.
 
 ## How to read the tables
 
@@ -17,13 +17,12 @@ The editor and the API read the same list. `GET /dashboards/catalog` returns it,
 - **Kind** is `id` (values have labels, such as monitor names), `enum`, `text` or `number`.
 - A field is **filter only** when it supports neither.
 - Aggregations: `avg`, `sum`, `min` and `max`; the percentiles `p50`, `p75`, `p90`, `p95` and `p99`; and `rate` for the metrics source.
-- Every query is scoped to your account.
 
 ## Monitors
 
 `monitors` reads HTTP and browser checks. Uptime and response time are measured per check, so they match the monitor page.
 
-Over two days or more, widgets read hourly summaries of the checks, so long ranges stay fast. Counts, uptime, averages, `min` and `max` are exact; percentiles are within 1%.
+Over two days or more, widgets read hourly summaries of the checks: counts, uptime, averages, `min` and `max` stay exact, and percentiles are within 1%.
 
 | Measure | Unit | Aggregations | Meaning |
 |---|---|---|---|
@@ -32,7 +31,7 @@ Over two days or more, widgets read hourly summaries of the checks, so long rang
 | `checks` | count | fixed | Checks run. |
 | `failed_checks` | count | fixed | Checks that failed. |
 | `dns_time`, `connect_time`, `tls_time`, `ttfb`, `download_time` | ms | `avg`, `p50`, `p95`, `p99` | The phases of an HTTP check. HTTP monitors only. |
-| `downtime` | seconds | `sum` | Time spent failing, derived from state transitions. Includes cron monitors. |
+| `downtime` | seconds | `sum` | Time spent failing. Includes cron monitors. |
 
 | Field | Kind | Group by | Variable |
 |---|---|---|---|
@@ -120,13 +119,13 @@ Buckets of 60 seconds and up.
 | `host`, `env`, `source` | Yes | Yes |
 | `tag:<key>` | Yes | Yes |
 
-For what each aggregation means on gauges and counters, see the [metrics overview](/observability/metrics/overview/#aggregations).
+For how aggregations treat gauges and counters, see the [metric query workspace](/observability/query/#metric-query-workspace).
 
 Buckets of 60, 300, 3600 and 21600 seconds. One-day buckets are built from the 21600-second ones.
 
 ## Traces
 
-`traces` reads spans. Requests are counted as entry spans.
+`traces` reads spans.
 
 | Measure | Unit | Aggregations | Meaning |
 |---|---|---|---|

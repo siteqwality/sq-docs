@@ -5,11 +5,9 @@ last_verified: 2026-10-16
 owner: jj
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
-An incident's **participants** are the people working it. Each has a role, so everyone can see who leads, who is helping and who is handling communication. You can add a person, whoever is on call now in a schedule, or the first level of an escalation policy, and page them as you add them.
-
-Participants are users already in your account, so adding one never uses or bills a seat.
+An incident's **participants** are the people working it, each with a role. Participants are users already in your account.
 
 ## Roles
 
@@ -33,7 +31,7 @@ Through the API, send exactly one of `user_id`, `schedule_id` or `escalation_pol
 | `schedule_id` | Whoever is on call in that [schedule](/incident-management/on-call/overview/) right now. |
 | `escalation_policy_id` | The users and the on-call people at the [policy](/incident-management/escalation/overview/)'s first level. |
 
-Two optional fields shape the request: `role` (default `responder`) and `page` (default `true`). A lead is one person, so `"role": "lead"` needs `user_id`. Someone already on the incident keeps their role, and is paged again when `page` is `true`.
+Optional fields are `role` (default `responder`) and `page` (default `true`). A lead is one person, so `"role": "lead"` needs `user_id`. Someone already on the incident keeps their role, and is paged again when `page` is `true`. A schedule or policy with nobody on call adds no one and the request fails.
 
 ```bash
 curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/participants \
@@ -42,11 +40,9 @@ curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/participants \
   -d '{ "schedule_id": "<schedule-id>", "role": "responder", "page": true }'
 ```
 
-The response is the incident's full participant list. `GET /incident/{incident_id}/participants` returns the same list.
-
 ## Paging when you add
 
-With `page` left at `true`, each added user is paged through their own [notification rules](/incident-management/notifications/how-to/notification-rules/), and the participant's `paged_at` records when. Paging needs the incident to belong to a service and not be resolved; otherwise the request is refused (see Errors). Send `"page": false` to record someone who is already on the call without paging them.
+With `page` left at `true`, each added user is paged through their own [notification rules](/incident-management/notifications/how-to/notification-rules/). Paging needs the incident to belong to a service and not be resolved. Send `"page": false` to record someone who is already on the call without paging them.
 
 ## Change a role or remove someone
 
@@ -59,20 +55,7 @@ curl -X PUT https://api.siteqwality.com/incident/$INCIDENT_ID/participants/$USER
   -d '{ "role": "lead" }'
 ```
 
-The response is the full list. `DELETE /incident/{incident_id}/participants/{user_id}` removes the person and returns `204`.
-
-## Errors
-
-| Status | When |
-|---|---|
-| `400` | None or more than one of the three ids was sent, a `lead` was sent with a schedule or policy, or `page` is `true` on an incident with no service. |
-| `404` | The incident, user, schedule or policy is not in your account. On a role change or removal, the user is not a participant. |
-| `409` | `data.conflict` is `merged` (the incident was merged into another), `resolved` (`page` is `true` on a resolved incident) or `nobody_on_call` (the schedule or policy resolved to no one). |
-| `422` | `role` is not `lead`, `responder` or `comms`. |
-
-<Aside type="note">
-When incidents are [merged](/incident-management/incidents/how-to/merge-incidents/), the sources' participants move to the target. The list endpoints (`GET /incident`) leave `participants` empty; fetch one incident, or its participants, to read them.
-</Aside>
+`DELETE /incident/{incident_id}/participants/{user_id}` removes the person.
 
 ## See also
 

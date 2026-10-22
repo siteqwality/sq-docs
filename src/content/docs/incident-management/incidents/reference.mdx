@@ -5,8 +5,6 @@ last_verified: 2026-10-20
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
 The full request schemas live in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet.
 
 ## Incident object
@@ -23,7 +21,7 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | `public_title` | string \| null | The title status pages show. `null` shows `title`. |
 | `service_id` | uuid \| null | Optional service tag. |
 | `monitors` | object[] | The monitors this incident is about (below). Empty in list responses. |
-| `affected_http_job_ids` | uuid[] | Deprecated: the `http` monitors in `monitors`. Kept for one more release. |
+| `affected_http_job_ids` | uuid[] | Deprecated: the `http` monitors in `monitors`. |
 | `participants` | object[] | The people working the incident (below). Empty in list responses. |
 | `merged_into_id` | uuid \| null | Set on an incident that was merged into another. |
 | `resolution_reason` | string \| null | `merged` for an incident that was merged into another, otherwise `null`. |
@@ -114,7 +112,7 @@ Account members with incident write access can edit or delete an internal note f
 
 `PUT /incident/{incident_id}/update/{update_id}` accepts only `{ "message": "Updated note" }` and returns the note. It preserves the original author and posting time. Empty messages return `400`. `DELETE` at the same path returns `204` with no body. Either route returns `404` for a missing, foreign or public update, `403` without incident write access, and `409` for a merged incident. These actions do not change incident status or notify subscribers. The timeline event records who edited or deleted the note.
 
-Resolving a published incident always posts a public `resolved` update, so its page never shows an incident as open after you resolved it. The text is the one you give, else the service's [public template](/incident-management/services/overview/#publish-incidents-to-a-status-page), else "This incident has been resolved."
+Resolving a published incident always posts a public `resolved` update. The text is the one you give, else the service's [public template](/incident-management/services/overview/#publish-incidents-to-a-status-page), else "This incident has been resolved."
 
 ## Status enum
 
@@ -232,7 +230,7 @@ A schedule adds whoever is on call now. A policy adds the users and on-call peop
 | `POST` | `/incident/{incident_id}/action_items` | `title`, plus optional `owner_user_id`, `due_date` and `external_url`. | `201` and the item. |
 | `PUT` | `/incident/{incident_id}/action_items/{action_item_id}` | Any of `title`, `status`, `owner_user_id`, `due_date`, `external_url`; `null` clears the last three. | The item. |
 | `DELETE` | `/incident/{incident_id}/action_items/{action_item_id}` | none | `204`. |
-| `GET` | `/incident/action_items` | Query: `status` (`open` default, `done`, `wont_do`, `all`), `owner_user_id`, `overdue`, `limit`, `offset`. | Every incident's items in `data`, soonest due first, plus `total`. |
+| `GET` | `/incident/action_items` | Query: `status` (`open` default, `done`, `wont_do`, `all`), `owner_user_id`, `overdue` (`true` for only open items past their due date), `limit` (default 50, at most 100), `offset`. | Every incident's items in `data`, soonest due first, plus `total`. |
 
 A new due date or owner re-arms the one overdue email. See [the reminder](/incident-management/incidents/how-to/postmortems/#overdue-items-and-the-reminder-email).
 
@@ -268,7 +266,7 @@ MTTA runs from creation to the first acknowledgment event. MTTR runs from creati
 
 The time window selects creation times; lifecycle state and duration values are current when queried. A resolution after `to` can therefore contribute, and later service or severity edits can change filtered results. `acknowledged_incidents` counts incidents with an acknowledgment time, including resolved incidents and incidents triggered again after reopening.
 
-Full incident detail and lifecycle responses can also include `first_paged_at`, the first responder page accepted by its provider, and `mitigated_at`, the first public status transition to `monitoring`. Email and carrier delivery updates are tracked separately. These fields are omitted when no matching event exists and on list responses. Earlier pages are not backfilled, and resolution alone does not set a mitigation time.
+Full incident detail and lifecycle responses can also include `first_paged_at`, the first responder page accepted by its provider, and `mitigated_at`, the first public status transition to `monitoring`. These fields are omitted when no matching event exists and on list responses. Resolution alone does not set a mitigation time.
 
 ## Endpoints
 

@@ -7,13 +7,13 @@ owner: jj
 
 import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
 
-This guide configures logs, traces, metrics. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+This guide covers logs, traces and metrics. Replace `YOUR_INGEST_KEY` with your key.
 
 <BeforeYouStart />
 
 ## 1. Save collector.yaml
 
-The container network can reach this receiver. Publish it only on loopback if host applications need access. To ingest container stdout, add the Collector filelog receiver with read-only mounts for your runtime log files, or use the Vector docker_logs source below.
+The container network can reach this receiver. If host applications need it, publish it on loopback only. To ingest container stdout, add the Collector filelog receiver with read-only mounts for your runtime log files, or use the `docker_logs` source in [Vector](/observability/platforms/vector/).
 
 ```yaml
 receivers:
@@ -60,7 +60,7 @@ service:
 
 ## 2. Save compose.yaml
 
-Choose a released Collector version and pin its image digest for production. Keep collector.yaml private because it contains the key. Applications in this Compose network use http://collector:4318, not the cloud key.
+Choose a released Collector version and pin its image digest for production. Keep `collector.yaml` private because it contains the key. Applications in this Compose network send to `http://collector:4318` and need no cloud key.
 
 ```yaml
 services:
@@ -74,7 +74,7 @@ services:
 
 ## 3. Start and inspect
 
-Enable SDK instrumentation in your app, send a request and inspect the selected explorer. Container stdout is separate from OTLP until you configure its log source.
+Enable SDK instrumentation in your app, send a request and check the explorer.
 
 ```bash
 export COLLECTOR_VERSION=YOUR_RELEASED_COLLECTOR_VERSION
@@ -85,14 +85,13 @@ docker compose logs --tail=50 collector
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
 Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
 - [Pipelines, access and privacy](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream Docker documentation](https://opentelemetry.io/docs/collector/installation/)

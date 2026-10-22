@@ -5,9 +5,9 @@ last_verified: 2026-10-14
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have an HTTP check running every 10 minutes against a URL of your choosing, with a notification that fires when the check fails.
+By the end of this guide you'll have an HTTP check running against a URL of your choosing, with a notification that fires when the check fails.
 
 ## Prerequisites
 
@@ -41,7 +41,7 @@ By the end of this guide you'll have an HTTP check running every 10 minutes agai
 
 </Steps>
 
-The check runs immediately and shows up in your monitors list. The first result lands within seconds.
+The check runs immediately, and the first result lands within seconds.
 
 </TabItem>
 <TabItem label="API">
@@ -65,9 +65,7 @@ The check runs immediately and shows up in your monitors list. The first result 
      }'
    ```
 
-2. **Read back the response.**
-
-   The API returns a `201 Created` with the full HTTP-job object including its `id`. Save the `id`. You'll use it to fetch results, update settings, or delete the check later.
+2. **Save the `id` from the response.** You'll use it to fetch results, update settings, or delete the check later.
 
 3. **(Optional) Choose notification groups.**
 
@@ -95,10 +93,6 @@ The full request schema is in the [API Reference](/api-reference/operations/crea
 4. **Flip it back.** Restore the URL to `https://mock.codes/200`. The monitor recovers on the next tick. The all clear goes out, and the incident auto-resolves, after the recovery period (2 healthy checks on a new monitor).
 
 </Steps>
-
-<Aside type="tip">
-30-second intervals are available on paid uptime plans. Checking from more than one location is also paid: without a paid uptime plan the API returns `403` with `multi_region_requires_paid_plan`. Each location counts as one check toward your check volume. See [check locations](/uptime-monitoring/overview/#check-locations).
-</Aside>
 
 ## What's next
 

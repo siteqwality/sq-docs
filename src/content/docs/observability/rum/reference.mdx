@@ -5,9 +5,7 @@ last_verified: 2026-10-10
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
-The full request/response schema is in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for the `/rum` endpoint family. For the browser SDK itself, see the [SDK reference](/sdk/v2/).
+Full request and response schemas are in the [API Reference](/api-reference/), and the browser SDK is in the [SDK reference](/sdk/v2/).
 
 ## RUM application
 
@@ -19,15 +17,15 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `replay_monthly_target` | int or null | `null` | Monthly replays [Auto sampling](/observability/rum/how-to/session-filters/#auto-sampling) aims this application at. 1 to 100,000,000. |
 | `settings.privacy.level` | `strict`, `balanced`, `relaxed` or null | `balanced` for new applications | See [privacy levels](/observability/rum/how-to/remote-config/#privacy-levels). Null (Custom) applies the flags below as stored. |
 | `settings.privacy.mask_inputs` | bool | `true` | Mask input values in replay recordings. Under a level, written from the level. Read the stored value rather than trusting this default; see [privacy settings](/observability/replay/reference/#privacy-settings). |
-| `settings.privacy.mask_text` | bool | `false` | Mask all user-visible text in replay recordings. Off by default, so page text is recorded verbatim unless you turn it on or choose Strict. |
+| `settings.privacy.mask_text` | bool | `false` | Mask all user-visible text in replay recordings. While off, page text is recorded unless the level is Strict. |
 | `settings.privacy.hide_action_text` | bool | `false` | Store clicks with their selector only, without a name. See [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names). |
 | `settings.privacy.pii_patterns` | string[] | all three for new applications | `email`, `card`, `digits9`: what is scrubbed from text. Written from the level. |
 | `settings.privacy.mask_selectors`, `unmask_selectors`, `block_selectors`, `ignore_input_selectors` | string[] | `[]` | Replay masking, blocking and input-ignoring CSS selectors, up to 50 each. `unmask_selectors` applies under Strict only. |
 | `settings.privacy.never_record_urls` | string[] | `[]` | URL patterns where the SDK pauses replay and drops Analyze detail. |
 | `settings.privacy.require_consent`, `honor_gpc`, `cookieless`, `capture_user_email` | bool | `false`, `true` for new applications, `false`, `true` | Consent and identity handling, applied by the SDK; `capture_user_email` is also applied at ingest. |
-| `settings.retention.observe_days` | int or null | `null` | Keep this application's page views and Web Vitals (`rum_measures`) at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
-| `settings.retention.analyze_days` | int or null | `null` | Keep this application's detail events (`rum_events`) at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
-| `settings.retention.session_replay_days` | 7, 14, 30 or null | `null` | Shorter replay retention with asynchronous object cleanup. Configure it in Settings → Data settings or through the API; saving the setting queues cleanup rather than confirming completion. See [privacy requests and retention](/observability/rum/how-to/privacy-requests/). |
+| `settings.retention.observe_days` | int or null | `null` | Keep this application's page views and Web Vitals at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
+| `settings.retention.analyze_days` | int or null | `null` | Keep this application's detail events at most this many days. `null` keeps your plan's full window. Can only shorten it; minimum 1. |
+| `settings.retention.session_replay_days` | 7, 14, 30 or null | `null` | Shorter replay retention. Saving it queues cleanup; it does not confirm completion. See [shorten retention](/observability/rum/how-to/privacy-requests/#shorten-retention). |
 | `settings.resource_exclusions` | string[] | `[]` | Resource URLs never recorded as resource events. Up to 50 rules; see [excluded resources](/observability/rum/how-to/remote-config/#excluded-resources). |
 | `settings.frustration_ignore_selectors` | string[] | `[]` | CSS selectors whose clicks never count as rage or dead clicks. Up to 50 valid CSS selectors, each 1 to 256 printable characters; anything else returns `400`. See [frustration signals](/sdk/v2/#frustration-signals). |
 | `settings.capture.network` | object | see [network capture](/observability/rum/how-to/remote-config/#network-capture) | `header_allowlist`, `body_urls` and `trace_urls` (URL prefixes), `max_body_bytes`. |
@@ -57,16 +55,16 @@ Recording rules decide which sessions record Analyze detail and which record a r
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `name` | string | required | 1 to 255 characters. |
-| `capture` | `analyze` or `replay` | required | Replay also records Analyze. |
-| `enabled` | bool | `true` | Disabled rules are never applied. |
-| `sample_rate` | number | `1` | 0.00001 to 1. The cap for an Auto rule. |
-| `auto_sample` | bool | `false` | Replay rules only. |
-| `conditions` | object[] | `[]` | All must hold; see [conditions](/observability/rum/how-to/session-filters/#conditions). |
+| `capture` | `analyze` or `replay` | required | What a matching session records. Replay also records Analyze. |
+| `enabled` | bool | `true` | Disabled rules are kept but never applied. |
+| `sample_rate` | number | `1` | Share of matching sessions, 0.00001 to 1, kept to 5 decimals. The cap for an Auto rule. |
+| `auto_sample` | bool | `false` | Replay rules only: the rate follows your replay quota. See [Auto sampling](/observability/rum/how-to/session-filters/#auto-sampling). |
+| `conditions` | object[] | `[]` | All must hold, at most 20; see [conditions](/observability/rum/how-to/session-filters/#conditions). |
 | `min_duration_ms` | int | `3000` for Replay, `0` for Analyze | 0 to 600,000. |
-| `require_interaction` | bool | `true` for Replay, `false` for Analyze | |
-| `position` | int | after the last rule | Display order. |
+| `require_interaction` | bool | `true` for Replay, `false` for Analyze | Wait for a click, tap or key press. |
+| `position` | int | after the last rule | Display order. Every enabled rule is evaluated whatever its position. |
 
-Responses add `id`, `effective_sample_rate`, `effective_rate_at`, `created_by_user_id`, `created_at` and `updated_at`. `PUT /rum/{app_id}/rules/{rule_id}` changes only the fields sent. At most 50 rules per application. A malformed body returns `422`, an invalid rule `400`, a 51st rule `409`.
+Responses add `id`, `application_id`, `effective_sample_rate` (the rate in force when Auto or quota protection set one), `effective_rate_at`, `created_by_user_id`, `created_at` and `updated_at`. `PUT /rum/{app_id}/rules/{rule_id}` changes only the fields sent. At most 50 rules per application. A malformed body returns `422`, an invalid rule `400`, a 51st rule `409`.
 
 ## Source-map releases
 
@@ -130,11 +128,9 @@ The SDK reads `https://cdn.siteqwality.com/rum/config/v2/{app_id}.json`, publish
 | `interval`, `tz` | Bucket size and zone (see conventions). |
 | `country`, `browser`, `os`, `device_type`, `url` | Optional filters, as on the overview. |
 
-Each point carries `timestamp`, `p50`, `p75`, `p95` and `count` (page views). A page view lands in the bucket of its last valid sample. Buckets without samples are left out. Latest valid values are selected by sequence and timestamp. A valid vital update inside the range can contribute even when the view started earlier.
+Each point carries `timestamp`, `p50`, `p75`, `p95` and `count` (page views). A page view lands in the bucket of its last valid sample. Buckets without samples are left out. A valid vital update inside the range can contribute even when the view started earlier.
 
 ### Traffic, panels, pages and attribution
-
-Use these endpoints to access the analytics, saved-view and comment features also available in the RUM dashboard.
 
 These endpoints accept the Overview range and Analytics filters. Requests that exceed the query time budget return 503. See [analytics investigations](/observability/rum/how-to/analytics/).
 
@@ -168,7 +164,7 @@ Saved views and comments include `can_edit`. Comment writes include `mention_del
 
 ### `GET /rum/{app_id}/sessions`
 
-A session is listed when it has a measure in `[from, to]` and at least one page view in the extended range (four hours either side), as in the Wave 1 contract. Its counts, `first_seen`, `last_seen` and duration cover its whole life, not only the part inside the range. Session metadata comes from a per-session rollup kept at ingest.
+A session is listed when it has a measure in `[from, to]` and at least one page view in the extended range (four hours either side). Its counts, `first_seen`, `last_seen` and duration cover its whole life, not only the part inside the range.
 
 | Param | Description |
 |---|---|

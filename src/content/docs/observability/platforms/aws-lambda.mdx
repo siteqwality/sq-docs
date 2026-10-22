@@ -7,13 +7,13 @@ owner: jj
 
 import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
 
-This guide configures logs, traces, metrics. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+This guide covers logs, traces and metrics. Replace `YOUR_INGEST_KEY` with your key.
 
 <BeforeYouStart />
 
 ## 1. Choose a Lambda instrumentation layer
 
-Attach the current published layer ARN from the official Lambda instructions. Never reuse an ARN from a different region or architecture. Layer support differs by runtime. For Java/.NET use their runtime-specific Lambda instrumentation.
+Attach the published layer ARN from the official Lambda instructions for your runtime, region and architecture; never reuse an ARN from another region or architecture. For Java or .NET, use their runtime-specific Lambda instrumentation.
 
 ```text
 Runtime: Node.js or Python
@@ -43,7 +43,7 @@ export OTEL_METRICS_EXPORTER=otlp
 
 ## 3. Invoke and check the exporter
 
-Use a test event accepted by your function. Configure variables through your infrastructure secret mechanism. Do not replace the function environment wholesale with a sample. Export during the invocation or use the Collector extension; a background timer may be frozen after return. CloudWatch logs are separate unless a logging bridge, extension or Firehose forwards them.
+Add the variables through your infrastructure secret mechanism without replacing the function's whole environment, then invoke it with a test event it accepts. Export during the invocation or use the Collector extension; a background timer may be frozen after return. CloudWatch logs arrive only if a logging bridge, extension or Firehose forwards them.
 
 ```bash
 aws lambda invoke --function-name YOUR_FUNCTION --payload fileb://event.json response.json
@@ -51,14 +51,13 @@ aws lambda invoke --function-name YOUR_FUNCTION --payload fileb://event.json res
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
 Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
 - [Pipelines, access and privacy](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream AWS Lambda documentation](https://opentelemetry.io/docs/platforms/faas/lambda-auto-instrument/)

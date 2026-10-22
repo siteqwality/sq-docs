@@ -5,18 +5,16 @@ last_verified: 2026-10-14
 owner: jj
 ---
 
-import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 A **cron check** (also called a heartbeat or deadman's switch) is the inverse of an HTTP check. Instead of Site Qwality calling your service, your service calls Site Qwality at the end of each successful run. Site Qwality alerts when the expected ping doesn't arrive on time.
-
-The pattern is simple:
 
 ```
 # At the end of your nightly backup script
 curl -X POST https://ping.siteqwality.com/<account-id>/<cron-job-id>
 ```
 
-If the expected ping stops arriving, the check flips to failure and notifications fire. A heartbeat that keeps flipping between late and on time is held like a flapping HTTP monitor: see [flap hold](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/#heartbeat-and-browser-monitors).
+A heartbeat that keeps flipping between late and on time is held like a flapping HTTP monitor: see [flap hold](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/#heartbeat-and-browser-monitors).
 
 ## When to use cron checks
 
@@ -32,41 +30,14 @@ If the expected ping stops arriving, the check flips to failure and notification
 ## How it works
 
 1. You create a cron check in Site Qwality with a `check_interval_seconds`, say `86400` for a daily job. Site Qwality returns a `cron_job_id`.
-2. Your job pings `https://ping.siteqwality.com/<account-id>/<cron-job-id>` at the end of every successful run.
-3. Site Qwality records each ping with a timestamp, source IP, and headers.
-4. Each cron check gets its own evaluation schedule (an AWS Scheduler entry) that fires at the same cadence as `check_interval_seconds`. At each evaluation, the check fails when the newest ping is older than `check_interval_seconds` (or when no ping has ever arrived).
+2. Your job pings `https://ping.siteqwality.com/<account-id>/<cron-job-id>` at the end of every successful run. The ping needs no API key: the URL itself is the credential, so treat it like a secret.
+3. Site Qwality records each ping with a timestamp, source IP, and headers, queryable via `GET /cron/job/{cron_job_id}/recent`.
+4. Each cron check gets its own evaluation schedule that fires at the same cadence as `check_interval_seconds`. At each evaluation, the check fails when the newest ping is older than `check_interval_seconds` (or when no ping has ever arrived).
 5. The next successful ping flips status back to healthy at the following evaluation.
 
-Because the evaluation runs at the same cadence as the expected pings, a missed ping is detected between one and two intervals after the last successful one, depending on how the two schedules line up. A slightly-delayed job (running 24h 5m instead of exactly 24h) usually doesn't page for the same reason; see [grace period notes](/uptime-monitoring/cron-checks/how-to/grace-period/).
+Because the evaluation runs at the same cadence as the expected pings, a missed ping is detected between one and two intervals after the last successful one, depending on how the two schedules line up. A slightly delayed job (running 24h 5m instead of exactly 24h) usually doesn't page for the same reason; see [grace period notes](/uptime-monitoring/cron-checks/how-to/grace-period/).
 
-## Anatomy
-
-| Field | Default | Description |
-|---|---|---|
-| `friendly_name` | optional | Display name. |
-| `check_interval_seconds` | required | Expected interval between pings, in seconds. Validated against AWS Scheduler rate expressions. |
-| `group_notification_ids` | default group | Notification groups to fire on state change. Cap of 10. Omitted on create, your account's [default group](/incident-management/notifications/default-routing/#the-default-notification-group) is attached; `[]` notifies no one. |
-| `state` | `active` | `active` or `paused`. Paused checks don't alert. |
-| `tags` | `[]` | For grouping and matching against [maintenance windows](/incident-management/maintenance/overview/). |
-
-## What the ping endpoint records
-
-Every ping captures:
-
-- A unique `id` for the receipt.
-- `created_at`: server-side timestamp.
-- `receiving_address`: IP from `X-Forwarded-For`.
-- `receiving_headers`: entire headers map (useful for debugging which job pinged).
-
-These are queryable via `GET /cron/job/{cron_job_id}/recent`.
-
-<Aside type="tip">
-The `cron-receiver` is a separate Lambda hosted at `ping.siteqwality.com`, independent of the main API. You don't need an API key to ping (the URL itself is the auth). Treat the URL like a secret.
-</Aside>
-
-## Pricing
-
-Cron checks are included on every plan. The free plan allows 25 active cron monitors, within its limit of 100 monitors (HTTP, cron and browser combined, paused ones included); a paid plan on any product lifts both. There's a soft monthly cap on total pings per account on the free tier; see your **Settings → Usage** page.
+Every field and the ping contract are in the [cron check reference](/uptime-monitoring/cron-checks/reference/).
 
 ## See also
 

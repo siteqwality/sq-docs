@@ -1,15 +1,11 @@
 ---
-title: Plan limits
-description: What the free plan includes, what a paid plan adds, and what Enterprise and status page extras unlock.
+title: Plans and limits
+description: What the free plan includes, what a paid plan adds, and what happens at a limit, when a plan ends, or when a payment fails.
 last_verified: 2026-10-16
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
-Site Qwality prices each product on its own, and every product has a free tier. Some limits lift once **any** product is on a paid plan, some need a paid plan on a specific product, and a few come from Enterprise or a status page extra. Prices are on the [pricing page](https://siteqwality.com/pricing/).
-
-A **paid plan** here means a paid tier on any product. Add-ons and status page extras on their own do not count.
+Every product has a free tier and is priced on its own; prices are on the [pricing page](https://siteqwality.com/pricing/). Some limits lift once **any** product is on a paid plan, some need a paid plan on a specific product, and a few need Enterprise or a status page extra. Add-ons and status page extras on their own do not count as a paid plan.
 
 ## Monitors and checks
 
@@ -36,7 +32,11 @@ The check interval and check locations follow the **uptime** plan, not any paid 
 | SAML single sign-on | No | No | Yes |
 | SCIM provisioning | No | No | Yes |
 
-A seat is a member or a pending invite. Over the limit nobody loses access, but new invites are refused until a seat frees up: a single invite returns `402`, and a bulk invite lists the refused addresses under `failed`. Without Enterprise, an existing SSO or SCIM connection stays readable and can be deleted, but not changed.
+A seat is a member or a pending invite. An invite stops using its seat when it expires or is canceled. Without Enterprise, an existing SSO or SCIM connection stays readable and can be deleted, but not changed, and members keep signing in through SSO until you delete it.
+
+## On-call responders
+
+The free plan includes 1 on-call responder, so rotations of more than one person need a responder pack. A responder is a distinct person in a rotation layer that has not ended, or named directly on an escalation level. Someone in three rotations and two levels is one responder. Overrides do not count, and neither does a schedule named on a level. The limit is checked when you add a layer or a level.
 
 ## Status pages
 
@@ -47,9 +47,7 @@ Every account includes one status page with full branding, and removing the "Pow
 | Additional status page | $10/mo ($100/yr) | 1 status page |
 | Custom domain | $10/mo ($100/yr) | 1 custom domain |
 
-White-Label is no longer sold. Accounts that hold it keep it, and each unit still adds 1 status page and 1 custom domain.
-
-Extras add only their pages and domains: on their own they are not a paid plan, so seats and monitor limits stay at free. Extras sit on the same subscription as your plans and share its billing interval. More units are charged straight away and apply once paid; fewer take effect at the end of the period you paid for. Past the limit, creating a page or adding a domain returns `402` naming the extra to buy.
+Each unit of the retired White-Label extra still adds 1 status page and 1 custom domain. Extras share your plan's billing interval: added units are charged right away and apply once paid, and removed units end with the period you paid for.
 
 ## Other features
 
@@ -57,9 +55,38 @@ Extras add only their pages and domains: on their own they are not a paid plan, 
 |---|---|---|
 | Custom dashboards | No | A paid plan |
 | SMS credit top-ups | No | A paid plan |
+| Stored response body of a failed check | 5 days | 30 days with a paid plan, up to 365 on request |
 
-Session replay (100 replays a month on free) and source map uploads work on every plan; a Session Replay plan raises the replay allowance. When a check fails, Site Qwality shows its stored response body for 5 days on free and 30 days with a paid plan.
+Session replay and source map uploads work on every plan. Monthly usage allowances (checks, browser minutes, RUM sessions, replays, SMS credits) for each tier are on the [pricing page](https://siteqwality.com/pricing/); logs, metrics and traces are on [telemetry billing](/observability/billing/).
 
-<Aside>
-Staff can set custom limits for an account. Those override everything on this page.
-</Aside>
+Limits agreed for your account replace the ones on this page.
+
+## At a limit
+
+Reaching a limit removes nothing you already have. Whatever would go over it is refused (a new monitor, invite, status page or domain, or a shorter check interval) until you are under the limit or upgrade. Usage-based products never bill overage: once the allowance and any grace buffer are used, they stop until the next period or an upgrade. Account settings show your usage.
+
+Through the API, a request over a limit gets `402 Payment Required`, except check intervals, check locations and the browser check count, which get `403 Forbidden`.
+
+## When a plan ends
+
+A paid plan ends when you cancel and the period runs out, when you downgrade a product to free, or when a payment stays unpaid. Monitors keep running, and what the plan unlocked falls back to what your remaining plans allow:
+
+- Without a paid uptime plan, checks that ran more often than every 5 minutes move to every 5 minutes. Without any paid plan, DNS record checks move to every hour.
+- A monitor with more check locations than your plans allow keeps its first one.
+- Monitors above a limit keep running, but you can't add new ones or resume paused ones until you are under it.
+- Stored response bodies older than the free window stop being readable. The window is a read window, so upgrading again makes them readable straight away.
+- Custom dashboards stay, and you can still list, open, export and delete them. Creating, editing, importing, cloning and querying wait for a paid plan. Share links show "not found" until then, but you can still pause or revoke them.
+- A new usage period starts that day with the free allowance. If your monitors would use it up before the month ends, the email says when they stop and when they start again.
+
+Upgrade any time and the settings Site Qwality changed come back, except on monitors you edited since.
+
+## When a payment fails
+
+Stripe retries a failed payment. Before the last try, Site Qwality emails the date of the next attempt; after a hard decline, it asks for a new card. Billing emails go to the account owner and every Billing Admin.
+
+If the last try fails, the subscription is **unpaid** and the plan ends as above. The Billing tab offers two ways back and shows the amount before you confirm:
+
+- **Restart** starts a new billing period today on your default card. Once it is paid, the plan comes back and the older unpaid invoices are voided.
+- **Choose a different plan** ends the unpaid subscription and starts a new one.
+
+After 30 days unpaid, Site Qwality cancels the subscription and voids its outstanding invoices. The account stays on the free plan.

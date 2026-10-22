@@ -7,11 +7,7 @@ owner: jj
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have a browser check running every 15 minutes that logs into a demo site, navigates to the dashboard, and confirms it loads. You'll see step results, screenshots, the HAR, and web vitals for every run.
-
-## Prerequisites
-
-- A Site Qwality account. The free plan includes 100 browser checks and 100 synthetic minutes a month.
+This guide builds a check that logs into a demo site and confirms the dashboard loads.
 
 ## 1. Write the script
 
@@ -42,7 +38,7 @@ await step('Confirm dashboard loaded', async () => {
 });
 ```
 
-A step that throws fails the whole check. Steps capture screenshots on both success and failure, so you have a visual trail.
+A step that throws fails the whole check. Every step captures a screenshot, pass or fail.
 
 ## 2. Create the check
 
@@ -60,7 +56,7 @@ A step that throws fails the whole check. Steps capture screenshots on both succ
    - **Regions:** `aws-us-east-1`.
    - **Notification groups:** pick one.
 
-3. Paste the script into the editor. The editor has Playwright autocomplete.
+3. Paste the script into the editor.
 
 4. Click **Submit**. The first run kicks off within a minute.
 
@@ -108,7 +104,7 @@ The response includes the new check's `id`. Save it.
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-The check page lists its runs under **Recent results**. Click the latest one to see step-by-step results, screenshots, the HAR, the video, and web vitals. **Check now** starts a run straight away.
+The check page lists its runs under **Recent results**. Click the latest one to see step results, screenshots, the HAR, the video, and web vitals. **Check now** starts a run straight away.
 
 </TabItem>
 <TabItem label="API">
@@ -132,14 +128,12 @@ curl https://api.siteqwality.com/browser_check/$CHECK_ID/results/$RESULT_ID/arti
 
 ## 4. Iterate
 
-Browser scripts often need tuning before they're reliable:
-
 - **Wait for network idle** at navigation (`{ waitUntil: 'networkidle' }`) for SPAs.
 - **Use text selectors** (`text=Sign in`) over CSS classes. They survive design refactors.
-- **Wait for selectors before interacting.** `await page.waitForSelector(...)` then `await page.click(...)` is more robust than just `click()`.
+- **Wait for selectors before interacting.** `await page.waitForSelector(...)` then `await page.click(...)` is more robust than `click()` alone.
 - **Set explicit timeouts on assertions.** `waitForSelector(..., { timeout: 10000 })` is clearer than relying on the default 30s.
 
-The dashboard's "Run now" button gives a quick iteration loop: edit script, save, click Run, see result.
+To iterate, edit the script, save, and click **Check now**.
 
 <Aside type="tip">
 For login flows in real apps, store the credentials in your secrets manager and reference them via your CI's environment when you `terraform apply` or `curl` the API. Don't bake real production secrets into the script field.

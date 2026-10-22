@@ -5,10 +5,6 @@ last_verified: 2026-10-20
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
-The full request schemas live in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet.
-
 ## Escalation policy
 
 | Field | Type | Default | Description |
@@ -31,11 +27,11 @@ Deleting a policy needs an admin or an API key; other roles get `403`. A policy 
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `level_number` | int | last | Position within the policy, from `1`. Lower runs first. Omit it to add the level last. A position inside the list inserts the level there and moves the levels at and below it down one. A position past the end (more than `N + 1` for `N` levels) or below `1` is a `400`. |
-| `timeout_minutes` | int | required | How long to wait for any responder ack at this level before advancing, counted from when the level starts. The level advances within a few seconds of it. Whole minutes, from `1` to `1440` (one day). |
+| `timeout_minutes` | int | required | How long to wait for any responder ack at this level before advancing, counted from when the level starts. Whole minutes, from `1` to `1440` (one day). |
 | `target_user_ids` | uuid[] | `[]` | Page these specific users. Each user's notification rules + contact methods determine the actual delivery. |
 | `target_schedule_ids` | uuid[] | `[]` | Page whoever is on-call in these on-call schedules at firing time. |
 
-A level that reaches nobody when it starts (no targets, nobody on call, or every target out of reach, as [readiness](/incident-management/escalation/readiness/) judges it) is skipped at once with an `escalation_unreachable` event, and the next level starts. A level is kept when anything would go out to any target, even a rule delayed past the timeout or the sign-in email fallback. A round of levels that reaches nobody ends the run, and `on_exhausted` applies.
+A level that reaches nobody when it starts is [skipped at once](/incident-management/escalation/overview/#a-level-that-reaches-nobody-is-skipped) with an `escalation_unreachable` event, and the next level starts.
 
 ## Levels are positions
 
@@ -57,7 +53,7 @@ Deleting the level an open incident is waiting on pages nobody straight away. Wh
 { "timeout_minutes": 5, "target_schedule_ids": ["<primary>"] }
 ```
 
-The most common first level. Resolves at firing time, so handoffs work transparently.
+The most common first level.
 
 ### Page a specific person
 
@@ -65,7 +61,7 @@ The most common first level. Resolves at firing time, so handoffs work transpare
 { "timeout_minutes": 10, "target_user_ids": ["<eng-manager>"] }
 ```
 
-Use for fixed targets like "the engineering manager always gets paged at level 2."
+For fixed targets, such as the engineering manager at level 2.
 
 ### Page on-call + a backup person
 
@@ -88,15 +84,13 @@ Both fire in parallel. First ack from anyone wins.
 }
 ```
 
-Both schedules' current responders get paged. Useful when you want a second pair of eyes from level 1.
+Both schedules' current responders get paged.
 
 ### Final-level "page everyone"
 
 ```json
 { "timeout_minutes": 30, "target_user_ids": ["<eng-mgr>", "<vp-eng>", "<cto>"] }
 ```
-
-Reserve for `critical` incidents that have already burned through 30+ minutes without an ack. If you hit this regularly, fix the on-call rotation, not the escalation.
 
 ## Reorder endpoint
 
@@ -141,11 +135,13 @@ The escalation writes these to the incident timeline. They carry ids and reasons
 
 ## Escalation state values
 
+The incident API does not return this state. An incident's detail response has `unassigned_after_exhaustion`, true while the state is `exhausted` and nobody has acknowledged.
+
 | Value | Meaning |
 |---|---|
 | `active` | Cycling through levels. |
 | `acknowledged` | Acked or resolved. Paging stopped and pending schedules deleted. |
-| `exhausted` | The policy ran out and `on_exhausted` applied. Level cycling stopped, but a per-user delayed page that was already scheduled can still fire. The incident's `unassigned_after_exhaustion` is true until someone acknowledges. |
+| `exhausted` | The policy ran out and `on_exhausted` applied. Level cycling stopped, but a per-user delayed page that was already scheduled can still fire. |
 
 ## See also
 

@@ -5,7 +5,7 @@ last_verified: 2026-10-20
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 By the end of this guide you'll have an escalation policy that:
 
@@ -103,7 +103,7 @@ curl -X POST https://api.siteqwality.com/escalation_policy/$POLICY_ID/level \
 
 ## 3. (Optional) Reorder levels
 
-To change the order without recreating levels, use the **Move up** and **Move down** arrows on a level in the policy's **Levels** list. Through the API, send the level UUIDs in the order you want:
+Use the **Move up** and **Move down** arrows on a level in the policy's **Levels** list. Through the API, send the level UUIDs in the new order:
 
 ```bash
 curl -X PUT https://api.siteqwality.com/escalation_policy/$POLICY_ID/level/reorder \
@@ -127,11 +127,9 @@ curl https://api.siteqwality.com/escalation_policy/$POLICY_ID/readiness \
 
 ## 5. Test it
 
-The cleanest test: attach the policy to a [service](/incident-management/services/overview/), open a manual incident on that service, and don't ack it. You should see the page hit the on-call first, escalate at 5 minutes, then 10, then 15.
+Attach the policy to a [service](/incident-management/services/overview/), open a manual incident on that service, and don't ack it. The on-call is paged first, then each later level as the one before it times out (after 5 minutes, then 10 more).
 
-<Aside type="tip">
-For acceptance testing, use a temporary policy with 1-minute timeouts so you can confirm escalation works end-to-end in about 3 minutes instead of 30.
-</Aside>
+To test faster, use a temporary policy with 1-minute timeouts.
 
 ## What's next
 

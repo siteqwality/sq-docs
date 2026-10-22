@@ -5,14 +5,9 @@ last_verified: 2026-08-02
 owner: jj
 ---
 
-import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-An **integration** is a stored credential or webhook URL connecting Site Qwality to an external service. Once an integration exists, you can create [notification channels](/incident-management/notifications/channels/) that deliver to it.
-
-The split exists because:
-
-- One integration → many channels. One Slack workspace integration can fan into 20 different channels (`#ops`, `#deploys`, `#alerts-billing`, ...).
-- Credentials are reusable. You connect Slack once via OAuth; you don't re-enter the workspace every time you want a new channel.
+An **integration** is a stored credential or webhook URL connecting Site Qwality to an external service. Once an integration exists, you can create [notification channels](/incident-management/notifications/channels/) that deliver to it. One integration feeds many channels: connect a Slack workspace once, then point channels at `#ops`, `#deploys` and `#alerts-billing` without connecting it again.
 
 To let an AI assistant such as Claude or ChatGPT work with your account instead, see [Connect AI assistants (MCP)](/integrations/mcp/).
 
@@ -47,28 +42,9 @@ To let an AI assistant such as Claude or ChatGPT work with your account instead,
   <LinkCard title="Webhooks" description="Signed JSON POSTs to your own URL, with retries and a delivery log." href="/integrations/webhooks/" />
 </CardGrid>
 
-<Aside type="note" title="Not every channel works with every monitor type">
-HTTP monitors, browser checks, domain expiry, alert rules and RUM issues reach every channel type. Heartbeat (cron) monitors, TLS expiry, [page-speed alerts](/uptime-monitoring/http-checks/how-to/page-speed-alerts/) and DNS record changes reach only some, and a channel of a type that a source does not support is skipped without an error. See [which alerts reach which channels](/integrations/coverage/).
-</Aside>
+Some alert sources (heartbeat monitors, TLS expiry, [page-speed alerts](/uptime-monitoring/http-checks/how-to/page-speed-alerts/), DNS record changes) reach only some channel types, and a channel of a type the source does not support is skipped. See [which alerts reach which channels](/integrations/coverage/).
 
 ## How integrations and channels relate
-
-```
-Integrations              Notification channels                Notification group
-(account-level)           (group-level)                        (monitor-level)
-
-┌──────────────────┐      ┌──────────────────┐                 ┌──────────────────┐
-│ Slack workspace  │ ←──  │ Channel: #ops    │ ─┐              │                  │
-│ (one OAuth)      │      └──────────────────┘  │              │  "Default group" │
-│                  │      ┌──────────────────┐  ├──→ attached →│                  │
-│                  │ ←──  │ Channel: #alerts │ ─┤              │                  │
-└──────────────────┘      └──────────────────┘  │              │                  │
-                          ┌──────────────────┐  │              │                  │
-                          │ Channel: webhook │ ─┘              │                  │
-                          └──────────────────┘                 └──────────────────┘
-```
-
-So the typical setup flow is:
 
 1. Connect the **integration** (one-time OAuth or webhook URL).
 2. Create a **notification channel** referencing that integration with the per-channel detail (the Slack channel name, the Telegram chat ID).
@@ -77,7 +53,7 @@ So the typical setup flow is:
 
 ## Who can change integrations
 
-Each integration holds a credential, so only account admins can add, change or remove one. Members, auditors and viewers can see them. Anyone else gets a `403`: "Only an account admin can add, change or remove integrations."
+Each integration holds a credential, so only account admins can add, change or remove one. Members, auditors and viewers can see them.
 
 API keys and [API clients](/enterprise/api-clients/) need the `integrations:manage` scope for those changes; `write:notifications` does not cover them. An API key with no scope list is unrestricted. AI assistants that sign in with OAuth are never offered the scope.
 
@@ -85,13 +61,9 @@ Credentials never read back in full. `GET /integration` shows a webhook URL as i
 
 ## What a save checks
 
-- A name is 1 to 256 characters (`422` otherwise).
-- Every URL uses `https` and a public host (`400` otherwise). Discord, Google Chat and Microsoft Teams URLs must be on that service's own webhook host, and Teams accepts Workflows URLs only.
-- A notification channel must name an integration of its own type in your account (`422` otherwise).
-
-## Pricing
-
-Integrations themselves are free. SMS uses credits; see [Notifications](/incident-management/notifications/overview/#pricing).
+- A name is 1 to 256 characters.
+- Every URL uses `https` and a public host. Discord, Google Chat and Microsoft Teams URLs must be on that service's own webhook host, and Teams accepts Workflows URLs only.
+- A notification channel must name an integration of its own type in your account.
 
 ## See also
 

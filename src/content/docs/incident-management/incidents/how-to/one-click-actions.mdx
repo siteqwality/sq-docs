@@ -5,9 +5,9 @@ last_verified: 2026-10-19
 owner: jj
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
-The fastest acknowledgment is the one that does not require finding a laptop. When an escalation policy pages you by email or SMS, the message carries a link that acknowledges the incident from your phone.
+When an escalation policy pages you by email or SMS, the message carries a link that acknowledges the incident from your phone.
 
 ## What each destination carries
 
@@ -19,13 +19,13 @@ The fastest acknowledgment is the one that does not require finding a laptop. Wh
 | Slack channel | A link to the incident in Site Qwality |
 | Webhook (chat or generic) | `incident_url`, a link to the incident in Site Qwality |
 
-An action link acts without a login, so it only ever goes to one person: the responder the escalation policy paged. Anything that reaches a shared place, such as a Slack channel, a chat or generic webhook, or a team address, gets a link to the incident page instead, and that page needs you to sign in.
+An action link acts without a login, so it only goes to the responder the escalation policy paged. Shared places (a Slack channel, a chat or generic webhook, a team address) get a link to the incident page instead, which needs you to sign in.
 
-Acting through a link does exactly what the API endpoints do, including canceling the escalation and deleting any pending delayed pages.
+Acting through a link does what the API endpoints do, including canceling the escalation and any pending delayed pages.
 
 ## Links in email and SMS
 
-Each link has the form `https://api.siteqwality.com/incident/action/<token>`. The token is random. Site Qwality stores only a hash of it, together with the person, the incident and the action it was made for.
+Each link has the form `https://api.siteqwality.com/incident/action/<token>`.
 
 - **Made for you.** The incident records you as the person who acknowledged it.
 - **Works once.** After you press the button, the link is used up.
@@ -34,7 +34,7 @@ Each link has the form `https://api.siteqwality.com/incident/action/<token>`. Th
 
 Opening a link shows a confirmation page with a single button, **Acknowledge incident** or **Resolve incident**. Nothing changes until you press it.
 
-The extra tap is deliberate. Email security scanners (Outlook Safe Links, Mimecast, Proofpoint and others) open every link in a message before a person sees it. If opening the link acted on its own, a scanner could acknowledge the incident and stop the escalation with nobody awake. A scanner opens the page; only a person presses the button.
+The button stops email security scanners (Outlook Safe Links, Mimecast, Proofpoint and others), which open every link in a message, from acknowledging the incident with nobody awake.
 
 | What you see | Meaning |
 |---|---|
@@ -45,20 +45,15 @@ The extra tap is deliberate. Email security scanners (Outlook Safe Links, Mimeca
 | Link expired | The link is more than 24 hours old. Nothing was changed. |
 | Link no longer active | The incident was acknowledged or resolved after the link was sent. The page names its current state. Nothing was changed. |
 | Link not recognized | The link is incomplete or altered. Mail clients that rewrite URLs are the usual cause. Nothing was changed. |
-| Link retired | The link came from an alert sent before 12 October 2026, in a format that no longer works. Nothing was changed. |
+| Link retired | The link came from an older alert format that does not work. Nothing was changed. |
 
 Every page links to the incident in Site Qwality, so you can act there instead.
 
-A successful action appears in the [customer audit log](/enterprise/audit-log/#incident-actions) with your member identity, the incident and the source **Action link**. The token is redacted. Opening the confirmation page or replaying a used link does not add a successful action entry.
+A successful action appears in the [customer audit log](/enterprise/audit-log/#incident-actions) with your member identity, the incident and the source **Action link**. Opening the confirmation page or replaying a used link does not add a successful action entry.
 
-<Aside type="tip">
-Treat the link like a password. It acts in your name, once, without a login, so forwarding it lets someone else acknowledge as you. To hand an incident to a colleague, share the incident page instead.
-</Aside>
-
-Two practical notes:
-
+- **Treat the link like a password.** Forwarding it lets someone else acknowledge as you. To hand an incident to a colleague, share the incident page instead.
 - **SMS carries the acknowledge link only.** The URL is long, so an SMS page can span multiple segments and bill accordingly. If that matters more than one-tap acknowledgment, route pages through email or a push channel instead.
-- **Suspended accounts can still acknowledge and resolve.** Both the links and the acknowledge and resolve endpoints are deliberately exempt from suspension blocking, so an account can always silence its own pager.
+- **Suspended accounts can still acknowledge and resolve**, through these links and the API, so an account can always silence its own pager.
 
 If a link cannot be created when the message is sent, the message carries the link to the incident page instead.
 
@@ -70,11 +65,11 @@ These links are for incidents. The down alert email for a monitor outage carries
 
 Slack channel messages show the service, severity, status and affected monitors, with a link to open the incident in Site Qwality. They carry no Acknowledge or Resolve buttons: everyone in the channel sees the message, so acknowledge and resolve from the incident page.
 
-Older messages may still show Acknowledge and Resolve buttons. Do not rely on them: acknowledge and resolve from the incident page.
+Older messages may still show Acknowledge and Resolve buttons. Do not rely on them.
 
 ## Webhooks
 
-Incident webhook payloads carry `incident_url`, a link to the incident page. They no longer carry `ack_url` or `resolve_url`: a webhook delivers to a shared system, and those links acted without a login.
+Incident webhook payloads carry `incident_url`, a link to the incident page, and no `ack_url` or `resolve_url`, because a webhook delivers to a shared system.
 
 ## See also
 

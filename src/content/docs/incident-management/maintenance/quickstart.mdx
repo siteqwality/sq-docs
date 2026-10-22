@@ -5,13 +5,9 @@ last_verified: 2026-05-03
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 By the end of this guide you'll have a one-time maintenance window scheduled for Friday 14:00–14:30 UTC that silences any monitor tagged `service:api`.
-
-## Prerequisites
-
-- One or more monitors tagged with `service:api`. Tags are set in the monitor form, or as the `tags` array through the API.
 
 ## 1. Tag your monitors
 
@@ -74,27 +70,17 @@ curl -X POST https://api.siteqwality.com/maintenance_windows \
 </TabItem>
 </Tabs>
 
-The response includes `is_currently_active: false` (assuming the window is in the future) and confirms the start/end timestamps in RFC 3339.
+The response has `is_currently_active: false` until the window starts.
 
 ## 3. Verify
 
-The window appears on the **Maintenance Windows** page with a status badge. The card view shows:
+The window appears on the **Maintenance Windows** page as **Scheduled**, then **Active** while it runs and **Ended** after. While it is active, each matching monitor's status badge gets a "Maintenance" overlay.
 
-- **Scheduled**: in the future.
-- **Active**: happening now.
-- **Ended**: already over.
-
-The list view shows **Active** or **Inactive**.
-
-When the window goes active, any matching monitor's status badge in the dashboard gets a "Maintenance" overlay. Notifications are suppressed automatically.
-
-<Aside type="tip">
-You can verify suppression by manually breaking a monitor during an active window. The check still runs and shows `failure` in recent results, but no notifications fire.
-</Aside>
+To test suppression, break a monitor during the window: the check still shows `failure` in recent results, but no notification goes out while the window is active.
 
 ## 4. (Recommended) Publish on the status page
 
-For customer-visible maintenance, also create a status-page maintenance entry. See [Publish a status page maintenance](/status-pages/how-to/publish-maintenance/). The two objects are independent: the maintenance window suppresses internal paging, the status page maintenance shows "Scheduled" cards to customers.
+To tell customers, also [publish a status page maintenance](/status-pages/how-to/publish-maintenance/). It is separate from the maintenance window, which only holds internal paging.
 
 ## What's next
 

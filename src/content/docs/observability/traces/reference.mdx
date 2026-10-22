@@ -9,7 +9,7 @@ owner: jj
 
 Use OTLP HTTP protobuf or JSON at `https://otlp.siteqwality.com/v1/traces`. Set service/environment/version resource attributes. Trace IDs are 32 hexadecimal characters and span IDs 16, and all-zero IDs are invalid. Parent IDs, span kind, start/end time, events and links describe the actual recorded graph. The receiver does not infer missing spans.
 
-OTLP over gRPC is [not available yet](/observability/ingest/#endpoints-and-authentication). Use HTTP/protobuf or HTTP/JSON. [Platform guides](/observability/platforms/overview/) include SDK setup and exporter flushing.
+OTLP over gRPC is [not available yet](/observability/ingest/#endpoints-and-authentication). [Platform guides](/observability/platforms/overview/) include SDK setup and exporter flushing.
 
 ## API reference
 
@@ -32,6 +32,6 @@ Use `https://api.siteqwality.com` and read credentials. Preserve service/environ
 
 Open a trace for waterfall, flame graph, critical path, span events/links and correlated data. Timing offsets and durations are nanosecond strings; converting them to a floating point Number too early loses precision. The critical path describes recorded timing and does not prove causality for an unrecorded dependency. Incomplete/skeleton/truncated traces are labeled; do not assume they represent every operation in the request.
 
-Service and endpoint RED uses weighted received spans and reports estimated/quality state. An upstream head sampler has already removed some requests. Customer pipeline sampling/exclusion and RED derivation have distinct ordering. Percentiles are approximate and histogram/layout constraints still apply. Use the [sampling guide](/observability/traces/how-to/sampling/) and [Services](/observability/services/).
+Service and endpoint RED uses weighted received spans and reports estimated and quality state; an upstream head sampler has already removed some requests. Percentiles are approximate. See the [sampling guide](/observability/traces/how-to/sampling/) and [Services](/observability/services/).
 
-Traces have an independent decimal-GB plan with 5 GB/7 days free and paid 30-day retention. Logs need matching actual trace IDs to correlate. Browser propagation is opt-in and requires controlled URLs/CORS. See [correlation](/observability/traces/how-to/correlate-logs/) and [access/exports](/observability/privacy/).
+Traces have their own [allowance and retention](/observability/billing/). Logs need matching trace IDs to correlate, and browser propagation is opt-in; see [correlation](/observability/traces/how-to/correlate-logs/) and [access/exports](/observability/privacy/).

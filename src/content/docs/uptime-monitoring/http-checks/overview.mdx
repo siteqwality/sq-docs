@@ -7,7 +7,7 @@ owner: jj
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-An **HTTP check** sends a request to a URL on a schedule, asserts on the response, and notifies you when something is wrong. They're the most common kind of monitor, so start here if you're checking that a website, API, or webhook endpoint is up.
+An **HTTP check** sends a request to a URL on a schedule, asserts on the response, and notifies you when something is wrong.
 
 ## When to use HTTP checks
 
@@ -22,7 +22,7 @@ For ping-style "is the box up" checks where there's no HTTP server, use a [cron 
 
 Every HTTP check has a **schedule** (default: every 10 minutes; minimum 30 seconds on paid uptime plans) and a **target URL**. On each tick:
 
-1. Site Qwality issues the configured HTTP request from each [check location](/uptime-monitoring/overview/#check-locations) you selected (by default `aws-us-east-1`, Virginia, AWS, joined by a second cloud provider on a paid uptime plan; see [default locations](/uptime-monitoring/http-checks/reference/#default-locations)).
+1. Site Qwality issues the configured HTTP request from each [check location](/uptime-monitoring/overview/#check-locations) you selected (see [default locations](/uptime-monitoring/http-checks/reference/#default-locations)).
 2. Each response is evaluated against your **assertions**: status code, response body keyword search, response time. With several locations, `min_healthy_regions` decides how many must pass.
 3. If the result differs from the previous status (e.g., success → failure), the monitor's [notification groups](/incident-management/notifications/default-routing/) send an alert. If the monitor is linked to a service that opens incidents automatically, an **incident** also opens and pages through the service's escalation policy.
 4. The result is recorded for uptime/latency dashboards and historical reporting.
@@ -31,9 +31,7 @@ A single HTTP check can also automatically provision a paired:
 
 - [**TLS check**](../../ssl-tls-checks/overview/): tracks the certificate's expiry and chain.
 - [**Domain expiry check**](../../dns-checks/overview/): tracks the registrable domain's registration at its registry. It does not resolve DNS.
-- [**Page-speed check**](#): runs Lighthouse against the URL on a slower schedule.
-
-These are opt-in via the `monitor_tls`, `monitor_dns`, and `monitor_page_speed` flags at create time.
+- [**Page-speed check**](/uptime-monitoring/http-checks/how-to/page-speed-alerts/): runs Lighthouse against the URL on a slower schedule.
 
 ## What you can configure
 
@@ -42,10 +40,8 @@ These are opt-in via the `monitor_tls`, `monitor_dns`, and `monitor_page_speed` 
 | **Request** | method, URI, custom headers, request body, content type, follow-redirects |
 | **Auth** | Basic, Digest, or Bearer token |
 | **Assertions** | success/failure status code lists, keyword search (substring or regex, optionally case-sensitive or inverted), timeout |
-| **Schedule** | run interval (30 s on paid uptime plans, 5 min minimum on the free plan), check locations (one on the free plan, any number on paid uptime plans) and minimum healthy locations |
+| **Schedule** | run interval, check locations and minimum healthy locations (intervals under 5 minutes and more than one location need a paid uptime plan) |
 | **Notifications** | one or more notification groups |
-
-Full field-by-field reference: see the auto-generated [`POST /http/job`](/api-reference/operations/create_http_job/).
 
 ## Next steps
 

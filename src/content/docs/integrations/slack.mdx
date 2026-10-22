@@ -5,7 +5,7 @@ last_verified: 2026-05-03
 owner: jj
 ---
 
-import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, LinkCard } from '@astrojs/starlight/components';
 
 The Slack integration installs an OAuth app into one Slack workspace. Each notification channel you create afterwards specifies a destination Slack channel.
 
@@ -17,19 +17,17 @@ Only an account admin can install it.
 
 1. Go to **Manage → Integrations** and click the **Slack** card. Optionally type a name (it defaults to the workspace name followed by "Slack"), then click **Add to Slack**.
 
-2. You're sent to Slack's consent screen. Pick the workspace and approve.
+2. On Slack's consent screen, pick the workspace and approve.
 
-3. Slack sends you back to Site Qwality, which finishes the install. The integration appears in your list.
+3. Slack sends you back to Site Qwality, and the integration appears in your list.
 
 </Steps>
 
-The link to Slack works once, for 10 minutes, and only for the admin who clicked **Add to Slack**. If it expired or was already used, or you cancel on Slack's screen, nothing is connected: click **Add to Slack** again.
+The link to Slack works once, for 10 minutes, and only for the admin who clicked **Add to Slack**. If it expired or was already used, or you canceled on Slack's screen, click **Add to Slack** again.
 
 The app asks for two scopes: `chat:write` to post, and `chat:write.public` to post in public channels without joining them.
 
-The install runs only from the dashboard, because it is a round trip through Slack in your browser. API keys, API clients and AI assistants get a `403` that says "Connect Slack from the Integrations page in the dashboard."
-
-Org-wide Enterprise Grid installs are not supported yet. Install the app into a single workspace instead.
+The install runs only from the dashboard: API keys, API clients and AI assistants cannot install it. Org-wide Enterprise Grid installs are not supported, so install the app into a single workspace.
 
 ## Add the bot to private channels
 
@@ -37,15 +35,13 @@ The app can post to any public channel without joining it. For a private channel
 
 ## Add it to a notification group
 
-Integrations deliver nothing on their own. Alerts reach one once it is a channel in a notification group that your monitors use.
-
 <Steps>
 
 1. Go to **Respond → Notifications**. Click a group's name to open it, or click **Add group** to make a new one.
 
 2. Under **Notifications**, click **Add Notification Method**. Set **Notification Type** to **Slack** and choose this integration under **Integration**.
 
-3. In **Channel Name or ID**, enter the Slack channel, such as `#ops` or a channel ID like `C0123456789`.
+3. In **Channel Name or ID**, enter the Slack channel, such as `#ops`, or its channel ID (`C0123456789`), which survives renames.
 
 4. Click **Done editing**, then **Update Group** (**Create Group** for a new group).
 
@@ -67,8 +63,6 @@ curl -X POST https://api.siteqwality.com/notification \
   }'
 ```
 
-`channel` accepts `#name` or a Slack channel ID (`C0123456789`). Channel IDs are robust to renames.
-
 ## Message format
 
 Monitor alerts post as a Slack message attachment with a colored bar:
@@ -82,7 +76,7 @@ A send is tried once. If Slack rejects or throttles it, there is no later retry.
 
 ## Incidents
 
-A service's Slack broadcast target can send with this integration: pick it and a channel, and the token stays in the integration. A broadcast target can also take a bot token you paste in, and a Slack contact method still does. Those messages link to the incident in Site Qwality and carry no buttons, because everyone in the channel sees them. Acknowledge and resolve incidents in the dashboard: Slack messages cannot act on an incident. See [Acknowledge from the alert itself](/incident-management/incidents/how-to/one-click-actions/#slack).
+A service's Slack broadcast target can send with this integration (pick it and a channel) or with a bot token you paste in, and a Slack contact method takes a pasted bot token. Those messages link to the incident in Site Qwality and carry no buttons: acknowledge and resolve incidents in the dashboard. See [Acknowledge from the alert itself](/incident-management/incidents/how-to/one-click-actions/#slack).
 
 ## Removing
 

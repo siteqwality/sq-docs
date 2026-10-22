@@ -5,7 +5,7 @@ last_verified: 2026-10-20
 owner: jj
 ---
 
-Site Qwality connects server telemetry with browser experience and monitoring. Start with the [setup guides](/observability/platforms/overview/): pick your language or platform, create an ingest key and send data. Until a signal's first data arrives, its Logs, Traces or Metrics page shows setup help instead of an empty explorer.
+Site Qwality connects server telemetry with browser experience and monitoring. Start with the [setup guides](/observability/platforms/overview/): pick your language or platform, create an ingest key and send data.
 
 | Area | Use it for |
 |---|---|
@@ -18,16 +18,16 @@ Site Qwality connects server telemetry with browser experience and monitoring. S
 | [RUM](/observability/rum/overview/) | Browser performance, resources and JavaScript errors. |
 | [Session replay](/observability/replay/overview/) | Inspect recorded user interactions subject to consent, sampling and access. |
 
+Telemetry alert rules show their state in the app but do not send notifications yet. Use uptime and incident notifications for paging.
+
 ## Send, verify, explore
 
-The OTLP/HTTP origin is `https://otlp.siteqwality.com`, with `/v1/logs`, `/v1/traces` and `/v1/metrics`. JSON, remote-write and platform adapters have their own [routes and contracts](/observability/ingest/). A successful send means accepted records reached storage or durable spill. Confirm readable data separately; replay, processing, access and time filters can affect visibility.
+The OTLP/HTTP origin is `https://otlp.siteqwality.com`, with `/v1/logs`, `/v1/traces` and `/v1/metrics`. JSON, remote-write and platform adapters have their own [routes and contracts](/observability/ingest/).
 
-Use stable `service.name`, `deployment.environment.name` and `service.version`. Resource identity joins related signals. Logs need actual trace/span IDs to link to a request. Metric exemplars link only to recorded trace IDs, and sampling or retention can make the target unavailable. [Correlation](/observability/traces/how-to/correlate-logs/) explains browser opt-in and CORS.
+Use stable `service.name`, `deployment.environment.name` and `service.version`: resource identity joins related signals. Logs need actual trace and span IDs to link to a request. [Correlation](/observability/traces/how-to/correlate-logs/) explains browser opt-in and CORS.
 
 ## Control data and cost
 
-Logs and traces have independent decimal-GB allowances. Metrics use active hourly distinct series averaged over the month. Free allowances, paid packs, retention and hard-limit behavior are in [billing and retention](/observability/billing/). RUM, replay, uptime and incident plans keep their separate units.
+Logs and traces are metered in decimal GB and metrics in active series; allowances, retention and limits are in [billing and retention](/observability/billing/).
 
 Configure [processing pipelines](/observability/pipelines/) before expanding collection. Review [access, exports and erasure](/observability/privacy/) and keep ingest keys on servers. Telemetry read restrictions apply across explorers, saved views, exports and correlation.
-
-**Telemetry alert notifications:** telemetry alert rules evaluate and show their state and history in the app, but they do not send notifications yet. Do not rely on a telemetry rule for paging. Uptime and incident notifications work as usual.

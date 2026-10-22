@@ -5,11 +5,11 @@ last_verified: 2026-10-18
 owner: jj
 ---
 
-Errors unifies browser issues and backend exception groups while keeping each source explicit. Use source, service, environment, time and status filters. Backend groups come from supported exception events, stack traces and log patterns in received telemetry. An error-level line without a parseable exception is still searchable in Logs and need not create a stack-based issue.
+Errors lists browser issues and backend exception groups together, labeled by source. Filter by source, service, environment, time and status. Backend groups come from supported exception events, stack traces and log patterns in received telemetry. An error-level line without a parseable exception is still searchable in Logs and need not create a stack-based issue.
 
-Open an issue to inspect its fingerprint, title, culprit, event samples, affected versions and activity. Grouping normalizes supported language stacks; unrelated exception families should not be merged solely because their messages match. Samples may be absent after retention or under your access restrictions. A count does not imply every original stack remains available.
+Open an issue to inspect its fingerprint, title, culprit, event samples, affected versions and activity. Grouping normalizes supported language stacks; unrelated exception families should not be merged solely because their messages match. Samples can be absent after retention or under your access restrictions, so a count does not mean every original stack is still available.
 
-Use the issue workflow to assign, resolve, ignore or reopen issues. Backend bulk actions and merges operate on explicit selected identities. Check the selected service/environment and fingerprint before a merge; it changes future grouping/workflow semantics. Browser issue actions follow the RUM workflow and access policy. Source maps and replay require their own uploaded artifacts and permissions.
+Use the issue workflow to assign, resolve, ignore or reopen issues. Before a backend merge, check the selected service, environment and fingerprint: a merge changes future grouping and workflow. Browser issue actions follow the RUM workflow and access policy. Source maps and replay require their own uploaded artifacts and permissions.
 
 | API path | Purpose |
 |---|---|
@@ -20,6 +20,6 @@ Use the issue workflow to assign, resolve, ignore or reopen issues. Backend bulk
 | `POST /errors/backend/bulk` | Explicit bulk action. |
 | `POST /errors/backend/merge` | Merge selected backend identities. |
 
-Use the API schema for each mutation body and URL-encode service/fingerprint values. Read restrictions also protect previews and correlation. Pipeline redaction runs before exception extraction; test stacks with representative safe samples in [Processing pipelines](/observability/pipelines/).
+Use the API schema for each mutation body and URL-encode service and fingerprint values. Pipeline redaction runs before exception extraction; test stacks with representative safe samples in [Processing pipelines](/observability/pipelines/).
 
-Telemetry alert evaluation can identify exception-related changes, but **telemetry alerts do not send notifications yet**. This workflow does not send a page, open an incident or post a status update.
+Telemetry [alerts](/observability/alerts/) can evaluate exception-related changes but do not send notifications yet, and this workflow does not page, open an incident or post a status update.

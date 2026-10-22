@@ -5,9 +5,9 @@ last_verified: 2026-10-19
 owner: jj
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
-Site Qwality has two separate routing paths. A monitor alert and an incident page never share a route, so set up the one you need.
+Monitor alerts and incident pages take separate routes, so set up the one you need.
 
 ## Two paths
 
@@ -34,7 +34,7 @@ A monitor linked to such a service uses both paths: its groups send the monitor 
 
 Signup creates a group named **Default**. It holds one email channel to the address you signed up with, and waits 3 minutes before sending a down alert.
 
-The Default group is the account's *default notification group*: the group new monitors get when you do not choose one. On older accounts, the group named "Default" is the default group, if it still exists.
+The Default group is the account's *default notification group*: the group new monitors get when you do not choose one.
 
 - **Dashboard:** the create form pre-selects the default group. Clear it, or pick other groups, before you save.
 - **API, MCP, CSV import and Terraform:** when a create omits `group_notification_ids` or sends `null`, the monitor is attached to the default group. This applies to HTTP monitors, heartbeat (cron) monitors, browser checks and DNS record monitors.
@@ -54,18 +54,18 @@ curl -X PUT https://api.siteqwality.com/notification_group/$GROUP_ID \
   -d '{ "is_default": true }'
 ```
 
-Every group object includes `is_default`, and at most one group per account has it set to `true`. `POST /notification_group` accepts `is_default` too.
+`POST /notification_group` accepts `is_default` too.
 
 ### With no default group
 
-If you delete the default group, or set `"is_default": false` on it, the account has no default. New monitors created without groups then notify no one. The dashboard form starts with no group selected, and API creates that omit `group_notification_ids` attach nothing.
+If you delete the default group, or set `"is_default": false` on it, the account has no default: the dashboard form starts with no group selected, and new monitors created without groups notify no one.
 
 ## Monitors that notify no one
 
 A monitor *notifies no one* when none of its notification groups has a channel, and it is not linked to a service that creates incidents automatically and pages someone (through an escalation policy or the service's notification targets).
 
 - The monitor list shows **No one is notified** on active monitors in that state.
-- Once per account, the dashboard shows a banner that lists those monitors so you can attach a group. Dismissing the banner hides it for the whole account, permanently.
+- The dashboard shows a banner that lists those monitors so you can attach a group. Dismissing it hides it for the whole account.
 
 Through the API, `GET /monitors` returns `notifies_no_one` on each row (it is computed for paused monitors too), and `GET /monitors/silent` lists the active ones:
 
@@ -86,9 +86,7 @@ Through the API, `GET /monitors` returns `notifies_no_one` on each row (it is co
 
 ## The group delay
 
-A group's `delay_send_after_minutes` holds back the first down alert. The Default group uses 3 minutes: alerts wait 3 minutes, then send if the monitor is still down. With `0` or no delay, alerts send as soon as a check fails.
-
-The delay applies today to down alerts from **HTTP monitors and browser checks** only.
+A group's `delay_send_after_minutes` holds back the first down alert, which then sends only if the monitor is still down. With `0` or no delay, alerts send as soon as a check fails. The delay applies to down alerts from **HTTP monitors and browser checks** only:
 
 | Alert | Group delay |
 |---|---|

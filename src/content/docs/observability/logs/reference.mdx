@@ -9,7 +9,7 @@ owner: jj
 
 Send OTLP to `/v1/logs` or custom JSON/NDJSON/text to `/ingest` at `https://otlp.siteqwality.com`. See [ingest routes](/observability/ingest/) and [Fluent Bit](/observability/platforms/fluent-bit/), [Vector](/observability/platforms/vector/) or [Collector](/observability/platforms/collector/) for concrete configs.
 
-Common body aliases include `message`, `msg`, `body` and wrapper `log`; severity accepts supported textual/numeric conventions. Service/environment/resource fields have explicit identity precedence. Structured custom attributes are retained and typed subject to truncation limits; they are not restricted to an old metadata-only field list. Logs can carry valid `trace_id` and `span_id` to open recorded trace context. Invalid IDs do not create a trace link.
+Common body aliases include `message`, `msg`, `body` and wrapper `log`; severity accepts supported textual/numeric conventions. Service/environment/resource fields have explicit identity precedence. Structured custom attributes are retained and typed, subject to truncation limits. Logs can carry valid `trace_id` and `span_id` to open recorded trace context. Invalid IDs do not create a trace link.
 
 ## Explore and query
 
@@ -29,14 +29,14 @@ Common body aliases include `message`, `msg`, `body` and wrapper `log`; severity
 
 These paths are relative to `https://api.siteqwality.com` and require read access. POST search wraps the versioned event query in `query` and supports `limit` and `cursor`; [query reference](/observability/query/) has a complete curl request. Use the same pinned range and query for cursor paging.
 
-Live tail polls at its configured interval and keeps a bounded client buffer. It can pause or fall behind; inspect dropped/backlog indicators. It is not an SSE stream or a guarantee of subsecond end-to-end ingest latency. Analytics and patterns describe the selected window and restrictions. Insights are exploratory output, not delivered alerts.
+Live tail polls at its configured interval and keeps a bounded client buffer. It can pause or fall behind; inspect dropped/backlog indicators.
 
-The UI exposes typed field predicates, event details, context, analysis and saved views. Structured fields and numeric fields remain distinct. A `body_clipped` list item is a preview; inspect detail before assuming the full body is visible. Retention can clamp a query and partial results require attention.
+Structured fields and numeric fields remain distinct. A `body_clipped` list item is a preview; inspect the event detail before assuming the full body is visible.
 
 ## Saved views, processing and exports
 
-Saved views use `/telemetry/views`, scoped to page `logs`, with a versioned query and display settings. Shared views preserve access restrictions; sharing does not grant more data. Use the UI for ownership and revision behavior.
+[Saved views](/observability/logs/how-to/saved-views/) use `/telemetry/views`, scoped to page `logs`, with a versioned query and display settings.
 
-Use [Processing pipelines](/observability/pipelines/) for new parsing/redaction rules. Legacy `/log_parsers` is not the pipeline API, and parsers created there are not converted to pipelines automatically. Use [bounded exports](/observability/privacy/#exports) from the explorer; inline download allows 10,000 rows and 4 MiB compressed.
+Use [Processing pipelines](/observability/pipelines/) for parsing and redaction rules. Use [bounded exports](/observability/privacy/#exports) from the explorer; inline download allows 10,000 rows and 4 MiB compressed.
 
-Logs have their own [decimal-GB allowance and retention](/observability/billing/). A metric derived from a log has metric-series semantics as well; it is not free unlimited cardinality.
+Logs have their own [allowance and retention](/observability/billing/); a metric derived from logs also counts as metric series.

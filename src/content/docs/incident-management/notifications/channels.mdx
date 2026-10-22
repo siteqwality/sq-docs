@@ -5,8 +5,6 @@ last_verified: 2026-10-19
 owner: jj
 ---
 
-import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
-
 A channel (also called a *notification* in the API) is a single delivery destination. Channels live inside a [notification group](/incident-management/notifications/overview/#notification-groups), which is what you attach to monitors.
 
 Every channel has:
@@ -19,21 +17,15 @@ Every channel has:
 }
 ```
 
-This page documents `details` for each type.
-
-<Aside type="caution" title="Channel support varies by alert source">
-Not every alert source reaches every channel type. A channel of a type the source does not support is **skipped**: no alert arrives on it, and a `skipped` receipt records why (see [Skipped deliveries](#skipped-deliveries)). Saving the monitor still succeeds, with a warning. Check [which alerts reach which channels](/integrations/coverage/) before you rely on a channel, and keep an email or SMS channel in every group that has to page someone.
-</Aside>
-
 ## Which alerts reach which channels
 
-Not every alert source reaches every channel type. [Alert coverage](/integrations/coverage/) lists which monitor and rule alerts reach each channel type, how incidents, escalations and status pages reach people, and what each skip reason means.
+Not every alert source reaches every channel type. A channel of a type the source does not support is **skipped**: no alert arrives on it, and a `skipped` receipt records why. Saving the monitor still succeeds, with a [warning](#warnings-when-you-save-a-monitor). [Alert coverage](/integrations/coverage/) lists which monitor and rule alerts reach each channel type, how incidents, escalations and status pages reach people, and what each skip reason means. Keep an email or SMS channel in every group that has to page someone.
 
 ## Skipped deliveries
 
-When an alert is deliberately not sent to a channel, Site Qwality records a receipt with the status `skipped` and a reason code. [Alert coverage](/integrations/coverage/#skipped-deliveries) lists every reason code, what it means and whether it marks the channel degraded.
+When Site Qwality skips a channel, it records a receipt with the status `skipped` and a reason code. [Alert coverage](/integrations/coverage/#skipped-deliveries) lists every reason code, what it means and whether it marks the channel degraded.
 
-Skipped receipts appear in a channel's recent deliveries (`health.recent` on `GET /notification/{id}` and on each channel in `GET /notification_group`) and in a monitor's alert history (`GET /monitors/{id}/alert_history`, with the slug in `detail`). A skip by design, such as `heartbeat_channel_unsupported`, is listed but does not change the channel's `health.state`. An `sms_quota`, `sms_platform_limit` or `recipient_suppressed` skip sets it to `degraded`, because the next alert will likely not arrive either.
+Skipped receipts appear in a channel's recent deliveries (`health.recent` on `GET /notification/{id}` and on each channel in `GET /notification_group`) and in a monitor's alert history (`GET /monitors/{id}/alert_history`, with the slug in `detail`). Some skips, such as `recipient_suppressed`, also set the channel's `health.state` to `degraded`; a skip by design, such as `heartbeat_channel_unsupported`, does not.
 
 An email channel whose address hard-bounced or complained after its last delivered alert is `degraded` too, with `health.bouncing` naming when (`since`), the `event_type` (`bounce` or `complaint`) and the `sub_type`. It recovers when a later alert to the channel is delivered. Every channel's alerts are listed in the [delivery history](/incident-management/notifications/how-to/delivery-history/).
 
@@ -86,11 +78,7 @@ Creating or updating an HTTP, heartbeat or DNS record monitor still succeeds whe
 - `country_code` is the country dialing prefix as an integer (1 for US, 44 for UK, 49 for DE, etc).
 - `phone_number` is the local number with no formatting characters.
 - Validation requires a parseable phone number.
-- Each message uses your account's SMS credits. When the account is over its SMS quota and has no credits left, the message is not sent and is recorded as skipped with `sms_quota`.
-
-<Aside type="caution">
-SMS delivery is best-effort and is tried once. For critical pages, pair SMS with a second channel such as email or a push app.
-</Aside>
+- Delivery is best-effort and tried once. For critical pages, pair SMS with a second channel such as email or a push app.
 
 ## Slack
 
@@ -106,7 +94,7 @@ SMS delivery is best-effort and is tried once. For critical pages, pair SMS with
 
 - Requires a Slack integration first. See [Integrations → Slack](/integrations/slack/).
 - `channel` accepts `#name` or a Slack channel ID. The app must be added to private channels.
-- Monitor alerts render as a message attachment with a status color, the monitor name and URL. They have no buttons.
+- Monitor alerts render as a message attachment with a status color, the monitor name and URL, with no buttons.
 - Incident messages link to the incident in Site Qwality and have no buttons. Acknowledge and resolve from the incident page.
 
 ## Webhook
@@ -172,7 +160,7 @@ Sample webhook body (`data` truncated):
 }
 ```
 
-- Teams integration uses a Workflows webhook URL for a Teams channel. Office 365 connector URLs no longer work. See [Integrations → Microsoft Teams](/integrations/microsoft-teams/).
+- Teams integration uses a Workflows webhook URL for a Teams channel. Office 365 connector URLs do not work. See [Integrations → Microsoft Teams](/integrations/microsoft-teams/).
 - Messages render as Adaptive Cards with a status color.
 
 ## PagerDuty
@@ -203,7 +191,7 @@ Sample webhook body (`data` truncated):
 
 - No per-channel priority field. Outages are `P1`, domain expiry warnings are `P3`.
 - Recoveries close the alert by alias. Domain expiry alerts never close on their own.
-- The channel type is still `opsgenie`. See [Integrations → Jira Service Management (Opsgenie)](/integrations/opsgenie/).
+- The channel type is `opsgenie`. See [Integrations → Jira Service Management (Opsgenie)](/integrations/opsgenie/).
 
 ## Google Chat
 
@@ -216,7 +204,7 @@ Sample webhook body (`data` truncated):
 
 - The integration holds a space incoming webhook URL, which is readable back through `GET /integration`.
 - Messages render as Google Chat cards.
-- Sends that fail 3 times are recorded and dropped rather than retried further. See [Integrations → Google Chat](/integrations/google-chat/).
+- See [Integrations → Google Chat](/integrations/google-chat/).
 
 ## Mattermost
 
@@ -229,7 +217,7 @@ Sample webhook body (`data` truncated):
 
 - The integration holds an incoming webhook URL, readable back through `GET /integration`.
 - Messages render as Slack-style attachments with a status color.
-- Same 3-attempts-then-drop behavior as Google Chat. See [Integrations → Mattermost](/integrations/mattermost/).
+- See [Integrations → Mattermost](/integrations/mattermost/).
 
 ## Pushover
 
@@ -259,23 +247,23 @@ Sample webhook body (`data` truncated):
 
 ## Delivery guarantees by channel
 
-Not all channels behave the same when a send fails. This matters when you are choosing which channel to trust for a critical page.
+What each channel does when a send fails:
 
 | Channels | On failure |
 |---|---|
 | Webhooks | Up to 6 attempts over 30 minutes. Every attempt is in the endpoint's [delivery log](/integrations/webhooks/#delivery-log-and-replay). While retries are pending the alert's receipt reads `delayed`; when they end it becomes `delivered`, `failed` or `rejected`. |
-| PagerDuty, Jira Service Management (Opsgenie) | 3 attempts, each waiting up to 10 seconds. A `4xx` other than `408` or `429` is recorded as rejected. Other failures run the send again up to twice; after that the alert is **dropped with no record**. |
+| PagerDuty, Jira Service Management (Opsgenie) | 3 attempts. A `4xx` other than `408` or `429` is recorded as rejected. Other failures run the send again up to twice; after that the alert is **dropped with no record**. |
 | Pushover, Pushbullet | 1 attempt. A `4xx` is recorded as rejected. A Pushover `429` means the Pushover account used its monthly message limit, and is recorded as rejected too. Other failures run the send again up to twice; after that the alert is dropped with no record. |
 | Email, SMS, Slack, Telegram | 1 attempt. A refusal is recorded as rejected, and an SMS to a number that opted out is skipped (`recipient_suppressed`). Other failures run the send again up to twice; after that the alert is dropped with no record. |
-| Discord, Microsoft Teams, Google Chat, Mattermost | Up to 3 attempts in quick succession, each waiting up to 10 seconds, with no redirect followed. A `400`, `401`, `403`, `404`, `410` or redirect is recorded once as rejected. A timeout after the request went out is not sent again, since it may have arrived. The attempts stop before the send's time limit, so the failure is always recorded. |
+| Discord, Microsoft Teams, Google Chat, Mattermost | Up to 3 attempts in quick succession, with no redirect followed. A `400`, `401`, `403`, `404`, `410` or redirect is recorded once as rejected. A timeout after the request went out is not sent again, since it may have arrived. The failure is always recorded. |
 
 For a page that must arrive, use more than one channel type.
 
 ## Common pitfalls
 
-- **Channel created but no notifications arrive.** First check whether the channel is attached to a *group* and the group is attached to the *monitor*. Channels alone don't deliver.
-- **Channel save refused with a `422`.** A channel must name an integration of its own type in your account, so a mistyped ID or an ID of another integration type is refused. Copy the ID from `GET /integration`.
-- **Alerts show as skipped.** The alert source cannot use that channel type, or SMS ran out of quota. See [Skipped deliveries](#skipped-deliveries).
+- **Channel created but no notifications arrive.** Check that the channel is in a *group* and the group is attached to the *monitor*.
+- **Channel save refused.** A channel must name an integration of its own type in your account, so a mistyped ID or an ID of another integration type is refused. Copy the ID from `GET /integration`.
+- **Alerts show as skipped.** See [Skipped deliveries](#skipped-deliveries) for the reason codes.
 - **SMS not arriving.** Verify the country code is the integer prefix (`1`, not `"+1"`); confirm the number is plain digits.
 
 ## See also

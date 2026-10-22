@@ -5,7 +5,7 @@ last_verified: 2026-08-02
 owner: jj
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
 An SLA report answers "did we hit our uptime commitment last month?" for each UTC calendar month, per monitor, with a clear met or breached verdict.
 
@@ -25,7 +25,7 @@ curl -G "https://api.siteqwality.com/monitors/sla" \
   --data-urlencode "months=6"
 ```
 
-`months` defaults to **3** and is clamped to the range 1 to 24. Out-of-range values are clamped rather than rejected, so `months=99` quietly gives you 24. The dashboard offers 3, 6 and 12, defaulting to 6.
+`months` defaults to **3** and is clamped to 1 to 24, so `months=99` gives you 24. The dashboard offers 3, 6 and 12, defaulting to 6.
 
 Each month returns:
 
@@ -46,19 +46,11 @@ The account-wide report adds `breached_months` per monitor, counting months wher
 | `status_page` | Taken from an SLA target you set on a status page. |
 | `default` | No target configured, so the default **99.9%** applies. |
 
-The target is configured on the monitor's row in a status page, not on the monitor itself. If a monitor appears on several status pages with different targets, the **highest** (strictest) one wins.
-
-<Aside type="caution">
-A status page lets you set an SLA target on browser checks too, but browser checks do not appear in SLA reports at all. That target is stored and never used.
-</Aside>
+The target is configured on the monitor's row in a status page, not on the monitor itself. If a monitor appears on several status pages with different targets, the **highest** (strictest) one wins. A status page also accepts an SLA target on a browser check, but browser checks never appear in SLA reports, so that target is unused.
 
 ## How the number is calculated
 
-This is the part worth reading before you put a figure in front of a customer.
-
-**Month uptime is the unweighted average of that month's daily uptime percentages.** Every day with data counts equally, whatever its traffic. A day with a handful of checks moves the monthly figure exactly as much as a fully sampled day, so a partial day at the start of monitoring, or a day when a monitor was paused for most of it, can pull the month around more than you would expect. Check `days_with_data` when a number looks surprising.
-
-It is not a request-weighted or minutes-of-downtime figure.
+**Month uptime is the unweighted average of that month's daily uptime percentages**, not a request-weighted or minutes-of-downtime figure. Every day with data counts equally, so a day with a handful of checks (a partial first day of monitoring, or a day the monitor spent mostly paused) moves the month as much as a fully sampled day. Check `days_with_data` when a number looks surprising.
 
 Other rules:
 
@@ -67,16 +59,12 @@ Other rules:
 - **Attainment is inclusive.** Exactly 99.900% against a 99.9% target is attained.
 - Months are **UTC calendar months**, so the newest month is always month-to-date.
 
-<Aside type="caution" title="Today is usually missing">
-SLA figures come from a daily rollup that **refreshes once a day at 03:00 UTC**. The current UTC day has no row until that refresh runs, and before 03:00 UTC yesterday is missing too.
-
-So the current month is always slightly behind, and an outage that happened this morning will not appear in the SLA report until tomorrow. It is visible immediately in the monitor's own check history. For contractual reporting, run the report a day after month end.
-</Aside>
+SLA figures come from a daily rollup that **refreshes once a day at 03:00 UTC**, so the current UTC day is missing, and before 03:00 UTC yesterday is missing too. An outage this morning appears in the SLA report tomorrow, though the monitor's check history shows it immediately. For contractual reporting, run the report a day after month end.
 
 ## Limitations
 
 - **HTTP monitors only.** Browser, cron, DNS and TLS monitors have no SLA report.
-- **JSON only.** There is no SLA CSV or PDF export. The [monitor uptime CSV](/enterprise/csv-exports/#monitor-uptime-summary) is the closest thing and uses the same daily-average convention.
+- **JSON only.** There is no SLA CSV or PDF export; the [monitor uptime CSV](/enterprise/csv-exports/#monitor-uptime-summary) is the closest thing and uses the same daily-average convention.
 - **No scheduled or emailed reports.** Reports are pull-only.
 
 ## See also

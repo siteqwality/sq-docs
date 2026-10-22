@@ -20,11 +20,11 @@ Keep the API key in your shell or CI secret store. Listing requires `read:incide
 
 ## List and page
 
-`list` defaults to `active`. Use `--status resolved` or `--status all` for the other views. The response is `{ data, total }`; `data` contains one page and `total` is the number matching the filter. `--limit` accepts 1 to 100. Increase `--offset` to fetch later pages.
+`list` defaults to `active`. Use `--status resolved` or `--status all` for the other views. Output is `{ data, total }`: one page of incidents and the number matching the filter. `--limit` accepts 1 to 100. Increase `--offset` to fetch later pages.
 
 ## Acknowledge and resolve
 
-API keys do not identify a member, so acknowledgment requires `--by` with a member UUID in the account. Acknowledgment stops escalation. A resolved incident cannot be acknowledged, and repeating acknowledgment returns `409`.
+API keys do not identify a member, so acknowledgment requires `--by` with a member UUID in the account. Acknowledgment stops escalation. A resolved or already acknowledged incident cannot be acknowledged.
 
 Resolving a published incident always posts a public resolution and emails its status-page subscribers by default. Add `--no-notify-subscribers` to suppress that email. `--message` supplies the public resolution text.
 
@@ -43,4 +43,4 @@ Moving an incident to a service can start its escalation policy. `--clear-servic
 
 All commands accept `--api-url`, `--timeout` and `--retries`. Reads retry transient failures within the configured budget. Incident mutations make one request even with `--retries`, so an ambiguous timeout cannot automatically repeat paging or a public update. Inspect the incident before retrying a failed mutation.
 
-The CLI does not follow redirects, accepts HTTPS (or loopback HTTP for local tests), and keeps API keys and response bodies out of error messages. The API enforces ownership, scopes, validation and lifecycle conflicts.
+The CLI does not follow redirects, accepts HTTPS (or loopback HTTP for local tests), and keeps API keys and response bodies out of error messages.

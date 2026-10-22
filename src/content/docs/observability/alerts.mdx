@@ -5,21 +5,21 @@ last_verified: 2026-10-18
 owner: jj
 ---
 
-**Notifications:** telemetry alert rules and SLOs evaluate in the app, with instances, state history and SLO summaries. They do not send notifications yet: a firing rule sends no email, webhook or on-call page and opens no incident or status-page update. Use uptime monitoring and its notifications for production paging.
+Telemetry alert rules and SLOs evaluate in the app, with instances, state history and SLO summaries, but they do not send notifications yet: a firing rule sends no email, webhook or on-call page and opens no incident or status-page update. Use uptime monitoring and its notifications for production paging.
 
 ## Threshold rules
 
-Use the telemetry Alerts editor. Choose an event query or a metric query output, time window, evaluation interval and threshold direction. Configure critical, optional warning and recovery thresholds, required breach duration, keep-firing duration, no-data timeout and missing-data policy. Preview on a bounded window before enabling. Set a stable service, severity, runbook and group dimensions rather than creating a rule per dynamic request ID.
+Use the telemetry Alerts editor. Choose an event query or a metric query output, time window, evaluation interval and threshold direction. Configure critical, optional warning and recovery thresholds, required breach duration, keep-firing duration, no-data timeout and missing-data policy. Preview on a bounded window before enabling. Set a stable service, severity, runbook and group dimensions rather than a rule per dynamic request ID.
 
-An event query can evaluate supported count/ratio/percentile analytics. A metric query refers to a named query/formula output. The preview validates the exact typed query and returns observed values/state without sending notifications. Maximum instances bound group expansion. Late-data recomputation is bounded and must not be interpreted as a replay of old notifications.
+An event query can evaluate supported count, ratio and percentile analytics. A metric query refers to a named query or formula output. The preview validates the exact typed query and returns observed values and state. Maximum instances bound group expansion.
 
-States distinguish healthy, pending, warning/firing, no data and evaluation error. Missing data is not zero: choose keep, no_data, alert or ok deliberately. Quota exhaustion can produce no_data with a quota reason. Partial/unfinished derived data can pause or qualify evaluation. Inspect the history reason before changing thresholds.
+States distinguish healthy, pending, warning/firing, no data and evaluation error. Missing data is not zero: choose keep, no_data, alert or ok as the missing-data policy. Quota exhaustion can produce no_data with a quota reason, and partial or unfinished derived data can pause or qualify evaluation, so inspect the history reason before changing thresholds.
 
 ## SLOs
 
-Choose a ratio SLI (good and total with compatible units) or a distribution SLI (query/output, latency threshold and unit), target and period. A distribution SLO needs actual distributions; a percentile scalar is not a count of good events. Error-budget and burn calculations use the selected input and its quality. The standard paired burn windows include long/short windows; configure both so a short spike alone does not imply sustained burn.
+Choose a ratio SLI (good and total with compatible units) or a distribution SLI (query/output, latency threshold and unit), target and period. A distribution SLO needs actual distributions; a percentile scalar is not a count of good events. The standard paired burn windows include long and short windows; configure both so a short spike alone does not imply sustained burn.
 
-Pause stops evaluation and mute changes notification eligibility. Neither sends anything today, because telemetry alerts do not send notifications yet. Edits use revision-aware updates; refresh after a conflict instead of overwriting another change. Rule queries carry a creator restriction snapshot so a shared rule cannot expose broader samples than the creator could read.
+Pause stops evaluation and mute changes notification eligibility. Edits are revision-aware: after a conflict, refresh instead of overwriting the other change. A shared rule cannot expose broader samples than its creator could read.
 
 | Endpoint family | Operations |
 |---|---|
@@ -32,4 +32,4 @@ Pause stops evaluation and mute changes notification eligibility. Neither sends 
 | `/slos/{id}/history`, `/summary` | GET SLO history and summary. |
 | `/slos/{id}/pause`, `/resume`, `/mute` | Evaluation and mute actions. |
 
-Use the current editor or generated API schemas for complete rule bodies and expected revisions. Notification groups and incident settings on a rule are saved but not used for delivery yet. Uptime and incident alerting is separate and works as usual.
+Use the editor or the generated API schemas for complete rule bodies and expected revisions. Notification groups and incident settings on a rule are saved but not used for delivery yet.

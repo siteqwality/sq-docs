@@ -7,22 +7,9 @@ owner: jj
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-By default a status page lives at `https://statuspage.siteqwality.com/<account-id>/<page-id>`. Adding a custom domain (typically `status.yourcompany.com`) takes a few minutes plus DNS propagation time.
+By default a status page lives at `https://statuspage.siteqwality.com/<account-id>/<page-id>`. A custom domain such as `status.yourcompany.com` serves it on your own subdomain, with a TLS certificate Site Qwality provisions through AWS Certificate Manager (ACM).
 
-Site Qwality provisions the TLS certificate via AWS Certificate Manager (ACM) and serves the page from the same edge as the default URL. There's no extra runtime cost or proxy hop.
-
-<Aside type="caution">
-A custom domain is a status page extra: $10/mo ($100/yr) per domain, on any plan, bought on the Billing tab under **Status page extras**. When every custom domain you hold is in use, the API returns `402 Payment Required` naming the Custom domain pack. A domain being removed stops counting straight away.
-</Aside>
-
-## What you'll add to DNS
-
-You'll create **two CNAME records**:
-
-1. A **traffic CNAME**: your subdomain points at Site Qwality's edge.
-2. An **ACM validation CNAME**: proves to AWS you control the domain so it can issue the cert.
-
-Both values come from the API response in step 1 below.
+Each custom domain is a paid status page extra. See [plan limits](/getting-started/plan-limits/#status-pages).
 
 ## 1. Register the custom domain in Site Qwality
 
@@ -63,7 +50,7 @@ The response includes:
 
 ## 2. Add both CNAME records
 
-In your DNS provider (Cloudflare, Route53, NS1, etc.) add:
+In your DNS provider (Cloudflare, Route53, NS1, etc.) add a **traffic CNAME** that points your subdomain at Site Qwality, and an **ACM validation CNAME** that proves to AWS you control the domain so it can issue the certificate:
 
 | Record type | Name | Value | TTL |
 |---|---|---|---|
@@ -76,7 +63,7 @@ If you use Cloudflare with the orange-cloud proxy, **set the traffic CNAME to "D
 
 ## 3. Wait for validation
 
-ACM polls your DNS for the validation record every ~5 minutes. The `status` field progresses through:
+The `status` field progresses through:
 
 - `pending_validation`: DNS records not yet seen.
 - `provisioning`: validation passed, certificate being issued.
@@ -100,7 +87,7 @@ Open `https://status.example.com` in a fresh browser. You should see:
 - Your branded status page.
 - The default URL (`https://statuspage.siteqwality.com/<account-id>/<page-id>`) still works as a fallback.
 
-On your domain, the page's live updates and the subscribe form call the API at your own hostname, and its feeds, badge and embed script are served there too (see [Feeds, badge and embed](/status-pages/how-to/feeds-badge-embed/)). Only the page and the files described there are served; any other path on your domain answers with a short "Page not found" page that links back to your status page.
+Your domain also serves the page's [feeds, badge and embed script](/status-pages/how-to/feeds-badge-embed/). Any other path on it answers with a short "Page not found" page that links back to your status page.
 
 ## Removing a custom domain
 
@@ -111,9 +98,7 @@ curl -X DELETE https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/custom_do
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-Removing the custom domain immediately stops serving it; you should also delete the two CNAME records from your DNS to avoid a dangling pointer at Site Qwality's edge.
-
-Deleting the status page removes its custom domain the same way, so delete the two CNAME records then too.
+The domain stops serving at once. Deleting the status page removes its custom domain the same way. In either case, delete the two CNAME records from your DNS so they do not dangle.
 
 ## Notes
 
@@ -123,13 +108,13 @@ Deleting the status page removes its custom domain the same way, so delete the t
 
 ## Domain health
 
-Once the domain is live, Site Qwality checks it every 6 hours: that your hostname still points at the `cname_target`, and that the certificate is issued and renewing. The dashboard's **Custom domain** tab shows when it was last checked and when the certificate expires. If something is wrong it shows **Needs attention** with what to fix, such as a CNAME that was removed or now points elsewhere, or a renewal waiting on the validation record. The API returns the same in the custom domain's `health` field.
+Once the domain is live, Site Qwality checks every 6 hours that your hostname still points at the `cname_target` and that the certificate is issued and renewing. The **Custom domain** tab shows when it was last checked and when the certificate expires. If something is wrong it shows **Needs attention** with what to fix, such as a CNAME that was removed or now points elsewhere, or a renewal waiting on the validation record. The API returns the same in the `health` field.
 
 ## Email from your domain (optional)
 
-With the page white-labeled, subscriber email carries your page's name. It can also come from your domain, as `notifications@status.example.com`, signed for it. The **Custom domain** tab shows a third, optional record, **Email from your domain**: one more CNAME. Add it, and once the domain is live Site Qwality checks it every 15 minutes until it is verified, then every 6 hours. The API returns the same in the custom domain's `sender` field.
+With the page white-labeled, subscriber email carries your page's name, and it can also come from your domain, as `notifications@status.example.com`, signed for it. Add the third, optional CNAME the **Custom domain** tab shows under **Email from your domain**. Once the domain is live, Site Qwality checks the record every 15 minutes until it is verified, then every 6 hours. The API returns the same in the `sender` field.
 
-Until the record is verified, or if it is later removed, subscriber email still goes out, from Site Qwality's address. Without white-label it always does.
+Until the record is verified, or if it is later removed, subscriber email goes out from Site Qwality's address. Without white-label it always does.
 
 ## See also
 

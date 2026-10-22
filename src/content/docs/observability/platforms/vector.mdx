@@ -7,13 +7,13 @@ owner: jj
 
 import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
 
-This guide configures logs. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+This guide covers logs. Replace `YOUR_INGEST_KEY` with your key.
 
 <BeforeYouStart />
 
 ## 1. Save vector.yaml
 
-For Docker stdout, replace the file source with type: docker_logs and grant access to the runtime socket only after reviewing its host privileges. For multiline stacks, configure a source multiline start pattern before shipping.
+For Docker stdout, replace the file source with `type: docker_logs`, and grant access to the runtime socket only after reviewing its host privileges. For multiline stacks, configure a multiline start pattern on the source.
 
 ```yaml
 data_dir: /var/lib/vector
@@ -42,7 +42,7 @@ sinks:
 
 ## 2. Validate, then start
 
-Persist data_dir for the disk buffer. Check the sink delivery counters and rejected JSON records. To preserve JSON object fields, parse the message with a remap transform before the sink.
+Persist `data_dir` for the disk buffer. Check the sink delivery counters and rejected JSON records. To preserve JSON object fields, parse the message with a remap transform before the sink.
 
 ```bash
 vector validate vector.yaml
@@ -51,14 +51,13 @@ vector --config vector.yaml
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
 Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
 - [Pipelines, access and privacy](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream Vector documentation](https://vector.dev/docs/reference/configuration/sinks/http/)

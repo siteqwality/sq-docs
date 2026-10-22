@@ -5,21 +5,17 @@ last_verified: 2026-10-21
 owner: jj
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
 A site that comes back for one check and fails again sends you an all clear and then a second outage alert a minute later. A site that bounces up and down every few minutes sends a pair of alerts every time. Two HTTP check settings deal with this:
 
 - `recovery_period_runs` waits for several healthy checks before the all clear.
 - Flap hold holds short outages while a monitor flaps and sends one notice instead. It is an account setting that each monitor can override.
 
-New monitors get a recovery period of `2`. Monitors created before it shipped keep `recovery_period_runs: 1`, so nothing changes until you opt in. The monitor form offers the new default on those monitors. Flap hold is different: it follows the account's [notification settings](/incident-management/notifications/settings/), which have it on, so every monitor holds flaps unless it is set to never hold.
-
-| Field | Type | Default for new monitors | Range |
+| Field | Type | Default | Range |
 |---|---|---|---|
 | `recovery_period_runs` | int | `2` | `1` to `10`. `1` sends the all clear on the first healthy check. |
 | `flap_hold_override` | bool \| null | `null` | `null` follows the account setting, `true` always holds, `false` never holds. |
-
-`flap_hold` on a response is the value in effect, a read-only bool. See [turn flap hold on or off](#turn-flap-hold-on-or-off).
 
 ```bash
 curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
@@ -28,11 +24,9 @@ curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
   -d '{ "recovery_period_runs": 2, "flap_hold_override": null }'
 ```
 
-Out-of-range values are rejected with `400` and the message `recovery_period_runs must be between 1 and 10`. There is no plan gate.
-
 ## Recovery period
 
-The monitor goes back to `success` on the first healthy check, as before. Uptime, SLA reports and the outage's recorded duration all use that first healthy check. What waits for the recovery period:
+The monitor goes back to `success` on the first healthy check. Uptime, SLA reports and the outage's recorded duration all use that first healthy check. What waits for the recovery period:
 
 - the all clear notification on every channel;
 - automatic resolution of the incident the outage opened.
@@ -49,35 +43,27 @@ A monitor is flapping after **4 status changes within 30 minutes**. While it fla
 - Each new outage is held. If the monitor recovers within **5 minutes**, the held outage and its recovery are dropped together. If it is still down after 5 minutes, the held outage is sent to every channel, paging ones included, and the incident opens.
 - Once the monitor has had no status change for **15 minutes**, a **Stable** summary says how many outages were held.
 
-SMS, PagerDuty, Opsgenie and Pushover never get the Flapping or Stable notices, only outages that broke through. Webhooks get no flap notices today.
+SMS, PagerDuty, Opsgenie and Pushover never get the Flapping or Stable notices, only outages that broke through. Webhooks get no flap notices.
 
-Held outages show on the monitor page with **Alert held while flapping**, and **then sent** once one broke through. The activity feed records when flapping started, each break-through and when it ended.
+Held outages show on the monitor page with **Alert held while flapping**, and **then sent** once one broke through.
 
 ### Turn flap hold on or off
 
 Whether an HTTP monitor holds depends on two things:
 
 - The account setting `flap_hold`, under **Notifications**, **Settings**. It is on by default.
-- The monitor's own `flap_hold_override`. In the monitor form, **Hold alerts while flapping** lets you follow the Notifications setting, always hold or never hold. `null` follows the account, `true` always holds and `false` never holds.
+- The monitor's own `flap_hold_override`. In the monitor form, **Hold alerts while flapping** lets you follow the Notifications setting, always hold or never hold.
 
-An override wins over the account setting. A monitor's `flap_hold` is the result: the override if it has one, otherwise the account setting, otherwise on. `PUT /http/job/{job_id}` takes `flap_hold_override` (leave it out to keep it, send `null` to follow the account), and a request that still sends `flap_hold` sets the override.
-
-<Aside type="caution" title="Older monitors now hold flaps">
-Monitors created before flap hold shipped used to have it off. They now follow the account setting, so they start holding flaps unless you set them to never hold. A monitor where flap hold was explicitly turned off after it shipped stays on never hold.
-</Aside>
+An override wins over the account setting. A monitor's read-only `flap_hold` is the result: the override if it has one, otherwise the account setting, otherwise on. `PUT /http/job/{job_id}` takes `flap_hold_override` (leave it out to keep it, send `null` to follow the account), and a request that sends `flap_hold` sets the override.
 
 ## Heartbeat and browser monitors
 
 Heartbeat (cron) monitors and browser checks hold flaps the same way: the same 4 changes in 30 minutes, the same 5-minute break-through, the same **Flapping** notice and **Stable** summary, and no incident or escalation while an outage is held. Two differences:
 
-- They follow the account's `flap_hold` setting only. There is no per-monitor override for them yet.
-- They have no recovery period. The all clear goes out on the first healthy check, as before.
+- They follow the account's `flap_hold` setting only, with no per-monitor override.
+- They have no recovery period. The all clear goes out on the first healthy check.
 
 Each held outage appears in the monitor's activity feed as **Outage held**, followed by **Held outage sent** if it broke through. A heartbeat checks on its own interval, so a held outage is decided by the one-minute tick, not by the next ping.
-
-<Aside type="note" title="Existing heartbeats and browser checks start holding flaps">
-The account setting is on by default, so heartbeats and browser checks that flap now get one notice instead of an alert pair for every change. Turn `flap_hold` off under **Notifications**, **Settings** to keep the old behavior for the whole account.
-</Aside>
 
 ## See also
 

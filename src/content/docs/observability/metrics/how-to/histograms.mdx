@@ -11,4 +11,4 @@ In Metrics, select the histogram and inspect the distribution. Merge distributio
 
 A point with `no_sum` has no valid sum or mean, even if it has count and bucket data. `no_recorded_value` stays a gap. Missing min/max are unavailable, not zero. Percentiles carry approximation and quality limits. Exemplars link to real recorded traces only and may be unavailable after trace retention.
 
-Free/paid raw retention is 7/15 days; minute rollups last 45 days; hourly rollups last 30/395 days. Rollups preserve supported distribution information but do not restore expired raw events. See [metric reference](/observability/metrics/reference/), [query workspace](/observability/query/) and [billing](/observability/billing/).
+Rollups preserve supported distribution information but do not restore expired raw events; see [metric retention](/observability/billing/#metric-retention). See also the [metric reference](/observability/metrics/reference/) and [query workspace](/observability/query/).

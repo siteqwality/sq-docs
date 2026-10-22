@@ -5,7 +5,7 @@ last_verified: 2026-10-22
 owner: jj
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
 ## Service fields
 
@@ -15,10 +15,10 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 | `name` | string | | Required. |
 | `description` | string | none | `null` on update clears it. |
 | `escalation_policy_id` | UUID | none | Who the service's incidents page. Without one, nobody is paged. Must be a policy in your account (`404` otherwise). `null` on update clears it. |
-| `incident_creation_mode` | `manual`, `auto` | `manual` | `auto_with_confirmation` is still accepted on input and treated as `auto`, but is never returned. |
-| `reopen_window_minutes` | integer | `30` for new services | `0` to `1440`. A monitor that fails again within this many minutes of the last alert of a resolved auto-created incident reopens it instead of opening a new one. `0` never reopens. See [reopen window](/incident-management/services/overview/#reopen-window). |
+| `incident_creation_mode` | `manual`, `auto` | `manual` | `auto_with_confirmation` is accepted on input as `auto` and never returned. |
+| `reopen_window_minutes` | integer | `30` for new services | `0` to `1440`. `0` never reopens. See [reopen window](/incident-management/services/overview/#reopen-window). |
 | `auto_resolve` | `always`, `unless_acknowledged`, `never` | `unless_acknowledged` | Whether an auto-created incident resolves itself when all its monitors recover. `unless_acknowledged` leaves an acknowledged incident for a person to resolve. See [auto-resolve](/incident-management/services/overview/#auto-resolve). |
-| `incident_merge_window_minutes` | integer | none | Deprecated and ignored. While an auto-created incident is open, every failing monitor of the service joins it. |
+| `incident_merge_window_minutes` | integer | none | Deprecated and ignored. |
 | `default_incident_severity` | `minor`, `major`, `critical` | `minor` | Severity of incidents the service opens automatically, and of manual incidents opened on it without a `severity`. |
 | `auto_publish_to_status_page_id` | UUID | none | Puts automatic incidents on this status page and emails its subscribers. `null` on update clears it. |
 | `public_incident_template` | object | none | `{ "title", "message", "resolved_message" }`, each optional: the public title, first public update and resolved update for this service's incidents on a status page. Values are trimmed and blank ones dropped. The title is at most 512 characters and each message 5,000 (`400` otherwise). Leaving it out keeps it; `null` clears it. Omitted from responses when empty. |
@@ -50,9 +50,7 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 | `PUT` | `/service/{id}/notification_target/{target_id}` | Change a target's `min_severity` and `events`, or a Slack target's `channel`. `null` resets a filter; omitted fields keep their value. `400` for an unknown or empty event list, `404` when the target is not on the service. |
 | `DELETE` | `/service/{id}/notification_target/{target_id}` | Remove a broadcast target. |
 
-<Aside type="note" title="Scopes">
 Scoped API keys, M2M API clients and AI assistants need `read:services` for the `GET` routes and `write:services` for the rest.
-</Aside>
 
 ## Listing services
 
@@ -168,9 +166,9 @@ curl -X POST https://api.siteqwality.com/service/$SERVICE_ID/notification_target
 
 ### When targets are told
 
-Every lifecycle event below is sent to the service's broadcast targets. The last column is what the Slack, email and webhook targets deliver today:
+The Slack, email and webhook targets deliver the events marked **Yes**. The others are recorded but not sent:
 
-| Event | Happens when | Delivered today |
+| Event | Happens when | Delivered |
 |---|---|---|
 | Opened | An incident opens on the service, automatically or by hand. | Yes |
 | Resolved | An incident on the service resolves. | Yes |
@@ -180,7 +178,7 @@ Every lifecycle event below is sent to the service's broadcast targets. The last
 | Merged | An incident is merged into another. | Recorded |
 | Service changed | An incident moves to another service. | Recorded |
 
-A recorded event starts delivering as each channel's message for it ships. A monitor recovering while the incident stays open sends nothing, and an incident merged into another sends no resolved message. An update posted as an internal note is marked internal on its event. Status page subscribers only ever get public updates.
+A monitor recovering while the incident stays open sends nothing, and an incident merged into another sends no resolved message. An update posted as an internal note is marked internal on its event. Status page subscribers only ever get public updates.
 
 ## Automatic incidents
 

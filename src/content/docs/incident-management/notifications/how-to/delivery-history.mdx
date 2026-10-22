@@ -5,11 +5,9 @@ last_verified: 2026-10-22
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+The **delivery history** answers "did anyone get told?" for the whole account, one row per alert and channel.
 
-The **delivery history** answers "did anyone get told?" for the whole account. Each row is one alert to one channel: when it went, what it was about, where it went and what happened to it.
-
-In the dashboard, open **Respond → Notifications** and click **Delivery history**. Filter by channel type or by result, and click **Load older deliveries** to go further back. The history reaches back 90 days.
+In the dashboard, open **Respond → Notifications** and click **Delivery history**. Filter by channel type or by result, and click **Load older deliveries** to go further back, up to 90 days. Test sends from the dashboard are left out.
 
 ## What a row tells you
 
@@ -24,11 +22,7 @@ A **repeat** is a re-send of a down alert from a notification group with **Resen
 
 **Delivered**, **Bounced** and **Marked as spam** come from the receiving mail server, so an email row can move from **Sent** to one of them a little later.
 
-A **Skipped** row is an alert we deliberately did not send to that channel. [Alert coverage](/integrations/coverage/#skipped-deliveries) lists every reason code and whether it means the channel needs fixing.
-
-<Aside type="note">
-Test sends from the dashboard are left out. Receipts recorded before receipts named their account are not listed.
-</Aside>
+A **Skipped** row is an alert Site Qwality chose not to send to that channel. [Alert coverage](/integrations/coverage/#skipped-deliveries) lists every reason code and whether it means the channel needs fixing.
 
 ## Bouncing email channels
 
@@ -52,10 +46,10 @@ curl https://api.siteqwality.com/notification/history?limit=50&status=failed \
 | `since`, `until` | RFC 3339 times. `since` may be at most 90 days back, the default; `until` defaults to now. |
 | `include_tests` | `true` to include test sends. |
 
-The response is `{ "data": { "data": [...], "next_cursor": "..." } }`, newest first, the same page shape as the integration delivery log. `next_cursor` is `null` on the last page. Each entry carries `at`, `status`, `reason`, `channel`, `destination` (masked), `monitor_id`, `monitor_type`, `monitor_name`, `event_kind`, `occurrence`, `repeat` and `fallback`:
+The response is `{ "data": { "data": [...], "next_cursor": "..." } }`, newest first. `next_cursor` is `null` on the last page. Each entry carries `at`, `status`, `reason`, `channel`, `destination` (masked), `monitor_id`, `monitor_type`, `monitor_name`, `event_kind`, `occurrence`, `repeat` and `fallback`:
 
 - `occurrence` is which send of the event it was: `0` for the first, `3` for the third repeat.
 - `repeat` is the repeat number, `null` for a first send.
 - `fallback` is `true` for an email sent to the account owner instead of a blocked SMS.
 
-A bad cursor, a `limit` outside 1 to 100, a `since` more than 90 days back or an `until` before `since` returns `400`. Scoped API keys and AI assistants need `read:notifications`. The AI assistant tool is `list_notification_history`.
+Scoped API keys and AI assistants need `read:notifications`. The AI assistant tool is `list_notification_history`.

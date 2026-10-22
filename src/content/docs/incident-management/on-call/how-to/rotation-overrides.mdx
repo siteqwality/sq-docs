@@ -5,15 +5,11 @@ last_verified: 2026-08-01
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-An **override** is a hard "user X is on call from time A to time B" entry that beats every layer in the schedule. It's the right tool for:
+An **override** is a hard "user X is on call from time A to time B" entry that beats every layer in the schedule.
 
-- **Vacation cover:** "Carol is covering Alice's week while she's at a wedding."
-- **One-off swaps:** "I'll take your Tuesday if you take my Thursday."
-- **Filling layer gaps:** if a layer's effective window leaves a hole, override the gap.
-
-Overrides do *not* modify the underlying rotation. Once the override expires, the rotation continues as if it never happened: Alice will still be next-up the week she'd normally have rotated to.
+Overrides do *not* modify the underlying rotation. Once the override expires, the rotation continues as if it never happened.
 
 ## Add an override
 
@@ -51,17 +47,9 @@ Times are RFC 3339 with timezone. The schedule's own timezone doesn't apply to o
 
 ## Common patterns
 
-### Whole-week vacation cover
-
-Single override covering the entire week. Carol takes over from Alice 09:00 Monday through 09:00 the following Monday. Both `start_at` and `end_at` must be set.
-
-### Daily swap
-
-Two overrides: each engineer takes the other's day. Each override is one calendar day, both saved with explicit start/end.
-
-### Patch a gap in a layer
-
-If your weekly rotation has `effective_from: 2026-06-01` and you have an incident before then, the layer doesn't apply. Add an override covering the period until the layer kicks in.
+- **Vacation cover:** one override for the whole week. Carol takes over from Alice 09:00 Monday through 09:00 the following Monday.
+- **Swap days:** two overrides, one calendar day each, so each engineer takes the other's day.
+- **Patch a gap in a layer:** a layer with `effective_from: 2026-06-01` doesn't apply before then. Add an override covering the period until the layer starts.
 
 ## Overlapping overrides
 
@@ -76,9 +64,7 @@ curl -X DELETE https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/overrid
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-<Aside type="tip">
-You can delete an active override (one currently in effect). The on-call lookup re-evaluates immediately, and the next page will route per the underlying layers.
-</Aside>
+You can delete an override that is in effect. The next page routes per the underlying layers.
 
 ## See also
 

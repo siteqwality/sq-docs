@@ -5,14 +5,11 @@ last_verified: 2026-10-10
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
-
-By the end of this guide you'll have replay activated for any session that throws an error, and you'll have watched a recorded session play back in the dashboard.
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 ## Prerequisites
 
-- A RUM application set up. See the [RUM quickstart](/observability/rum/quickstart/).
-- The SDK installed in your app.
+- A RUM application with the SDK installed in your app. See the [RUM quickstart](/observability/rum/quickstart/).
 
 ## 1. Check the application's privacy settings
 
@@ -25,7 +22,7 @@ New applications start on the **Balanced** [privacy level](/observability/rum/ho
 
 1. Go to **Observe → RUM**, open your application and choose **Settings**, then **Privacy**.
 
-2. Under **Masking**, check that **Mask all inputs** is on. (Almost always a yes, since your customers shouldn't see other customers' typed data.)
+2. Under **Masking**, check that **Mask all inputs** is on.
 
 3. Turn on **Mask all text** if your app displays sensitive content (financial info, PII), or pick the **Strict** **Privacy level**.
 
@@ -36,7 +33,7 @@ New applications start on the **Balanced** [privacy level](/observability/rum/ho
 </TabItem>
 <TabItem label="API">
 
-Set the level through the API. Send only the keys you change; the rest keep their stored values. Changing privacy needs an account admin or an API key with no scope restriction:
+Send only the keys you change; the rest keep their stored values. Changing privacy needs an account admin or an API key with no scope restriction:
 
 ```bash
 curl -X PATCH https://api.siteqwality.com/rum/$APP_ID \
@@ -63,13 +60,13 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
   }'
 ```
 
-The SDK fetches rules on every page load, and an open tab refetches them when it becomes visible with a copy older than 5 minutes. A new rule reaches new page loads within 6 minutes; see [how long changes take](/observability/rum/how-to/remote-config/#how-long-changes-take-to-land).
+A new rule reaches new page loads within 6 minutes; see [how long changes take](/observability/rum/how-to/remote-config/#how-long-changes-take-to-land).
 
 ## 3. Trigger an error in your app
 
-Open your app, do something that throws an error in production code. (Or temporarily add `throw new Error('replay test')` to a button handler and click it.)
+Open your app and do something that throws an error, or temporarily add `throw new Error('replay test')` to a button handler and click it.
 
-The SDK evaluates the rule as soon as it sends the error. Because an error rule could match any session, the recorder has been buffering since the page loaded, so the replay includes up to the last 60 to 120 seconds before the error. Keep using the page for a few seconds; segments upload within about 20 seconds, or when you leave the page.
+Because an error rule could match any session, the recorder has been buffering since the page loaded, so the replay includes up to the last 60 to 120 seconds before the error. Keep using the page for a few seconds; segments upload within about 20 seconds, or when you leave the page.
 
 ## 4. Watch the replay
 
@@ -82,7 +79,7 @@ The SDK evaluates the rule as soon as it sends the error. Because an error rule 
 
 2. Click its **Replay** badge to open the player. From the error's page under **RUM → Errors**, **Watch replay** opens the same replay at the error.
 
-3. The video player loads. Hit play; scrub the timeline; jump to the error using its marker, or **Next error** (`]`).
+3. Press play, and jump to the error with its marker or **Next error** (`]`).
 
 </Steps>
 
@@ -108,7 +105,7 @@ Before rolling out replay broadly:
 - [ ] Sensitive text (PII, financial figures, health info) is covered by `mask_selectors`, or the application is on Strict.
 - [ ] Payment forms match a `block_selectors` entry (not recorded at all), and pages that should never be recorded are in `never_record_urls`.
 - [ ] Your privacy policy mentions session replay if you collect from EU/CA customers (GDPR/CCPA).
-- [ ] Replay-enabled recording rules are scoped. Don't replay every session, just the interesting ones.
+- [ ] Replay rules are scoped to the sessions you need, not every session.
 
 ## What's next
 

@@ -5,7 +5,7 @@ last_verified: 2026-10-03
 owner: jj
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
 RUM sessions carry four context dimensions, so you can ask questions like "is LCP worse on mobile?" or "which browser is throwing this error?" without instrumenting anything yourself.
 
@@ -18,7 +18,7 @@ RUM sessions carry four context dimensions, so you can ask questions like "is LC
 | `device_type` | The User-Agent, parsed server side |
 | `country` | The client IP address, looked up at ingest |
 
-Your SDK payload can also set any of these explicitly, and an explicit value always wins over the derived one. That is the escape hatch if you already know better than a User-Agent string or an IP address does.
+Your SDK payload can also set any of these explicitly, and an explicit value always wins over the derived one.
 
 Country comes from an IP-to-country database bundled with the ingest service, so the address never leaves it, and it is never stored or logged. A visitor on a VPN or corporate proxy is placed where that exit is. Country headers sent by the client are ignored. [IP geolocation by DB-IP](https://db-ip.com), CC BY 4.0.
 
@@ -28,17 +28,11 @@ Country comes from an IP-to-country database bundled with the ingest service, so
 
 **`os`** normalizes to `Windows`, `macOS`, `iOS`, `Android` or `Linux` where it can, and otherwise passes through whatever was detected, so less common values do appear.
 
-**`browser`** covers the mainstream engines: `Chrome`, `Firefox`, `Safari`, `Edge`, `Opera` and similar. Requests from HTTP libraries such as curl or scripted clients are deliberately left **empty** rather than polluting the browser breakdown with tool names.
+**`browser`** covers the mainstream engines: `Chrome`, `Firefox`, `Safari`, `Edge`, `Opera` and similar. Requests from HTTP libraries such as curl or scripted clients are left **empty**.
 
 **`country`** is an uppercase ISO 3166-1 alpha-2 code such as `US` or `DE`. Anything that is not exactly two letters is discarded, so `USA` or `United States` will not be stored.
 
-Unknown values are stored as an **empty string**, not the literal text `unknown`. The dashboard renders that bucket as `(unknown)`.
-
-<Aside type="caution" title="There is no backfill">
-Browser, OS and device were not recorded before they shipped, and country was left empty until the IP lookup shipped. Those historical rows are **permanently empty** and nothing re-processes them.
-
-Comparing a breakdown across the date a dimension started being recorded will show a large `(unknown)` block for the earlier period. That is missing data, not a change in your traffic. Pick time ranges that start after the change when you want a clean picture.
-</Aside>
+Unknown values are stored as an **empty string**, not the literal text `unknown`. The dashboard renders that bucket as `(unknown)`. Sessions recorded before a dimension was introduced stay empty, so a range spanning that date shows a large `(unknown)` block for the earlier period: missing data, not a change in your traffic.
 
 ## Filtering and breaking down
 
@@ -64,8 +58,6 @@ The response includes two breakdowns:
 | `country_breakdown` | Top 20 by session count |
 | `browser_breakdown` | Top 10 by session count |
 
-There is **no OS or device breakdown**. Those two dimensions are filter-only, so to compare them you filter and read the resulting totals. The dashboard shows country names and hides the country panel when no session in the range has one.
-
 ### Sessions
 
 ```bash
@@ -77,7 +69,7 @@ curl -G "https://api.siteqwality.com/rum/$APP_ID/sessions" \
   --data-urlencode "has_error=true"
 ```
 
-Accepts `browser`, `os`, `country` and `device_type`, plus `search`, `url` (a case-insensitive substring of any visited page), `has_error`, `has_replay`, `has_frustration`, `error_fingerprint`, `sort`, `order`, `limit` (default 50, max 100) and `offset`. See the [RUM reference](/observability/rum/reference/#get-rumapp_idsessions).
+Accepts `browser`, `os`, `country` and `device_type` alongside the other session filters; see the [RUM reference](/observability/rum/reference/#get-rumapp_idsessions).
 
 ### Facets
 
@@ -103,11 +95,9 @@ curl -G "https://api.siteqwality.com/rum/$APP_ID/facets" \
 
 Each list holds the top 50 non-empty values by session count. Counts above about 1,500 sessions are approximate, within about 0.2%.
 
-## A limitation worth knowing
+## Errors and dimensions
 
-These dimensions live on **session measurements only**. Individual error and detail events do not carry them.
-
-In practice that means you segment sessions by browser or device, and reach errors through those sessions, rather than filtering an error list directly by browser. The overview's top errors do honor a dimension filter, by keeping errors from sessions that match it.
+These dimensions live on **session measurements only**; individual error and detail events do not carry them. Segment sessions by browser or device and reach errors through those sessions, rather than filtering an error list directly by browser. The overview's top errors do honor a dimension filter, by keeping errors from sessions that match it.
 
 ## See also
 

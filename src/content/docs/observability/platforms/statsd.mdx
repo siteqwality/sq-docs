@@ -7,13 +7,13 @@ owner: jj
 
 import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
 
-This guide configures metrics. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+This guide covers metrics. Replace `YOUR_INGEST_KEY` with your key.
 
 <BeforeYouStart />
 
 ## 1. Save collector.yaml
 
-Use the contrib distribution. StatsD listens only on your local Collector at UDP 8125. Site Qwality does not expose a public StatsD UDP port.
+Use the contrib distribution. StatsD listens only on your local Collector at UDP 8125; Site Qwality has no public StatsD UDP port.
 
 ```yaml
 receivers:
@@ -55,7 +55,7 @@ service:
 
 ## 2. Start the Collector
 
-A memory queue survives transient failures, not process loss. Use the file_storage extension and a persistent sending queue for host restart durability. Keep batches within the receiver byte limits; record counts alone do not bound large records.
+A memory queue survives transient failures, not process loss; for host restart durability, use the `file_storage` extension and a persistent sending queue. Keep batches within the [receiver byte limits](/observability/ingest/#content-types-and-compression).
 
 ```bash
 otelcol-contrib --config=collector.yaml
@@ -72,14 +72,13 @@ printf 'example.requests:1|c
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
 Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
 - [Pipelines, access and privacy](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream StatsD through a Collector documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/statsdreceiver)

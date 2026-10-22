@@ -5,8 +5,6 @@ last_verified: 2026-10-16
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
 The full request schemas live in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for the `/status_page` endpoint family.
 
 ## Status page
@@ -32,7 +30,7 @@ A page shows four kinds of component:
 | Heartbeat | `cron_job` | A heartbeat monitor: up while its pings arrive on time, down once one is missed. | No. |
 | Manual | `manual` | You. There is no monitor behind it. | No. |
 
-A page shows at most 100 components, all four kinds together. Adding a 101st returns `400` with `A status page can show at most 100 components`. Sending the attach again for a monitor already on the page still works and just updates its `friendly_name`.
+A page shows at most 100 components, all four kinds together. Adding a 101st returns `400` with `A status page can show at most 100 components`. Attaching a monitor already on the page updates its `friendly_name`.
 
 Group, order, describe and hide every kind in the dashboard's **Layout** tab or with `PUT /status_page/{id}/layout`, which saves the whole layout at once. See [Group and order status page components](/status-pages/how-to/organize-components/).
 
@@ -105,15 +103,13 @@ An override wins over the monitor, a pause and any maintenance, and it counts to
 | `favicon_s3_key` | string | from the upload flow | Browser tab icon. | Site Qwality icon, none when white-labeled |
 | `og_image_s3_key` | string | from the upload flow | Link preview image. | none |
 
-Every field is free on every plan, `white_label` included. Clearing a field is always allowed.
-
 An `*_s3_key` must be the `s3_key` the upload endpoint returned for that asset type on this page; any other key returns `400`. Sending back the key already stored is accepted. Replacing or clearing a key deletes the old file.
 
 `GET` and `PUT` return the stored fields plus `logo_url`, `logo_dark_url`, `favicon_url` and `og_image_url`, the CDN addresses of the assets (`null` when unset).
 
 ### Colors and contrast
 
-The page never draws a brand color where it would be hard to read. For each theme it uses the color as given when it meets WCAG 2.2 AA on the page's backgrounds, and otherwise the nearest shade of the same hue that does: 4.5:1 for text (the title, links), 3:1 for focus rings and the chart line. The Subscribe button keeps 4.5:1 between its fill and its label, which is ink or cream, whichever reads better. No color reaches 4.5:1 on both the light and the dark background, so a strong brand color usually shows a lighter or darker shade in one theme. The dashboard's Branding tab shows the ratio and the shade the page will use as you pick a color, and previews both themes.
+The page never draws a brand color where it would be hard to read. For each theme it uses the color as given when it meets WCAG 2.2 AA on the page's backgrounds, and otherwise the nearest shade of the same hue that does: 4.5:1 for text (the title, links), 3:1 for focus rings and the chart line. The Subscribe button keeps 4.5:1 between its fill and its label, which is ink or cream, whichever reads better. No color reaches 4.5:1 on both the light and the dark background, so a strong brand color usually shows a lighter or darker shade in one theme.
 
 ### Asset upload flow
 
@@ -127,8 +123,6 @@ The page never draws a brand color where it would be hard to read. For each them
 | `logo`, `logo_dark` | `image/png`, `image/jpeg`, `image/svg+xml`, `image/webp` | 2 MB |
 | `favicon` | `image/png`, `image/x-icon`, `image/vnd.microsoft.icon`, `image/svg+xml` | 512 KB |
 | `og_image` | `image/png`, `image/jpeg`, `image/webp` | 5 MB |
-
-Public responses expose CDN URLs (`logo_url`, `logo_dark_url`, `favicon_url`, `og_image_url`), never S3 keys.
 
 ## Custom domain
 
@@ -145,7 +139,7 @@ Public responses expose CDN URLs (`logo_url`, `logo_dark_url`, `favicon_url`, `o
 | `sender` | object | Subscriber email from the domain, for a white-labeled page: `status` (`not_started` until the domain is provisioned, then `pending`, `verified` or `failed`), `dkim_record` (`name` and `value` of the CNAME to add) and `from_address`, where the mail comes from once verified. |
 | `created_at` / `updated_at` | rfc3339 | Timestamps. |
 
-Deleting the status page removes its custom domain too, along with the certificate and distribution behind it. See the [custom domain guide](/status-pages/how-to/custom-domain/) for the DNS walkthrough.
+Deleting the status page removes its custom domain and certificate too. See the [custom domain guide](/status-pages/how-to/custom-domain/) for the DNS walkthrough.
 
 ## Scheduled maintenance
 
@@ -174,7 +168,7 @@ Every create and update names the scope: `whole_page: true` with no `affected_ht
 
 Responses return `id`, `status_page_id`, `title`, `body`, `status`, `scheduled_start_at`, `scheduled_end_at`, `affected_http_job_ids`, `whole_page` and `created_at`. `affected_http_job_ids` is empty when `whole_page` is `true`.
 
-The page shows a `scheduled` entry as in progress once `scheduled_start_at` passes, and drops it after `scheduled_end_at`, so you do not have to move it by hand. Setting `in_progress` starts it early, and `completed` ends it early. Moving the window while sending the status back unchanged gives it the status the new window implies, and subscribers hear about the new start and end. Creating a maintenance emails the confirmed subscribers who take maintenance notices for the components it covers (everyone who takes them, when it covers the whole page), and so do its start and end. See [Publish a status page maintenance](/status-pages/how-to/publish-maintenance/).
+The page shows a `scheduled` entry as in progress once `scheduled_start_at` passes, and drops it after `scheduled_end_at`. Setting `in_progress` starts it early, and `completed` ends it early. Moving the window while sending the status back unchanged gives it the status the new window implies, and subscribers hear about the new start and end. Creating a maintenance, its start and its end each email the matching subscribers (see [Notice matching](#notice-matching)). See [Publish a status page maintenance](/status-pages/how-to/publish-maintenance/).
 
 ## Incidents on a page
 
@@ -206,7 +200,7 @@ Subscribers change their choices or unsubscribe on `https://statuspageapi.siteqw
 
 ### Notice matching
 
-A notice goes only to `confirmed` subscribers whose `kinds` are empty or include that kind, and whose `component_ids` are empty or include at least one component the incident or maintenance affects. Incident notices are opened, updated and resolved; maintenance notices are scheduled, started and completed. An incident with no affected components, or a maintenance with `whole_page: true`, goes to everyone who takes that kind. Notices are queued when the incident, update or maintenance is posted and sent in the background in batches of 100. Each subscriber gets each notice once, and a failed send is tried up to 3 times.
+A notice goes only to `confirmed` subscribers whose `kinds` are empty or include that kind, and whose `component_ids` are empty or include at least one component the incident or maintenance affects. Incident notices are opened, updated and resolved; maintenance notices are scheduled, started and completed. An incident with no affected components, or a maintenance with `whole_page: true`, goes to everyone who takes that kind. Each subscriber gets each notice once.
 
 ### States
 
@@ -273,9 +267,8 @@ The answer is `{"rows": [{"row", "email", "result"}], "counts": {...}, "sends_pe
 | Confirmation emails per page | 30 per hour, of which imports use at most 25 |
 | Confirmation emails across Site Qwality | 300 per hour, of which imports use at most 250 |
 | Import confirmations per account | 100 per hour across all of the account's pages |
-| Notice sending | Batches of 100, up to 3 attempts per subscriber |
 
-The first import confirmations go out during the import; the rest stay `queued` and are sent automatically, oldest first, as room frees up. When several accounts have addresses queued, they take turns. The 5 confirmations an hour that imports cannot use stay free for the public form.
+The first import confirmations go out during the import; the rest stay `queued` and are sent automatically, oldest first, as room frees up.
 
 ### Retention
 

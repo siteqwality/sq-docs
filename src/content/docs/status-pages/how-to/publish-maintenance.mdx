@@ -5,13 +5,11 @@ last_verified: 2026-10-16
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 A **status page maintenance** is the customer-facing notice for planned work. It appears on your public status page, marks the components it covers as under maintenance instead of down, and emails your confirmed subscribers when you schedule it, when it starts and when it ends.
 
-<Aside type="note">
-A [maintenance window](/incident-management/maintenance/overview/) is a different thing. It only silences alerts and never appears on a status page. For a planned outage you usually want both.
-</Aside>
+A [maintenance window](/incident-management/maintenance/overview/) is different: it only silences alerts and never appears on a status page. For a planned outage you usually want both.
 
 ## Schedule one
 
@@ -50,7 +48,7 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/maintenance
   }'
 ```
 
-Name the scope in every create and update: list at least one monitor in `affected_http_job_ids`, or send `"whole_page": true` with no ids. Sending both, or neither, returns `400`. The response includes `whole_page`.
+Name the scope in every create and update: list at least one monitor in `affected_http_job_ids`, or send `"whole_page": true` with no ids. A request with both, or neither, is rejected.
 
 </TabItem>
 </Tabs>
@@ -61,11 +59,9 @@ Name the scope in every create and update: list at least one monitor in `affecte
 - When the start time passes, the page shows it as **in progress** and the components it covers show **Maintenance** instead of an outage. A maintenance for the whole page (`whole_page: true`) shows the whole page as **Under Maintenance**.
 - When the end time passes, it drops off the page.
 
-You do not have to move it by hand. To start early, set the status to `in_progress`. To finish early, set it to `completed`.
+To start early, set the status to `in_progress`. To finish early, set it to `completed`.
 
-<Aside type="caution">
-Maintenance covers HTTP checks you pick. A browser check shows maintenance only when the maintenance covers the whole page.
-</Aside>
+Maintenance covers the HTTP checks you pick. A browser check shows maintenance only when the maintenance covers the whole page.
 
 ## Subscribers
 

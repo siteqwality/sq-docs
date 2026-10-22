@@ -5,9 +5,9 @@ last_verified: 2026-05-03
 owner: jj
 ---
 
-import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-A **TLS check** verifies that a domain's TLS certificate is valid and tells you when it's about to expire. It catches the silent failure mode where your site is up but its cert quietly expires next Tuesday.
+A **TLS check** verifies that a domain's TLS certificate is valid and tells you when it's about to expire, even while the site itself is up.
 
 ## When to use TLS checks
 
@@ -17,7 +17,7 @@ A **TLS check** verifies that a domain's TLS certificate is valid and tells you 
 
 ## How it works
 
-TLS checks are **paired with an HTTP check** today. Set `monitor_tls: true` when creating an HTTP check; Site Qwality auto-provisions a paired TLS check that targets the same domain on a slower schedule (no need to handshake every minute).
+TLS checks are **paired with an HTTP check**. Set `monitor_tls: true` when creating an HTTP check; Site Qwality auto-provisions a paired TLS check that targets the same domain on a slower schedule.
 
 The TLS check's `current_status` reflects the most recent handshake outcome:
 
@@ -27,14 +27,12 @@ The TLS check's `current_status` reflects the most recent handshake outcome:
 
 `expiry_date` is recorded so the dashboard can render a countdown. Standard advance-warning periods (30 days, 14 days, 7 days) trigger increasingly severe notifications.
 
-<Aside type="tip">
-You don't need a separate TLS monitor for every HTTPS endpoint. Enable `monitor_tls` on any one HTTP check per host and you're covered for that hostname.
-</Aside>
+You don't need a TLS check for every HTTPS endpoint: enable `monitor_tls` on one HTTP check per host and that hostname is covered.
 
-## What it doesn't do (today)
+## What it doesn't do
 
-- **Standalone TLS checks** (without an HTTP host) aren't currently supported. Track via the API roadmap.
-- **CT log checks** (confirming new certs appear in Certificate Transparency logs) aren't yet supported.
+- **Standalone TLS checks** (without an HTTP host) aren't supported.
+- **CT log checks** (confirming new certs appear in Certificate Transparency logs) aren't supported.
 - **Custom expiry-warning thresholds** are inherited from the HTTP check's notification group.
 
 ## See also

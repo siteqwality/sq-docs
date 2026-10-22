@@ -5,16 +5,7 @@ last_verified: 2026-10-11
 owner: jj
 ---
 
-This page holds the facts you look up. For the concepts, start with the [overview](/dashboards/overview/).
-
-| Looking for | Go to |
-|---|---|
-| Every widget type and its options | [Widgets](/dashboards/widgets/) |
-| Measures, fields and aggregations per source | [Data sources](/dashboards/data-sources/) |
-| Query rules, formula grammar, variables | [Queries, formulas and variables](/dashboards/queries/) |
-| The built-in dashboards | [Templates](/dashboards/templates/) |
-| Public links and TV mode | [Sharing and TV mode](/dashboards/sharing/) |
-| Everything else | This page |
+Requires a paid plan. See [plan limits](/getting-started/plan-limits/).
 
 ## Time range syntax
 
@@ -35,7 +26,7 @@ The time picker takes a preset, a calendar range or typed text.
 | `Oct 1 - Oct 3` | A fixed range between two dates. |
 | Two ISO 8601 timestamps | A fixed range between them. |
 
-The maximum window is 400 days. Typed phrases are turned into exact times before they are sent to the API.
+The maximum window is 400 days.
 
 ### Moving through time
 
@@ -74,7 +65,7 @@ The `refresh` setting is `auto`, `off`, `30s`, `1m`, `5m` or `15m`. With `auto`,
 | 7d | 15 minutes |
 | Longer than 7d | 1 hour |
 
-Refresh pauses while the tab is hidden, and only widgets that are on screen query. Query results are cached for 30 seconds, so a short refresh rarely recomputes everything.
+Refresh pauses while the tab is hidden, and only widgets that are on screen query. Query results are cached for 30 seconds.
 
 ## URL parameters
 
@@ -165,23 +156,19 @@ On Windows and Linux, use `Ctrl` where the table says `Cmd`.
 
 ## Roles and permissions
 
-Everyone in an account can view its dashboards. What else you can do depends on your role and your plan.
+Everyone in an account can view its dashboards. What else you can do depends on your role.
 
-| Action | Viewer, Auditor | Member, Billing Admin | Admin, Super Admin | Needs a paid plan |
-|---|---|---|---|---|
-| List, open and export | Yes | Yes | Yes | No |
-| Load widget data | Yes | Yes | Yes | Yes |
-| Create, clone, import, create from a template | No | Yes | Yes | Yes |
-| Edit, restore a version | No | Yes | Yes | Yes |
-| Delete, restore a deleted dashboard | No | Yes | Yes | No |
-| Create share links | No | Yes | Yes | Yes |
-| Manage existing share links | No | Yes | Yes | No |
-
-Viewers and Auditors are read-only everywhere. This is the same rule that applies to the rest of the product.
+| Action | Viewer, Auditor | Member, Billing Admin | Admin, Super Admin |
+|---|---|---|---|
+| List, open and export | Yes | Yes | Yes |
+| Load widget data | Yes | Yes | Yes |
+| Create, clone, import, create from a template | No | Yes | Yes |
+| Edit, restore a version | No | Yes | Yes |
+| Delete, restore a deleted dashboard | No | Yes | Yes |
+| Create share links | No | Yes | Yes |
+| Manage existing share links | No | Yes | Yes |
 
 A **locked** dashboard can be edited only by its creator, Admins and Super Admins.
-
-On the free plan the paid-plan actions return `402`. Listing, opening, exporting and deleting still work, so an account that leaves a paid plan keeps its dashboards.
 
 Scoped API keys, [M2M clients](/enterprise/api-clients/) and connected apps need `read:dashboards` to read dashboards and `write:dashboards` to change them. `POST /dashboards/query` is a read operation.
 
@@ -220,7 +207,7 @@ Template keys are `uptime-overview`, `monitor-deep-dive`, `incident-reliability`
 
 ### Assistants and MCP
 
-Every endpoint is documented, so an assistant connected through [MCP](/integrations/mcp/) can build dashboards with `call_api`. The share endpoints are withheld from MCP, so an assistant cannot publish data.
+An assistant connected through [MCP](/integrations/mcp/) can build dashboards with `call_api`. The share endpoints are withheld from MCP, so an assistant cannot publish data.
 
 ### Running queries
 

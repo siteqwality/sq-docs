@@ -11,7 +11,7 @@ Deletion runs asynchronously. A queued request or saved retention setting does n
 
 ## Request erasure
 
-An account admin, or an API key without scope restrictions, can submit `POST /rum/deletion-requests`. Keep privileged credentials on your server. These endpoints are deliberately unavailable through MCP, including `call_api`.
+An account admin, or an API key without scope restrictions, can submit `POST /rum/deletion-requests`. Keep privileged credentials on your server. These endpoints are unavailable through MCP, including `call_api`.
 
 ```json
 {
@@ -23,11 +23,11 @@ An account admin, or an API key without scope restrictions, can submit `POST /ru
 }
 ```
 
-Generate a fresh UUID for `id`. Reuse it when retrying the same request; changing its input returns `409`. Supported subjects are `user_id`, `user_email`, `anonymous_id` and `session_id`. Email matching trims surrounding whitespace and lowercases the address. Other identifiers match their stored values. A session ID must be a UUID.
+Generate a fresh UUID for `id`. Reuse it when retrying the same request; changing its input returns `409`. Supported subjects are `user_id`, `user_email`, `anonymous_id` and `session_id`. Email matching trims surrounding whitespace and lowercases the address. A session ID must be a UUID.
 
-Omit `application_id` to capture all applications currently owned by your account, up to 1,000. An account with more applications must submit one application at a time. An unknown or foreign application returns `404`. The captured scope does not grow when an application is created later.
+Omit `application_id` to cover every application your account owns, up to 1,000; an account with more must submit one application at a time. The scope does not grow when an application is created later.
 
-A `202` response confirms that the request is queued. The completion target is 24 hours, with escalation after seven days. These are operational targets, not a guaranteed completion time. Check the returned deadlines and status; retries and in-flight uploads can delay cleanup.
+The completion target for a queued request is 24 hours, with escalation after seven days. These are targets, not a guaranteed completion time: retries and in-flight uploads can delay cleanup.
 
 ## Track the result
 
@@ -36,25 +36,23 @@ A `202` response confirms that the request is queued. The completion target is 2
 - `failed` retains completed work and retries on subsequent scheduled passes. It is not a successful erasure result.
 - `done` means the captured applications finished discovery and cleanup. The submitted value is replaced with a hash in the request record. Request responses and history never return that value.
 
-Counts describe stored rows matched for erasure and acknowledged object removals, not unique events or users. A repeated request can report fewer rows because an earlier request already removed them. A retry within the same job keeps its saved counts. Deleting an application is blocked while a privacy request for it remains unfinished.
+Counts describe stored rows matched for erasure and acknowledged object removals, not unique events or users. A repeated request can report fewer rows because an earlier request already removed them. Deleting an application is blocked while a privacy request for it remains unfinished.
 
 ## What is removed and retained
 
-Erasure resolves sessions from retained RUM data and the ingest identity registry. It removes those sessions' measures, events, replay indexes, compaction queue rows and session summaries. It removes raw recordings and compacted blocks. Session comments, usage deduplication records and stored identity links are removed too.
+Erasure removes the matching sessions' measures, events, session summaries, raw and compacted replay recordings with their indexes, session comments and stored identity links. Affected error and network aggregates are rebuilt from surviving events, and error descriptions derived from erased events are cleared while issue workflow state remains.
 
-Affected error and network aggregate buckets are rebuilt from surviving events. Error descriptions derived from erased events are cleared while issue workflow state remains. Application and account boundaries apply to every query and object key.
+Audit records, aggregate billing usage, operational statistics and shared stylesheet assets remain. Erasure does not delete an account, erase unrelated telemetry, purge backups or refund usage.
 
-Shared stylesheet assets retain their shared storage lifecycle. Audit records, aggregate billing usage and operational ingest/compactor statistics remain. They are not per-subject recording data. This endpoint does not delete an account, erase unrelated telemetry, purge backups or refund usage.
-
-Permanent session tombstones prevent another upload or compaction of an erased session. With `do_not_record: true`, an application-scoped identity hash also prevents future recording under the matching identifier. Without DNR, a later new session may be recorded again. DNR cannot recognize a person who changes all identifiers or stops sending an identifying field.
+An erased session can never be uploaded or compacted again. With `do_not_record: true`, an application-scoped identity hash also prevents future recording under the matching identifier. Without DNR, a later new session may be recorded again. DNR cannot recognize a person who changes all identifiers or stops sending an identifying field.
 
 ## DNR and first-party proxies
 
-The SDK config sets `limits.dnr` after the DNR update is published. Intake also checks stored DNR state before writing, including replay requests whose session was previously linked to an identity. If that check is unavailable, intake returns a retryable failure instead of accepting recording data.
+Intake checks stored DNR state before writing, including replay requests whose session was previously linked to an identity. If that check is unavailable, intake returns a retryable failure instead of accepting recording data.
 
 For an identity check, SDK clients send the application-scoped SHA-256 hash. The intake supports `POST /v2/identity` with `{"h":"<64 hex characters>"}` and the compatibility `GET /v2/identity?h=<hash>`. Published SDK 2.1 and 2.2 use GET, so proxies must retain it. Keep the bearer client token in `Authorization`; POST also requires `Content-Type: application/json`. The response is `{"record":true}` or `{"record":false}` with `Cache-Control: private, no-store`. Keep GET query strings out of proxy access logs; a hash is still an identifier. An identity check controls future recording; it does not report deletion progress.
 
-Use the existing [CSP and proxy guide](/observability/rum/how-to/csp/) for SDK host allowlists, config fetches and replay preflights. A first-party proxy must preserve authorization, origin, request bodies, refusals and retry headers. A proxy does not replace consent, masking or allowed-origin checks.
+See the [CSP and proxy guide](/observability/rum/how-to/csp/#first-party-proxies) for the rest of the proxy requirements. A proxy does not replace consent, masking or allowed-origin checks.
 
 ## Shorten retention
 
@@ -74,6 +72,4 @@ The same settings are available through this admin-only API patch:
 }
 ```
 
-Send it to `PATCH /rum/{application_id}`. Observe and Analyze ceilings are positive day counts. Replay accepts 7, 14 or 30 days. Each value is capped by the account entitlement; it cannot purchase a longer window. `null` removes a customer ceiling and cannot restore data already erased.
-
-New writes use the current ceiling. Existing data is processed asynchronously by a durable retention job. Replay objects are removed or retagged before their indexes are shortened. Shared assets keep their shared lifecycle. Shorter retention does not change subscription prices or recorded-session billing.
+Send it to `PATCH /rum/{application_id}`. Observe and Analyze ceilings are positive day counts. Replay accepts 7, 14 or 30 days. Each value is capped by your plan's window and cannot extend it. `null` removes a customer ceiling and cannot restore data already erased. Shorter retention does not change what you are billed.

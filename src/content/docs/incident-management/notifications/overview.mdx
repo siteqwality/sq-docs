@@ -5,9 +5,9 @@ last_verified: 2026-10-19
 owner: jj
 ---
 
-import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Site Qwality's notifications system has four objects and they often get confused. This page is the map.
+Notifications are built from four objects: two shared by the account, two personal to each user.
 
 | Object | Owner | Purpose | Example |
 |---|---|---|---|
@@ -16,37 +16,17 @@ Site Qwality's notifications system has four objects and they often get confused
 | **Contact method** | user (personal) | One way to reach me | "My phone for SMS" |
 | **Notification rule** | user (personal) | Per-urgency delivery preferences for me | "High urgency? SMS at 0min, email at 5min" |
 
-The first two are account-wide; the last two are personal, and every team member configures their own. The two layers are decoupled on purpose: the team picks "where this monitor's alerts go" once; each engineer picks "how I personally want to be paged."
+The team picks where a monitor's alerts go once; each engineer picks how they personally want to be paged.
 
 ## Channels (notifications)
 
-A *channel* is a single delivery destination. Each channel has a `type` and `details` specific to that type:
+A *channel* is a single delivery destination: email, SMS, Slack, webhook, Telegram, Discord, Microsoft Teams, PagerDuty, Jira Service Management (Opsgenie), Google Chat, Mattermost, Pushover or Pushbullet. Every type except email and SMS references an [integration](/integrations/overview/); set those up first under **Manage → Integrations**.
 
-| Type | Required `details` |
-|---|---|
-| `email` | `email_address` |
-| `sms` | `country_code` (int), `phone_number` |
-| `slack` | `integration_id` (a Slack integration UUID), `channel` (`#ops`) |
-| `webhook` | `integration_id` (a webhook integration UUID, with the URL held on the integration) |
-| `telegram` | `telegram_integration_id` |
-| `discord` | `discord_integration_id` |
-| `microsoft_teams` | `teams_integration_id` |
-| `pagerduty` | `pagerduty_integration_id`, optional `pagerduty_severity` |
-| `opsgenie` | `opsgenie_integration_id` |
-| `google_chat` | `google_chat_integration_id` |
-| `mattermost` | `mattermost_integration_id` |
-| `pushover` | `pushover_integration_id` |
-| `pushbullet` | `pushbullet_integration_id` |
-
-Every type except `email` and `sms` references an [integration](/integrations/overview/); set those up first under **Manage → Integrations**.
-
-See the [channels reference](/incident-management/notifications/channels/) for the per-type `details` shape, the delivery guarantees table, and [which alerts reach which channels](/integrations/coverage/).
-
-Channels live inside a notification group; you don't attach raw channels to monitors.
+Channels live inside a notification group; you don't attach raw channels to monitors. See the [channels reference](/incident-management/notifications/channels/) for each type's `details` and [which alerts reach which channels](/integrations/coverage/).
 
 ## Notification groups
 
-A *notification group* is the bag of channels you attach to a monitor. In the dashboard, groups live under **Respond → Notifications**: click **Add group** to make one, or a group's name to edit it. **Add Notification Method** adds a channel to the group, and the group is saved with **Create Group** or **Update Group**.
+A *notification group* is the bag of channels you attach to a monitor. In the dashboard, groups live under **Respond → Notifications**, and **Add Notification Method** adds a channel to a group.
 
 Two extra knobs, under **Advanced Settings** in the group, control timing:
 
@@ -55,19 +35,17 @@ Two extra knobs, under **Advanced Settings** in the group, control timing:
 | **Delay after (minutes)** | `delay_send_after_minutes` | Wait this long before sending the first down alert. Clamped 0–60. |
 | **Resend every (minutes)** | `resend_every_minutes` | While the monitor is still down, re-send the down alert every N minutes, at most 10 times. Clamped 0–60. |
 
-Both apply to down alerts from HTTP monitors and browser checks only. Heartbeat (cron), TLS expiry, domain expiry, DNS record and page-speed alerts, and alert rules, ignore them and send at once. Recovery alerts are not delayed.
+Both apply to down alerts from HTTP monitors and browser checks only; every other alert, and every recovery, sends at once (see [the group delay](/incident-management/notifications/default-routing/#the-group-delay)).
 
-New accounts get a **Default** group: an email channel to the address you signed up with and a 3-minute delay, so an HTTP or browser down alert waits 3 minutes, then sends if the monitor is still down. The account's default group (`is_default`) is attached to new monitors that are created without groups. See [who gets notified](/incident-management/notifications/default-routing/).
+A repeat stops when the monitor recovers, or earlier when someone [acknowledges the outage](/incident-management/notifications/how-to/acknowledge-outages/) and the account's `outage_ack_stops_repeats` [notification setting](/incident-management/notifications/settings/) is on (the default). The recovery alert is still sent. When a repeat is set, the first down alert also waits for the first scheduled send. The same settings page decides whether monitors hold alerts while they flap.
 
-A repeat stops when the monitor recovers, after the 10th resend, or earlier when someone [acknowledges the outage](/incident-management/notifications/how-to/acknowledge-outages/) and the account's `outage_ack_stops_repeats` [notification setting](/incident-management/notifications/settings/) is on (the default). The recovery alert is still sent. When a repeat is set, the first down alert also waits for the first scheduled send.
+New monitors created without groups get the account's default group, which at signup is **Default**: one email channel to the address you signed up with. See [the default notification group](/incident-management/notifications/default-routing/#the-default-notification-group).
 
-Two account-wide switches under **Notifications**, **Settings** also shape monitor alerts: whether monitors (HTTP, heartbeat and browser) hold alerts while they flap, and whether an acknowledgment stops repeats. See [notification settings](/incident-management/notifications/settings/).
-
-A monitor can attach to multiple groups (cap of 10 per monitor), which is useful when you want a single check to alert both an internal team and a customer-facing channel.
+A monitor can attach to up to 10 groups, for example to alert both an internal team and a customer-facing channel.
 
 ## Contact methods (per user)
 
-Each user defines how they personally can be reached, in their personal settings, under **Notifications → Contact methods** (open the menu under your name, bottom left):
+Each user sets how they personally can be reached, in their personal settings under **Notifications → Contact methods** (open the menu under your name, bottom left):
 
 | Type | Detail |
 |---|---|
@@ -75,13 +53,13 @@ Each user defines how they personally can be reached, in their personal settings
 | `sms` | A phone number in any country. It must be verified with a 6-digit code before a rule can use it. |
 | `slack_dm` | A Slack bot token you paste in, and the channel or user ID to message. It does not use the Slack integration. |
 
-There are no phone calls: a `phone_call` contact method is refused when you save it. Each user can have up to 20 contact methods. See [add and verify contact methods](/incident-management/notifications/how-to/contact-methods/).
+There are no phone calls. Each user can have up to 20 contact methods. See [add and verify contact methods](/incident-management/notifications/how-to/contact-methods/).
 
-Contact methods are *not* attached to monitors. They power escalation paging: when an escalation level targets `target_user_ids`, that user's notification rules determine which contact methods fire.
+Contact methods are *not* attached to monitors. They are used for incident pages: when an escalation level pages a user, that user's notification rules decide which contact methods fire.
 
 ## Notification rules (per user)
 
-Personal preferences for "if I'm being paged at urgency X, fire this contact method after this many minutes." A new user starts with two rules on their sign-in email, one `high` and one `low`, both at 0 minutes. Stack multiple rules at increasing delays for personal escalation:
+Personal preferences for "if I'm being paged at urgency X, fire this contact method after this many minutes." A new user starts with two rules on their sign-in email, one `high` and one `low`, both at 0 minutes. Stack rules at increasing delays for personal escalation:
 
 ```json
 [
@@ -93,35 +71,20 @@ Personal preferences for "if I'm being paged at urgency X, fire this contact met
 
 That's: SMS me immediately, Slack DM me if I haven't acked in 5 minutes, email me if I haven't acked in 15.
 
-`urgency` is `high` or `low`, and it is derived from the incident's severity rather than chosen: `critical` and `major` page at **high** urgency, `minor` pages at **low**. A user with no rule matching the incident's urgency, or whose matching rules cannot page, is paged at their sign-in email instead (see [the fallback](/incident-management/escalation/readiness/#the-sign-in-email-fallback)).
+Urgency comes from the incident's severity: `critical` and `major` page at **high** urgency, `minor` at **low**. A user no rule can reach is paged at their sign-in email instead (see [the fallback](/incident-management/escalation/readiness/#the-sign-in-email-fallback)). [Set up notification rules](/incident-management/notifications/how-to/notification-rules/) covers delays and ordering.
 
-`delay_minutes` defaults to `0` and accepts `0` to `1440`. A rule with a delay becomes a scheduled one-shot, and when it fires the system re-checks that the incident is still triggered, the escalation has not been acknowledged, and the rule still exists. Anything that changed in the meantime cancels the send, so a delayed rule cannot page you about an incident you already acked.
+## How a page fires
 
-`position` orders the rules in the list; it does not stagger them. Every matching rule fires in the same pass, each waiting only its own `delay_minutes`.
+Monitor alerts and incident pages take separate paths:
 
-## How a page actually fires
+- **Monitor alerts** go straight to the monitor's notification groups, with no incident involved.
+- **Incidents** page people through the escalation policy of the incident's service. Each level pages its users through their notification rules, and if no one acknowledges within the level's `timeout_minutes`, the next level is paged.
 
-There are two separate paths, and they share nothing. [Who gets notified](/incident-management/notifications/default-routing/) covers both, plus the default group and monitors that notify no one.
-
-**Monitor alerts** go straight to notification groups, with no incident involved:
-
-1. A monitor goes down or recovers.
-2. For each notification group on the monitor, wait `delay_send_after_minutes` if it applies (down alerts from HTTP monitors and browser checks only).
-3. Send to every channel in the group whose type supports that alert.
-4. If `resend_every_minutes` is set, repeat the down alert, at most 10 times, until the monitor recovers or someone acknowledges the outage (unless the account turned that off).
-
-**Incidents** page people through escalation policies:
-
-1. An incident opens on a service, either by hand or automatically from a monitor linked to a service.
-2. The service's escalation policy pages the users on its first level:
-   - For each user, walk their notification rules for the incident's urgency.
-   - Each rule waits its `delay_minutes`, then fires its contact method. A rule that cannot page (an unverified SMS number, a bounced address, no SMS left) is skipped.
-   - A user no rule can reach is paged at their sign-in email.
-3. If no one acknowledges within the level's `timeout_minutes`, advance to the next escalation level.
+[Who gets notified](/incident-management/notifications/default-routing/) covers both, plus the default group and monitors that notify no one.
 
 ## Pricing
 
-Email, Slack, webhook, Discord, Teams, Telegram, PagerDuty, Jira Service Management (Opsgenie), Google Chat, Mattermost, Pushover, and Pushbullet are included on every plan. SMS uses SMS credits, sold in packs; see [pricing](https://siteqwality.com/pricing/).
+SMS uses SMS credits, sold in packs. See [pricing](https://siteqwality.com/pricing/).
 
 ## See also
 

@@ -5,14 +5,14 @@ last_verified: 2026-10-20
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 By the end of this guide you'll have a schedule called `Primary on-call` that hands off every Monday at 09:00 in your timezone, rotating between two engineers.
 
 ## Prerequisites
 
 - At least two users in the account ([invite teammates first](/getting-started/account-and-team/)).
-- For the API path, their user UUIDs (`GET /account/info` returns them). The dashboard lets you pick people by name.
+- For the API path, their user UUIDs (`GET /account/info` returns them).
 
 ## 1. Create the schedule
 
@@ -84,8 +84,6 @@ curl -X POST https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/layer \
 
 `handoff_day` is 0=Sunday … 6=Saturday. `handoff_time` is `HH:MM` in 24-hour format, interpreted in the schedule's timezone.
 
-`layer_number` is auto-assigned to the next free integer. Layers with a higher `layer_number` are evaluated first, so later-added layers shadow earlier ones during their effective windows.
-
 </TabItem>
 </Tabs>
 
@@ -94,7 +92,7 @@ curl -X POST https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/layer \
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-The schedule's page shows who is on call now, until when, and who is next, then every shift of the next two weeks with any gap called out. The on-call list shows who is on call now on every schedule.
+Open the schedule. Its page shows who is on call now, until when, and who is next, then every shift of the next two weeks with any gap called out.
 
 </TabItem>
 <TabItem label="API">
@@ -104,7 +102,7 @@ curl https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/on_call \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-`data.on_call` names the `user_id` on call, why (`source` is `layer` or `override`), and when the shift started and ends; `data.next` is the shift after it. Add `?at=2026-11-02T09:30:00Z` to ask about another moment, or call `/on_call_schedule/$SCHEDULE_ID/shifts` for the next two weeks. See the [reference](/incident-management/on-call/reference/#see-whos-on-call).
+The response names who is on call, when the shift started and ends, and the shift after it. Add `?at=2026-11-02T09:30:00Z` to ask about another moment, or call `/on_call_schedule/$SCHEDULE_ID/shifts` for the next two weeks. See the [reference](/incident-management/on-call/reference/#see-whos-on-call).
 
 </TabItem>
 </Tabs>

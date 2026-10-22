@@ -5,11 +5,11 @@ last_verified: 2026-08-14
 owner: jj
 ---
 
-import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 Capabilities aimed at teams who have to answer to someone else: a security reviewer, an auditor, a customer with a contract, or a board.
 
-Only SAML single sign-on and SCIM provisioning need an Enterprise plan. M2M API clients, the audit log, CSV exports and SLA reports work on every plan.
+Only SAML single sign-on and SCIM provisioning require an Enterprise plan; the rest work on every plan. See [plan limits](/getting-started/plan-limits/).
 
 <CardGrid>
   <LinkCard
@@ -54,7 +54,7 @@ Only SAML single sign-on and SCIM provisioning need an Enterprise plan. M2M API 
 | Rotation | Create a new key, delete the old | Built in, no overlap window |
 | Audit trail | Recorded as `api_key` | Recorded as `m2m` with the client ID |
 
-An API key is the right tool for a quick script or a one-off. An [M2M client](/enterprise/api-clients/) is the right tool for anything long-lived, anything a third party operates, and anything where "what could this credential do if it leaked?" is a question you would rather have a narrow answer to.
+Use an API key for a quick script or a one-off. Use an [M2M client](/enterprise/api-clients/) for anything long-lived, anything a third party operates, and anything where a leaked credential should be able to do as little as possible.
 
 ## Answering the common questions
 
@@ -64,10 +64,6 @@ An API key is the right tool for a quick script or a one-off. An [M2M client](/e
 | "Did we meet 99.9% last quarter?" | [SLA reports](/enterprise/sla-reports/) with `months=3`. |
 | "Can you send us the raw check data?" | [CSV exports](/enterprise/csv-exports/). |
 | "What can this integration actually touch?" | The client's [scopes](/enterprise/api-clients/#scopes). |
-
-<Aside type="note">
-Two boundaries worth knowing up front: the audit log records **changes, not reads**, and its read window is the last 90 days. SLA figures come from a daily rollup that refreshes at 03:00 UTC, so the current day is usually missing. Both are covered in detail on their own pages.
-</Aside>
 
 ## See also
 

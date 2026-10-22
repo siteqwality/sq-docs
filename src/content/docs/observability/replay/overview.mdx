@@ -7,7 +7,7 @@ owner: jj
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-**Session Replay** reconstructs a user's session as a video: every page view, every DOM mutation, every click, every keystroke (with privacy controls). Use it for the "what did the user actually do?" debugging that no amount of metrics or logs can answer.
+**Session Replay** reconstructs a user's session as a video: every page view, every DOM mutation, every click, every keystroke (with privacy controls). Use it to see what a user actually did.
 
 ## When to use replay
 
@@ -19,7 +19,7 @@ import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 ## When NOT to use replay
 
 - For aggregate analytics. That's RUM's measurement layer.
-- As your only data source. Replay is heavy and only captured for sessions a recording rule matches. The other observability pillars are still your high-level monitoring.
+- As your only data source. Replay is captured only for sessions a recording rule matches.
 
 ## How it works
 
@@ -31,30 +31,21 @@ Replay is built on [rrweb](https://www.rrweb.io). The recorder:
 4. Pauses while the tab is hidden or idle and on never-record pages, then resumes with a fresh snapshot.
 5. Ships the recording as gzipped **segments** to `https://in-replay.siteqwality.com`. Every tab records its own window.
 
-Playback in the dashboard:
-
-1. Replays the initial DOM.
-2. Applies each mutation in real time.
-3. Renders mouse cursor, click highlights, typing.
-4. Lets you scrub the timeline, slow down, click an event or marker to seek to it, and step between errors with **Previous error** / **Next error** (keys `[` and `]`).
+In the dashboard player, scrub the timeline, slow down, click an event or marker to seek to it, and step between errors with **Previous error** / **Next error** (keys `[` and `]`).
 
 **Copy link at current time** gives a link that opens the replay at that moment, and an error's **Watch replay** opens the replay at the error. See [replay links](/observability/replay/reference/#replay-links).
 
 ## Activation
 
-Replay records only sessions that match a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application starts with **Errored sessions**, which replays every session with an error, and an Auto sample that stays within your replay quota.
+Replay records only sessions that match a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application starts with **Errored sessions**, which replays every session with an error, and an [Auto](/observability/rum/how-to/session-filters/#auto-sampling) sample.
 
-When a Replay rule could still match a session, the SDK records into a memory buffer from page load, keeping the last 60 to 120 seconds. A match, such as the session's first error, sends that buffer and then streams the recording, so an error replay usually shows what led up to the error. Without a match nothing is uploaded, and the buffer is dropped when the page goes. Once replay activates for a session, it stays on for the rest of that session, in every tab and across page loads. See [replay recording](/sdk/v2/#replay-recording).
+When a Replay rule could still match a session, the SDK records into a memory buffer from page load, keeping the last 60 to 120 seconds. A match, such as the session's first error, sends that buffer and then streams the recording, so an error replay usually shows what led up to the error. A fresh page, delayed config or consent, a pause, memory pressure or a large snapshot can leave less than 60 seconds before the match; see [replay buffer and privacy](/sdk/v2/#replay-buffer-and-privacy). Without a match nothing is uploaded, and the buffer is dropped when the page goes.
 
-<Aside type="caution" title="The buffer is not a guaranteed minute">
-A fresh page, delayed config or consent, a pause, memory pressure or a large snapshot can leave less than 60 seconds before the match. See [replay buffer and privacy](/sdk/v2/#replay-buffer-and-privacy).
-</Aside>
-
-In the dashboard, a session without a replay says why: replay is off for the application, the session ended before the first replay rule existed, it is older than the 30-day retention, the replay quota was reached, or no rule matched (or the recording never arrived, for example a very short visit or a blocked request).
+Once replay activates for a session, it stays on for the rest of that session, in every tab and across page loads.
 
 ## Privacy
 
-Replay is a privacy-sensitive feature. What a recording masks comes from the application's [privacy level](/observability/rum/how-to/remote-config/#privacy-levels), delivered to the SDK with its config:
+What a recording masks comes from the application's [privacy level](/observability/rum/how-to/remote-config/#privacy-levels), delivered to the SDK with its config:
 
 | Level | Inputs | Page text | Images and video |
 |---|---|---|---|
@@ -63,7 +54,7 @@ Replay is a privacy-sensitive feature. What a recording masks comes from the app
 | Relaxed | Masked | Visible | Recorded |
 | Custom (applications created before levels) | `mask_inputs` | `mask_text` | Recorded |
 
-Password, email and telephone inputs are always masked, and hidden inputs are never recorded. The settings are stored per RUM application: `GET /rum/{app_id}` returns them under `settings.privacy`, and the dashboard shows the masking toggles under **RUM → Settings → Privacy**. **Check them before you rely on them.** An application created before privacy levels keeps the flags stored at its creation, which can include `mask_inputs: false`.
+Password, email and telephone inputs are always masked, and hidden inputs are never recorded. The settings are stored per RUM application, under **RUM → Settings → Privacy** or `settings.privacy` in `GET /rum/{app_id}`. **Check them before you rely on them**: an application created before privacy levels keeps the flags stored at its creation, which can include `mask_inputs: false`.
 
 Per-element controls are application settings too, under `settings.privacy`:
 
@@ -77,9 +68,7 @@ Per-element controls are application settings too, under `settings.privacy`:
 
 rrweb's own `rr-block` and `rr-ignore` classes still work in your markup, with the same effect as a block or ignore selector. Do not rely on `rr-mask`: when the application masks or scrubs text, the SDK's own masking decides instead. Use `mask_selectors`.
 
-<Aside type="caution" title="Ignoring input events does not cascade, and does not cover the initial value">
-An ignore selector or `rr-ignore` is checked on the element the event fired on, with no walk up the tree, so it has to match the `<input>` itself. It suppresses input *events* only: with input masking off, a value already in the field when recording starts is still captured in the snapshot. Keep input masking on, or block the field.
-</Aside>
+An ignore selector or `rr-ignore` must match the `<input>` itself: it is checked only on the element the event fired on. It suppresses input *events* only, so with input masking off, a value already in the field when recording starts is still captured in the snapshot. Keep input masking on, or block the field.
 
 <Aside type="caution">
 Under Balanced and Relaxed, user-visible page text is recorded. For PCI/HIPAA-sensitive apps, use Strict or mask selectors, audit replays before relying on them, and consider whether replay is appropriate at all.
@@ -87,13 +76,12 @@ Under Balanced and Relaxed, user-visible page text is recorded. For PCI/HIPAA-se
 
 ## Pricing
 
-Replay includes 100 recorded sessions per month on the free tier. Paid packs increase the recorded-session allowance. The first accepted segment counts the replay session; stored MB are not a separate customer billing unit. Use recording rules to control which sessions are recorded.
+Replay is metered by recorded session, separately from Observe and Analyze, and recording rules control which sessions are recorded. See [pricing](https://siteqwality.com/pricing/).
 
 ## Limits
 
 - **Segments**: gzipped, closing at 20 seconds or about 2.5 MB of JSON. A page whose snapshot is larger than 4 MB is not recorded.
-- **Retention**: **30 days** on every plan, the free tier and every paid replay pack alike. An application can shorten it to 7 or 14 days; see [shorten retention](/observability/rum/how-to/privacy-requests/#shorten-retention). Buying a larger replay pack raises the number of sessions you can record, not how long they are kept.
-- **Usage**: Replay has its own session allowance, separate from Observe and Analyze. See [capture and billing](/sdk/v2/#capture-and-billing).
+- **Retention**: **30 days**. An application can shorten it to 7 or 14 days; see [shorten retention](/observability/rum/how-to/privacy-requests/#shorten-retention).
 
 ## See also
 

@@ -5,11 +5,13 @@ last_verified: 2026-10-11
 owner: jj
 ---
 
-import { Steps, Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+import { Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
 By the end of this guide you will have an uptime dashboard built from a template, with a failure-rate widget you added yourself, a `$region` variable, a saved default time range and a public link.
 
-You need a paid plan and at least one [monitor](/getting-started/signup-and-first-monitor/). The template used here reads monitor data.
+Requires a paid plan. See [plan limits](/getting-started/plan-limits/).
+
+You also need at least one [monitor](/getting-started/signup-and-first-monitor/), because the template used here reads monitor data.
 
 ## 1. Create the dashboard from a template
 
@@ -17,11 +19,11 @@ You need a paid plan and at least one [monitor](/getting-started/signup-and-firs
 
 1. Open **Dashboards** in the sidebar and choose **New dashboard**.
 
-2. Pick **Template**. The gallery shows seven boards. Each is marked **Has data** or **No data yet** for your account. Choose **Uptime overview**.
+2. Pick **Template** and choose **Uptime overview**.
 
 </Steps>
 
-You now have an ordinary dashboard with a monitor summary, a monitor grid, uptime, response time by region, failed checks, a slowest-monitors list, 30-day uptime bars, expiring certificates and domains, and open incidents. It is yours to edit.
+You now have an ordinary dashboard that is yours to edit.
 
 ## 2. Add a widget with the editor
 
@@ -33,23 +35,19 @@ You will chart the share of checks that failed. That takes two queries and a for
 
 2. Choose **Add widget**, search for **Time series** and click it to place it on the grid.
 
-3. Open the new widget's menu and choose **Edit**. The widget editor opens as a drawer, with a live preview on top.
+3. Open the new widget's menu and choose **Edit**. The widget editor opens as a drawer.
 
 4. Set query **a** to source **Monitors** and measure **Checks**.
 
 5. Add a second query. Set query **b** to source **Monitors** and measure **Failed checks**. Hide queries **a** and **b** so only the formula is drawn.
 
-6. Add a formula: `b / a * 100`. Set its unit to **Percent** and its alias to `Failure rate`.
+6. Add a [formula](/dashboards/queries/#formulas): `b / a * 100`. Set its unit to **Percent** and its alias to `Failure rate`.
 
 7. Leave the title empty to use the suggested one, or type your own. Close the drawer.
 
 </Steps>
 
-The widget is on the grid. Drag it to move it and drag its corner to resize it. Nothing is saved yet.
-
-<Aside type="tip">
-A formula divides, adds, subtracts and multiplies queries by their letters. Division by zero gives a gap rather than an error. See [queries, formulas and variables](/dashboards/queries/#formulas).
-</Aside>
+Drag the widget to move it, or drag its corner to resize it. Nothing is saved yet.
 
 ## 3. Add a variable
 
@@ -65,7 +63,7 @@ A formula divides, adds, subtracts and multiplies queries by their letters. Divi
 
 </Steps>
 
-Now the widget follows the dropdown. With **All** selected the filter is dropped, so every region shows. Pick one region and only that region remains. The selection is written to the URL as `var-region=us-east-1`.
+The chart now follows the dropdown: **All** shows every region, and picking one region shows only that region. The selection is written to the URL as `var-region=us-east-1`.
 
 ## 4. Change the time
 
@@ -79,7 +77,7 @@ Now the widget follows the dropdown. With **All** selected the filter is dropped
 
 </Steps>
 
-A time change is a view. It lives in the URL and does not change the dashboard. To store a default range for everyone who opens the dashboard, set the range you want and choose **Save as default** while in edit mode.
+A time change lives in the URL and does not change the dashboard. To store a default range for everyone who opens it, set the range you want and choose **Save as default** while in edit mode.
 
 ## 5. Save
 
@@ -90,8 +88,6 @@ A time change is a view. It lives in the URL and does not change the dashboard. 
 2. Open **Version history** from the actions menu. Your save is the newest entry, with a short summary of what changed.
 
 </Steps>
-
-If a teammate saved while you were editing, a conflict dialog explains what happened instead of overwriting their changes.
 
 ## 6. Share a public link
 
@@ -107,11 +103,11 @@ If a teammate saved while you were editing, a conflict dialog explains what happ
 
 </Steps>
 
-Anyone with the link can see the data in the widgets. They cannot edit anything. Log stream and Trace list widgets show "Not available on shared dashboards" in place of their data. To stop sharing, pause or revoke the link from the same dialog. See [sharing](/dashboards/sharing/).
+Anyone with the link can see the data in the widgets, read-only. Log stream and Trace list widgets show no data on a shared link. To stop sharing, pause or revoke the link from the same dialog. See [sharing](/dashboards/sharing/).
 
 ## Prefer the API?
 
-Everything above has an endpoint. This call creates the same board from the template:
+This call creates the same board from the template:
 
 ```bash
 curl -X POST https://api.siteqwality.com/dashboards/templates/uptime-overview \
@@ -120,7 +116,7 @@ curl -X POST https://api.siteqwality.com/dashboards/templates/uptime-overview \
   -d '{ "name": "Uptime overview" }'
 ```
 
-The response is the full dashboard, including its `definition`. See [the API endpoints](/dashboards/reference/#api-endpoints).
+See [the API endpoints](/dashboards/reference/#api-endpoints).
 
 ## What's next
 

@@ -5,9 +5,7 @@ last_verified: 2026-10-10
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
-
-By the end of this guide you'll have the RUM SDK installed in a web app, a session showing up in the dashboard, and you'll know how to identify users and track custom actions.
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 ## 1. Create a RUM application
 
@@ -18,9 +16,9 @@ By the end of this guide you'll have the RUM SDK installed in a web app, a sessi
 
 1. Go to **Observe → RUM** and click **Add application**.
 
-2. **Name:** `Web app` (or whatever's descriptive). **Domain** (optional): `app.example.com`. Click **Create application**.
+2. **Name:** `Web app`. **Domain** (optional): `app.example.com`. Click **Create application**.
 
-3. The panel then shows the **Install snippet**, which carries the `application_id`, and the **Client token**. Copy both. The `client_token` is public and ships in your bundle; the `application_id` is also public.
+3. Copy the `application_id` from the **Install snippet**, and the **Client token**. Both are public and ship in your bundle.
 
 </Steps>
 
@@ -91,12 +89,12 @@ Paste this into your page's `<head>`, as high as you can:
 </script>
 ```
 
-The snippet loads the SDK asynchronously, so it never blocks rendering. Until the SDK arrives it queues your calls to any public method and captures any error the page throws. When the SDK loads it runs `init` first, then the rest in order, and reports the early errors with their original times. It is a classic script and needs no `type="module"`. To pin a release, load `/rum/v2.2.1/sdk.min.js` instead; see the [release channels](/sdk/v2/#install).
+The snippet loads the SDK asynchronously and queues your calls and any page errors until it arrives. It is a classic script and needs no `type="module"`. To pin a release, load `/rum/v2.2.1/sdk.min.js` instead; see the [release channels](/sdk/v2/#install).
 
 </TabItem>
 </Tabs>
 
-`init()` starts collection synchronously inside the call, so there is nothing to wait for. It returns a Promise that settles once the remote config is applied (or fails to load); you never need to `await` it, and awaiting it only delays your app.
+`init()` starts collection inside the call. Do not `await` the Promise it returns: it settles only once the remote config is applied or fails to load, so awaiting it delays your app.
 
 With the npm package, calls made before `init()` (`setUser`, `addError` and the rest) are ignored, so call `init()` first. The CDN snippet queues them instead.
 
@@ -111,7 +109,7 @@ Load your app in a fresh browser. The SDK starts a session immediately and posts
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-In **RUM → Sessions**, your session appears at the top with its start time, entry page, duration and error count. If you came from the setup wizard, its verify step turns green within about 10 seconds of the first page view.
+In **RUM → Sessions**, your session appears at the top. If you came from the setup wizard, its verify step turns green within about 10 seconds of the first page view.
 
 </TabItem>
 <TabItem label="API">
@@ -148,7 +146,7 @@ SiteQwalityRUM.setUser({
 });
 ```
 
-The user then shows on the session in **RUM → Sessions**, and the session search finds it by any part of the ID or email, ignoring case.
+Session search then finds the session by any part of the ID or email.
 
 For business events:
 
@@ -167,11 +165,9 @@ try {
 
 ## 6. Set up source maps (production)
 
-Minified JS errors aren't very useful. Upload source maps so stacks resolve to original source. See the [Source maps how-to](/observability/rum/how-to/source-maps/).
+Upload source maps so minified stacks resolve to original source. See the [Source maps how-to](/observability/rum/how-to/source-maps/).
 
-<Aside type="tip">
-Set `version` in `init()` and change it on every deploy. Errors carry it, and it must match the release you upload source maps to, byte for byte.
-</Aside>
+Set `version` in `init()` and change it on every deploy: errors carry it, and it must match the release you upload source maps to, byte for byte.
 
 ## What's next
 

@@ -5,13 +5,11 @@ last_verified: 2026-08-06
 owner: jj
 ---
 
-import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-The partner program is for agencies, MSPs and consultancies who monitor other people's websites. You hold one Site Qwality account, sign one agreement, and get one invoice. Each client you take on gets a **client account**: a separate account with its own monitors, its own status page, its own alert routing and its own history, which you manage from inside your own login.
+The partner program is for agencies, MSPs and consultancies who monitor other people's websites. You hold one Site Qwality account, sign one agreement, and get one invoice. Each client you take on gets a **client account**: a separate account with its own monitors, status page, alert routing and history, which you manage from inside your own login.
 
-<Aside type="note" title="Joining is a conversation, not a checkout">
-There is no self-serve signup for the partner program. Rates and the minimum commitment are on the [partner page](https://siteqwality.com/partners/), and joining means signing the Partner Program Addendum to the standard agreement. Once your account is enabled, everything on these pages works immediately.
-</Aside>
+There is no self-serve signup: joining means signing the Partner Program Addendum to the standard agreement. Rates and the minimum commitment are on the [partner page](https://siteqwality.com/partners/).
 
 <CardGrid>
   <LinkCard
@@ -45,12 +43,12 @@ One level, and only one. A client account cannot itself have client accounts.
 | | Your partner account | A client account |
 |---|---|---|
 | Who signs in | Your team | Nobody, unless you invite them |
-| Who is billed | You | Nobody. It has no payment method and no Stripe customer |
+| Who is billed | You | Nobody. It has no payment method |
 | Monitors, status pages, dashboards | Yours | Its own, entirely separate |
 | Alert destinations | Yours | The client contact you set at creation |
 | Plan | Your partner plan | An entitlement bundle you set |
 
-A client account is a completely ordinary Site Qwality account in every respect except two: it points at you as its partner, and its entitlements come from your bundle rather than from a card. Nothing in the product treats a client's monitors, data or status page as second class.
+A client account is an ordinary Site Qwality account except in two ways: it points at you as its partner, and its entitlements come from your bundle rather than from a card.
 
 ## What your clients see
 
@@ -60,23 +58,21 @@ A client account is a completely ordinary Site Qwality account in every respect 
 | Monthly uptime report | Yours |
 | The dashboard | Ours |
 
-The dashboard is ours and we would rather say that plainly than let you discover it. It is also the surface your clients are least likely to see, because you are the one signing in. The status-page data hostname is visible in a browser's developer tools.
+Your clients rarely see the dashboard, because you are the one signing in. The status page's data hostname is visible in a browser's developer tools.
 
 ## Roles and access
 
 Everything under `/partner` requires the **Admin** or **Super Admin** role on your own account. A Member, Viewer or Auditor on your account can work inside a client (if you send them there) but cannot create, re-plan or remove clients.
 
-<Aside type="caution" title="Machine credentials cannot manage clients">
-[API keys](/getting-started/account-and-team/#generate-api-keys) and [M2M clients](/enterprise/api-clients/) carry no role, so they resolve to Member and get a `403` on every `/partner` endpoint. Client management is a session-authenticated operation today. An M2M client **can** work inside a client account with the `X-SQ-Account` header; an API key cannot. The reasoning is on the [context-switching page](/partners/context-switching/#which-credentials-may-switch).
-</Aside>
+[API keys](/getting-started/account-and-team/#generate-api-keys) and [M2M clients](/enterprise/api-clients/) carry no role, so they resolve to Member and cannot use any `/partner` endpoint: manage clients from a signed-in session. An M2M client **can** work inside a client account with the `X-SQ-Account` header; an API key [cannot](/partners/context-switching/#which-credentials-may-switch).
 
-## Billing in one paragraph
+## Billing
 
-You are invoiced for the number of client accounts you hold, at the rate in your agreement, against a minimum commitment. Client accounts are never charged for anything. Adding a client is an API call, not a checkout; the invoice follows from your client list rather than the other way round. If a client wants something outside their bundle, they can buy it retail on their own account, or you can talk to us.
+You are invoiced for the number of client accounts you hold, at the rate in your agreement, against a minimum commitment. Client accounts are never charged. If a client wants something outside their bundle, they can buy it retail on their own account, or you can talk to us.
 
 ## Your clients if you leave
 
-Each client account gets a window, defined in the agreement, to convert into a direct retail account with us, keeping its data, monitors, status page and history. Nothing is held back. That is a contractual term rather than a courtesy.
+Each client account gets a window, defined in the agreement, to convert into a direct retail account with us, keeping its data, monitors, status page and history.
 
 ## See also
 

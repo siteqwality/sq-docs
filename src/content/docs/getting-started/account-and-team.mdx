@@ -5,15 +5,13 @@ last_verified: 2026-10-18
 owner: jj
 ---
 
-import { Steps, Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+import { Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-Once you have an account, there are a handful of one-time setup steps that pay off the moment something breaks. Do them now, not at 3am.
-
-The **Get started** checklist in the dashboard sidebar tracks your setup progress. Click its **X** to dismiss it permanently for your user. It stays hidden after signing out and back in, including on other browsers and devices. Dismissing it does not affect your teammates' checklists.
+A few one-time steps that pay off the moment something breaks. The **Get started** checklist in the dashboard sidebar tracks them; dismissing it hides it for you only.
 
 ## Secure your sign-in
 
-Open **Sign-in & security** from the menu under your name (bottom left) to add a passkey, set up an authenticator app, or manage your password. See [Sign-in and security](/getting-started/sign-in-and-security/) for email codes, recovery codes and account recovery.
+Open **Sign-in & security** from the menu under your name (bottom left) to add a passkey, set up an authenticator app, or manage your password. See [Sign-in and security](/getting-started/sign-in-and-security/).
 
 ## Invite your team
 
@@ -21,65 +19,49 @@ Open **Sign-in & security** from the menu under your name (bottom left) to add a
 
 1. Open **Settings → Users**.
 
-2. Click **Invite User**, enter their email, and pick the role they'll join with (defaults to **Member**). Inviting someone as Admin, Billing Admin, or Super Admin requires you to be a Super Admin yourself. To invite a group, choose **Invite several people** and paste up to 25 addresses (one per line, or separated by commas).
+2. Click **Invite User**, enter their email, and pick a role (defaults to **Member**). Only a Super Admin can invite an Admin, Billing Admin or Super Admin. To invite a group, choose **Invite several people** and paste up to 25 addresses, one per line or separated by commas.
 
-3. Invites expire after **14 days**. Pending invites stay listed in the same table with **Resend** and **Cancel** actions: Resend re-sends the original link and resets the expiry clock (including for already-expired invites); canceling kills the link.
-
-4. Roles, changeable later by any Super Admin from the dropdown in the Users table:
-   - **Super Admin**: everything, including billing, role assignment, and SSO/SCIM. Multiple people can hold it. The account's original user is always a Super Admin and cannot be demoted or deleted.
-   - **Admin**: team and credential management (invites, API keys, integrations, the audit log) and deleting escalation policies, on-call schedules and services: everything except billing, roles, and SSO/SCIM.
-   - **Member**: full product access (monitors, incidents, dashboards), but no team, credential, or billing management, and no deleting escalation policies, on-call schedules or services. Members see integrations with their credentials masked but cannot add, change or remove them. New users start here.
-   - **Auditor**: read-only across the product, plus access to the [audit log](/enterprise/audit-log/). An auditor can still manage their own contact methods and notification rules. For compliance reviewers who should see everything and change nothing else.
-   - **Viewer**: read-only, except that a viewer can acknowledge and resolve incidents and manage their own contact methods and notification rules. Viewers cannot read the audit log.
+3. Invites expire after **14 days**. **Resend** on a pending invite sends the link again and restarts the 14 days, even for an expired invite.
 
 </Steps>
 
-<Aside type="caution">
-Pending invites count toward your plan's seat limit immediately, not on acceptance. Expired invites stop counting on their own, and canceling frees the seat right away. The free plan has 3 seats, and 10 once any product is on a paid plan. Enterprise has no seat limit. Over the limit nobody loses access, but new invites are refused until a seat frees up: a single invite returns `402`, and a bulk invite lists the refused addresses under `failed`. See [Plan limits](/getting-started/plan-limits/).
-</Aside>
+A pending invite uses a seat until it is accepted, expires or is canceled. See [plans and limits](/getting-started/plan-limits/#team) for seats per plan. Teams managed by an identity provider can map groups to roles with [SCIM](/enterprise/scim/).
 
-Directory-managed teams should map IdP groups to the exact role IDs in [SCIM role mapping](/enterprise/scim/). Unknown names become Member. The account's original user cannot be deprovisioned.
+### Roles
+
+Any Super Admin can change a role later from the Users table.
+
+- **Super Admin**: everything, including billing, role assignment, and SSO/SCIM. The account's original user is always a Super Admin and cannot be demoted or deleted.
+- **Admin**: team and credential management (invites, API keys, integrations, the audit log) and deleting escalation policies, on-call schedules and services. Everything except billing, roles, and SSO/SCIM.
+- **Member**: full product access (monitors, incidents, dashboards), but no team, credential or billing management, and no deleting escalation policies, on-call schedules or services. Members see integrations with credentials masked. New users start here.
+- **Auditor**: read-only across the product, plus the [audit log](/enterprise/audit-log/). For compliance reviewers.
+- **Viewer**: read-only, except acknowledging and resolving incidents. Viewers cannot read the audit log.
+
+Every role can manage its own contact methods and notification rules.
 
 ### Removing someone who is on call
 
-Removing a user from **Settings → Users** also takes them out of every on-call rotation and escalation level they are in. The people after them in a rotation move up a place. If they are in any, the dialog lists each rotation and level first and asks you to confirm with **Remove anyway**. Through the API, `DELETE /account/delete_user/{user_id}` answers `409` with code `user_has_paging_references` and the list in `data`; send it again with `?confirm=true` to go ahead.
-
-Check that each listed rotation and level still pages someone afterwards. The [readiness check](/incident-management/escalation/readiness/) shows any level that would page nobody.
+Removing a user also removes them from every on-call rotation and escalation level they are in, and the people after them in a rotation move up. The dialog lists those rotations and levels and asks you to confirm with **Remove anyway**; through the API, repeat the `DELETE` with `?confirm=true`. Afterwards, the [readiness check](/incident-management/escalation/readiness/) shows any level that now pages nobody.
 
 ## Set up your contact methods
 
-A *contact method* is **how you personally** can be reached, whether that's your email, your phone for SMS, or a Slack DM. Distinct from a notification *channel*, which is account-level.
+A *contact method* is how you personally get paged: email, SMS, or a Slack DM. It is separate from a notification *channel*, which belongs to the account. Each user manages their own under **Notifications → Contact methods** in their personal settings, and admins can manage anyone's.
 
-Each user manages their own contact methods in their personal settings, under **Notifications → Contact methods**. Admins can also manage other users' contact methods. Available types:
+**Notification rules** pick which contact method fires for high urgency (`critical` and `major` incidents) and low urgency (`minor`), with optional delays: for example SMS at 0 minutes, Slack DM at 5, email at 15. A new user starts with their sign-in email as a verified contact method, with a high and a low rule on it, so they are paged by email from day one.
 
-| Type | What it is |
-|---|---|
-| `email` | An email address. |
-| `sms` | A phone number in any country. Pick the country, then verify the number with a 6-digit code before a rule can use it. |
-| `slack_dm` | A Slack bot token and a channel or user ID that you paste in. It does not use the Slack integration. |
-
-A new user starts with their sign-in email as a verified contact method. There are no phone calls. See [add and verify contact methods](/incident-management/notifications/how-to/contact-methods/).
-
-**Notification rules** define which method fires for which urgency:
-
-- *High* urgency: incidents with severity `critical` or `major`.
-- *Low* urgency: incidents with severity `minor`.
-
-A new user starts with a high and a low rule on their sign-in email, both with no delay, so a new teammate is paged by email from day one. A rule has an urgency, a contact method, and an optional `delay_minutes`. Stack multiple rules at increasing delays for personal escalation: SMS at 0 min, Slack DM at 5 min, email at 15 min. A user with no rule for an incident's urgency is paged at their sign-in email instead.
-
-See the [Notification rules how-to](/incident-management/notifications/how-to/notification-rules/) for the full setup.
+See [contact methods](/incident-management/notifications/how-to/contact-methods/) and [notification rules](/incident-management/notifications/how-to/notification-rules/).
 
 ## Generate API keys
 
-Anything you can do in the dashboard, you can do via the API. Generate a key under **Settings → API keys**.
+Anything you can do in the dashboard, you can do through the API.
 
 <Steps>
 
 1. **Settings → API keys → New key.**
 
-2. Name it after where it'll be used (`local-dev`, `terraform-prod`, `ci`). One key per use case so you can rotate them independently.
+2. Name it after where it will be used (`local-dev`, `terraform-prod`, `ci`). One key per use lets you rotate them independently.
 
-3. Copy the value when shown. It's only displayed once, so store it in your secrets manager.
+3. Copy the value when shown. It is displayed only once, so store it in your secrets manager.
 
 4. Use it as a Bearer token:
 
@@ -90,53 +72,15 @@ Anything you can do in the dashboard, you can do via the API. Generate a key und
 
 </Steps>
 
-Keys belong to the account, not the user. Revoke immediately if leaked. Rotating a key ends the old one at once, so deploy the new value right away.
-
-<Aside type="tip">
-An API key with no scopes can do everything the account can, so give each key only the scopes it needs. For automation that should be limited to specific resources, or that a third party operates, use an [M2M API client](/enterprise/api-clients/) instead: scoped permissions, short-lived tokens, built-in rotation, and immediate revocation.
-</Aside>
-
-Whichever you use, every change either one makes is recorded in the [audit log](/enterprise/audit-log/).
+Keys belong to the account, not the user. Rotating a key ends the old one at once, so deploy the new value right away. A key with no scopes can do everything the account can, so give each key only the scopes it needs. For automation limited to specific resources, or run by a third party, use an [M2M API client](/enterprise/api-clients/) instead.
 
 ## Configure billing
 
-<Steps>
+Super Admins and Billing Admins manage billing on **Settings → Billing**: change plans (upgrades apply immediately, downgrades at the end of the billing cycle), manage payment methods, download invoices, or cancel at the end of the period. See [plans and limits](/getting-started/plan-limits/) for what each plan includes and what happens when a plan ends or a payment fails.
 
-1. **Settings → Billing** to see what you're on and what's available.
+## Connect integrations
 
-2. **Change plan** flips you between tiers. Upgrades are immediate; downgrades take effect at the end of the current billing cycle.
-
-3. **Payment methods**, **Invoices** and **Cancel plan** are on the same tab: add or remove a card, download any invoice as a PDF, or cancel at the end of the period. Only Super Admins and Billing Admins see the Billing tab.
-
-</Steps>
-
-Usage is shown in account settings. Plan limits are enforced at the API layer. A request that would go over one is refused, mostly with `402 Payment Required`; check intervals, check locations and the browser check count answer `403 Forbidden`. Logs and traces have independent decimal-GB allowances; metrics use active hourly series averaged over the month. Telemetry sends receive a hard 429 with Retry-After at the 110% grace boundary. There is no silent success-and-drop or automatic overage bill. See [telemetry billing and retention](/observability/billing/) for prices and units.
-
-### When a plan ends
-
-A paid plan ends when you cancel and the period runs out, when you downgrade a product to free, or when a payment stays unpaid (see below). Nothing is paused: every monitor keeps running, and what that plan unlocked falls back to what your remaining plans allow (free settings when no paid plan is left).
-
-- Without a paid uptime plan, checks that ran more often than every 5 minutes move to every 5 minutes. Without any paid plan, DNS record checks move to every hour.
-- A monitor with more check locations than your plans allow keeps its first one.
-- Monitors above a limit keep running, but you can't add new ones or resume paused ones until you are under it. Resuming a monitor also needs an interval and locations your plans allow.
-- A new usage period starts that day with the free allowance. If your monitors would use it up before the month ends, the email says when they stop and when they start again.
-
-Upgrade any time and the settings Site Qwality changed come back, except on monitors you edited since. See [Plan limits](/getting-started/plan-limits/) for the free settings.
-
-### When a payment fails
-
-Stripe retries a failed payment. Before the last try, Site Qwality emails the date it will try again; after a hard decline, it asks for a new card. Billing emails go to the account owner and every Billing Admin.
-
-If the last try fails, the subscription is **unpaid**: the paid plan stops and your monitors fall back as above. The Billing tab offers two ways back, and shows the amount before you confirm:
-
-- **Restart** starts a new billing period today and charges it to your default card. Once that payment goes through, the paid plan comes back and the older unpaid invoices are voided.
-- **Choose a different plan** ends the unpaid subscription and starts a new one.
-
-After 30 days unpaid, Site Qwality cancels the subscription and voids its outstanding invoices. The account stays on the free plan.
-
-## Set up integrations early
-
-The rest of these docs assume Slack/Teams/Discord/Telegram/webhook integrations are already connected if you reference them. Connect the ones you use under **Manage → Integrations** before you wire monitors to them. See [Integrations overview](/integrations/overview/) for the per-tool setup steps.
+Connect the chat tools and webhooks you use under **Manage → Integrations** before you point monitors at them. See [Integrations](/integrations/overview/).
 
 ## What's next
 

@@ -7,7 +7,9 @@ owner: jj
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 
-A **public link** lets anyone without an account view a dashboard. It is read-only. You decide which time ranges and variable values viewers can use, and you can pause, expire or revoke the link whenever you want.
+A **public link** lets anyone without an account view a dashboard. It is read-only. You decide which time ranges and variable values viewers can use, and you can pause, expire or revoke the link.
+
+Requires a paid plan. See [plan limits](/getting-started/plan-limits/).
 
 <Aside type="caution">
 Anyone with the link can see what the widgets show: monitor names, incident titles, error counts and more. Treat a share link like a public status page URL. Review the dashboard before you share it.
@@ -27,7 +29,7 @@ Anyone with the link can see what the widgets show: monitor names, incident titl
 
 </Steps>
 
-A dashboard can have several links, each with its own settings. This lets you give one audience a day view and another a month view, and revoke them separately. Members can open the share dialog at any time to copy a link again.
+A dashboard can have several links, each with its own settings, so you can give one audience a day view and another a month view and revoke them separately. Reopen the share dialog to copy a link again.
 
 ## Share options
 
@@ -54,15 +56,15 @@ The page is sent the dashboard's name, description, widget definitions and the l
 
 ## Link states
 
-A link shows "not found" when it is paused, expired or revoked, when its dashboard is deleted, or when its account no longer has a paid plan.
+A link shows "not found" when it is paused, expired or revoked, or when its dashboard is deleted.
 
-Shared pages are never cached by the browser, and data can be up to 30 seconds old. Each link records when it was last opened and how often, shown in the API as `last_accessed_at` and `access_count`.
+Data on a shared page can be up to 30 seconds old. Each link records when it was last opened and how often.
 
 ## Who can share
 
-Anyone who can edit dashboards can create and manage share links: Members, Billing Admins, Admins and Super Admins. Viewers and Auditors cannot. AI assistants connected through [MCP](/integrations/mcp/) cannot either: share endpoints are withheld from MCP so that an assistant can build a dashboard but cannot publish one.
+Members, Billing Admins, Admins and Super Admins can create and manage share links. Viewers, Auditors and assistants connected through [MCP](/integrations/mcp/) cannot.
 
-Creating a link needs a paid plan. Existing links can still be paused or revoked after a downgrade. For a locked dashboard, only its creator and account admins can create, change or revoke links. Scoped API clients also need read access to every data source used by the dashboard, as described in [API permissions](/dashboards/reference/#roles-and-permissions).
+For a locked dashboard, only its creator and account admins can create, change or revoke links. Scoped API clients also need read access to every data source used by the dashboard, as described in [API permissions](/dashboards/reference/#roles-and-permissions).
 
 ## TV mode
 

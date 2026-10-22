@@ -5,15 +5,11 @@ last_verified: 2026-05-03
 owner: jj
 ---
 
-import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, LinkCard } from '@astrojs/starlight/components';
 
 The Microsoft Teams integration posts alerts to a Teams channel through a Workflows webhook URL. Each alert is an Adaptive Card with a colored title (red when a monitor goes down, green when it recovers) and a fact set: **Monitor**, **Status** and **URL** on every card, **Reason** when the check reported one, and **Started** and **Resolved** on a recovery. The card has no link back to Site Qwality.
 
-<Aside type="caution" title="Office 365 Connectors no longer work">
-Microsoft retired Office 365 Connectors in Teams in May 2026, so Incoming Webhook connector URLs (`outlook.office.com/webhook/...` or `*.webhook.office.com`) no longer deliver. Use a Workflows webhook as described below. If you have a Teams integration with a connector URL, create a new integration with a Workflows URL and point your notification channels at it.
-
-Saving a connector URL is refused with a `400` that says so, and so is a Workflows URL on the retired `logic.azure.com` hosts.
-</Aside>
+Microsoft retired Office 365 Connectors in Teams, so Incoming Webhook connector URLs (`outlook.office.com/webhook/...` or `*.webhook.office.com`) do not deliver and are refused when you save them, as are Workflows URLs on the retired `logic.azure.com` hosts. If a Teams integration has a connector URL, create a new integration with a Workflows URL and point your notification channels at it.
 
 ## Set up
 
@@ -41,15 +37,9 @@ curl -X POST https://api.siteqwality.com/integration/microsoft_teams \
   }'
 ```
 
-<Aside type="note" title="Things to know about Workflows flows">
-- A flow belongs to the person who created it. If they leave your organization, the flow stops, so add a co-owner to the flow in Power Automate.
-- On some Microsoft 365 plans, Microsoft turns off a flow that has had no successful run for 90 days. A channel for a quiet monitor can reach that, so check the flow if a channel has been silent for a long time.
-- Your organization must allow Workflows in Teams.
-</Aside>
+Your organization must allow Workflows in Teams. A flow belongs to the person who created it and stops if they leave your organization, so add a co-owner to the flow in Power Automate. On some Microsoft 365 plans, Microsoft turns off a flow that has had no successful run for 90 days, so check the flow if a channel for a quiet monitor has been silent for a long time.
 
 ## Add it to a notification group
-
-Integrations deliver nothing on their own. Alerts reach one once it is a channel in a notification group that your monitors use.
 
 <Steps>
 
@@ -76,17 +66,15 @@ curl -X POST https://api.siteqwality.com/notification \
   }'
 ```
 
-The destination is implicit in the integration's webhook URL, so you don't specify a channel separately.
-
 ## What reaches Teams
 
-HTTP monitors, browser checks, TLS and domain expiry warnings, page speed alerts, log, metric and trace alert rules, and RUM issues all post to Teams. Heartbeat (cron) monitors and DNS record changes do not post to Teams today, and incidents and escalations do not use Teams. See the [coverage table](/integrations/coverage/#microsoft-teams).
+Heartbeat (cron) monitors and DNS record changes do not post to Teams, and incidents and escalations do not use Teams. See the [coverage table](/integrations/coverage/#microsoft-teams).
 
-Each attempt waits up to 10 seconds and never follows a redirect. A deleted or refused workflow URL (`400`, `401`, `403`, `404`, `410`) or a redirect is recorded once as rejected and not retried. Other failures are tried up to three times in quick succession. There is no later retry.
+A failed send is not retried later. See [delivery guarantees](/incident-management/notifications/channels/#delivery-guarantees-by-channel).
 
 ## Multiple channels
 
-For multiple Teams destinations, create one flow and one integration per channel. Then create one notification per integration.
+For multiple Teams destinations, create one flow and one integration per channel.
 
 ## See also
 

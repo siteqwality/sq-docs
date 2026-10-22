@@ -3,13 +3,13 @@ title: Upload source maps
 description: Match production JavaScript errors to original source with Debug IDs and private source maps.
 ---
 
-Source maps translate generated JavaScript locations into original files, functions and lines. Debug IDs identify the exact emitted bundle independently of its URL or release name. Source maps remain included on every plan.
+Source maps translate generated JavaScript locations into original files, functions and lines. Debug IDs identify the exact emitted bundle independently of its URL or release name.
 
 ## SDK compatibility
 
-The browser SDK captures Debug IDs from SDK **2.1.0**; npm `latest` installs SDK 2.2.1. See [install](/sdk/v2/#install). Installing the CLI or a bundler plugin alone does not upgrade the browser SDK.
+The browser SDK captures Debug IDs from SDK **2.1.0**; see [install](/sdk/v2/#install). Installing the CLI or a bundler plugin alone does not upgrade the browser SDK.
 
-For errors without a Debug ID, matching by the SDK's configured release and generated bundle filename remains supported. Keep the SDK release value and uploaded release version aligned.
+Errors without a Debug ID still match by the SDK's configured release and the generated bundle filename, so keep the SDK release value and the uploaded release version aligned.
 
 ## Build and inject
 
@@ -21,7 +21,7 @@ npm run build
 npx siteqwality sourcemaps inject ./dist
 ```
 
-Enable external or hidden version 3 source maps in your build. Injection adds a deterministic UUIDv8 to the bundle's runtime registration and map. It preserves mapped positions and source content. The browser SDK captures the ID with errors. Deploy the exact injected JavaScript. Run signing and integrity generation after injection, and do not minify or rewrite the output afterward.
+Enable external or hidden version 3 source maps in your build. Injection adds a Debug ID to each bundle and its map, preserving mapped positions and source content. Deploy the exact injected JavaScript: run signing and integrity generation after injection, and do not minify or rewrite the output afterward.
 
 Inline and indexed maps are unsupported. Injection rejects unsafe paths, symlinks, conflicting IDs and changed previously injected files. Rebuild from clean output when a pair changes.
 
@@ -39,7 +39,7 @@ npx siteqwality releases deploy "$SITEQWALITY_RELEASE" --env production
 npx siteqwality releases list
 ```
 
-Upload creates the release if needed, presigns batches of up to 50 maps, uploads gzip bytes, then confirms each batch. Each map is limited to 32 MiB both compressed and inflated. `--delete-after` removes selected local maps only after all uploads are confirmed. A failure exits nonzero and must prevent deployment. Confirmation verifies storage metadata; verify a real error's original location separately.
+Upload creates the release if needed and uploads maps in batches of up to 50. Each map is limited to 32 MiB both compressed and inflated. `--delete-after` removes the local maps only after every upload is confirmed. A failure exits nonzero and must block the deployment. A confirmed upload does not prove symbolication, so check a real error's original location.
 
 Without a release, uploads use the reserved `__debug_id__` release and require Debug IDs. A deployment record does not deploy your site or change the SDK's release setting.
 
@@ -69,7 +69,7 @@ The adapter defines `__SQ_RELEASE__`; explicitly pass that value to the SDK's `r
 
 ## Direct API uploads
 
-API requests use `Authorization: Bearer <API_KEY>` and `Content-Type: application/json`. Successful responses wrap results in `data`. All routes are scoped to your application under `/rum/{app_id}`.
+Requests use `Authorization: Bearer <API_KEY>` and `Content-Type: application/json`, and the routes below are relative to `/rum/{app_id}`.
 
 1. Create or reuse a release with `POST /releases` and `{"version":"web-v1"}`.
 2. Call `POST /releases/web-v1/sourcemaps` with the batch shown below.
@@ -88,12 +88,12 @@ API requests use `Authorization: Bearer <API_KEY>` and `Content-Type: applicatio
 }
 ```
 
-`size_bytes` is the exact uploaded size, including gzip encoding. Use a byte buffer or Blob so the HTTP client supplies Content-Length, or set it when streaming from a CLI. URL-encode release versions in path segments. Filenames identify source maps and may include a relative directory, such as `assets/main.js.map`. Pending uploads are excluded from symbolication until confirmation succeeds. The original single-map `POST /releases/{version}/sourcemaps` endpoint remains compatible with existing release/filename integrations.
+`size_bytes` is the exact uploaded size, including gzip encoding. Use a byte buffer or Blob so the HTTP client supplies Content-Length, or set it when streaming. URL-encode release versions in path segments. Filenames may include a relative directory, such as `assets/main.js.map`. Maps are not used until their upload is confirmed.
 
 ## Late maps and troubleshooting
 
-The occurrence API performs symbolication on read. A map uploaded after an error can resolve its stored generated coordinates without changing issue grouping. Debug ID lookup takes priority; release and bundle filename provide a fallback. Missing or invalid maps leave generated frames readable. Failed lookups are not cached, while successful event symbolication can be cached for 24 hours.
+Symbolication happens when an error is read, so a map uploaded after an error still resolves it, without changing issue grouping. Missing or invalid maps leave generated frames readable. Failed lookups are not cached, while a successful result can be cached for 24 hours.
 
-Check that the deployed bundle is the injected file, the SDK captured its Debug ID, the uploaded map has the same ID, and the upload was confirmed. If source context is absent, ensure the map includes `sourcesContent`. Source-map columns are zero-based internally; the API presents source locations with one-based line and column values.
+Check that the deployed bundle is the injected file, the SDK captured its Debug ID, the uploaded map has the same ID, and the upload was confirmed. If source context is absent, ensure the map includes `sourcesContent`. The API shows one-based line and column numbers.
 
-Keep maps out of public hosting. Hidden maps avoid a browser source-map URL but still need exclusion from deployed assets or deletion after confirmed upload. Maps can contain your complete source code. MCP and Connected App responses omit source context and other sensitive occurrence fields.
+Keep maps out of public hosting: they can contain your complete source code. Hidden maps avoid a browser source-map URL but still need excluding from deployed assets, or deleting after a confirmed upload. MCP and Connected App responses omit source context and other sensitive occurrence fields.

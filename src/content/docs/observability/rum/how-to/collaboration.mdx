@@ -11,7 +11,7 @@ Saved views preserve a page's query string so you can return to an investigation
 
 Save a query for Overview, Sessions, Errors or Pages. Give it a name and choose whether it is shared. Shared views are readable within the account; private views are visible only to their author. Only the author can edit a private view. The author or an account administrator can edit a shared view.
 
-The API accepts a query string, not a complete URL. It preserves filters and the selected range. A fixed range remains fixed when you reopen it. The query is at most 4096 characters; names are at most 128 characters.
+The API takes a query string, not a complete URL. A fixed range stays fixed when you reopen the view. The query is at most 4096 characters; names are at most 128 characters.
 
 ```http
 POST /rum/{app_id}/views
@@ -33,14 +33,14 @@ Content-Type: application/json
 {"target":"session:00000000-0000-0000-0000-000000000001","body":"The checkout stalls here.","at_ms":1791000000000,"mentions":[]}
 ```
 
-List comments with `GET /comments?target=...`. Results are oldest first. Pass the returned `next_cursor` to retrieve the next page. Use `PATCH /comments/{id}` with `{"resolved":true}` to resolve, or `{"resolved":false}` to reopen. `DELETE /comments/{id}` returns 204.
+List comments, oldest first, with `GET /comments?target=...`, passing the returned `next_cursor` for the next page. Use `PATCH /comments/{id}` with `{"resolved":true}` to resolve, or `{"resolved":false}` to reopen, and `DELETE /comments/{id}` to delete.
 
 ## Mentioning teammates
 
 The `mentions` array accepts up to 20 distinct account user IDs. Mention emails link to the comment and include the absolute timestamp for a session comment. Editing a comment notifies only newly added recipients; the person making the write is not notified about their own mention.
 
-A successful comment write returns `mention_delivery` with `queued` and `failed` counts. Queued means accepted by the notification transport, not delivered to an inbox. A queue failure does not undo the comment. Show the failure to the user and do not automatically repost the comment, which would duplicate the discussion.
+A comment write returns `mention_delivery` with `queued` and `failed` counts; queued means accepted for sending, not delivered to an inbox. A failure does not undo the comment, so show it to the user rather than reposting the comment, which would duplicate the discussion.
 
-Collaboration writes require a named member or administrator. Viewer and auditor roles cannot write. Machine-only API keys and M2M clients can read shared records with the appropriate RUM scope, but cannot author them. Captured network and console bodies retain their separate access and audit rules.
+Collaboration writes need a named member or administrator; viewers and auditors cannot write. Machine-only API keys and M2M clients can read shared records with the appropriate RUM scope but cannot author them. Captured network and console bodies keep their own [access rules](/observability/rum/reference/#body-access).
 
 See the [RUM API reference](/observability/rum/reference/) for endpoint and response details.

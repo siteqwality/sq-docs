@@ -5,8 +5,8 @@ last_verified: 2026-10-18
 owner: jj
 ---
 
-Build a useful query in Metrics, then use the Saved views control. Choose a name and personal/shared visibility. Save a relative time range for a view that moves with now; an absolute range intentionally pins an incident window.
+Build a useful query in Metrics, then use the Saved views control. Choose a name and personal/shared visibility. Save a relative time range for a view that moves with now; an absolute range pins an incident window.
 
-Views use `/telemetry/views` and `/telemetry/views/{id}`, with the appropriate page and versioned query/display state. Loading a shared view still applies the current member's service/environment/signal restrictions. It does not transfer the creator's data access. Owner/admin mutation rules and conflict behavior are enforced by the API.
+Views use `/telemetry/views` and `/telemetry/views/{id}`, with the appropriate page and versioned query/display state. Loading a shared view applies the current member's service, environment and signal restrictions; it does not transfer the creator's data access.
 
-Changing the query invalidates its old paging cursor. URL links are for query state, never an ingest key. See [query reference](/observability/query/) and [privacy](/observability/privacy/).
+See [query reference](/observability/query/) and [privacy](/observability/privacy/).

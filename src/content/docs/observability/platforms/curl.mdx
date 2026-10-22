@@ -11,7 +11,7 @@ import logs from '../../../../../examples/curl/logs.sh?raw';
 import traces from '../../../../../examples/curl/traces.sh?raw';
 import metrics from '../../../../../examples/curl/metrics.sh?raw';
 
-This guide configures logs, traces, metrics. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+This guide covers logs, traces and metrics. Replace `YOUR_INGEST_KEY` with your key.
 
 <BeforeYouStart />
 
@@ -33,14 +33,13 @@ This sample uses fixed demonstration trace and span IDs; use unique IDs for real
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
 Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
 - [Pipelines, access and privacy](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream curl / HTTP documentation](https://opentelemetry.io/docs/specs/otlp/)

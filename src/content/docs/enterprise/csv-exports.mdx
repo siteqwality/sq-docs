@@ -5,9 +5,9 @@ last_verified: 2026-10-21
 owner: jj
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
-Two endpoints return CSV attachments for offline analysis, board reporting, or feeding a warehouse. Both are `GET`, both return `text/csv; charset=utf-8` with a `Content-Disposition` filename, and both work with any credential that can read the underlying data.
+Two `GET` endpoints return CSV attachments for offline analysis, board reporting or a warehouse. Both work with any credential that can read the underlying data.
 
 | Export | Endpoint | Row cap |
 |---|---|---|
@@ -35,15 +35,13 @@ timestamp, region, status, http_code, total_ms,
 dns_ms, tcp_connect_ms, tls_ms, ttfb_ms, download_ms, failure_reason
 ```
 
-`from` and `to` are optional: `to` defaults to now, `from` to 30 days before it. `from` must be before `to` or you get a `400`.
+`from` and `to` are optional: `to` defaults to now, `from` to 30 days before it. `from` must be before `to`.
 
-<Aside type="note">
-The per-phase timing columns (`dns_ms`, `tcp_connect_ms`, `tls_ms`, `ttfb_ms`, `download_ms`) are empty for results recorded before mid-2026, when the current check transport shipped. `total_ms` is populated throughout.
-</Aside>
+The per-phase timing columns (`dns_ms`, `tcp_connect_ms`, `tls_ms`, `ttfb_ms`, `download_ms`) are empty for results recorded before mid-2026; `total_ms` is always filled.
 
 ## Monitor uptime summary
 
-One row per HTTP monitor, summarizing the range. This export is API only; the dashboard has no button for it.
+One row per HTTP monitor, summarizing the range. API only.
 
 ```bash
 curl -G "https://api.siteqwality.com/monitors/export" \
@@ -60,28 +58,18 @@ monitor_id, name, url, state, uptime_percentage,
 avg_response_time_ms, days_with_data, range_from, range_to
 ```
 
-This one is uncapped, because the row count is bounded by how many monitors you have.
-
-Two things to read carefully:
-
 - **HTTP monitors only**, despite the endpoint name. Browser, cron, DNS and TLS monitors are not included. Paused monitors are, with empty metrics.
-- **`uptime_percentage` is the unweighted average of daily uptime percentages**, the same convention the [SLA report](/enterprise/sla-reports/) uses. It comes from a daily rollup that refreshes at 03:00 UTC, so the current day is usually missing.
+- **`uptime_percentage` is the unweighted average of daily uptime percentages**, from the same daily rollup as the [SLA report](/enterprise/sla-reports/#how-the-number-is-calculated), so the current day is usually missing.
 
 ## When you exceed the cap
 
-The check results export **counts the matching rows first**. If the count is over the cap, you get a `400` before any data is generated, with a message telling you the actual count:
+If a range matches more rows than the cap, the check results export returns no file, only a message with the actual count:
 
 ```
 Range matches 91240 rows; the export cap is 50000. Narrow the date range.
 ```
 
-Nothing is truncated silently. You never receive a partial file believing it is complete, which is the failure mode the cap exists to prevent.
-
-To get more data, split the request into smaller windows and concatenate the results, keeping one header row.
-
-## Why the cap exists
-
-Exports are generated and returned in a single request, and that response has a hard size ceiling of roughly 6 MB imposed by the serverless platform. The cap is sized against that: check-result rows are compact, so 50,000 fit.
+Split the request into smaller windows and concatenate the results, keeping one header row.
 
 ## See also
 

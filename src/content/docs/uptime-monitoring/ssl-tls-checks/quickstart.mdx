@@ -5,9 +5,7 @@ last_verified: 2026-10-14
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
-
-By the end of this guide you'll have TLS expiry monitoring active on an existing HTTP check, and you'll know how to view its current status and expiry countdown.
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 ## Prerequisites
 
@@ -98,9 +96,7 @@ Force a TLS failure path by:
 2. The TLS check flips to `failed`.
 3. The HTTP check's notification group fires.
 
-<Aside type="tip">
-TLS failures alert through the same notification group as the HTTP parent. If you want a separate group for TLS issues, use the dashboard's per-check group override.
-</Aside>
+To send TLS alerts to a separate group, use the dashboard's per-check group override.
 
 ## What's next
 

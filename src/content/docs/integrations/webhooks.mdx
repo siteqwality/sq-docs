@@ -5,13 +5,9 @@ last_verified: 2026-10-16
 owner: jj
 ---
 
-import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, LinkCard } from '@astrojs/starlight/components';
 
-A **webhook integration** POSTs a JSON event to a URL you control. Use it when there is no native integration for your tool: an internal event bus, a ticketing system, a data warehouse ingest URL. Each request is signed with HMAC-SHA256, failed sends are retried for 30 minutes, and every delivery is kept in a log for 30 days.
-
-<Aside type="tip">
-[PagerDuty](/integrations/pagerduty/) and [Jira Service Management (Opsgenie)](/integrations/opsgenie/) are native integrations that close their alert when a monitor recovers. Prefer those over a webhook bridge to the same tool.
-</Aside>
+A **webhook integration** POSTs a JSON event to a URL you control. Use it when there is no native integration for your tool: an internal event bus, a ticketing system, a data warehouse ingest URL. For [PagerDuty](/integrations/pagerduty/) or [Jira Service Management (Opsgenie)](/integrations/opsgenie/), use the native integration instead: it closes the alert when the monitor recovers.
 
 ## Set up
 
@@ -37,17 +33,15 @@ curl -X POST https://api.siteqwality.com/integration/webhook \
   }'
 ```
 
-The `201` response carries the secret in `details.signing_secret`. Store it now. It starts with `sqwh_`. Endpoints created before signing existed also have a secret: rotate it to get one you can see.
+The response carries the secret in `details.signing_secret`. It starts with `sqwh_`. If you never saw an endpoint's secret, [rotate it](#rotate-the-secret) to get one you can see.
 
-Only an account admin can add, change or remove a webhook integration. An API key or API client needs the `integrations:manage` scope for that; `write:notifications` is not enough. See [Who can change integrations](/integrations/overview/#who-can-change-integrations).
+Adding, changing or removing a webhook integration takes an account admin, or an API key or API client with `integrations:manage` (see [who can change integrations](/integrations/overview/#who-can-change-integrations)).
 
-The URL never reads back in full. `GET /integration`, and the create response itself, show `webhook_url` as its scheme and host only, such as `https://events.example.com/****`. To point at a different URL, add a new integration and delete the old one.
+The URL reads back as its scheme and host only, even in the create response. To point at a different URL, add a new integration and delete the old one.
 
-The URL must be reachable at a public address. A URL whose host is a private, loopback or link-local address (`10.x`, `192.168.x`, `127.0.0.1`, `localhost`, `169.254.169.254`, and their IPv6 equivalents) is refused with a `400` when you save it. A hostname that resolves only to such addresses at delivery time fails with `blocked_destination` and is not retried. The same check applies to Discord, Microsoft Teams, Google Chat and Mattermost URLs.
+The URL must use a public host. A private, loopback or link-local address (`10.x`, `192.168.x`, `127.0.0.1`, `localhost`, `169.254.169.254`, and their IPv6 equivalents) is refused when you save it, and a hostname that resolves only to such addresses at delivery time fails with `blocked_destination` and is not retried.
 
 ## Add it to a notification group
-
-Integrations deliver nothing on their own. Alerts reach one once it is a channel in a notification group that your monitors use.
 
 <Steps>
 
@@ -152,7 +146,7 @@ signed_payload = "{X-SiteQwality-Delivery}.{X-SiteQwality-Timestamp}.{raw body}"
 signature      = "v1=" + hex(HMAC_SHA256(secret, signed_payload))
 ```
 
-The key is the secret exactly as shown, `sqwh_` included. Each attempt is signed again with a fresh timestamp, so a retry 30 minutes later still passes a 5-minute tolerance check.
+The key is the secret exactly as shown, `sqwh_` included. Each attempt is signed again with a fresh timestamp, so a retry 30 minutes later still passes the 5-minute tolerance check below.
 
 ```js
 const crypto = require('crypto');
@@ -179,8 +173,6 @@ function verify(secret, headers, rawBody) {
 }
 ```
 
-Reject requests older than 300 seconds, and use the delivery ID to ignore a delivery you have already processed.
-
 ### Rotate the secret
 
 Open the webhook integration from **Manage → Integrations** and choose **Rotate secret**, or call `POST /integration/webhook/{id}/rotate_secret` from an admin session. API keys cannot rotate secrets. The new secret is shown once. For the next 24 hours every delivery carries two signatures in `X-SiteQwality-Signature`, one under each secret, so a verifier that checks each entry keeps working while you deploy the new secret.
@@ -197,40 +189,31 @@ Each attempt times out after 15 seconds. Your endpoint should answer with a 2xx 
 | Other 4xx | Failed, not retried. |
 | 5xx, timeout or connection error | Retried. |
 
-Retries run 10 seconds, 30 seconds, 2 minutes, 8 minutes and 30 minutes after the first attempt: six attempts at most, and a final answer 30 minutes after the first try. A delivery that has not succeeded by then is marked failed.
+Retries run 10 seconds, 30 seconds, 2 minutes, 8 minutes and 30 minutes after the first attempt: six attempts at most. A delivery that has not succeeded by then is marked failed. Deleting the integration cancels any remaining attempts.
 
 ### What the alert records
 
-An alert sent to a webhook channel also has a receipt, which the monitor's alert history and the channel's health read. It records the first attempt. While retries are pending it reads `delayed`, and when the attempts end it takes the final result:
-
-| Outcome | Receipt status | Detail, for example |
-|---|---|---|
-| A later attempt got a 2xx | `delivered` | `Delivered on attempt 3 (HTTP 200)` |
-| Every attempt failed with a retryable error | `failed` | `Not delivered: gave up after 6 attempts. Last error: ...` |
-| Your endpoint refused an attempt with an answer that is not retried | `rejected` | `Not delivered: the endpoint refused attempt 2: ...` |
-| The integration was deleted while retries were pending | `failed` | `Not delivered: the webhook endpoint no longer exists` |
-
-The remaining attempts of a delivery to a deleted integration are canceled. A replay has no receipt of its own.
+In the monitor's alert history, the alert's receipt reads `delayed` while retries are pending, then `delivered`, `failed` or `rejected` when the attempts end.
 
 ## Delivery log and replay
 
 Open the webhook integration from **Manage → Integrations** to see every delivery to the endpoint, each attempt, your server's status code and how long it took. Deliveries are kept for 30 days. From a delivery you can replay it.
 
-Each attempt keeps the first 8 KiB of your server's response body. Site Qwality stops reading a response after 64 KiB, and records the full size from `Content-Length` when your server sent one (otherwise the bytes it read). A response body that is not UTF-8 text is kept as its size only. Response headers keep their names, but only a short list of harmless headers keep their values.
+Each attempt keeps the first 8 KiB of your server's response body (only its size when it is not UTF-8 text). Response headers keep their names, but only a short list of harmless headers keep their values.
 
-The same log is available through the API:
+Through the API:
 
 - `GET /integration/webhook/{id}/deliveries?limit=25&offset=0&state=failed` lists deliveries (`limit` up to 100; `state` is `pending`, `delivered`, `failed` or `cancelled`).
 - `GET /integration/webhook/{id}/delivery/{delivery_id}` returns one delivery with the request body and every attempt.
-- `POST /integration/webhook/{id}/delivery/{delivery_id}/replay` sends it again and returns `202` with the new delivery's ID.
+- `POST /integration/webhook/{id}/delivery/{delivery_id}/replay` sends it again and returns the new delivery's ID.
 
-With an API key, reading the log needs `read:notifications` and replaying needs `write:notifications`. A replay changes no credential, so it does not need `integrations:manage`.
+With an API key, reading the log needs `read:notifications` and replaying needs `write:notifications` (not `integrations:manage`).
 
-A replay is a new delivery with its own ID header, timestamp and signature under the current secret. The body is unchanged, so `id` in the body still names the original delivery. A request body over 64 KiB is still sent in full, but the log keeps only its first 64 KiB, so that delivery cannot be replayed (`409`).
+A replay is a new delivery with its own ID header, timestamp and signature under the current secret, and no alert receipt of its own. The body is unchanged, so `id` in the body still names the original delivery. A request body over 64 KiB is sent in full, but the log keeps only its first 64 KiB, so that delivery cannot be replayed.
 
 ## Payload settings
 
-Each endpoint has four optional settings, on the integration's page or through `GET` and `PUT /integration/webhook/{id}/settings`. Changing them follows the same rule as creating the integration: an account admin, or an API key with `integrations:manage`.
+Each endpoint has four optional settings, on the integration's page or through `GET` and `PUT /integration/webhook/{id}/settings`. Changing them takes the same access as creating the integration.
 
 ```bash
 curl -X PUT https://api.siteqwality.com/integration/webhook/$INTEGRATION_ID/settings \
@@ -249,11 +232,11 @@ curl -X PUT https://api.siteqwality.com/integration/webhook/$INTEGRATION_ID/sett
 - `fields`: keep only these keys in `data`. Unset means the whole object.
 - `metadata`: a flat object added to every envelope. At most 10 keys, keys up to 64 characters, values up to 256.
 
-An unknown event or field name, or an empty list, is refused with a `400` that names it. The `GET` response lists the selectable fields and events.
+An unknown event or field name, or an empty list, is refused with an error that names it. `GET` lists the selectable fields and events.
 
 ## Incident webhooks
 
-A service can also send `incident.created` and `incident.resolved` events to a webhook URL as a broadcast target. Those are the only incident events a webhook target delivers today. Acknowledged, updated, reopened, merged and service-changed events are recorded and not yet delivered. Those deliveries use the same envelope and retries and are signed. A target that sends with a webhook integration uses the integration's signing secret and appears in its delivery log; a target with a pasted URL is signed with a secret of its own, returned once when you add it, and verified with the same check.
+A service can also send `incident.created` and `incident.resolved` events (no other incident events) to a webhook URL as a broadcast target. Those deliveries use the same envelope and retries and are signed. A target that sends with a webhook integration uses the integration's signing secret and appears in its delivery log; a target with a pasted URL is signed with a secret of its own, returned once when you add it, and verified with the same check.
 
 `data` for an incident event:
 
@@ -269,11 +252,7 @@ A service can also send `incident.created` and `incident.resolved` events to a w
 }
 ```
 
-`incident_url` opens the incident in Site Qwality, which needs a sign-in. The payload carries no acknowledge or resolve links: a webhook can reach a shared place, so those links only go to the paged person by [email and SMS](/incident-management/incidents/how-to/one-click-actions/). The event is `incident.resolved` when `responder_status` is `resolved`, and `incident.created` otherwise.
-
-## Multiple integrations
-
-Create one webhook integration per destination URL. Attach one channel per destination to a notification group to send the same alerts to a webhook, a Slack channel and an email at once.
+`incident_url` opens the incident in Site Qwality, which needs a sign-in. The payload carries no acknowledge or resolve links; those go only to the paged person by [email and SMS](/incident-management/incidents/how-to/one-click-actions/). The event is `incident.resolved` when `responder_status` is `resolved`, and `incident.created` otherwise.
 
 ## See also
 

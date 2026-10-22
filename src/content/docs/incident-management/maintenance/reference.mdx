@@ -5,7 +5,7 @@ last_verified: 2026-08-01
 owner: jj
 ---
 
-The full request schemas live in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for `/maintenance_windows`.
+Full request schemas for `/maintenance_windows` are in the [API Reference](/api-reference/).
 
 ## Request settings
 
@@ -51,13 +51,7 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 
 ## What suppression does, precisely
 
-The check applies to notifications that carry monitor context (HTTP monitors, heartbeats, browser checks and alert rules). A window matches by tag, by the monitor's or rule's service, or by the rule's id in `alert_rule_ids`. While a matching window is active:
-
-- **Failure notifications are held**, not dropped: they are stored and re-evaluated when the window's current occurrence ends, so a monitor still down after the window pages then.
-- **Recovery notifications are suppressed** and clear the held failure for that monitor, so a blip fully inside the window pages no one.
-- **Checks keep running** and results keep being recorded throughout.
-- **Auto-created incidents wait** and open when the window ends if the monitor is still failing.
-- **Updating or deleting a window releases** the alerts it no longer covers on the next minute tick.
+A window matches by tag, by the monitor's or rule's service, or by the rule's id in `alert_rule_ids`. It holds failure alerts and auto-created incidents until it ends, while checks keep running. See [what "silenced" means](/incident-management/maintenance/overview/#what-silenced-means-precisely) for which monitors it covers and what it releases.
 
 ## Endpoints
 

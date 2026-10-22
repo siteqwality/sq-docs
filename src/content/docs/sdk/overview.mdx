@@ -7,9 +7,9 @@ owner: jj
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-The Site Qwality client SDK is a single browser-side package: **`@siteqwality/rum`**. It collects [Real User Monitoring](/observability/rum/overview/) data and, when a recording rule activates it, [session replay](/observability/replay/overview/). Every option and behavior is in the [SDK reference](/sdk/v2/). SDK 1.x is retired and no longer accepts data; install SDK 2.
+The Site Qwality client SDK is a single browser-side package: **`@siteqwality/rum`**. It collects [Real User Monitoring](/observability/rum/overview/) data and, when a recording rule activates it, [session replay](/observability/replay/overview/). Every option and behavior is in the [SDK reference](/sdk/v2/). SDK 1.x is retired; install SDK 2.
 
-It is **not** a back-end ingestion library, and there are no Site Qwality logging or metrics libraries for back-end languages. Send backend logs, traces and metrics through standard OpenTelemetry SDKs over OTLP/HTTP or the supported JSON/remote-write adapters. Follow the [platform guides](/observability/platforms/overview/) and keep server ingest credentials separate from the public RUM client token.
+There is no Site Qwality back-end library. Send back-end logs, traces and metrics through standard OpenTelemetry SDKs over OTLP/HTTP or the supported JSON and remote-write adapters, as in the [platform guides](/observability/platforms/overview/), and keep server ingest credentials separate from the public RUM client token.
 
 ## What it does
 
@@ -49,9 +49,7 @@ SiteQwalityRUM.init({
 });
 ```
 
-`init` starts collection synchronously, and the Promise it returns (settled once remote config is applied or fails) never needs an `await`. A second call is ignored. With the npm package, calls to other methods before `init()` are ignored, except the opt-out methods. Every option is in the [SDK reference](/sdk/v2/#init-options).
-
-No public method throws: invalid input is ignored and internal failures are swallowed.
+`init` starts collection synchronously and returns a Promise you never need to `await`. A second call is ignored. With the npm package, calls to other methods before `init()` are ignored, except the opt-out methods. No public method throws: invalid input is ignored and internal failures are swallowed. Every option is in the [SDK reference](/sdk/v2/#init-options).
 
 ## Public methods
 
@@ -59,7 +57,7 @@ The full list, including consent, opt-out, replay control and `getStatus()`, is 
 
 ### `setUser(user)` / `clearUser()`
 
-Identify the user. Call after login, or as soon as you know who's there.
+Identify the user. Call it after login, or as soon as you know who it is.
 
 ```javascript
 SiteQwalityRUM.setUser({
@@ -87,8 +85,6 @@ SiteQwalityRUM.setGlobalAttribute('plan', 'pro');
 SiteQwalityRUM.removeGlobalAttribute('plan');
 ```
 
-Up to 50 attributes, keys up to 128 characters, values up to 1,024 (longer values are cut) and 4 KB in all. Invalid input is ignored, never thrown.
-
 ### `addError(error, context?)`
 
 Track a custom error in addition to auto-captured errors.
@@ -105,7 +101,7 @@ try {
 | Param | Type | Description |
 |---|---|---|
 | `error` | any | An `Error`, or any other value (recorded as text, with no stack). |
-| `context` | `Record<string, string>` | **Stored** with the error. `sq.fingerprint` sets your own grouping. Read the warning below before putting anything in here. |
+| `context` | `Record<string, string>` | **Stored** with the error. `sq.fingerprint` sets your own grouping. |
 
 Custom errors pass the same [error filtering](/sdk/v2/#error-filtering) as captured ones.
 
@@ -120,52 +116,37 @@ SiteQwalityRUM.addAction('checkout_completed', { variant: 'A' });
 | Param | Type | Description |
 |---|---|---|
 | `name` | `string` | Event name, up to 256 characters. Used by `event` recording rule conditions. |
-| `context` | `Record<string, string>` | **Stored** with the event. Read the warning below before putting anything in here. |
+| `context` | `Record<string, string>` | **Stored** with the event. |
 
 <Aside type="danger" title="Do not put personal data in context">
-The `context` argument of `addError` and `addAction` **is stored**, and so are user traits and global attributes. Global attributes can be used in [session filters](/observability/rum/reference/#filter-grammar).
-
-Pass low-cardinality, non-personal labels only, as in the `{ feature: 'checkout', step: '3' }` example above.
+The `context` of `addError` and `addAction`, user traits and global attributes are all stored. Pass low-cardinality, non-personal labels only, such as `{ feature: 'checkout', step: '3' }`.
 </Aside>
 
 ### Naming clicks
 
-Auto-captured clicks are attributed to the nearest link, button, form control or similar element at or above the click target, and recorded with a name (its `data-sq-action-name`, `aria-label` or text, up to 64 characters) and a stable selector. Set `data-sq-action-name` on an element (or an ancestor) to name its clicks yourself, or turn on [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names) for the application. See [click names](/sdk/v2/#click-names).
+Auto-captured clicks are named from the element's `data-sq-action-name`, `aria-label` or text. Set `data-sq-action-name` on an element (or an ancestor) to name its clicks yourself, or turn on [hiding element text in click names](/observability/rum/how-to/remote-config/#hiding-element-text-in-click-names) for the application. See [click names](/sdk/v2/#click-names).
 
 ## Behavior worth knowing
 
-- **Errors are filtered.** Known browser noise (ResizeObserver loop warnings, detail-less `Script error.`, errors raised entirely inside browser extensions) is dropped, identical errors within 5 seconds are folded into one, and each error is limited to 10 and then one every 10 seconds, with at most 500 per page load. Ingest applies the same noise rules. A dropped error never marks a session as errored, never triggers a recording rule and is never billed. Add your own with `ignoreErrors`, `denyUrls` and `beforeSend`. See [error filtering](/sdk/v2/#error-filtering).
-- **Page views follow real URL changes.** A view is recorded only when the minimized URL changes, and carries `loading_type` (`initial_load`, `route_change` or `bfcache_restore`). Web Vitals always belong to the document's initial view. See [page views and Web Vitals](/sdk/v2/#page-views-and-web-vitals).
-- **Sessions are shared by tabs and follow the user.** Only user input, the tab becoming visible and new page views keep a session alive; it ends after 15 minutes without them or 4 hours in all. See [sessions](/sdk/v2/#sessions).
-- **Recording rules are evaluated in the browser**, when the config arrives and on every relevant input, with per-session sampling. The decision lasts for the rest of the session, in every tab. See [rule evaluation](/sdk/v2/#rule-evaluation).
-- **Frustration signals.** A click carries at most one of `error_click`, `rage_click` or `dead_click`, in that order of precedence. Add `data-sq-no-frustration` to an element, or list selectors in the application settings, to exempt controls that draw rapid or no-op clicks by design from rage and dead clicks. See [frustration signals](/sdk/v2/#frustration-signals).
+- **Errors are filtered.** Known browser noise is dropped, repeats are folded and limited, and a dropped error is never billed. Add your own filters with `ignoreErrors`, `denyUrls` and `beforeSend`. See [error filtering](/sdk/v2/#error-filtering).
+- **Page views follow real URL changes**, and Web Vitals always belong to the document's initial view. See [page views and Web Vitals](/sdk/v2/#page-views-and-web-vitals).
+- **Sessions are shared by tabs.** A session ends after 15 minutes without activity or 4 hours in all. See [sessions](/sdk/v2/#sessions).
+- **Recording rules are evaluated in the browser**, and the decision lasts for the rest of the session, in every tab. See [rule evaluation](/sdk/v2/#rule-evaluation).
+- **Frustration signals.** Add `data-sq-no-frustration` to an element, or list selectors in the application settings, to exempt it from rage and dead clicks. See [frustration signals](/sdk/v2/#frustration-signals).
 - **Delivery is bounded.** Batches are gzipped, retried with backoff, and capped by a hard request budget per session and page load. See [batching and delivery](/sdk/v2/#batching-and-delivery).
 
 ## TypeScript types
 
-The SDK ships with TypeScript types:
+The SDK ships with TypeScript types. See [exported types](/sdk/v2/#exported-types).
 
 ```typescript
 import type { InitOptions, UserContext } from '@siteqwality/rum';
 ```
 
-Notable types:
-
-- `InitOptions`: `init` argument shape.
-- `UserContext`: `setUser` argument shape.
-- `SdkStatus`: what `getStatus()` returns.
-- `SqEvent`, `SqEventKind`: the event and kind `beforeSend` receives.
-
-See [exported types](/sdk/v2/#exported-types).
-
-## Pricing
-
-The SDK is free; what costs is the data it sends. See [capture and billing](/sdk/v2/#capture-and-billing) and [Replay pricing](/observability/replay/overview/#pricing).
-
 ## Compatibility
 
 - Modern browsers. The bundles target ES2020, and there's no IE11 support.
-- The CDN bundle is a classic script that defines a single global, `window.SiteQwalityRUM` (it also works when loaded with `type="module"`). The replay recorder is a separate file, loaded only when needed, and browsers without `CompressionStream` load a small gzip fallback.
+- The CDN bundle is a classic script that defines a single global, `window.SiteQwalityRUM` (it also works when loaded with `type="module"`).
 - The npm package is published as both ESM and CJS, with types. Transpile further via your bundler if you support older browsers.
 
 ## See also

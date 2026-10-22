@@ -7,13 +7,13 @@ owner: jj
 
 import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
 
-This guide configures logs. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+This guide covers logs. Replace `YOUR_INGEST_KEY` with your key.
 
 <BeforeYouStart />
 
 ## 1. Create an HTTPS drain
 
-Heroku sends application/logplex-1 frames using Basic authentication, with the ingest key as the password. This drain URL contains credentials. Treat it as a secret, avoid shell history and screenshots, and rotate the key if exposed.
+Heroku sends Logplex frames with Basic authentication, using the ingest key as the password, so the drain URL is a secret: keep it out of shell history and screenshots, and rotate the key if exposed.
 
 ```bash
 heroku drains:add 'https://siteqwality:YOUR_INGEST_KEY@otlp.siteqwality.com/v1/heroku' --app YOUR_APP
@@ -22,7 +22,7 @@ heroku drains --app YOUR_APP
 
 ## 2. Generate traffic and verify
 
-Make an application request that emits a log. This adapter collects Logplex frames, not arbitrary JSON. Use an application SDK for traces and metrics. Configure service/environment defaults on the ingest key when Logplex does not carry them.
+Make an application request that emits a log. The drain carries logs only; use an application SDK for traces and metrics. Set service and environment defaults on the ingest key when Logplex does not carry them.
 
 ```bash
 heroku logs --tail --app YOUR_APP
@@ -30,14 +30,13 @@ heroku logs --tail --app YOUR_APP
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
 Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
 - [Pipelines, access and privacy](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream Heroku documentation](https://devcenter.heroku.com/articles/log-drains#https-drains)

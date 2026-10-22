@@ -5,7 +5,7 @@ last_verified: 2026-08-02
 owner: jj
 ---
 
-import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 A **browser check** is a synthetic monitor that runs a Playwright script in a real Chromium browser on a schedule. Use it for the things HTTP checks can't tell you:
 
@@ -29,12 +29,12 @@ A **browser check** is a synthetic monitor that runs a Playwright script in a re
 ## How it works
 
 1. You write a Playwright script in JavaScript, driving the browser with the `page` API and `step()` helpers.
-2. Site Qwality runs your script in headless Chromium on Lambda on the schedule (`5m`, `10m`, `15m`, `30m`, `1h`).
+2. Site Qwality runs your script in headless Chromium on the schedule (`5m`, `10m`, `15m`, `30m`, `1h`).
 3. Each step's pass/fail, duration, and a screenshot are captured.
-4. On every run, a HAR file (full network log) and a video are uploaded to S3.
+4. On every run, a HAR file (full network log) and a video are recorded.
 5. Web vitals (LCP, FCP, CLS, TTFB) are extracted from the page and reported.
 6. Console errors and unhandled exceptions are captured.
-7. Status flips to `failed` when steps fail, and alerts fire on that first confirmed failure. Browser checks have no consecutive-failure debounce; the [`confirmation_threshold`](/uptime-monitoring/http-checks/how-to/confirmation-threshold/) knob is HTTP-only.
+7. Status flips to `failed` when steps fail, and alerts fire on that first confirmed failure (see [rerun and confirmation](/uptime-monitoring/browser-checks/reference/#rerun-and-confirmation)). A check that keeps passing and failing is held like a flapping HTTP monitor: one notice instead of an alert pair per change. See [flap hold](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/#heartbeat-and-browser-monitors).
 
 The script runs inside a sandboxed `async` function with `page` (Playwright Page) and `step` (your wrapper for tracked steps) injected:
 
@@ -70,53 +70,28 @@ Anything you can do with Playwright works inside a step.
 | **Video** | 1280×720 MP4 of the entire run. |
 | **Web vitals** | LCP, FCP, CLS, TTFB extracted via PerformanceObserver. |
 | **Console errors** | Anything logged at `console.error` or thrown. |
-| **Trace IDs** | Every request the browser makes, to any origin, carries a W3C `traceparent` header with its own trace ID, and the run records those IDs. If the server that received a request is instrumented with OpenTelemetry and sends its traces to Site Qwality, the ID opens that backend trace; otherwise the trace has no spans. |
-
-## Frequencies and pricing
-
-Available frequencies: `5m`, `10m`, `15m`, `30m`, `1h`. Browser checks are billed per run; the dashboard shows your current monthly count under **Settings → Usage**.
-
-<Aside type="caution">
-Every browser check run happens in `aws-us-east-1` (Virginia, AWS). Unlike HTTP checks, they cannot be spread across several locations.
-</Aside>
-
-A check that keeps passing and failing is held like a flapping HTTP monitor: one notice instead of an alert pair per change. See [flap hold](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/#heartbeat-and-browser-monitors).
+| **Trace IDs** | Every request the browser makes, to any origin, carries a W3C `traceparent` header, and the run records those trace IDs. If the receiving server sends its OpenTelemetry traces to Site Qwality, the ID opens that backend trace; otherwise the trace has no spans. |
 
 ## Failure alerts carry the failed step and a screenshot
 
-When a browser check fails, the alert names the **first failed step** and links to the **screenshot captured at that step**, so you can often diagnose without opening the dashboard.
+When a browser check fails, the **email and Slack** alerts name the **first failed step** and link to the **screenshot captured at that step**. Other channels get the monitor name and error message only.
 
-This enrichment appears on **email and Slack** alerts. Other channels get the monitor name and error message only.
+You get this only when:
 
-Three things determine whether you get it:
+- **The failure happens inside a `step()` call.** A script that throws at the top level, fails to navigate, or times out before any step runs produces no step results, so there is no step name and no screenshot.
+- **The step has a name.** An unnamed step yields no enrichment, including no screenshot link.
+- **The alert is not delayed.** If a notification group has `delay_send_after_minutes` set, the delayed alert arrives without the step name or screenshot; the immediate alert is the enriched one.
 
-- **The failure must happen inside a `step()` call.** A script that throws at the top level, fails to navigate, or times out before any step runs produces no step results, so there is no step name and no screenshot. Wrap your actions in `step('name', async () => { ... })` if you want named failure context.
-- **The step must have a name.** An unnamed step yields no enrichment at all, including no screenshot link.
-- **Delayed alerts are not enriched.** If a notification group has `delay_send_after_minutes` set, the delayed alert arrives without the step name or screenshot. The immediate alert is the enriched one.
-
-<Aside type="caution" title="Screenshot links are short-lived">
-The screenshot URL in an alert is pre-signed with the alerting service's own temporary credentials, so it stops working when that credential session expires, typically within a few hours rather than days.
-
-Open it while triaging. After that, get the screenshot from the check's run detail in the dashboard, where it does not expire.
-</Aside>
+The screenshot link in an alert usually stops working within a few hours. After that, open the screenshot from the check's run detail in the dashboard, where it does not expire.
 
 ## Location
 
-<Aside type="caution" title="Browser checks run from Virginia (AWS) only">
-HTTP checks can run from any of the [check locations](/uptime-monitoring/overview/#check-locations) on AWS, Google Cloud and Microsoft Azure. Browser checks cannot: **every browser check runs in `aws-us-east-1`**, the only location that can run them.
-
-- Leave `check_regions` unset, or set it to `["aws-us-east-1"]`.
-- A location that cannot run browser checks is rejected with `400`. The retired ids `aws-us-east-2` and `aws-us-west-1` are accepted and replaced with `aws-us-east-1`.
-- More than one location without a paid uptime plan is rejected with `403` and `multi_region_requires_paid_plan`, the same rule as HTTP checks.
-
-`POST /browser_check/{id}/run` reports the location the run executed in.
-</Aside>
+Every browser check runs in `aws-us-east-1` (Virginia, AWS), the only location that can run them. Unlike HTTP checks, they cannot be spread across several [check locations](/uptime-monitoring/overview/#check-locations). Leave `check_regions` unset, or set it to `["aws-us-east-1"]`. See [supported locations](/uptime-monitoring/browser-checks/reference/#supported-locations).
 
 ## Constraints
 
-- **Script size**: anything under 50KB. The script is stored in Postgres alongside the check config.
-- **Timeout**: `1`–`300` seconds per run. Includes browser startup; the user script gets `timeout - 30s`.
-- **Location**: `aws-us-east-1` only; see [location](#location) above.
+- **Script size**: under 50KB.
+- **Timeout**: `1`–`300` seconds per run, including browser startup; the user script gets `timeout - 30s`.
 
 ## See also
 

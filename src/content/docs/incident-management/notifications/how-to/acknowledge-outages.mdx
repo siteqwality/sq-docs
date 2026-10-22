@@ -5,7 +5,7 @@ last_verified: 2026-10-19
 owner: jj
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
 An outage starts when an HTTP monitor, heartbeat (cron) monitor or browser check goes down. Acknowledging it records who is on it and when. With the default [notification settings](/incident-management/notifications/settings/), it also stops the outage's repeat alerts, so the team stops being re-paged for something a person already has.
 
@@ -21,33 +21,27 @@ An acknowledgment is about one outage, not the monitor. If the monitor recovers 
 | AI assistant | The `acknowledge_monitor_outage` [MCP tool](/integrations/mcp/). See [MCP](#mcp). |
 | The linked incident | Acknowledging the incident the outage opened also acknowledges the outage. See [Incidents](#incidents-opened-by-the-outage). |
 
-Slack, PagerDuty and the other chat and paging channels carry no acknowledge button for monitor outages. Use one of the routes above.
-
-The monitor's alert history lists each outage with its acknowledgment, if any.
+Slack, PagerDuty and the other chat and paging channels carry no acknowledge button for monitor outages.
 
 ## The rules
 
 - **The first acknowledgment wins.** It is recorded once per outage. Acknowledging again, by anyone and by any route, returns the original acknowledgment unchanged.
-- **An ended outage cannot be acknowledged.** Once the monitor has recovered, the request is refused with `409`, unless the outage was already acknowledged, in which case you get that acknowledgment back.
+- **An ended outage cannot be acknowledged.** Once the monitor has recovered, the request is refused, unless the outage was already acknowledged, in which case you get that acknowledgment back.
 - **Recovery alerts are still sent.** Acknowledging never suppresses the all clear.
-- **Repeats stop only when the setting is on.** With `outage_ack_stops_repeats` on (the default), the next scheduled repeat sees the acknowledgment, sends nothing and cancels the rest. With it off, repeats continue until the monitor recovers.
+- **Repeats stop only when the setting is on.** With [`outage_ack_stops_repeats`](/incident-management/notifications/settings/) on (the default), the outage's repeat alerts stop. With it off, they continue until the monitor recovers.
 
-Repeats come from a notification group's `resend_every_minutes`, which applies to HTTP and browser down alerts. Heartbeat (cron) down alerts are never repeated, so there an acknowledgment records who is on the outage and nothing more.
+Repeats come from a notification group's `resend_every_minutes`, which applies to HTTP and browser down alerts. Heartbeat (cron) down alerts are never repeated, so there an acknowledgment only records who is on the outage.
 
 ## The email link
 
-Down alert emails sent to an email channel carry an acknowledge link, `https://api.siteqwality.com/monitors/outage_action/<token>`. It is meant for the person who got the email.
+Down alert emails sent to an email channel carry an acknowledge link, `https://api.siteqwality.com/monitors/outage_action/<token>`.
 
 - **Single use.** After you press the button, the link is used up.
 - **Expires after 24 hours.**
-- **Tied to one outage and one email.** The token is made for that outage and the email that carried it. Site Qwality stores only a hash of it.
+- **Tied to one outage and one email.** The token is made for that outage and the email that carried it.
 - **Recorded as the recipient.** The acknowledgment names the address the email was sent to, with source `email_link`. No user is attached, so the link works without signing in.
 
-Opening the link shows a page that says what will happen and changes nothing. Pressing its button acknowledges. The extra step is deliberate: email security scanners open every link in a message, and a scanner must not be able to acknowledge an outage on its own.
-
-<Aside type="tip">
-Treat the link like a password. Anyone who has it can acknowledge as that address until it is used or expires.
-</Aside>
+Opening the link shows a page that says what will happen and changes nothing; pressing its button acknowledges. The extra step keeps email security scanners, which open every link in a message, from acknowledging an outage on their own. Treat the link like a password: anyone who has it can acknowledge as that address until it is used or expires.
 
 `GET /monitors/outage_action/{token}` shows the confirmation page and `POST /monitors/outage_action/{token}` acknowledges. Both are unauthenticated: the token is the credential. They mirror the [incident action links](/incident-management/incidents/how-to/one-click-actions/).
 
@@ -58,11 +52,9 @@ When a monitor linked to a [service](/incident-management/services/overview/) in
 - Acknowledging the outage acknowledges the incident it opened, as the same person, if the incident is still `triggered`. That stops its [escalation](/incident-management/escalation/overview/#acknowledging-stops-it).
 - Acknowledging that incident, from the incident page, an action link or the API, records the outage acknowledgment with source `incident`.
 
-Only the incident the outage opened automatically is linked. An incident someone created by hand that merely lists the monitor is not touched by an outage acknowledgment, and acknowledging it does not acknowledge the outage.
+Only the incident the outage opened automatically is linked. An incident someone created by hand that lists the monitor is not touched by an outage acknowledgment, and acknowledging it does not acknowledge the outage.
 
-<Aside type="note">
-An acknowledged incident does not resolve itself when the monitor recovers if its service uses the default `unless_acknowledged` [auto-resolve](/incident-management/services/overview/#auto-resolve). Acknowledging the outage therefore leaves the incident open for a person to resolve.
-</Aside>
+If the service uses the default `unless_acknowledged` [auto-resolve](/incident-management/services/overview/#auto-resolve), an acknowledged incident does not resolve itself when the monitor recovers, so acknowledging the outage leaves the incident open for a person to resolve.
 
 ## REST
 
@@ -100,17 +92,11 @@ To acknowledge whatever outage is open right now without looking up its id, use 
 | `source` | Where it came from: `console` (the dashboard), `api`, `mcp`, `email_link` or `incident` (the linked incident was acknowledged). |
 | `recipient` | The email address for `email_link`, otherwise `null`. |
 
-| Status | Meaning |
-|---|---|
-| `200` | Acknowledged. An outage that was already acknowledged also returns `200`, with the first acknowledgment. |
-| `404` | The monitor does not exist in your account. |
-| `409` | The outage has already ended. |
-
 Each outage in `GET /monitors/{monitor_id}/alert_history` carries `acknowledgement`: this object once acknowledged, otherwise `null`.
 
 ## MCP
 
-The `acknowledge_monitor_outage` tool takes a `monitor_id` and an optional `transition_id`. Without `transition_id` it acknowledges the monitor's open outage. The acknowledgment is recorded with source `mcp`. It is a write tool; `get_alert_history` shows the result. See [Connect AI assistants](/integrations/mcp/).
+The `acknowledge_monitor_outage` tool takes a `monitor_id` and an optional `transition_id`. Without `transition_id` it acknowledges the monitor's open outage. The acknowledgment is recorded with source `mcp`, and `get_alert_history` shows the result. See [Connect AI assistants](/integrations/mcp/).
 
 ## Audit
 

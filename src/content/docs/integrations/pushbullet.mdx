@@ -7,7 +7,7 @@ owner: jj
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-Pushbullet pushes alerts to every device signed into your Pushbullet account. Alerts arrive as note pushes with the monitor status as the title.
+Pushbullet pushes alerts to every device signed into your Pushbullet account. Each alert is a **note** push: a title carrying the monitor and its new status, and a body with the detail. Outages and recoveries arrive the same way, since Pushbullet has no priority.
 
 ## What you need
 
@@ -39,17 +39,13 @@ curl -X POST https://api.siteqwality.com/integration/pushbullet \
   }'
 ```
 
-Both fields are required and must be non-empty. The token is not verified against Pushbullet at save time.
-
-The token is a secret: `GET /integration` never returns it, and it is redacted from the stored delivery record. `pushbullet_access_token` shows it as `****` followed by its last four characters (just `****` when it is shorter than 16 characters).
+Both fields are required. The token is not verified against Pushbullet at save time, and it never reads back in full.
 
 <Aside type="caution">
 A Pushbullet account access token grants full access to the account, not just the ability to push. Create it on an account you are comfortable dedicating to alerting.
 </Aside>
 
 ## Add it to a notification group
-
-Integrations deliver nothing on their own. Alerts reach one once it is a channel in a notification group that your monitors use.
 
 <Steps>
 
@@ -74,17 +70,13 @@ curl -X POST https://api.siteqwality.com/notification \
   }'
 ```
 
-## Message format
-
-Each alert is a Pushbullet **note** push: a title carrying the monitor and its new status, and a body with the detail. There is no priority concept in Pushbullet, so outages and recoveries arrive identically as far as your device is concerned.
-
 ## Delivery behavior
 
-Like Pushover, Pushbullet sends are **not** retried in-process, because a re-send would appear as a duplicate push. A single attempt is made. A 4xx answer is recorded as rejected. Any other failure fails the event, and it is run up to two more times, so a duplicate push is possible. If those runs fail too, the alert is dropped with no record in alert history.
+A send is attempted once, and a refusal from Pushbullet is recorded as rejected. Any other failure is run up to two more times, so a duplicate push is possible. If those runs fail too, the alert is dropped with no record in alert history. See [delivery guarantees](/incident-management/notifications/channels/#delivery-guarantees-by-channel).
 
 ## Limitations
 
-Pushbullet channels fire for **HTTP monitors, browser checks, domain expiry warnings, log, metric and trace alert rules, and RUM issues**. Heartbeat (cron) monitors, TLS expiry warnings, page speed alerts and DNS record changes do not reach Pushbullet today: a Pushbullet channel on a group used by those sources is skipped. See the [coverage table](/integrations/coverage/#pushbullet).
+Heartbeat (cron) monitors, TLS expiry warnings, page speed alerts and DNS record changes do not reach Pushbullet. See the [coverage table](/integrations/coverage/#pushbullet).
 
 ## See also
 

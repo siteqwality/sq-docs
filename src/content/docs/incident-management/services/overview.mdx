@@ -5,7 +5,7 @@ last_verified: 2026-10-22
 owner: jj
 ---
 
-import { CardGrid, LinkCard, Aside, Steps } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
 
 A **service** is a named part of your product, such as `Checkout API` or `Marketing site`. It ties monitors to incident handling:
 
@@ -29,9 +29,9 @@ Services are the only way a monitor failure becomes an incident, and the only wa
 
 4. Pick an **incident creation mode** (see below) and a **default severity**.
 
-5. Set how long a resolved incident can reopen (the reopen window, 30 minutes for a new service; `0` never reopens) and when an incident resolves itself (auto-resolve; `unless_acknowledged` by default).
+5. Set the [reopen window](#reopen-window) and [auto-resolve](#auto-resolve).
 
-6. Choose the **HTTP monitors**, **cron monitors** (heartbeats) and **browser checks** that belong to the service, and save. Saving changes only the links you added or removed; the form waits for the current links to load before it lets you change them.
+6. Choose the **HTTP monitors**, **cron monitors** (heartbeats) and **browser checks** that belong to the service, and save.
 
 </Steps>
 
@@ -51,15 +51,11 @@ curl -X POST https://api.siteqwality.com/service \
   }'
 ```
 
-<Aside type="note" title="Scopes">
-Scoped API keys, M2M API clients and AI assistants need `read:services` to read services and `write:services` to change them.
-</Aside>
-
-An AI assistant connected to [MCP](/integrations/mcp/#services) with an API key can do the same: list, create and update services, and link or unlink their monitors.
+Scoped API keys, M2M API clients and AI assistants need `read:services` to read services and `write:services` to change them. An AI assistant connected to [MCP](/integrations/mcp/#services) with an API key can list, create and update services, and link or unlink their monitors.
 
 ## Service health
 
-The **Services** page shows each service's health, worst first by default, and opening a service shows the same at the top of its page. Health is the worse of its incidents and its monitors:
+The **Services** page and each service's own page show its health. Health is the worse of its incidents and its monitors:
 
 | Health | When |
 |---|---|
@@ -74,7 +70,7 @@ Beside the health, each service shows its open incidents, failing monitors, when
 
 The service page also shows the last 30 days: incidents opened, mean time to acknowledge, mean time to resolve, and uptime, the share of that time with no open incident on the service.
 
-Filter the list by name, team, tag or health, and sort it by health, name, latest incident or age. Set a service's team, tags and on-call schedule in **Edit Settings** on its page.
+Set a service's team, tags and on-call schedule in **Edit Settings** on its page.
 
 ## Incident creation modes
 
@@ -83,13 +79,13 @@ Filter the list by name, team, tag or health, and sort it by health, name, lates
 | `manual` (default) | Nothing. You open incidents yourself; one you attach to the service still pages its policy and tells its broadcast targets. |
 | `auto` | Opens the service's auto-created incident, or joins it if one is already open. See [auto-created incidents](#auto-created-incidents). |
 
-HTTP monitors open incidents only after their own confirmation settings pass, and heartbeats and browser checks are always treated as confirmed. The old `auto_with_confirmation` mode is gone: the API still accepts it on input, treats it as `auto`, and never returns it.
+HTTP monitors open incidents only after their own confirmation settings pass, and heartbeats and browser checks are always treated as confirmed.
 
 ## Auto-created incidents
 
-A service in `auto` mode has **at most one open auto-created incident**. The first linked monitor to fail opens it, titled `<monitor name> is down`. While it is open, every other failing monitor of the service joins it instead of opening a second one. Each join adds a `monitor_joined` event to the timeline, and each monitor records when it joined and when it recovered; see [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/).
+A service in `auto` mode has **at most one open auto-created incident**. The first linked monitor to fail opens it, titled `<monitor name> is down`. While it is open, every other failing monitor of the service joins it instead of opening a second one. Each join is recorded on the timeline; see [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/).
 
-The incident starts at the service's default severity and pages the service's escalation policy as soon as it is recorded. If that is interrupted, a sweep pages it within about a minute. While a [maintenance window](/incident-management/maintenance/overview/) covers the monitor, by its tags or by its service, the incident waits: it opens when the window ends if the monitor is still failing, and never opens if the monitor recovers first. A service switched off with `"disabled": true` opens no automatic incidents until you switch it back on.
+The incident starts at the service's default severity and pages the service's escalation policy as soon as it is recorded. While a [maintenance window](/incident-management/maintenance/overview/) covers the monitor, by its tags or by its service, the incident waits: it opens when the window ends if the monitor is still failing, and never opens if the monitor recovers first. A service switched off with `"disabled": true` opens no automatic incidents until you switch it back on.
 
 Every linked monitor type counts, and the incident counts as recovered when every one of its monitors is healthy again. What healthy means depends on the type:
 
@@ -117,10 +113,6 @@ When every monitor on the incident has recovered, `auto_resolve` decides whether
 | `unless_acknowledged` (default) | It resolves itself unless someone acknowledged it, including by [acknowledging the outage](/incident-management/notifications/how-to/acknowledge-outages/#incidents-opened-by-the-outage) that opened it. An acknowledged incident stays open for a person to resolve. |
 | `never` | It stays open until someone resolves it. |
 
-<Aside type="note" title="Retired settings">
-The merge window (`incident_merge_window_minutes`) is deprecated and ignored, and the dashboard form no longer shows it. While an auto-created incident is open, every failing monitor of the service joins it, whatever value is stored.
-</Aside>
-
 ## Link monitors
 
 Every type below can join a service with `POST /service/{id}/monitors`, one or more at a time, and leave it with `DELETE /service/{id}/monitors/{type}/{monitor_id}`. Neither touches the service's other monitors.
@@ -131,35 +123,29 @@ Every type below can join a service with `POST /service/{id}/monitors`, one or m
 | Heartbeat (cron) monitors | `cron` | The service form, or `service_id` on `POST /cron/job` and `PUT /cron/job/{id}`. |
 | Browser checks | `browser` | The service form, or `service_id` on `POST /browser_check` and `PUT /browser_check/{id}`. |
 | DNS record monitors | `dns_record` | `service_id` on `POST /dns/record-monitor` and `PUT /dns/record-monitor/{id}`. |
-| TLS certificate, domain registration and page speed checks of an HTTP monitor | `tls`, `dns`, `page_speed` | Only the link endpoint. A maintenance window holds their alerts when it matches the HTTP monitor's tags or names the service the check is linked to. |
+| TLS certificate, domain registration and page speed checks of an HTTP monitor | `tls`, `dns`, `page_speed` | Only the link endpoint. |
 | Alert rules | | In the rule's own settings. |
 | RUM | | Cannot be linked. |
 
-A monitor belongs to at most one service. Linking one that belongs to another service returns `409` unless you send `"move": true`; the dashboard's service form moves it.
-
-<Aside type="note">
-The HTTP monitor edit form shows its service read-only. Change it from the service form, or with `service_id` on `PUT /http/job/{id}`.
-</Aside>
+A monitor belongs to at most one service. To link one that belongs to another service, send `"move": true`; the dashboard's service form moves it. The HTTP monitor edit form shows its service read-only, so change it from the service form.
 
 ## Broadcast targets
 
 A broadcast target tells someone outside the escalation chain about the service's incidents. There are three types:
 
-- **Email:** any address. An address outside your members' email domains needs a confirmation, because every incident update for the service will be emailed there.
-- **Slack channel:** a channel of a connected [Slack integration](/integrations/slack/), or a bot token you paste in. With the integration, nothing secret is stored on the target: the token stays in the integration and is read only when a message is sent. A pasted token is write-only and is never shown again.
+- **Email:** any address. An address outside your members' email domains needs a confirmation.
+- **Slack channel:** a channel of a connected [Slack integration](/integrations/slack/), or a bot token you paste in. With the integration, nothing secret is stored on the target. A pasted token is write-only and is never shown again.
 - **Webhook:** a connected [webhook integration](/integrations/webhooks/), or a public URL you paste in. Deliveries use the [webhook envelope](/integrations/webhooks/#payload) with `incident.created` and `incident.resolved` events and are signed. A webhook integration signs with its own secret and shows the deliveries in its log; a pasted URL gets a signing secret of its own, shown once when you add it.
 
 Each target can take only some incidents: a minimum severity, compared with the highest severity the incident reaches, so a target that hears an escalation also hears how it ends, and a list of the lifecycle events it wants.
 
-Incident lifecycle events go to the service's broadcast targets: opened, acknowledged, updated (an update posted, or the severity or title changed), resolved, reopened, merged and service changed. Today the Slack, email and webhook targets deliver **opened** and **resolved**. The other events are recorded, and start delivering as each channel's message for them ships.
+The Slack, email and webhook targets deliver **opened** and **resolved**. The other lifecycle events (acknowledged, updated, reopened, merged and service changed) are recorded but not sent.
 
-An incident merged into another sends no resolved message. An update posted as an internal note is marked internal on its event, while status page subscribers only ever get public updates.
-
-Add targets on the service's detail page in the dashboard (it opens from a monitor or incident linked to the service), or through the API. A service can have up to 20 targets. See the [reference](/incident-management/services/reference/#broadcast-targets).
+Add targets on the service's detail page in the dashboard (it opens from a monitor or incident linked to the service), or through the API. See the [reference](/incident-management/services/reference/#broadcast-targets).
 
 ## Manual incidents
 
-An incident you open by hand on a service pages its escalation policy and tells its broadcast targets, like an automatic one. It starts at the service's default severity unless you pick one; the dashboard's **Report Incident** form fills the severity in when you choose the service. It is never published by itself: publish it from the incident, where the service's public template prefills the words.
+An incident you open by hand on a service starts at the service's default severity unless you pick one. It is never published by itself: publish it from the incident, where the service's public template prefills the words.
 
 ## Publish incidents to a status page
 
@@ -171,7 +157,7 @@ The **public incident template** (`public_incident_template`) words what custome
 - **First public update**: posted when the incident is published. Without one: "We are investigating this issue."
 - **Resolved update**: posted when it resolves. Without one: "This incident has been resolved."
 
-The template also prefills **Publish** for the service's manual incidents. Set both on the service form in the dashboard, or through the API.
+Set both on the service form.
 
 ## Deleting a service
 

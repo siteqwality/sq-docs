@@ -7,6 +7,6 @@ owner: jj
 
 Use the **Processing pipelines** form in [Telemetry settings](https://app.siteqwality.com/account/telemetry). Select logs, add a bounded filter and choose the parser processor for your format. Test representative safe samples, including unmatched input and malformed lines, before saving.
 
-JSON, regex named captures, grok and supported access-log/syslog/CSV/key-value templates extract typed fields. Pipeline order and processor order matter. Preview diagnostics show matches and failures; a failed parse should not be mistaken for a successful field extraction. Default privacy redaction runs first.
+Pipeline order and processor order matter. Preview diagnostics show failures as well as matches, so confirm each field was actually extracted. Default privacy redaction runs first.
 
-New rules use `/telemetry/pipelines`, not `/log_parsers`. Parsers created with `/log_parsers` are not converted automatically, so recreate each one as a pipeline. Retained records keep their old fields; saving a new parser does not rewrite history. See [pipeline reference](/observability/pipelines/) for operations, limits and safe rollout.
+Parsers created with the legacy `/log_parsers` endpoint are not converted, so recreate each one as a pipeline. A new parser does not rewrite retained records. See [Processing pipelines](/observability/pipelines/) for parser formats, the API, limits and safe rollout.

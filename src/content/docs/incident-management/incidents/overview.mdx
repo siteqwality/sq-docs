@@ -5,43 +5,27 @@ last_verified: 2026-10-19
 owner: jj
 ---
 
-import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 An **incident** is the durable record of "something is broken." Every page, every escalation, every status-page update hangs off an incident. They're created two ways:
 
 1. **Auto**: when a monitor linked to a [service](/incident-management/services/overview/) in `auto` mode starts failing, Site Qwality opens an incident with `auto_created: true`. A service has at most one open auto-created incident, and every other monitor of the service that fails joins it. Monitors with no service never open incidents. See [auto-created incidents](/incident-management/services/overview/#auto-created-incidents).
-2. **Manual**: when you create one in the dashboard or via `POST /incident`. Use this for non-monitor events ("partial Stripe outage breaking webhooks," "a cron job took down the queue").
+2. **Manual**: when you create one in the dashboard or via `POST /incident`, for events no monitor catches ("partial Stripe outage breaking webhooks," "a cron job took down the queue"). See [create manual incidents](/incident-management/incidents/how-to/manual-incidents/).
 
 Either way the lifecycle is the same.
 
 ## Anatomy of an incident
 
-| Field | What it is |
-|---|---|
-| `title` | Short, scannable label. `"Elevated 5xx errors on /api/checkout"`. Show this in alerts. |
-| `auto_created` | `true` when a monitor state change opened the incident; `false` for manual ones. |
-| `severity` | `minor`, `major`, or `critical`. Drives display priority on status pages and dashboards. |
-| `status` | `investigating` → `identified` → `monitoring` → `resolved`. Forward-only in practice; see notes. |
-| `responder_status` | `triggered` (no one's looking), `acknowledged` (someone's on it), or `resolved`. |
-| `acknowledged_at` / `acknowledged_by` | Set when a responder acknowledges. Stops escalation. |
-| `monitors[]` | The monitors this incident is about. Each has an `impact`, a `source` (`auto` or `manual`) and `joined_at` / `recovered_at` times, and drives which status-page components show the incident. See [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/). |
-| `affected_http_job_ids` | Deprecated: the HTTP monitors in `monitors[]`. Use `monitors`. |
-| `participants[]` | The people working the incident, each with a role: `lead`, `responder` or `comms`. See [participants](/incident-management/incidents/how-to/participants/). |
-| `merged_into_id` / `resolution_reason` | Set on an incident that was [merged](/incident-management/incidents/how-to/merge-incidents/) into another. It is resolved, with `resolution_reason` set to `merged`. Otherwise both are `null`. |
-| `merged_from[]` | On the incident that others were merged into: each merged incident's `id`, `title`, `created_at` and its own `updates`. |
-| `service_id` | Optionally tag an incident to a service (a logical grouping of monitors). You can [move it to another service](/incident-management/incidents/how-to/manual-incidents/#move-an-incident-to-another-service). |
-| `status_page_ids` | The status pages the incident is published on. |
-| `public_title` | The title those pages show, so an internal title like `db-7 failover` never reaches customers. Empty shows `title`. |
-| `updates[]` | Chronological list of `IncidentUpdate`s, each `public` (on status pages) or `internal` (a note for your team). |
+An incident has a `title`, a `severity`, two states (below), the monitors it is about, the people working it, an optional service, the status pages it is published on, and a timeline of updates. Status pages show its `public_title`, so an internal title like `db-7 failover` never reaches customers. Each update is `public` (on status pages) or `internal` (a note for your team). Every field is in the [incident reference](/incident-management/incidents/reference/).
 
 ## Status vs responder_status
 
-Two parallel state machines that often confuse new users:
+An incident has two parallel states:
 
 - **`status`** is the *external* / *customer-facing* progress: "we're still investigating," "we know the cause," "fix is rolled out, we're watching." It's what shows on the status page, and only public updates and resolving move it.
 - **`responder_status`** is the *internal* / *responder* state: "no one's on this," "someone has it," "we're done." It's what drives escalation and ack tracking.
 
-A status page incident can be `status: monitoring` while still `responder_status: acknowledged`, meaning the customer-facing message is "we're keeping an eye on it" but a human is still actively babysitting.
+An incident can be `status: monitoring` and `responder_status: acknowledged` at once: customers read "we're keeping an eye on it" while a responder still owns it.
 
 ## Severity guidance
 
@@ -49,9 +33,9 @@ A status page incident can be `status: monitoring` while still `responder_status
 |---|---|
 | `minor` | Single non-critical endpoint flapping; degraded performance below SLA but functional. |
 | `major` | Customer-facing feature broken for a subset of users; one region down with traffic still served from another. |
-| `critical` | Full outage; data loss; security incident. Wakes everyone up. |
+| `critical` | Full outage; data loss; security incident. |
 
-Severity sets the urgency of the page: `critical` and `major` incidents page at **high** urgency, `minor` at **low**, and each responder's [notification rules](/incident-management/notifications/how-to/notification-rules/) decide how each urgency reaches them. It does not choose a different escalation policy: the policy comes from the incident's service.
+Severity sets the urgency of the page: `critical` and `major` incidents page at **high** urgency, `minor` at **low**, and each responder's [notification rules](/incident-management/notifications/how-to/notification-rules/) decide how each urgency reaches them. It does not choose a different escalation policy: the policy comes from the incident's service. Severity also drives display priority on status pages and dashboards.
 
 Raising an incident's severity from `minor` to `major` or `critical` pages the current escalation level again. An acknowledged incident goes back to `triggered`, so an earlier acknowledgment does not silence the new page.
 
@@ -66,21 +50,11 @@ Raising an incident's severity from `minor` to `major` or `critical` pages the c
 7. The fix lands at 03:24. The check goes green on the next tick, and `prod-api` records its `recovered_at`.
 8. Every monitor on the incident has recovered, but the incident was acknowledged and the service uses the default [auto-resolve](/incident-management/services/overview/#auto-resolve) setting, `unless_acknowledged`. It stays open for the engineer to resolve at 03:27: `status: resolved`, `responder_status: resolved`, `resolved_at` set.
 
-Had nobody acknowledged it, the incident would have resolved itself at 03:24. If `prod-api` fails again within the service's reopen window after that, the same incident reopens instead of a new one opening.
-
-You can override any of these transitions manually if needed: the auto-resolution will be skipped if you've already moved the incident to `resolved` yourself.
-
-## When to create manual incidents
-
-- A third-party service breaks something for your customers (Stripe, AWS, your CDN). The monitors don't know, but you do.
-- A bug in production that doesn't manifest as a monitor failure (UI broken, auth flow broken for a subset of users).
-- Coordination of a complex outage across multiple teams. One canonical incident with a clear timeline beats six Slack threads.
-
-For these, use `POST /incident` (standalone) or `POST /status_page/{id}/incident` (creates it on that page and emails the page's confirmed subscribers). Add `service_id` to page the service's escalation policy.
+Had nobody acknowledged it, the incident would have resolved itself at 03:24. If `prod-api` fails again within the service's reopen window after that, the same incident reopens instead of a new one opening. If you resolve the incident yourself first, auto-resolution is skipped.
 
 ## Acknowledgment
 
-Acknowledging an incident is **not** resolving it. Ack stops the page (so escalation won't keep paging), but the incident stays open until someone explicitly resolves it. This is intentional: the responder claims ownership, then has the time to actually fix the thing without their phone going off.
+Acknowledging an incident is **not** resolving it. Ack stops escalation, but the incident stays open until someone resolves it.
 
 The first person to acknowledge an incident that has no lead becomes its `lead` participant.
 

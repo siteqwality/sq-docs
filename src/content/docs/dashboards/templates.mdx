@@ -5,9 +5,9 @@ last_verified: 2026-10-11
 owner: jj
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
-Templates are ready-made dashboards. Pick one from the gallery under **New dashboard**, and you get an ordinary dashboard that you can edit, clone, share and delete like any other.
+Pick a template from the gallery under **New dashboard**, and you get an ordinary dashboard that you can edit, clone, share and delete like any other. Changing it never changes the template.
 
 The gallery marks each template **Has data** or **No data yet** for your account:
 
@@ -18,6 +18,8 @@ The gallery marks each template **Has data** or **No data yet** for your account
 - Service health needs spans in the last 7 days.
 
 You can create a template that has no data yet. Its widgets show **No data** until the data arrives.
+
+To learn the widgets, open a template widget's editor and see how its queries, filters and formulas are set up.
 
 ## The seven templates
 
@@ -100,14 +102,6 @@ For: a one-screen status report.
 
 ## Template variables
 
-Variables in templates default to **All**. The exceptions are `$monitor` and `$app`, which default to your first monitor or first RUM application when the dashboard is created. Change the selection in the variables bar. See [variables](/dashboards/queries/#variables).
-
-## After you create one
-
-The new dashboard is a copy. Edit it, remove what you do not need and add what you do. Changing it never changes the template.
-
-<Aside type="tip">
-Templates are also the quickest way to learn the widgets. Open a template widget's editor to see how its queries, filters and formulas are set up.
-</Aside>
+Variables in templates default to **All**. The exceptions are `$monitor` and `$app`, which default to your first monitor or first RUM application when the dashboard is created. See [variables](/dashboards/queries/#variables).
 
 <LinkCard title="Quickstart" description="Create a template, add a widget and a variable, and share it." href="/dashboards/quickstart/" />

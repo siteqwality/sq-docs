@@ -154,6 +154,15 @@ owner: jj
 | ... |
 ```
 
+## What to leave out
+
+Each fact has one home; elsewhere, link to it.
+
+- **Plans and prices.** Numbers, seats, prices and over-limit behavior live only on `getting-started/plan-limits.mdx` (telemetry on `observability/billing.mdx`). A paid feature's page gets one plain sentence after its intro, such as `Requires a paid uptime plan. See [plan limits](/getting-started/plan-limits/).`
+- **HTTP status codes and response field names** in overviews and how-tos. They belong in the API reference. Status codes of the monitored target are product behavior and stay.
+- **Internals** the reader cannot act on (tables, queues, Lambdas, query counts), **history** ("before this shipped", "currently", "no longer") and **reassurance** ("deliberately", "there is no X").
+- **Callouts:** at most two per page, never two in a row. Use `caution` or `danger` only for destructive or irreversible steps. Plan notes, prerequisites and links are body text.
+
 ## Sidebar conventions
 
 Sidebar groups live in `astro.config.mjs`. Within each product area:

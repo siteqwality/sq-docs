@@ -5,9 +5,7 @@ last_verified: 2026-10-11
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
-The five chart widgets (Time series, Query value, Top list, Table and Pie) are built from **queries**, optionally combined by **formulas** and narrowed by **variables**. The widget editor builds all of this for you. This page explains the rules behind it.
+The five chart widgets (Time series, Query value, Top list, Table and Pie) are built from **queries**, optionally combined by **formulas** and narrowed by **variables**. The widget editor builds all of this for you.
 
 ## Queries
 
@@ -87,16 +85,12 @@ A widget has up to 5 formulas, `f1` to `f5`, of up to 256 characters each. A for
 | Smooth a noisy series | `moving_avg(a, 5)` |
 | Change against yesterday | `a - timeshift(a, 1d)` |
 
+For a simple before-and-after view, set `compare` on a Time series or Query value instead of using `timeshift`.
+
 ### How formulas evaluate
 
 - **Groups.** Grouped queries join on identical group keys. A query without groups applies to every group.
 - **Nulls.** Division by zero gives a gap, and so does any null operand.
-- **Window.** Every query behind a formula uses the same window and bucket size.
-- **Hidden queries.** A hidden query is computed and available to formulas, but not drawn.
-
-<Aside type="tip">
-For a simple before-and-after view you do not need `timeshift`. Set `compare` on a Time series or Query value to draw the previous period.
-</Aside>
 
 ## Variables
 
@@ -141,19 +135,11 @@ Use `$name` as a filter value, or as the `metric` of a metrics query.
 - With **All** selected, the variable's value is dropped. A filter left with no values is removed, so the widget is not filtered by that field.
 - Entity widgets such as Monitor grid and Incidents take the same filters, so variables work there too.
 
-### Choosing variable values
-
-The dropdown loads its values from your data and searches as you type. A variable with a fixed `values` list uses that list instead.
-
 ### Selection and the URL
 
 The current selection is stored in the URL as `var-<name>=a,b`, for example `var-region=us-east-1,eu-west-1`. Open the link and the same selection applies. Hover a variable to highlight the widgets that use it.
 
-A selection in the URL does not edit the dashboard. To change the starting selection, edit the variable's `default` in **Settings**.
-
-### Variables in templates
-
-Template variables default to **All**, except `$monitor` and `$app`. Those default to your first monitor or first RUM application when you create the dashboard from the template.
+A selection in the URL does not edit the dashboard. To change the starting selection, edit the variable's `default` in **Settings**. Template variable defaults are on [templates](/dashboards/templates/#template-variables).
 
 ## See also
 

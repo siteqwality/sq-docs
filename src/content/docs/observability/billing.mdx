@@ -7,7 +7,7 @@ owner: jj
 
 ## Independent signal plans
 
-Logs and traces each have their own pack. One signal exhausting its allowance does not consume or stop another signal. A GB means **1,000,000,000 bytes**. There is no pooled telemetry pack, per-seat telemetry charge or automatic overage billing.
+Logs and traces each have their own pack, and one signal exhausting its allowance does not consume or stop another. A GB means **1,000,000,000 bytes**. Telemetry has no per-seat charge.
 
 | Logs or traces, each | Monthly price | Retention |
 |---|---|---|
@@ -16,7 +16,7 @@ Logs and traces each have their own pack. One signal exhausting its allowance do
 | 250 GB | $60 | 30 days |
 | 1,000 GB | $200 | 30 days |
 
-Bytes describe accepted customer data before transport compression, using the accepted OTLP protobuf encoded representation for OTLP, original UTF-8 record bytes for custom JSON/text and the adapter's decoded-record representation for platform payloads. Internal copies, storage compression and replication do not increase billed ingest. Rejected records and data excluded by customer rules do not consume accepted ingest bytes. Processed input still has a separate abuse ceiling, so exclusions do not authorize unbounded free processing.
+Billed bytes are accepted data before transport compression: the encoded OTLP protobuf for OTLP, the original UTF-8 record bytes for custom JSON and text, and the decoded records for platform payloads. Rejected records and data excluded by your rules do not count. Processed input, including excluded data, still has a separate abuse ceiling.
 
 ## Metric series
 
@@ -27,9 +27,9 @@ Bytes describe accepted customer data before transport compression, using the ac
 | 50,000 | $100 |
 | 200,000 | $350 |
 
-An active series is a distinct metric identity with its resource/point label combination observed during an hour. Distinct counts for each hour are averaged over the billing month. It is not a count of samples, events, unique label values or the largest daily peak. Sending a point every second instead of every minute does not create a new series if its identity stays the same. A user ID, request ID or changing URL in a label can create many series. Keep those in logs or traces instead.
+An active series is a distinct metric identity with its resource and point label combination observed during an hour. Each hour's distinct count is averaged over the billing month. It is not a count of samples, events, unique label values or the largest daily peak, so sending a point every second instead of every minute adds no series. A user ID, request ID or changing URL in a label can create many series; keep those in logs or traces.
 
-The Metrics cardinality view shows active series and expensive labels. Account and per-metric cardinality limits can reject **new series** while continuing known series. Inspect metric partial-success reasons and Usage before increasing cardinality.
+The Metrics cardinality view shows active series and expensive labels. Account and per-metric cardinality limits can reject **new series** while known series continue. Inspect metric partial-success reasons and Usage before increasing cardinality.
 
 ## Metric retention
 
@@ -39,10 +39,10 @@ The Metrics cardinality view shows active series and expensive labels. Account a
 | Minute rollups | 45 days | 45 days |
 | Hour rollups | 30 days | 395 days |
 
-A rollup is an aggregate, not an archived raw event. Query responses identify source, precision and quality. Retention can remove raw detail, exact recomputation inputs and exemplar targets while a longer-lived chart remains. Do not infer zero when a bucket is missing. Logs and traces do not inherit metric rollup retention.
+A rollup is an aggregate, not an archived raw event. Retention can remove raw detail, exact recomputation inputs and exemplar targets while a longer-lived chart remains.
 
 ## Limits and notifications
 
-Usage emails are sent at **80%, 100% and 110%**. The 10% grace buffer ends at the hard 110% boundary, where the affected signal receives **429 with Retry-After**. Rate limits, processed-input ceilings and cardinality guards can refuse requests before a monthly allowance is exhausted. Queue data locally and honor retry guidance; upgrade deliberately rather than assuming overflow will be stored or billed.
+Usage emails are sent at **80%, 100% and 110%**. The 10% grace buffer ends at the hard 110% boundary, where the affected signal receives **429 with Retry-After**. Rate limits, processed-input ceilings and cardinality guards can refuse requests before a monthly allowance is exhausted. Queue data locally and honor retry guidance: refused data is not stored or billed.
 
-There is no automatic overage billing and no separate spending cap. Telemetry packs cost the same per month on monthly or annual billing; annual billing has no discount. Buy paid packs in [Account billing](https://app.siteqwality.com/account?tab=billing). RUM, replay, monitors, status pages and incident pricing remain separate.
+There is no automatic overage billing and no separate spending cap. Telemetry packs cost the same per month on monthly or annual billing, with no annual discount. Buy paid packs in [Account billing](https://app.siteqwality.com/account?tab=billing). RUM, replay, monitors, status pages and incidents are priced separately.

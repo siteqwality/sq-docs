@@ -5,14 +5,14 @@ last_verified: 2026-10-16
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have a public status page at `https://statuspage.siteqwality.com/<account-id>/<page-id>` showing the status of an HTTP check, with a custom logo and brand color, and you'll have published one incident update to it.
+By the end of this guide you'll have a public status page at `https://statuspage.siteqwality.com/<account-id>/<page-id>` that shows an HTTP check, carries your logo and brand color, and has one published incident.
 
 ## Prerequisites
 
 - An existing HTTP check (or [follow the first-monitor quickstart](/getting-started/signup-and-first-monitor/)).
-- A logo as PNG or SVG, ≤2MB.
+- A logo as PNG, JPEG, SVG or WebP, up to 2 MB.
 
 ## 1. Create the page
 
@@ -25,7 +25,7 @@ By the end of this guide you'll have a public status page at `https://statuspage
 
 2. Set the **Name**. This is the public page title, so use your product name, e.g. `Acme Cloud`.
 
-3. Click **Add**, then click the new page in the list to open it. Its public URL (`https://statuspage.siteqwality.com/<account-id>/<page-id>`) is shown at the top.
+3. Click **Add**, then click the new page in the list to open it. Its public URL is shown at the top.
 
 </Steps>
 
@@ -39,14 +39,14 @@ curl -X POST https://api.siteqwality.com/status_page \
   -d '{ "friendly_name": "Acme Cloud" }'
 ```
 
-Returns the new page's `id`. The public URL is `https://statuspage.siteqwality.com/<account-id>/<page-id>`.
+Returns the new page's `id`.
 
 </TabItem>
 </Tabs>
 
 ## 2. Add components
 
-A *component* is a public-facing label for one of your monitors. Attach any HTTP check or browser check. Heartbeats and components whose status you set yourself are added on the **Layout** tab; see [Group and order status page components](/status-pages/how-to/organize-components/).
+A *component* is a public-facing label for one of your monitors. Here you attach HTTP and browser checks; heartbeats and components whose status you set yourself are added on the **Layout** tab (see [Group and order status page components](/status-pages/how-to/organize-components/)).
 
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
@@ -61,7 +61,7 @@ A *component* is a public-facing label for one of your monitors. Attach any HTTP
 
 </Steps>
 
-Repeat for each monitor you want public. A typical SaaS publishes 3–6 components: API, Web app, Auth, Webhooks, Background workers.
+Repeat for each monitor you want public.
 
 </TabItem>
 <TabItem label="API">
@@ -92,9 +92,9 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/browser_che
 
 1. On the page, open the **Branding** tab.
 
-2. Under **Images**, click **Upload** next to **Logo** and pick a PNG, JPEG, SVG or WebP file up to 2MB. Add a **Dark theme logo** the same way if your logo needs one. Each file is saved as soon as it uploads.
+2. Under **Images**, click **Upload** next to **Logo** and pick your file. Add a **Dark theme logo** the same way if your logo needs one. Each file is saved as soon as it uploads.
 
-3. Set the **Primary Color** (`#RRGGBB`) for the page title and the **Accent Color** for links and the Subscribe button. The page shifts either one to a readable shade in a theme where it would be hard to read; the preview shows both themes.
+3. Set the **Primary Color** (`#RRGGBB`) for the page title and the **Accent Color** for links and the Subscribe button.
 
 4. Under **Page Info**, set a **Page Title** (browser tab) and optional **Header Text** and **Footer Text**.
 
@@ -107,7 +107,7 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/browser_che
 </TabItem>
 <TabItem label="API">
 
-Branding is a two-step flow because logos go to S3 first.
+Upload the logo first, then save its key with the other branding fields.
 
 ```bash
 # 1. Get a presigned upload URL for the logo
@@ -146,7 +146,7 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/branding \
 
 ## 4. Publish your first incident
 
-An incident reaches a status page when you create it on the page, publish an existing one to it, or when a [service](/incident-management/services/overview/) publishes an incident it opened automatically. Let's create one by hand to confirm the page shows it.
+Create an incident by hand to confirm the page shows it. Incidents also reach a page when you publish an existing one or a [service](/incident-management/services/overview/) publishes one it opened automatically.
 
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
@@ -161,7 +161,7 @@ An incident reaches a status page when you create it on the page, publish an exi
 
 4. Click **Report Incident**. The incident appears immediately on the public page.
 
-5. To resolve, open the incident from the **Incidents** tab and click **Mark Resolved**. That posts a public **Resolved** update, emails the page's subscribers and closes the incident on the page. To add a closing message of your own first, write it under **Post Update** and click **Post Update**.
+5. To resolve, open the incident from the **Incidents** tab and click **Mark Resolved**. That posts a public **Resolved** update, emails the page's subscribers and closes the incident on the page. For a closing message of your own, first write it under **Post Update** and click **Post Update**.
 
 </Steps>
 
@@ -212,9 +212,7 @@ Open `https://statuspage.siteqwality.com/<account-id>/<page-id>` in an incognito
 - The published incident at the top with its updates in chronological order.
 - For each HTTP check, a 90-day uptime bar chart and response-time percentiles. Browser checks show their current status and SLA label only.
 
-<Aside type="tip">
-The status page is rendered on request and is not cached at the edge. Its data is at most about 30 seconds old, and an open page refreshes its live status every 60 seconds, so visitors during an active incident see fresh data.
-</Aside>
+The page's data is at most about 30 seconds old, and an open page refreshes its live status every 60 seconds.
 
 ## What's next
 

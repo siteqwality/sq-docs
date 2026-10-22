@@ -5,9 +5,9 @@ last_verified: 2026-05-03
 owner: jj
 ---
 
-import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, LinkCard } from '@astrojs/starlight/components';
 
-The Telegram integration uses the Site Qwality bot. Setup is a two-step flow because Telegram doesn't expose a webhook URL: you send the bot a one-time code, and Site Qwality records the chat ID.
+The Telegram integration uses the Site Qwality bot. You send the bot a one-time code from the chat you want alerts in, and Site Qwality records the chat ID.
 
 ## Set up
 
@@ -49,8 +49,6 @@ curl -X POST https://api.siteqwality.com/integration/telegram \
 ```
 
 ## Add it to a notification group
-
-Integrations deliver nothing on their own. Alerts reach one once it is a channel in a notification group that your monitors use.
 
 <Steps>
 

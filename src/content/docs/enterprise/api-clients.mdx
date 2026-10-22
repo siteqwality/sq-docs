@@ -9,7 +9,7 @@ import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
 An **M2M API client** is a credential for automation. Unlike an [API key](/getting-started/account-and-team/#generate-api-keys), which is a long-lived bearer token with full account access, a client exchanges a secret for a short-lived token and can be restricted to exactly the resources it needs.
 
-Reach for a client when a deploy pipeline, a Terraform run, or an internal service needs API access and you want the blast radius to be small and the credential rotatable.
+Use one when a deploy pipeline, a Terraform run or an internal service needs API access with a small blast radius and a rotatable credential.
 
 ## Create one
 
@@ -52,9 +52,7 @@ The response carries the client and, **exactly once**, the secret:
 ```
 
 <Aside type="danger" title="The secret is shown once and is never stored">
-Site Qwality does not keep a copy of the secret in any form. If you lose it, the only path forward is to rotate, which invalidates the old one.
-
-Put it into your secrets manager before you close the response.
+Put it into your secrets manager before you close the response. If you lose it, the only path forward is to rotate, which invalidates the old one.
 </Aside>
 
 Creating a client requires the **owner** role and a verified email address. Listing clients does not.
@@ -63,7 +61,7 @@ An account can hold **20 active clients**. Revoke an unused one to make room.
 
 ## Get a token, then call the API
 
-Authentication is a standard OAuth2 client-credentials exchange against the `token_endpoint` the API returned. Do not hardcode that URL; read it from the create or list response.
+Authentication is a standard OAuth2 client-credentials exchange against the `token_endpoint` the API returned. Do not hardcode that URL; read it from the create, list or rotate response.
 
 <Steps>
 
@@ -78,7 +76,7 @@ Authentication is a standard OAuth2 client-credentials exchange against the `tok
      -d "scope=read:monitors write:incidents"
    ```
 
-   You get back an `access_token`. Scopes are space-separated.
+   You get back a standard OAuth2 token response (no `data` envelope) with an `access_token`. Scopes are space-separated.
 
 2. **Call the Site Qwality API with it**, exactly like any other bearer token.
 
@@ -87,13 +85,9 @@ Authentication is a standard OAuth2 client-credentials exchange against the `tok
      -H "Authorization: Bearer $ACCESS_TOKEN"
    ```
 
-3. **Refresh when it expires.** Tokens are short-lived by design; request a new one rather than caching indefinitely.
+3. **Refresh when it expires.** Tokens are short-lived; request a new one rather than caching indefinitely.
 
 </Steps>
-
-<Aside type="note">
-Site Qwality's token endpoint returns a standard OAuth2 token response without a `data` envelope. The `token_endpoint` value returned when you create, list or rotate a client is the authoritative URL for your environment. Existing clients using the older endpoint continue to work.
-</Aside>
 
 ## Scopes
 
@@ -119,22 +113,11 @@ One scope sits outside the families: `read:rum_replay` lets a client watch [sess
 
 `integrations:manage` also sits outside the families. Adding, changing or deleting an [integration](/integrations/overview/#who-can-change-integrations) needs it, because each integration holds a credential; `write:notifications` does not cover those writes. Reading integrations stays under `read:notifications`, with credentials masked.
 
-<Aside type="caution" title="Anything outside those eleven families is refused">
-Scope checking is fail-closed. Account management, billing, authentication, staff endpoints and webhooks are **not** covered by any family, so an M2M client gets a `403` on them no matter what scopes it holds.
+Scope checking is fail-closed. No family covers account management, billing, authentication, staff endpoints or webhooks, so a client is refused there whatever scopes it holds. That includes managing API clients: a client can never mint another client, so use a session or an API key for those operations. The `users` family does not invite, remove or change the role of anyone on the team.
 
-That includes managing API clients themselves, which is deliberate: a client can never mint another client. Use a session or an API key for those operations.
+The [partner](/partners/overview/) client-management endpoints need the Admin role, and a client carries no role, so it cannot use them. A client **can** act inside a partner's client account with the `X-SQ-Account` header, subject to its scopes.
 
-The `users` family reaches contact methods and notification rules only. It does not invite, remove or change the role of anyone on the team.
-
-The [partner](/partners/overview/) client-management endpoints are a separate case: they are refused because every one of them requires the Admin role, and a client carries no role at all. A client **can** act inside a partner's client account with the `X-SQ-Account` header, subject to the scopes it holds.
-</Aside>
-
-Two errors distinguish the cases:
-
-| Response | Meaning |
-|---|---|
-| `403 Insufficient scopes` | The family is mapped but this client lacks the scope. |
-| `403 This endpoint is not available to M2M API clients` | The surface is not covered by any family. |
+A `403` reading `Insufficient scopes` means the client lacks the scope; `This endpoint is not available to M2M API clients` means no family covers the endpoint.
 
 ## Rotate a secret
 
@@ -147,7 +130,7 @@ curl -X POST https://api.siteqwality.com/account/m2m_client/$CLIENT_ID/rotate_se
 
 Rotation is **immediate and has no overlap window**. The moment the call returns, the old secret stops working and the new one is shown once. Deploy the new secret before you rotate, not after.
 
-Owner role required. Rotating a revoked client returns `404`.
+Owner role required.
 
 ## Revoke a client
 
@@ -158,16 +141,13 @@ curl -X DELETE https://api.siteqwality.com/account/m2m_client/$CLIENT_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-Revocation takes effect against the Site Qwality API **immediately**. Every M2M request is checked against the local client record, so an already-issued token stops being accepted on its very next request.
+Revocation takes effect **immediately**: an already-issued token is refused on its next request to the Site Qwality API. The token stays valid at the identity provider until it expires, so revocation means "this client can no longer reach Site Qwality", not "this token is destroyed everywhere".
 
-The token itself remains technically valid at the identity provider until it expires naturally, so treat revocation as "this client can no longer reach Site Qwality" rather than "this token has been destroyed everywhere".
+Owner role required.
 
-Revoking twice is harmless. Owner role required.
+## Other behavior
 
-## Other behavior worth knowing
-
-- A revoked client, a soft-deleted account, or an unknown client all produce `401`.
-- A suspended account can still read through a client, but mutations return `403`.
+- A suspended account can still read through a client but cannot make changes.
 - Every mutating call a client makes is recorded in the [audit log](/enterprise/audit-log/) with actor type `m2m` and the client's ID.
 - There is no "fetch one client" endpoint; list them and filter.
 

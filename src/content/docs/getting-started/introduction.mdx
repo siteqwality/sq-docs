@@ -5,11 +5,9 @@ last_verified: 2026-10-11
 owner: jj
 ---
 
-import { Card, CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Every engineering team duct-tapes the same four tools together: uptime monitoring, observability (metrics + logs + traces + RUM), on-call paging, and a public status page. Site Qwality combines all four into a single product, with a free tier on every product and usage-based pricing for each.
-
-If you're tired of stitching Pingdom + Datadog + PagerDuty + Statuspage and watching the invoices climb in lock-step with your traffic, you're in the right place.
+Site Qwality combines uptime monitoring, observability (metrics, logs, traces and RUM), on-call paging and public status pages in one product, with a free tier and usage-based pricing for each.
 
 ## What's in the platform
 
@@ -37,7 +35,7 @@ Each product area has the same shape:
 - **How-to guides**: task-shaped recipes ("rotate an on-call schedule," "add a custom domain to a status page").
 - **Reference**: every field on every object, with defaults and constraints.
 
-The [API Reference](/api-reference/) is auto-generated from the live Rust handlers, so it's always in sync with what the API actually does.
+The [API Reference](/api-reference/) is generated from the API itself.
 
 To work with Site Qwality from Claude, ChatGPT, Cursor or another AI assistant, see [Connect AI assistants (MCP)](/integrations/mcp/).
 
@@ -66,12 +64,6 @@ To work with Site Qwality from Claude, ChatGPT, Cursor or another AI assistant, 
   />
 </CardGrid>
 
-## A note on plans
+## Plans
 
-Most features in these docs work on the free plan. A few are paid: check intervals under 5 minutes and more than one check location per monitor (a paid uptime plan), more seats and custom dashboards (a paid plan on any product), extra status pages and custom status-page domains ($10/mo each), and SAML single sign-on and SCIM (Enterprise). [Plan limits](/getting-started/plan-limits/) lists every limit; where a feature is paid the relevant page also calls it out in an `Aside`.
-
-On the free plan each monitor checks from one location, by default `aws-us-east-1` (Virginia, AWS). Paid uptime plans can check from any number, and each location counts as one check toward your check volume. See [check locations](/uptime-monitoring/overview/#check-locations).
-
-<Aside type="tip">
-Need help picking a plan, or want to see a demo before signing up? Email <a href="mailto:hello@siteqwality.com">hello@siteqwality.com</a>.
-</Aside>
+Most features work on the free plan. A page about a paid feature names the plan it needs right under its introduction, and [plans and limits](/getting-started/plan-limits/) lists every limit. For help choosing a plan or a demo, email <a href="mailto:hello@siteqwality.com">hello@siteqwality.com</a>.

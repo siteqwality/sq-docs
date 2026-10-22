@@ -5,9 +5,7 @@ last_verified: 2026-10-21
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
-The product uses a small set of nouns consistently. When the docs say "attach a notification group to a monitor," every word means a specific thing. This page defines them.
+The nouns below mean one specific thing everywhere in the product and the docs.
 
 ## Monitoring vocabulary
 
@@ -17,19 +15,19 @@ The umbrella term for any scheduled health check. Site Qwality has five monitor 
 
 ### Check
 
-A single execution of a monitor: one HTTP request, one DNS lookup, one TLS handshake. Each check produces a *result* (`success`, `failure`, plus latency and any captured payload). An HTTP monitor with several check locations produces one check per location per tick, and each one counts toward your check volume.
+A single execution of a monitor: one HTTP request, one DNS lookup, one TLS handshake. Each check produces a *result* (`success`, `failure`, plus latency and any captured payload). An HTTP monitor with several check locations produces one check per location per tick.
 
 ### Run interval
 
-How often a monitor's checks fire. Free plan minimum is 5 minutes (300 seconds); paid uptime plans go down to 30 seconds. Browser checks have their own discrete intervals (`5m`, `10m`, `15m`, `30m`, `1h`).
+How often a monitor's checks fire. The minimum depends on your [plan](/getting-started/plan-limits/). Browser checks have their own fixed intervals (`5m`, `10m`, `15m`, `30m`, `1h`).
 
 ### Check location
 
-A place Site Qwality runs checks from, on AWS, Google Cloud or Microsoft Azure. Each has a stable id of the form `<provider>-<region>`, such as `aws-us-east-1`, and the API field that holds them is `check_regions`. The default is `aws-us-east-1` (Virginia, AWS). The free plan allows one location per monitor; paid uptime plans allow any number, and a new monitor on a paid uptime plan starts on two locations on different providers while the account's projected checks stay within half of its quota. HTTP checks can use any live location; browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1`. The live list is on the [locations page](https://siteqwality.com/locations/). See [check locations](/uptime-monitoring/overview/#check-locations).
+A place Site Qwality runs checks from, on AWS, Google Cloud or Microsoft Azure, with a stable id such as `aws-us-east-1` (the API field is `check_regions`). The default is `aws-us-east-1` (Virginia, AWS). HTTP checks can use any live location; browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1`. See [check locations](/uptime-monitoring/overview/#check-locations).
 
 ### Min healthy regions
 
-When a monitor runs in N locations, this knob says "consider the monitor failing only if fewer than M locations report healthy." With one location it is always 1 of 1. A location that returns no result in a run is left out of that run, so it never counts against the monitor. When only one location of several answers and it failed, the run is inconclusive and the status waits for the next run.
+For a monitor in several locations, how many must report healthy for a check to pass. With one location it is always 1 of 1.
 
 ## Incident vocabulary
 
@@ -42,8 +40,6 @@ An open record of "something is broken." Incidents are opened by hand (dashboard
 - **Responder status:** `triggered` (no one's looking), `acknowledged` (someone's on it), or `resolved`.
 - **Updates:** a chronological log of status changes, posted internally and (optionally) to the public status page.
 - **Monitors and participants:** the monitors it is about, and the people working it.
-
-Auto-created incidents have `auto_created: true`; manually created ones do not.
 
 ### Incident update
 
@@ -59,7 +55,7 @@ A person's claim on a monitor outage, separate from an incident: it records who 
 
 ### Participant
 
-A person working an incident, with a role of `lead`, `responder` or `comms`. The first person to acknowledge becomes the lead. Participants are users already in your account, so they never use a seat. See [Participants](/incident-management/incidents/how-to/participants/).
+A person working an incident, with a role of `lead`, `responder` or `comms`. The first person to acknowledge becomes the lead. See [Participants](/incident-management/incidents/how-to/participants/).
 
 ### Merged incident
 
@@ -77,7 +73,7 @@ A single rotation rule: which users participate, how often they hand off (`daily
 
 ### Override
 
-A hard "user X is on call from time A to time B" entry that beats every layer. Used for "I'm covering for Alice while she's on holiday."
+A "user X is on call from time A to time B" entry that beats every layer, for covering someone's shift.
 
 ### Rotation type
 
@@ -89,11 +85,11 @@ A hard "user X is on call from time A to time B" entry that beats every layer. U
 
 ### Service
 
-A named part of your product, such as `Checkout API`, that ties monitors to incident handling. A service holds the escalation policy to page, an incident creation mode (`manual` or `auto`), a reopen window, an auto-resolve setting, a default severity for the incidents it opens, and optional broadcast targets. In `auto` mode it keeps one open incident that every failing monitor joins. Any monitor type can join it: HTTP monitors, heartbeats and browser checks from the service form, and every type, including TLS, domain, DNS record and page speed checks, through the API. See [Services](/incident-management/services/overview/).
+A named part of your product, such as `Checkout API`, that ties monitors to incident handling. A service holds the escalation policy to page, an incident creation mode (`manual` or `auto`), a reopen window, an auto-resolve setting, a default severity for the incidents it opens, and optional broadcast targets. In `auto` mode it keeps one open incident that every failing monitor joins. Any monitor type can join a service. See [Services](/incident-management/services/overview/).
 
 ### Broadcast target
 
-An email address, a Slack channel or a webhook that a service tells about its incidents: today when one opens and when one resolves. A Slack or webhook target can send with a connected integration, so nothing secret is stored on it, and each target can filter by minimum severity and by lifecycle event. Separate from notification channels.
+An email address, Slack channel or webhook that a service tells when its incidents open and resolve, optionally filtered by severity. Separate from notification channels.
 
 ## Escalation vocabulary
 
@@ -173,7 +169,7 @@ A numeric time-series: `gauge` (current value), `counter` (monotonically increas
 
 ### Log
 
-A discrete event with a timestamp, level, message, and arbitrary structured metadata. Stored in ClickHouse, queried with the Site Qwality query syntax.
+A discrete event with a timestamp, level, message, and arbitrary structured metadata.
 
 ### Trace
 
@@ -189,7 +185,7 @@ One SDK installation, identified by an `application_id` and a `client_token`. Ea
 
 ### Session replay
 
-A reconstructable video of a user session, recorded by the RUM SDK. Privacy-aware (`mask_inputs`, `mask_text`). Activated only when a Replay [recording rule](/observability/rum/how-to/session-filters/) matches the session.
+A recording of a user session, captured by the RUM SDK. Privacy-aware (`mask_inputs`, `mask_text`). Activated only when a Replay [recording rule](/observability/rum/how-to/session-filters/) matches the session.
 
 ## Account vocabulary
 

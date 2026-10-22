@@ -5,9 +5,9 @@ last_verified: 2026-08-01
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
+import { Steps, LinkCard } from '@astrojs/starlight/components';
 
-Recurring maintenance windows fire on a schedule instead of a single timestamp pair. Two recurrence types are supported: `daily` and `weekly`.
+A recurring window repeats `daily`, or `weekly` on chosen days, instead of running once. Recurrences have no end date, so for something that happens only a few times (such as a quarterly DB rotation), create one-time windows instead.
 
 ## In the dashboard
 
@@ -25,13 +25,9 @@ Recurring maintenance windows fire on a schedule instead of a single timestamp p
 
 </Steps>
 
-To change a window later, use the pencil icon (**Edit window**) on its row and click **Update Window**. The cross icon (**Delete window**) removes it.
-
-The API examples below create the same windows.
+To change or remove a window later, use **Edit window** or **Delete window** on its row.
 
 ## Daily: same window every day
-
-Useful for nightly batch jobs, regular cache warm-ups, or anything else that hits a known short window every 24 hours.
 
 ```bash
 curl -X POST https://api.siteqwality.com/maintenance_windows \
@@ -50,13 +46,9 @@ curl -X POST https://api.siteqwality.com/maintenance_windows \
   }'
 ```
 
-`start_time` and `end_time` are 24-hour `HH:MM` strings interpreted in the window's `timezone`. The window fires from `start_time` to `end_time` every day.
-
-If `end_time < start_time`, the window crosses midnight: e.g. `start_time: "23:00"`, `end_time: "01:00"` runs from 11pm to 1am.
+`start_time` and `end_time` are 24-hour `HH:MM` strings interpreted in the window's `timezone`. If `end_time` is earlier than `start_time`, the window crosses midnight: `start_time: "23:00"`, `end_time: "01:00"` runs from 11pm to 1am. One window covers it.
 
 ## Weekly: chosen days each week
-
-Useful for weekly deploys, weekend-only maintenance, or vendor maintenance on a specific day.
 
 ```bash
 curl -X POST https://api.siteqwality.com/maintenance_windows \
@@ -76,19 +68,11 @@ curl -X POST https://api.siteqwality.com/maintenance_windows \
   }'
 ```
 
-`days` is an array of day names, matched case-insensitively. Full English names (`monday` .. `sunday`) and three-letter abbreviations (`mon` .. `sun`) both work; anything else is rejected at creation. Combine multiple:
-
-```json
-"days": ["saturday", "sunday"]
-```
-
-…to silence both weekend days.
+`days` is an array of day names, matched case-insensitively. Full English names (`monday` .. `sunday`) and three-letter abbreviations (`mon` .. `sun`) both work; anything else is rejected at creation. List several to cover each, such as `"days": ["saturday", "sunday"]` for both weekend days.
 
 ## Timezones
 
-Always set `timezone` explicitly. Defaulting to UTC is fine if your team operates that way, but most engineering teams want their windows in their primary office timezone so "02:00" means "the dead of night locally."
-
-Valid values are IANA timezone names: `America/Los_Angeles`, `America/New_York`, `Europe/London`, `Asia/Tokyo`, etc.
+Set `timezone` explicitly. It defaults to `UTC`, so "02:00" means 02:00 UTC unless you choose your team's zone. Values are IANA timezone names: `America/Los_Angeles`, `America/New_York`, `Europe/London`, `Asia/Tokyo`, etc.
 
 ## Updating a recurring window
 
@@ -110,22 +94,12 @@ curl -X PUT https://api.siteqwality.com/maintenance_windows/$WINDOW_ID \
 
 ## Disabling vs deleting
 
-There's no "disabled" flag. To stop a window from firing, delete it with **Delete window** in the dashboard or through the API; to keep it for reference, leave it alone (it has no real cost beyond a row in the DB).
+Windows have no disabled flag. To stop a window from firing, delete it with **Delete window** in the dashboard or through the API:
 
 ```bash
 curl -X DELETE https://api.siteqwality.com/maintenance_windows/$WINDOW_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
-
-## Common mistakes
-
-- **Forgetting the timezone.** UTC for "02:00" lands at 7pm Pacific, and most teams want their actual local time.
-- **`tags: []`.** Empty tags is invalid (the API rejects it); an unscoped window doesn't make sense. There is no wildcard tag: to silence everything, give every monitor a shared tag (like `env:prod`) and use that.
-- **Daily window crossing midnight.** Set `start_time > end_time` and the window correctly wraps. Don't try to model it as two separate windows.
-
-<Aside type="tip">
-For one-off events that happen on a known recurring schedule but only once or twice (e.g. a quarterly DB rotation), prefer a series of one-time windows over a recurring rule with `effective_until`: recurrences don't currently support a `until` clause.
-</Aside>
 
 ## See also
 

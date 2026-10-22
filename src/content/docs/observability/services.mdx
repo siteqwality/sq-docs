@@ -7,9 +7,9 @@ owner: jj
 
 Open Services to explore services observed in telemetry. Use stable `service.name`, environment and version resource fields. A service name groups telemetry; a linked incident service supplies ownership, tier, on-call and runbook context.
 
-Filter by time, service and environment. Service and endpoint RED shows received request rate, errors and duration with sampling/quality indicators. RED is derived from received spans before customer trace exclusion/sampling where supported, not a reconstruction of traffic the SDK never sent. Weighted counts can be estimates. A dependency map needs actual matching client/server trace relationships; missing spans and short retention can leave edges incomplete.
+Service and endpoint RED shows received request rate, errors and duration with sampling and quality indicators. RED is derived from received spans, before your trace exclusion or sampling rules where supported. It does not reconstruct traffic the SDK never sent, and weighted counts can be estimates. A dependency map needs actual matching client/server trace relationships; missing spans and short retention can leave edges incomplete.
 
-Deployment markers come from observed service versions and deployment information. They help compare error/rate/duration changes; they are evidence of reported versions, not proof that a whole fleet deployed. Open related logs, metrics, trace samples and Errors with the same time range. Use the existing service controls to link owners, tier, incident service and runbook. Permissions still apply to every destination.
+Deployment markers come from observed service versions and deployment information. They help compare error, rate and duration changes, but they show reported versions, not proof that a whole fleet deployed. Open related logs, metrics, trace samples and Errors with the same time range. Use the service controls to link owners, tier, incident service and runbook.
 
 | Read endpoint | Purpose |
 |---|---|
@@ -22,4 +22,4 @@ Deployment markers come from observed service versions and deployment informatio
 | `GET /services/deployments` | Deployment markers. |
 | `PUT /services/{id}/telemetry-links` | Link an incident service to telemetry identities. |
 
-These are API-relative paths at `https://api.siteqwality.com`. URL-encode names. Derived replacements can be pending/partial; wait or narrow the query rather than treating an empty result as zero traffic. The source and precision of long-range results depend on retention.
+These are API-relative paths at `https://api.siteqwality.com`. URL-encode names. Derived results can be pending or partial; wait or narrow the query rather than treating an empty result as zero traffic.

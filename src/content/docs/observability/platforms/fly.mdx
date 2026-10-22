@@ -7,7 +7,7 @@ owner: jj
 
 import BeforeYouStart from '../../../../components/BeforeYouStart.astro';
 
-This guide configures logs. Replace `YOUR_INGEST_KEY` with your key on your server, never in a public example.
+This guide covers logs. Replace `YOUR_INGEST_KEY` with your key.
 
 <BeforeYouStart />
 
@@ -23,7 +23,7 @@ fly launch --no-deploy
 
 ## 2. Append an HTTP sink to vector.toml
 
-The official shipper configuration uses the log_json transform. Preserve it and its NATS source when adding this sink. Store the key as a Fly secret and use Vector environment substitution in production. Keep a single NATS consumer queue for replicas to avoid duplicate logs.
+The sink reads from the shipper's `log_json` transform. In production, store the key as a Fly secret and use Vector environment substitution. Keep a single NATS consumer queue across replicas to avoid duplicate logs.
 
 ```toml
 [sinks.siteqwality]
@@ -43,7 +43,7 @@ Authorization = "Bearer YOUR_INGEST_KEY"
 
 ## 3. Deploy the shipper configuration
 
-Inspect fly logs for sink errors and open Logs in Site Qwality. Add the private Vector health check from Fly documentation so a stalled shipper is visible.
+Check `fly logs` for sink errors, then open Logs in Site Qwality. Add the private Vector health check from the Fly documentation so a stalled shipper is visible.
 
 ```bash
 fly deploy --file-local="/etc/vector/vector.toml=./vector.toml"
@@ -51,14 +51,13 @@ fly deploy --file-local="/etc/vector/vector.toml=./vector.toml"
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute, and a page that says it is waiting for data switches to your data on its own. Nothing arriving? See what each status code means in [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
 Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pricing and retention](/observability/billing/)
 - [Pipelines, access and privacy](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream Fly.io documentation](https://docs.fly.io/monitoring/exporting-logs)
