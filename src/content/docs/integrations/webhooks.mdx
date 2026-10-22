@@ -37,7 +37,28 @@ The response carries the secret in `details.signing_secret`. It starts with `whs
 
 Adding, changing or removing a webhook integration takes an account admin, or an API key or API client with `integrations:manage` (see [who can change integrations](/integrations/overview/#who-can-change-integrations)).
 
-The URL reads back as its scheme and host only, even in the create response. To point at a different URL, add a new integration and delete the old one.
+The URL reads back as its scheme and host only, even in the create response.
+
+## Change the URL, authentication and headers
+
+Open the webhook integration from **Manage → Integrations**. The **Endpoint** card shows the URL, the authentication and the custom header names, and **Change** replaces each one. Through the API, `PATCH /v1/integrations/{id}` with `integrations:manage`:
+
+```bash
+curl -X PATCH https://api.siteqwality.com/v1/integrations/<webhook-integration-id> \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "credentials": { "url": "https://events.example.com/sq-webhook-v2" },
+    "auth": { "type": "bearer", "token": "<token-your-server-expects>" },
+    "headers": [{ "name": "X-Api-Key", "value": "<key-your-server-expects>" }]
+  }'
+```
+
+- `credentials.url` moves deliveries to the new URL from the next alert. The signing secret stays.
+- `auth` is `{"type": "bearer", "token"}`, `{"type": "basic", "username", "password"}` or `{"type": "none"}`. It goes in the `Authorization` header.
+- `headers` replaces the whole set, at most 10; `[]` removes them. Names are refused if they are `Host`, `Content-Length`, `Content-Type`, `Authorization` (use `auth`), `Cookie`, `Proxy-Authorization`, `Forwarded`, `Transfer-Encoding`, `Connection`, `Upgrade`, `TE`, `Expect`, `User-Agent`, or start with `X-Forwarded-`, `webhook-` or `X-SiteQwality-`. Values are one line of up to 1,024 printable characters.
+
+Send any of the three alone. Token, password and header values are stored encrypted and never shown again: reads return `webhook_request` with the header names, the auth type and a basic auth username. The delivery log keeps these headers' names with their values masked. Any of these changes starts the integration's health over.
 
 The URL must use a public host. A private, loopback or link-local address (`10.x`, `192.168.x`, `127.0.0.1`, `localhost`, `169.254.169.254`, and their IPv6 equivalents) is refused when you save it, and a hostname that resolves only to such addresses at delivery time fails with `blocked_destination` and is not retried.
 

@@ -13,5 +13,10 @@
     "route": "POST /v1/integrations/{integration_id}/signing-secret/rotate",
     "source": "core-rs api/src/routes/v1.rs (integrations::webhook::secret::rotate_signing_secret_v1)",
     "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "PATCH /v1/integrations/{integration_id}",
+    "source": "core-rs api/src/routes/v1.rs (integrations::edit::edit_integration)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
   }
 ]
