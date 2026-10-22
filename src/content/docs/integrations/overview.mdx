@@ -50,6 +50,26 @@ Some alert sources (heartbeat monitors, TLS expiry, [page-speed alerts](/uptime-
 2. In a **notification group**, create a **notification channel** that references that integration, with any per-channel detail (such as the Slack channel, or the PagerDuty severity).
 3. Attach the group to your **monitors**.
 
+Right after you connect an integration, the dashboard does steps 2 and 3 for you: choose a group or create one, choose which monitors alert it (the ones that already do, every monitor, or ones you pick), then send a test. **Skip for now** leaves the integration unrouted, and its card says **Not receiving alerts** until a group, a [service](/incident-management/services/overview/) or an [on-call contact method](/incident-management/notifications/how-to/contact-methods/) sends to it. **Route alerts** on the card opens the same step.
+
+Through the API, one call does the same. It needs an admin or the `integrations:manage` scope:
+
+```bash
+curl -X POST https://api.siteqwality.com/v1/integrations/<integration-id>/routes \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "group": { "name": "Ops alerts" },
+    "monitors": "all"
+  }'
+```
+
+- `group`: `{"id": "<group-id>"}` for one of your groups, or `{"name": "..."}` to create one.
+- `monitors`: `"group"` (the default) leaves monitors as they are, `"all"` adds the group to every monitor, or pass a list of up to 1,000 monitor ids.
+- `slack_channel`: for Slack, the channel to post to, such as `#ops-alerts`. Other types refuse it.
+
+It answers `201` with `notification_group_id`, `notification_id`, `group_created` and `monitors_attached` (the monitors that did not alert the group before). It answers `409` when the group already sends to the integration (for Slack, to that channel) or a group or account channel limit is reached, and `422` for a group or monitor that is not in your account. Nothing changes when it refuses. The integration list (`GET /integration`) marks an integration nothing sends to with `"routed": false`.
+
 ## Who can change integrations
 
 Each integration holds a credential, so only account admins can add, change or remove one. Members, auditors and viewers can see them.

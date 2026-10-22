@@ -18,5 +18,10 @@
     "route": "PATCH /v1/integrations/{integration_id}",
     "source": "core-rs api/src/routes/v1.rs (integrations::edit::edit_integration)",
     "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "POST /v1/integrations/{integration_id}/routes",
+    "source": "core-rs api/src/routes/v1.rs (integrations::routes::route_integration)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
   }
 ]
