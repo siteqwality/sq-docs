@@ -285,17 +285,17 @@ In the monitor's alert history, the alert's receipt reads `delayed` while retrie
 
 ## Delivery log and replay
 
-Open the webhook integration from **Manage → Integrations** to see every delivery to the endpoint, each attempt, your server's status code and how long it took. Deliveries are kept for 30 days. From a delivery you can replay it.
+Open the webhook integration from **Manage → Integrations** to see every delivery to the endpoint and, while one is still retrying, when it tries next. Deliveries are kept for 30 days. An account admin can open a delivery to see each attempt and to replay it.
 
-Each attempt keeps the first 8 KiB of your server's response body (only its size when it is not UTF-8 text). Response headers keep their names, but only a short list of harmless headers keep their values.
+Each attempt records your server's status code, how long it took, and the first 8 KiB of the response body (only its size when it is not UTF-8 text). A failed attempt also records where it stopped in `error_stage`: `dns` (the host name did not resolve), `connect` (no connection), `tls` (the handshake failed), `timeout` or `http` (your server answered with something other than a 2xx, or the connection broke mid-request). Response headers keep their names; only `Content-Type`, `Content-Length`, `Date`, `Retry-After` and `Server` keep their values, and `Location` keeps only its host.
 
 Through the API:
 
-- `GET /integration/webhook/{id}/deliveries?limit=25&offset=0&state=failed` lists deliveries (`limit` up to 100; `state` is `pending`, `delivered`, `failed` or `cancelled`).
-- `GET /integration/webhook/{id}/delivery/{delivery_id}` returns one delivery with the request body and every attempt.
+- `GET /integration/webhook/{id}/deliveries?limit=25&offset=0&state=failed` lists deliveries (`limit` up to 100; `state` is `pending`, `delivered`, `failed` or `cancelled`). A pending delivery carries `next_attempt_at`.
+- `GET /integration/webhook/{id}/delivery/{delivery_id}` returns one delivery with the request body and every attempt, with their headers and response bodies. It is for account admins only.
 - `POST /integration/webhook/{id}/delivery/{delivery_id}/replay` sends it again and returns the new delivery's ID.
 
-With an API key, reading the log needs `read:notifications` and replaying needs `write:notifications` (not `integrations:manage`).
+With an API key, listing deliveries needs `read:notifications`, opening one also needs `integrations:manage`, and replaying needs `write:notifications`.
 
 A replay is a new delivery with its own timestamp and a signature under the current secret, and no alert receipt of its own. It keeps the original's body and `webhook-id`, so a receiver that drops duplicates by ID drops it too when the original already arrived. `X-SiteQwality-Replay-Of` names the delivery it replays, and each delivery in the log carries its `message_id`. A request body over 64 KiB is sent in full, but the log keeps only its first 64 KiB, so that delivery cannot be replayed.
 
