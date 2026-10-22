@@ -31,9 +31,15 @@ New applications start on the **Balanced** [privacy level](/observability/rum/ho
 </TabItem>
 <TabItem label="API">
 
-With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY` and the application's `id` (from `GET /rum`) as `APP_ID`:
 
-Send only the keys you change; the rest keep their stored values. Changing privacy needs an account admin or an API key with no scope restriction:
+```bash
+# settings.privacy: a level masks inputs; with level null, check mask_inputs
+curl https://api.siteqwality.com/rum/$APP_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+If your app displays sensitive content, switch to Strict. Send only the keys you change; the rest keep their stored values. Changing privacy needs an account admin or an API key with no scope restriction:
 
 ```bash
 curl -X PATCH https://api.siteqwality.com/rum/$APP_ID \
@@ -47,7 +53,7 @@ curl -X PATCH https://api.siteqwality.com/rum/$APP_ID \
 
 ## 2. Add a recording rule to enable replay
 
-Replay activates when a session matches a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application already has one, **Errored sessions**, which replays every session with an error, so you can skip this step. If you deleted it, open the application's **Recording rules** page, click **New recording rule**, choose **Replay**, add an **Error** condition and click **Save rule**. Or through the API:
+Replay activates when a session matches a Replay [recording rule](/observability/rum/how-to/session-filters/). A new application already has one, **Errored sessions**, which replays every session with an error, so you can skip this step. If you deleted it, open the application's **Recording rules** page, click **New recording rule**, name it `Errored sessions`, choose **Replay**, add an **Error** condition, then click **Preview rule** and **Save rule**. Or through the API:
 
 ```bash
 curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
@@ -77,22 +83,28 @@ Because an error rule could match any session, the recorder has been buffering s
 
 1. In **RUM → Sessions**, find your session (it has the error indicator).
 
-2. Click its **Replay** badge to open the player. From the error's page under **RUM → Errors**, **Watch replay** opens the same replay at the error.
+2. Click the play button on its row to open the player. From the error's page under **RUM → Errors**, **Watch replay** opens the same replay at the error.
 
-3. Press play, and jump to the error with its marker or **Next error** (`]`).
+3. Press play, and jump to the error with its marker or **Next error** (`E`).
 
 </Steps>
 
 </TabItem>
 <TabItem label="API">
 
+The key needs the `read:rum_replay` and `read:rum` scopes.
+
 ```bash
+# Sessions with a replay, newest first: export a session_id as SESSION_ID
+curl "https://api.siteqwality.com/rum/$APP_ID/sessions?has_replay=true" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+
 # The replay manifest: every window, page load and chunk, without URLs
 curl https://api.siteqwality.com/rum/$APP_ID/sessions/$SESSION_ID/replay \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-Then request short-lived URLs for the chunks you want to play with `POST /rum/{app_id}/sessions/{session_id}/replay/chunks`. The key needs the `read:rum_replay` and `read:rum` scopes. See [retrieval](/observability/replay/reference/#retrieval).
+Then request short-lived URLs for the chunks you want to play with `POST /rum/{app_id}/sessions/{session_id}/replay/chunks`. See [retrieval](/observability/replay/reference/#retrieval).
 
 </TabItem>
 </Tabs>
@@ -111,4 +123,3 @@ Before rolling out replay broadly:
 
 <LinkCard title="Recording rules" description="More rule patterns." href="/observability/rum/how-to/session-filters/" />
 <LinkCard title="Replay overview" description="What's captured, retention, pricing." href="/observability/replay/overview/" />
-<LinkCard title="RUM overview" description="The parent observability pillar." href="/observability/rum/overview/" />

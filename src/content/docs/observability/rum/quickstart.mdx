@@ -1,6 +1,6 @@
 ---
 title: RUM quickstart
-description: Install the JS SDK, create an application, see your first session in 5 minutes.
+description: Create a RUM application, install the JS SDK and see your first session.
 last_verified: 2026-10-10
 owner: jj
 ---
@@ -14,11 +14,11 @@ import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 <Steps>
 
-1. Go to **Observe → RUM** and click **Add application**.
+1. Go to **Observe → RUM**. Without an application yet, the setup wizard opens; otherwise click **Add application**.
 
-2. **Name:** `Web app`. **Domain** (optional): `app.example.com`. Click **Create application**.
+2. Name it `Web app`, set **Domain** (optional) to `app.example.com` and click **Create application**.
 
-3. Copy the `application_id` from the **Install snippet**, and the **Client token**. Both are public and ship in your bundle.
+3. Copy the application ID and the client token shown with the install snippet. Both are public and ship in your bundle.
 
 </Steps>
 
@@ -33,11 +33,11 @@ curl -X POST https://api.siteqwality.com/rum \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Web app",
-    "domain": "https://app.example.com"
+    "domain": "app.example.com"
   }'
 ```
 
-The response includes `id` (the `application_id`) and `client_token`.
+The response includes `id` (the `application_id`) and `client_token`. Export the `id` as `APP_ID` for the API steps below.
 
 </TabItem>
 </Tabs>
@@ -91,7 +91,7 @@ Paste this into your page's `<head>`, as high as you can:
 </script>
 ```
 
-The snippet loads the SDK asynchronously and queues your calls and any page errors until it arrives. It is a classic script and needs no `type="module"`. To pin a release, load `/rum/v2.2.1/sdk.min.js` instead; see the [release channels](/sdk/v2/#install).
+The snippet loads the SDK asynchronously and queues your calls and any page errors until it arrives. It is a classic script and needs no `type="module"`. To pin a release, load `/rum/v2.3.1/sdk.min.js` instead; see the [release channels](/sdk/v2/#install).
 
 </TabItem>
 </Tabs>
@@ -111,7 +111,7 @@ Load your app in a fresh browser. The SDK starts a session immediately and posts
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-In **RUM → Sessions**, your session appears at the top. If you came from the setup wizard, its verify step turns green within about 10 seconds of the first page view.
+In **RUM → Sessions**, your session appears at the top. In the setup wizard, **Verify data** shows **Receiving data** once the first page view lands.
 
 </TabItem>
 <TabItem label="API">
@@ -130,7 +130,7 @@ curl https://api.siteqwality.com/rum/$APP_ID/sessions \
 
 If nothing shows up after a minute, check that:
 
-- The snippet sits in the page's `<head>`.
+- The CDN snippet sits in the page's `<head>`, or `init()` runs in your app's entry point.
 - Your [Content Security Policy](/observability/rum/how-to/csp/) allows `https://cdn.siteqwality.com` in `script-src` and `connect-src`, and `https://in.siteqwality.com` and `https://in-replay.siteqwality.com` in `connect-src`.
 - Consent is granted, if you passed `trackingConsent: 'pending'`. `SiteQwalityRUM.getStatus()` in the browser console shows the consent state and what the SDK dropped.
 - No ad blocker is blocking those hosts in your test browser.
@@ -169,10 +169,9 @@ try {
 
 Upload source maps so minified stacks resolve to original source. See the [Source maps how-to](/observability/rum/how-to/source-maps/).
 
-Set `version` in `init()` and change it on every deploy: errors carry it, and it must match the release you upload source maps to, byte for byte.
+Set `version` in `init()` and change it on every deploy: errors carry it, and errors without a Debug ID match source maps by it, so keep it identical to the release you upload them to.
 
 ## What's next
 
-<LinkCard title="Source maps" description="Symbolicate stack traces in the dashboard." href="/observability/rum/how-to/source-maps/" />
 <LinkCard title="Recording rules" description="Capture detailed sessions only when something interesting happens." href="/observability/rum/how-to/session-filters/" />
 <LinkCard title="Session Replay" description="Watch what users actually did." href="/observability/replay/overview/" />

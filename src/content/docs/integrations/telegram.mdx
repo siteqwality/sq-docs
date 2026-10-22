@@ -15,13 +15,13 @@ The Telegram integration uses the Site Qwality bot. You send the bot a one-time 
 
 1. Go to **Manage → Integrations** and click the **Telegram** card. Give the integration a name and click **Start Setup**.
 
-2. The dashboard shows a link to the Site Qwality bot (`t.me/SiteQwality_bot`) that carries a one-time setup code. Open it in Telegram and press **Start**. This sends `/start <setup-code>` to the bot, which records the chat. The bot does not reply.
+2. The dashboard shows a link to the Site Qwality bot (`t.me/SiteQwality_bot`) that carries a one-time setup code. Open it in Telegram and press **Start**. This sends `/start <setup-code>` to the bot, which records the chat. The bot does not reply. For a group chat, add the bot to the group instead, then send `/start <setup-code>` in the group.
 
 3. Back in Site Qwality, click **Check**. When it shows **Completed**, click **Add**. The integration is created for that chat.
 
 </Steps>
 
-For a group chat, add the bot to the group first, then send `/start <setup-code>` in the group.
+Send the code to the bot within 15 minutes of starting the setup, and finish adding the integration within the hour. Otherwise, start again.
 
 To script the same flow through the API:
 
@@ -81,9 +81,8 @@ For an HTTP monitor, a message has a title (**Monitor Down** or **Monitor Up**),
 
 ## Notes
 
-- Setup codes expire one hour after you start the setup. If the code expires before you message the bot, start again.
 - One integration per chat. Use multiple integrations for multiple destinations.
-- A send is tried once and is not queued or retried later, so a message Telegram rate-limits can be lost.
+- A send is tried once, and a refusal from Telegram is recorded as rejected. Any other failure, a rate limit included, runs the send again up to twice, so a duplicate message is possible. If those runs fail too, the alert is dropped with no record in alert history. See [delivery guarantees](/incident-management/notifications/channels/#delivery-guarantees-by-channel).
 - Telegram is a recipient you choose. Telegram processes the messages under its own terms; it is not a Site Qwality subprocessor.
 
 ## See also

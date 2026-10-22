@@ -1,6 +1,6 @@
 ---
 title: Incidents quickstart
-description: Open, update, acknowledge, and resolve an incident in five minutes, from the dashboard or the API.
+description: Open, update, acknowledge, and resolve an incident from the dashboard or the API.
 last_verified: 2026-10-16
 owner: jj
 ---
@@ -26,8 +26,6 @@ Create a manual incident, post an update, acknowledge it and resolve it.
 
 3. Click **Report Incident**. The incident opens.
 
-4. Under **Monitors**, click **Add monitor**, pick your `prod-api` monitor and click **Add**. Optional, but it drives the status-page banner.
-
 </Steps>
 
 </TabItem>
@@ -42,12 +40,11 @@ curl -X POST https://api.siteqwality.com/incident \
   -d '{
     "title": "Investigating elevated 5xx errors on the API",
     "severity": "major",
-    "message": "Several monitors reported failures starting around 14:30 UTC. We are investigating.",
-    "monitors": [{ "monitor_id": "a3c1f5e0-1234-4abc-9def-aaaaaaaaaaaa", "monitor_type": "http" }]
+    "message": "Several monitors reported failures starting around 14:30 UTC. We are investigating."
   }'
 ```
 
-Save the `id` from the response.
+Export the `id` from the response as `INCIDENT_ID`; the next steps use it.
 
 </TabItem>
 </Tabs>
@@ -79,11 +76,11 @@ curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/update \
 </TabItem>
 </Tabs>
 
-An update with a new `status` advances the incident. Don't skip statuses: go `investigating` → `identified` → `monitoring` → `resolved`.
+An update with a new `status` advances the incident: `investigating` → `identified` → `monitoring` → `resolved`.
 
 ## 3. Acknowledge
 
-Acknowledging stops escalation. It does *not* resolve the incident.
+Acknowledging records that someone owns the incident and stops any escalation. It does *not* resolve the incident.
 
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
@@ -92,6 +89,8 @@ Click the **Acknowledge** button on the incident.
 
 </TabItem>
 <TabItem label="API">
+
+An API key acknowledges on behalf of a user: `acknowledged_by` takes your user ID, which `GET /account/info` lists.
 
 ```bash
 curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/acknowledge \
@@ -103,7 +102,7 @@ curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/acknowledge \
 </TabItem>
 </Tabs>
 
-`responder_status` flips to `acknowledged` and escalation stops.
+`responder_status` flips to `acknowledged`.
 
 ## 4. Resolve
 
@@ -138,8 +137,6 @@ curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/resolve \
 </Tabs>
 
 Both paths set `status: resolved`, `responder_status: resolved`, and `resolved_at`.
-
-An auto-created incident resolves itself when every monitor on it recovers, unless someone acknowledged it and the service keeps the default `unless_acknowledged` [auto-resolve](/incident-management/services/overview/#auto-resolve) setting. A new failure within the service's [reopen window](/incident-management/services/overview/#reopen-window) reopens it.
 
 ## What's next
 

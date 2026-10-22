@@ -53,7 +53,7 @@ Flush intervals, batch sizes and session timeouts are fixed in the SDK. Endpoint
 
 ## Where you set it
 
-In the dashboard, **RUM → Settings** holds the masking toggles, click names, excluded resources and frustration selectors, and **RUM → Recording rules** the recording rules. Everything else is set through the API:
+In the dashboard, **RUM → Settings** holds the settings on this page, and **RUM → Recording rules** the recording rules. Through the API:
 
 - `PATCH /rum/{app_id}` with `settings` holding only the keys you change. Nested objects merge key by key, arrays and single values replace, and `null` clears a nullable key such as `privacy.level`. Unknown keys are refused, so a typo cannot pass as a save. The same request takes `allowed_origins` and `replay_monthly_target`.
 - `PUT /rum/{app_id}` with `settings` merges the same way but ignores unknown keys.

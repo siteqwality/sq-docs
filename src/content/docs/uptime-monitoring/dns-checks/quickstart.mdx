@@ -25,34 +25,18 @@ This turns on DNS monitoring for an existing [HTTP check](/uptime-monitoring/htt
 </TabItem>
 <TabItem label="API">
 
-With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`, and `$JOB_ID` set to the HTTP check's `id`:
 
 ```bash
-# On an existing check
 curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "monitor_dns": true }'
 ```
 
-Or at create time:
+New HTTP checks have it on unless created with `"monitor_dns": false`. Send the check's current `auth_type`, `content_type` and `custom_http_headers` in the same `PUT` if it uses them: leaving them out clears them.
 
-```bash
-curl -X POST https://api.siteqwality.com/http/job \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "friendly_name": "API homepage",
-    "method": "GET",
-    "uri": "https://api.example.com/",
-    "monitor_tls": true,
-    "monitor_dns": true,
-    "timeout_ms": 15000,
-    "run_interval_seconds": 600
-  }'
-```
-
-The HTTP check's response carries the paired check's id as `dns_job_id`.
+The HTTP check's response carries the paired check's id as `dns_job_id`; the API steps below use it as `$DNS_JOB_ID`.
 
 </TabItem>
 </Tabs>
@@ -64,7 +48,7 @@ The check runs on a daily schedule with a flexible window of up to four hours, s
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-The HTTP check page shows a **DNS** sub-card with the current status, the registrable domain being monitored, and the expiry date once the first run completes.
+The HTTP check page shows a **Domain** tile with the status and days until expiry. The **Domain Registration** section of the **Details** panel shows the registrable domain being monitored and, once the first run completes, the expiry date.
 
 </TabItem>
 <TabItem label="API">
@@ -136,9 +120,9 @@ A domain on one of them reports `registry_publishes_expiry: false`, `expiry_date
 
 <Steps>
 
-1. Open the HTTP check and find the domain card. On these TLDs it says the registry publishes no expiry date, instead of showing a countdown.
+1. Open the HTTP check and find **Domain Registration** in the **Details** panel. On these TLDs it says the registry publishes no expiry date, instead of showing a date.
 
-2. Pick the **Renewal date** and click **Save**.
+2. Under **Enter the renewal date**, pick the date and click **Save**.
 
 </Steps>
 

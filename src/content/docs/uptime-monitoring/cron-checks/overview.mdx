@@ -29,20 +29,20 @@ A heartbeat that keeps flipping between late and on time is held like a flapping
 
 ## How it works
 
-1. You create a cron check in Site Qwality with a `check_interval_seconds`, say `86400` for a daily job. Site Qwality returns a `cron_job_id`.
+1. You create a cron check in Site Qwality with a `check_interval_seconds`, say `86400` for a daily job. Site Qwality returns the check's `id`.
 2. Your job pings `https://ping.siteqwality.com/<account-id>/<cron-job-id>` at the end of every successful run. The ping needs no API key: the URL itself is the credential, so treat it like a secret.
 3. Site Qwality records each ping with a timestamp, source IP, and headers, queryable via `GET /cron/job/{cron_job_id}/recent`.
 4. Each cron check gets its own evaluation schedule that fires at the same cadence as `check_interval_seconds`. At each evaluation, the check fails when the newest ping is older than `check_interval_seconds` (or when no ping has ever arrived).
 5. The next successful ping flips status back to healthy at the following evaluation.
 
-Because the evaluation runs at the same cadence as the expected pings, a missed ping is detected between one and two intervals after the last successful one, depending on how the two schedules line up. A slightly delayed job (running 24h 5m instead of exactly 24h) usually doesn't page for the same reason; see [grace period notes](/uptime-monitoring/cron-checks/how-to/grace-period/).
+Because the evaluation runs at the same cadence as the expected pings, a missed ping is detected between one and two intervals after the last successful one, depending on how the two schedules line up. A slightly delayed job (running 24h 5m instead of exactly 24h) usually doesn't alert for the same reason; see [grace period notes](/uptime-monitoring/cron-checks/how-to/grace-period/).
 
 Every field and the ping contract are in the [cron check reference](/uptime-monitoring/cron-checks/reference/).
 
 ## See also
 
 <CardGrid>
-  <LinkCard title="Quickstart" description="Create your first heartbeat in 5 minutes." href="/uptime-monitoring/cron-checks/quickstart/" />
+  <LinkCard title="Quickstart" description="Set up a heartbeat for a daily job and test its alert." href="/uptime-monitoring/cron-checks/quickstart/" />
   <LinkCard title="Sending heartbeats" description="Best practices for the actual ping in your jobs." href="/uptime-monitoring/cron-checks/how-to/heartbeats/" />
   <LinkCard title="Grace period notes" description="How late is too late." href="/uptime-monitoring/cron-checks/how-to/grace-period/" />
 </CardGrid>

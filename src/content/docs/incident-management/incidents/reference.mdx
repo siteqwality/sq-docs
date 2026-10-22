@@ -138,7 +138,7 @@ Resolving a published incident always posts a public `resolved` update. The text
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `title` | string | yes | Incident title. |
-| `severity` | enum | yes | `minor` / `major` / `critical`. |
+| `severity` | enum | without `service_id` | `minor` / `major` / `critical`. Defaults to the service's default severity. |
 | `message` | string | yes | Text of the first incident update. |
 | `status_page_id` | uuid | no | Publish to a status page at creation. |
 | `monitors` | object[] | no | Affected monitors: `{ "monitor_id", "monitor_type", "impact" }`, with `impact` optional. |
@@ -172,7 +172,7 @@ Every field is optional. Send only what changes:
 
 | Field | Type | Description |
 |---|---|---|
-| `acknowledged_by` | uuid | Optional when authenticated as a user (defaults to you). Required when calling with an API key. |
+| `acknowledged_by` | uuid | Required with an API key or API client: a user in your account. A signed-in user always acknowledges as themselves. |
 
 ### Resolve (`POST /incident/{incident_id}/resolve`)
 

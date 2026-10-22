@@ -11,7 +11,7 @@ A status page lists its components in one flat list by default. With a **layout*
 
 Besides HTTP and browser checks, a page can show a **heartbeat** (one of your heartbeat monitors) and a **manual component** (no monitor behind it; you set its status). Any component can also carry a **status override**: a status you set by hand, with an optional note for visitors and an optional end time.
 
-In the dashboard, open the status page and use the **Layout** tab: **Add component** and **Add heartbeat** add the new kinds, each row's menu sets or clears its status override, and you add and rename groups and move components with the arrows, the group menu or drag and drop. New components, heartbeats and overrides go live at once; the layout waits for **Save**. The rest of this page does the same through the API.
+In the dashboard, open the status page and use the **Layout** tab: **Add component** and **Add heartbeat** add the new kinds, each row's menu sets or clears its status override, and you add and rename groups and move components with the arrows, the group menu or drag and drop. New components, heartbeats and overrides go live at once; the layout waits for **Save layout**. The rest of this page does the same through the API, with an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY` and the page's `id` as `STATUS_PAGE_ID`.
 
 ## Add a heartbeat
 
@@ -22,7 +22,7 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/cron_job/$C
   -d '{ "friendly_name": "Nightly backup" }'
 ```
 
-The page shows it as operational while its pings arrive on time and down once one is missed. `DELETE` on the same path takes it off the page; the heartbeat monitor keeps running.
+`$CRON_JOB_ID` is the heartbeat monitor's `id`. The page shows it as operational while its pings arrive on time and down once one is missed. `DELETE` on the same path takes it off the page; the heartbeat monitor keeps running.
 
 ## Add a manual component
 
@@ -55,11 +55,11 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/component/$C
   -d '{
     "status": "degraded",
     "note": "Our card processor is slow. Payments still go through.",
-    "expires_at": "2026-10-16T09:00:00Z"
+    "expires_at": "2026-11-06T09:00:00Z"
   }'
 ```
 
-`$COMPONENT_ID` is the component's `id` from the layout. Clear the override with `DELETE` on the same path. The page shows the note next to the status, the headline counts the override, and it lapses on its own at `expires_at`.
+`$COMPONENT_ID` is the component's `id` from the layout. Clear the override with `DELETE` on the same path. The page shows the note under the component's name, the headline counts the override, and it lapses on its own at `expires_at`.
 
 <Aside type="caution">
 An override wins over what the monitor says, a pause and any maintenance. Forcing `operational` on a component that is really down hides the outage from visitors, and from the headline.
@@ -84,15 +84,15 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/layout \
   -H "Content-Type: application/json" \
   -d '{
     "ungrouped": [
-      { "id": "<http-job-id>" }
+      { "id": "<http-job-id-1>", "show_uptime": false }
     ],
     "groups": [
       {
         "name": "Public API",
         "description": "Everything customers integrate with.",
         "components": [
-          { "id": "<http-job-id>", "description": "REST API, all regions" },
-          { "id": "<browser-check-id>", "show_uptime": false },
+          { "id": "<http-job-id-2>", "description": "REST API, all regions" },
+          { "id": "<browser-check-id>" },
           { "id": "<manual-component-id>" }
         ]
       }
@@ -108,7 +108,7 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/layout \
 | `id` | component | A component already on this page: its `id` from the layout. |
 | `description` | component | Optional one line under the name, at most 200 characters. |
 | `hidden` | component | `true` leaves the component off the public page and out of the headline. Default `false`. |
-| `show_uptime` | component | `false` shows the status only, with no uptime bars, percentage or SLA badge. Default `true`. Browser checks, heartbeats and manual components never show uptime bars, so it changes nothing for them. |
+| `show_uptime` | component | `false` shows the status only, with no uptime bars, percentage or SLA badge. Default `true`. Only HTTP checks use it: browser checks, heartbeats and manual components never show uptime bars, and a browser check keeps its SLA label. |
 
 Order is the order of the arrays, and a page holds at most 50 groups. The response is the saved layout.
 

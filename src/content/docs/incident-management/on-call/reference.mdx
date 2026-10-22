@@ -213,9 +213,7 @@ The MCP server has tools for who is on call, shifts, the report and editing a la
 
 ## Handoff notices
 
-When someone goes on call, Site Qwality can tell them through their **low-urgency** notification rules (the channels with the shortest delay). A rotation handoff is `on_call_starting`; a change made by an override starting or ending is `on_call_changed`. Each notice is sent once, within a few minutes of the handoff. Email notices are sent first; SMS and Slack DM notices follow as those channels move to the new delivery pipeline.
-
-Webhooks get handoffs only when they ask for them: add `on_call_starting` or `on_call_changed` to the webhook's `events` filter. They arrive as `on_call.handoff` events.
+When someone goes on call, Site Qwality can tell them through their **low-urgency** notification rules (the ones with the shortest delay). A rotation handoff is `on_call_starting`; a change made by an override starting or ending is `on_call_changed`. Each notice is sent once, within a few minutes of the handoff, and only to email contact methods: SMS, Slack DM and webhooks get no handoff notice.
 
 ## On-call report
 

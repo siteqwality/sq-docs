@@ -19,7 +19,7 @@ Open the incident, choose the **Post-incident** tab and click **Start postmortem
 - **Timeline (UTC)**: status and severity changes, acknowledgments, escalations, monitor changes and updates, with who did each.
 - Empty sections for the root cause, contributing factors, what went well, what could be better and the action items.
 
-In the console, the person who starts it becomes its owner. The body is Markdown; edit it in the tab and click **Save**.
+In the dashboard, the person who starts it becomes its owner. The body is Markdown; edit it in the tab and click **Save**.
 
 From the API, `POST /incident/{incident_id}/postmortem` starts it. Send no `body` to get the drafted template, or your own `body` to start from that instead:
 
@@ -48,7 +48,7 @@ Deleting a postmortem (`DELETE /incident/{incident_id}/postmortem`) keeps the in
 
 ## Add action items
 
-Each action item is one piece of follow-up work: a required title, plus an optional owner (a user in your account), due date and link to the ticket that tracks it. Add them in the tab with **+ Add action item**, or from the API:
+Each action item is one piece of follow-up work: a required title, plus an optional owner (a user in your account), due date and link to the ticket that tracks it. Add them in the tab with **Add action item**, or from the API:
 
 ```bash
 curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/action_items \

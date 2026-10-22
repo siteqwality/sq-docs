@@ -76,7 +76,7 @@ Force what the page shows for any component, whatever its monitor says: for exam
 | Field | Type | Description |
 |---|---|---|
 | `status` | enum | `operational`, `degraded`, `down` or `maintenance`. Required. |
-| `note` | string \| null | Shown next to the status on the public page, at most 500 characters, one line. |
+| `note` | string \| null | Shown under the component's name on the public page, at most 500 characters, one line. |
 | `expires_at` | rfc3339 \| null | When the override lapses on its own. Must be in the future. Leave it out to keep it until you clear it. |
 
 It answers with the component, including its `status_override`. Setting it again replaces it. `DELETE` on the same path clears it and answers `204`, also when there was none. Both return `404` for a component that is not on this page.
@@ -172,7 +172,7 @@ The page shows a `scheduled` entry as in progress once `scheduled_start_at` pass
 
 ## Incidents on a page
 
-Incidents published to a page (via `status_page_id` at creation, or `POST /incident/{id}/publish`) render with their updates. Field-by-field: [Incident reference](/incident-management/incidents/reference/). An incident's affected monitors, and the `impact` set on each, decide how the page marks their components; see [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/). A published incident that is [merged](/incident-management/incidents/how-to/merge-incidents/) into another gets a public "Merged into" update, and the incident it merged into is added to the page.
+Incidents published to a page (via `status_page_id` at creation, `POST /incident/{id}/publish`, or a [service](/incident-management/services/overview/#publish-incidents-to-a-status-page) that publishes the incidents it opens) render with their updates. Field-by-field: [Incident reference](/incident-management/incidents/reference/). An incident's affected monitors, and the `impact` set on each, decide how the page marks their components; see [affected monitors and impact](/incident-management/incidents/how-to/affected-monitors/). A published incident that is [merged](/incident-management/incidents/how-to/merge-incidents/) into another gets a public "Merged into" update, and the incident it merged into is added to the page.
 
 The routes under `/status_page/{status_page_id}/incident` only reach incidents shown on that page. Any other incident id answers `404`, even one from the same account. API keys need the `incidents` scopes for them, not `status_pages`. `POST /status_page/{id}/incident/{incident_id}/update` posts an update and emails the page's confirmed subscribers.
 

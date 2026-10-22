@@ -27,29 +27,9 @@ The SDK can add a W3C `traceparent` header to fetch and XHR requests whose URLs 
 
 ## Install
 
-### NPM
+Install the npm package or paste the CDN snippet into your page's `<head>`, then call `init` with the RUM application's `applicationId` and `clientToken`. The [RUM quickstart](/observability/rum/quickstart/) walks through a first install, and the [SDK reference](/sdk/v2/#install) has both snippets, the release channels and every [init option](/sdk/v2/#init-options).
 
-```bash
-npm install @siteqwality/rum
-```
-
-### CDN
-
-Paste the [CDN snippet](/sdk/v2/#cdn-snippet) into your page's `<head>`. It loads `https://cdn.siteqwality.com/rum/v2/sdk.min.js` asynchronously, queues your calls and captures early errors until the SDK arrives.
-
-## Initialize
-
-```javascript
-import { SiteQwalityRUM } from '@siteqwality/rum';
-
-SiteQwalityRUM.init({
-  applicationId: 'abc123',          // from RUM application
-  clientToken: 'pub_def456',        // from RUM application (public token)
-  version: '1.4.2',                  // your release (used for source-map matching)
-});
-```
-
-`init` starts collection synchronously and returns a Promise you never need to `await`. A second call is ignored. With the npm package, calls to other methods before `init()` are ignored, except the opt-out methods. No public method throws: invalid input is ignored and internal failures are swallowed. Every option is in the [SDK reference](/sdk/v2/#init-options).
+`init` starts collection synchronously and returns a Promise you never need to `await`. A second call is ignored. With the npm package, calls to other methods before `init()` are ignored, except the opt-out methods. No public method throws: invalid input is ignored and internal failures are swallowed.
 
 ## Public methods
 

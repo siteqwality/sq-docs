@@ -71,7 +71,7 @@ import { Aside } from '@astrojs/starlight/components';
 ```mdx
 ---
 title: Quickstart
-description: <Achieve concrete outcome> in 5 minutes.
+description: <Achieve concrete outcome>.
 last_verified: 2026-05-03
 owner: jj
 ---

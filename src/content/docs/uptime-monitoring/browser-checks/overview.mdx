@@ -67,7 +67,7 @@ Anything you can do with Playwright works inside a step.
 | **Step results** | Pass/fail, duration, error message per step. |
 | **Screenshots** | Auto-captured after each step (pass or fail). |
 | **HAR file** | Full network capture, downloadable from the run page. |
-| **Video** | 1280×720 MP4 of the entire run. |
+| **Video** | 1280×720 WebM of the entire run. |
 | **Web vitals** | LCP, FCP, CLS, TTFB extracted via PerformanceObserver. |
 | **Console errors** | Anything logged at `console.error` or thrown. |
 | **Trace IDs** | Every request the browser makes, to any origin, carries a W3C `traceparent` header, and the run records those trace IDs. If the receiving server sends its OpenTelemetry traces to Site Qwality, the ID opens that backend trace; otherwise the trace has no spans. |
@@ -96,7 +96,7 @@ Every browser check runs in `aws-us-east-1` (Virginia, AWS), the only location t
 ## See also
 
 <CardGrid>
-  <LinkCard title="Quickstart" description="A working browser check in 10 minutes: a login flow against a public demo." href="/uptime-monitoring/browser-checks/quickstart/" />
+  <LinkCard title="Quickstart" description="A working browser check: a login flow against a public demo." href="/uptime-monitoring/browser-checks/quickstart/" />
   <LinkCard title="Reference" description="Step API, supported assertions, captured artifacts." href="/uptime-monitoring/browser-checks/reference/" />
   <LinkCard title="HTTP checks" description="The cheaper alternative for plain endpoint health." href="/uptime-monitoring/http-checks/overview/" />
 </CardGrid>

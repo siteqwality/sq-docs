@@ -35,7 +35,7 @@ A [maintenance window](/incident-management/maintenance/overview/) is different:
 </TabItem>
 <TabItem label="API">
 
-With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY` and the page's `id` as `STATUS_PAGE_ID`:
 
 ```bash
 curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/maintenance \
@@ -61,7 +61,7 @@ Name the scope in every create and update: list at least one monitor in `affecte
 - When the start time passes, the page shows it as **in progress** and the components it covers show **Maintenance** instead of an outage. A maintenance for the whole page (`whole_page: true`) shows the whole page as **Under Maintenance**.
 - When the end time passes, it drops off the page.
 
-To start early, set the status to `in_progress`. To finish early, set it to `completed`.
+To start early, edit it and set its **Status** to **In Progress** (`in_progress` through the API). To finish early, set it to **Completed** (`completed`).
 
 Maintenance covers the HTTP checks you pick. A browser check shows maintenance only when the maintenance covers the whole page.
 

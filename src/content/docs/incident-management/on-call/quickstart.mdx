@@ -9,6 +9,8 @@ import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 By the end of this guide you'll have a schedule called `Primary on-call` that hands off every Monday at 09:00 in your timezone, rotating between two engineers. You need at least two users in the account ([invite teammates](/getting-started/account-and-team/#invite-your-team)).
 
+Rotations of more than one person need a responder pack. See [plans and limits](/getting-started/plan-limits/#on-call-responders).
+
 ## 1. Create the schedule
 
 <Tabs syncKey="interface">
@@ -37,7 +39,7 @@ curl -X POST https://api.siteqwality.com/on_call_schedule \
   }'
 ```
 
-Save the returned `id`; you'll attach a layer to it next.
+Save the returned `id` as `SCHEDULE_ID`; you'll attach a layer to it next.
 
 </TabItem>
 </Tabs>
@@ -108,46 +110,9 @@ The response names who is on call, when the shift started and ends, and the shif
 
 ## 4. Wire it into an escalation policy
 
-A schedule on its own doesn't page anyone; you need an [escalation policy](/incident-management/escalation/overview/) that targets it.
-
-<Tabs syncKey="interface">
-<TabItem label="Dashboard">
-
-<Steps>
-
-1. Go to **Respond → Escalation Policies** and click **New policy**. Name it `Primary on-call escalation` and click **Create Policy**.
-
-2. Open the policy and click **Add level**. Set **Timeout (minutes)** to `5`, pick `Primary on-call` under **Target Schedules**, and click **Add Level**.
-
-</Steps>
-
-</TabItem>
-<TabItem label="API">
-
-```bash
-# Create a policy
-curl -X POST https://api.siteqwality.com/escalation_policy \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "name": "Primary on-call escalation" }'
-
-# Add a level that pages the schedule
-curl -X POST https://api.siteqwality.com/escalation_policy/$POLICY_ID/level \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "timeout_minutes": 5,
-    "target_schedule_ids": ["'$SCHEDULE_ID'"]
-  }'
-```
-
-</TabItem>
-</Tabs>
-
-This level pages whoever is on-call in `$SCHEDULE_ID` and waits 5 minutes for them to ack before moving on.
+A schedule on its own doesn't page anyone; an [escalation policy](/incident-management/escalation/overview/) has to target it. The [escalation quickstart](/incident-management/escalation/quickstart/) builds one whose first level pages `Primary on-call`.
 
 ## What's next
 
 <LinkCard title="Rotation overrides" description="Cover holidays without disturbing the rotation." href="/incident-management/on-call/how-to/rotation-overrides/" />
-<LinkCard title="Escalation policies" description="What happens when no one acks." href="/incident-management/escalation/overview/" />
-<LinkCard title="Notifications" description="The channels and contact methods that pages route through." href="/incident-management/notifications/overview/" />
+<LinkCard title="Notifications" description="The contact methods and rules that pages reach people through." href="/incident-management/notifications/overview/" />

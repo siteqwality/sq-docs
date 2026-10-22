@@ -1,6 +1,6 @@
 ---
 title: Enterprise
-description: Scoped API credentials, a customer-facing audit trail, CSV exports, and monthly SLA attainment reporting.
+description: Scoped API credentials, a customer-facing audit trail, CSV exports, monthly SLA attainment reporting, SAML single sign-on and SCIM.
 last_verified: 2026-08-14
 owner: jj
 ---
@@ -49,9 +49,9 @@ Only SAML single sign-on and SCIM provisioning require an Enterprise plan; the r
 | | API key | M2M client |
 |---|---|---|
 | Shape | Long-lived bearer token | Secret exchanged for short-lived tokens |
-| Access | Everything the account can do | Only the scopes you grant |
-| Revocation | Delete the key | Revoke the client, effective immediately |
-| Rotation | Create a new key, delete the old | Built in, no overlap window |
+| Access | Everything, or only the scopes you grant | Only the scopes you grant |
+| Revocation | Revoke the key, effective immediately | Revoke the client, effective immediately |
+| Rotation | Built in, no overlap window | Built in, no overlap window |
 | Audit trail | Recorded as `api_key` | Recorded as `m2m` with the client ID |
 
 Use an API key for a quick script or a one-off. Use an [M2M client](/enterprise/api-clients/) for anything long-lived, anything a third party operates, and anything where a leaked credential should be able to do as little as possible.

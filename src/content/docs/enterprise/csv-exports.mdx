@@ -18,7 +18,7 @@ Logs, metrics and traces export through [telemetry exports](/observability/priva
 
 ## Check results
 
-Every recorded check run for one HTTP monitor, oldest first. In the dashboard, open the monitor and choose **Export CSV** from its actions menu; it exports the range currently selected. Through the API:
+Every recorded check run for one HTTP monitor, oldest first. In the dashboard, open the monitor and choose **Export CSV** from its actions menu; it exports the range currently selected. Through the API, with the monitor's `id` as `JOB_ID`:
 
 ```bash
 curl -G "https://api.siteqwality.com/http/job/$JOB_ID/results/export" \

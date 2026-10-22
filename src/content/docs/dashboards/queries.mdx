@@ -79,7 +79,7 @@ A widget has up to 5 formulas, `f1` to `f5`, of up to 256 characters each. A for
 
 | Goal | Expression |
 |---|---|
-| Error percentage from two counts | `a / b * 100` |
+| Failure percentage from two counts | `b / a * 100` |
 | Successful checks | `a - b` |
 | Never show a negative | `clamp_min(a - b, 0)` |
 | Smooth a noisy series | `moving_avg(a, 5)` |
@@ -94,7 +94,7 @@ For a simple before-and-after view, set `compare` on a Time series or Query valu
 
 ## Variables
 
-A variable is a named dropdown for the whole dashboard. Define variables in **Settings** while editing. They appear in the variables bar.
+A variable is a named dropdown for the whole dashboard. Define variables on the **Variables** tab of **Settings** while editing. They appear in the variables bar.
 
 ```json
 {

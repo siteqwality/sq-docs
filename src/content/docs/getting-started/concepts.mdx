@@ -145,7 +145,7 @@ Two flavors:
 
 ### Status page maintenance
 
-A separate object (*not* a maintenance window) that publishes "scheduled maintenance" cards on the public status page. Doesn't silence anything; purely communicative. See [Status page maintenance](/status-pages/overview/).
+A separate object (*not* a maintenance window) that publishes "scheduled maintenance" cards on the public status page. Doesn't silence anything; purely communicative. See [Publish a status page maintenance](/status-pages/how-to/publish-maintenance/).
 
 ## Status page vocabulary
 
@@ -155,7 +155,7 @@ A public, branded page at `https://statuspage.siteqwality.com/<account-id>/<page
 
 ### Status page component
 
-A monitor (HTTP check or browser check) attached to a status page with a public-facing `friendly_name` and optional `sla_target_percentage`. The component's status is the underlying monitor's status.
+One row on a status page, with a public-facing `friendly_name`: an HTTP check, browser check or heartbeat, whose status follows the monitor, or a manual component, whose status you set. HTTP and browser check components take an optional `sla_target_percentage`, and any component can carry a status override set by hand. See [Group and order components](/status-pages/how-to/organize-components/).
 
 ### Subscriber
 
@@ -199,4 +199,4 @@ A person with login credentials, scoped to one or more accounts. Roles are per-a
 
 ### API key
 
-An account-scoped key, 96 hexadecimal characters, sent as a Bearer token. Create one under **Settings → API keys**. An **ingest** key can only send telemetry; a **full-access** key can also call the API.
+An account-scoped key, 96 hexadecimal characters, sent as a Bearer token. Create one under **Settings → API keys**. An **Ingest only** key can only send telemetry; a **Full access** key can also call the API, either everywhere or only within the scopes you tick.

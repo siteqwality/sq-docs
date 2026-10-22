@@ -46,10 +46,9 @@ Some alert sources (heartbeat monitors, TLS expiry, [page-speed alerts](/uptime-
 
 ## How integrations and channels relate
 
-1. Connect the **integration** (one-time OAuth or webhook URL).
-2. Create a **notification channel** referencing that integration with the per-channel detail (the Slack channel name, the Telegram chat ID).
-3. Add the channel to a **notification group**.
-4. Attach the group to your **monitors**.
+1. Connect the **integration** once.
+2. In a **notification group**, create a **notification channel** that references that integration, with any per-channel detail (such as the Slack channel, or the PagerDuty severity).
+3. Attach the group to your **monitors**.
 
 ## Who can change integrations
 

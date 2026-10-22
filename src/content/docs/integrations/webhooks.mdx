@@ -216,7 +216,7 @@ A replay is a new delivery with its own ID header, timestamp and signature under
 Each endpoint has four optional settings, on the integration's page or through `GET` and `PUT /integration/webhook/{id}/settings`. Changing them takes the same access as creating the integration.
 
 ```bash
-curl -X PUT https://api.siteqwality.com/integration/webhook/$INTEGRATION_ID/settings \
+curl -X PUT https://api.siteqwality.com/integration/webhook/<webhook-integration-id>/settings \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

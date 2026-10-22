@@ -24,7 +24,7 @@ Python wrapper: AWS_LAMBDA_EXEC_WRAPPER=/opt/otel-instrument
 
 ## 2. Set server environment variables
 
-Set these on the running service. Keep the key out of source control, client bundles and build logs.
+Add these to the function's environment through your infrastructure secret mechanism, without replacing its whole environment. Keep the key out of source control, client bundles and build logs.
 
 ```bash
 export OTEL_SERVICE_NAME='my-service'
@@ -43,7 +43,7 @@ export OTEL_METRICS_EXPORTER=otlp
 
 ## 3. Invoke and check the exporter
 
-Add the variables through your infrastructure secret mechanism without replacing the function's whole environment, then invoke it with a test event it accepts. Export during the invocation or use the Collector extension; a background timer may be frozen after return. CloudWatch logs arrive only if a logging bridge, extension or Firehose forwards them.
+Invoke the function with a test event it accepts. Export during the invocation or use the Collector extension; a background timer may be frozen after return. CloudWatch logs arrive only if a logging bridge, extension or Firehose forwards them.
 
 ```bash
 aws lambda invoke --function-name YOUR_FUNCTION --payload fileb://event.json response.json
@@ -55,9 +55,9 @@ Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.
 
 ## Production checklist
 
-Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
+Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review [redaction and processors](/observability/pipelines/) before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pipelines, access and privacy](/observability/privacy/)
+- [Access, exports and erasure](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream AWS Lambda documentation](https://opentelemetry.io/docs/platforms/faas/lambda-auto-instrument/)

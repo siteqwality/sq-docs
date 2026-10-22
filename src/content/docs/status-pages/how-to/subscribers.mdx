@@ -50,28 +50,28 @@ Once an address is confirmed, only that preferences page changes its choices. Su
 
 In the dashboard, open the status page and use the **Subscribers** tab. It shows the count in each [state](/status-pages/reference/#states) and the places used out of 1,000, filters by state or address, adds an address, imports a CSV, removes an address and exports the list as CSV or JSON.
 
-The same through the API needs an API key with access to status pages.
+Through the API, with an [API key](/getting-started/account-and-team/#generate-api-keys) that has access to status pages, exported as `SITEQWALITY_API_KEY`, and the page's `id` as `STATUS_PAGE_ID`:
 
 ```bash
 # How many, and in which state
 curl -s -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber?limit=1" | jq '.counts, .capacity'
+  "https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/subscriber?limit=1" | jq '.counts, .capacity'
 
 # Find an address
 curl -s -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber?q=ann@"
+  "https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/subscriber?q=ann@"
 
 # List the quarantined addresses
 curl -s -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber?state=quarantined"
+  "https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/subscriber?state=quarantined"
 
 # Download everything as CSV
 curl -s -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber/export" -o subscribers.csv
+  "https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/subscriber/export" -o subscribers.csv
 
-# Remove one (an erasure request, or a mistake)
+# Remove one by its id from the list (an erasure request, or a mistake)
 curl -s -X DELETE -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber/$SUBSCRIBER_ID"
+  "https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/subscriber/$SUBSCRIBER_ID"
 ```
 
 Fields, states and limits are in the [status page reference](/status-pages/reference/#subscribers).
@@ -85,12 +85,12 @@ Through the API you can preselect what the person gets with `kinds` (`incident`,
 ```bash
 # Everything
 curl -s -X POST -H "Authorization: Bearer $SITEQWALITY_API_KEY" -H "Content-Type: application/json" \
-  -d '{"email":"ann@example.com"}' "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber"
+  -d '{"email":"ann@example.com"}' "https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/subscriber"
 
 # Only incidents that affect one check
 curl -s -X POST -H "Authorization: Bearer $SITEQWALITY_API_KEY" -H "Content-Type: application/json" \
   -d '{"email":"ann@example.com","kinds":["incident"],"component_ids":["<http-job-id>"]}' \
-  "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber"
+  "https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/subscriber"
 ```
 
 Nothing is sent when the address is already subscribed or a link went out to it in the last hour.
@@ -104,7 +104,7 @@ Import from the **Subscribers** tab, or send the file's contents to the API:
 ```bash
 jq -Rs '{csv: .}' subscribers.csv | curl -s -X POST \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" -H "Content-Type: application/json" \
-  -d @- "https://api.siteqwality.com/status_page/$PAGE_ID/subscriber/import"
+  -d @- "https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/subscriber/import"
 ```
 
 The file:
@@ -137,11 +137,11 @@ When someone asks you to delete their data, remove them in the **Subscribers** t
 
 ## Best practices
 
-- **Send maintenance windows, not flapping checks.** Use [maintenance windows](/incident-management/maintenance/overview/) to suppress monitor-driven incidents during planned work; only manually-created incidents should reach subscribers.
+- **Announce planned work, not the failures it causes.** Publish a [status page maintenance](/status-pages/how-to/publish-maintenance/) and cover the monitors with a [maintenance window](/incident-management/maintenance/overview/), so a service that publishes its incidents does not also email subscribers about the planned outage.
 - **Keep messages short and actionable.** "We're investigating elevated 500 errors on the API. Affects: checkout. ETA: 30 minutes." is better than three paragraphs of context.
 
 ## See also
 
 <LinkCard title="Status page reference" description="Subscriber fields, states, import results, limits and retention." href="/status-pages/reference/#subscribers" />
 <LinkCard title="Status page quickstart" description="Get your status page set up before subscribers can find it." href="/status-pages/quickstart/" />
-<LinkCard title="Custom domain" description="Subscribe widgets feel more legitimate on your own domain." href="/status-pages/how-to/custom-domain/" />
+<LinkCard title="Custom domain" description="Serve the page on your own domain and send subscriber email from it." href="/status-pages/how-to/custom-domain/" />

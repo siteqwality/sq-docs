@@ -15,7 +15,7 @@ Requires an Enterprise plan. See [plan limits](/getting-started/plan-limits/).
 
 <Steps>
 
-1. As a Super Admin, open **Settings → SCIM provisioning** in Site Qwality and create a connection. Copy the **SCIM base URL** and the **bearer token** (shown once).
+1. As a Super Admin, open **Settings → SCIM provisioning** in Site Qwality and choose **Set up SCIM**. Copy the **SCIM base URL** and the **bearer token** (shown once).
 
 2. In your identity provider (Okta, Entra ID, OneLogin, JumpCloud, and so on) create a SCIM 2.0 application. Paste the base URL and token.
 
@@ -27,27 +27,25 @@ Requires an Enterprise plan. See [plan limits](/getting-started/plan-limits/).
 
 ## Role IDs the IdP must send
 
-Send one of these strings as the member's role. They are the same IDs you pick in the invite dialog.
+Send one of these strings as the member's role. They match the roles in the invite dialog.
 
-| IdP / Stytch `role_id` | Dashboard role | What they can do |
+| Role ID | Dashboard role | What they can do |
 |---|---|---|
 | `super_admin` | Super Admin | Everything, including billing, roles, SSO, and SCIM. |
 | `admin` | Admin | Team, API keys, and the audit log. Not billing, roles, SSO, or SCIM. |
-| `billing_admin` | Billing Admin | Billing only. Not team or role management. |
+| `billing_admin` | Billing Admin | Member access plus billing. Not team, credentials, or roles. |
 | `member` | Member | Full product access. No team, credentials, or billing. New users start here. |
-| `viewer` | Viewer | Read-only. Can still acknowledge and resolve incidents if they are on call. |
+| `viewer` | Viewer | Read-only, except acknowledging and resolving incidents. |
 | `auditor` | Auditor | Read-only, plus the [audit log](/enterprise/audit-log/). |
 
 `owner` is a retired alias for Super Admin. Existing grants still work; do not assign it to new people.
 
-If a member has more than one of these roles, Site Qwality keeps the **first** one in that list that appears on the member. Extra roles are ignored.
+Map each member to exactly one of these roles. A member holding several gets the access of the highest, but **Settings → Users** shows only one of them.
 
 ## Unknown names become Member
 
 These do **not** map and fall through to Member:
 
-- Stytch's implicit `stytch_member` (every member has it; it is not a Site Qwality role)
-- Custom Stytch roles you created in the Stytch dashboard
 - Display names (`Super Admin`, `Admin`, `Viewer`)
 - Okta/Entra group names (`Engineering`, `On-Call`)
 - Empty role lists

@@ -7,61 +7,25 @@ owner: jj
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-An **M2M API client** is a credential for automation. Unlike an [API key](/getting-started/account-and-team/#generate-api-keys), which is a long-lived bearer token with full account access, a client exchanges a secret for a short-lived token and can be restricted to exactly the resources it needs.
+An **M2M API client** is a credential for automation. Unlike an [API key](/getting-started/account-and-team/#generate-api-keys), which is a long-lived bearer token, a client exchanges a secret for a short-lived token and always carries an explicit list of scopes.
 
 Use one when a deploy pipeline, a Terraform run or an internal service needs API access with a small blast radius and a rotatable credential.
 
 ## Create one
 
-In the dashboard, **Settings → API clients → New client**. Name it after what uses it, then tick the scopes it needs.
+In the dashboard, go to **Settings → API clients → New client**. Name it after what uses it, tick the scopes it needs, then copy the **Client ID** and the secret. The dialog also shows a ready-made token request for your client.
 
-```bash
-curl -X POST https://api.siteqwality.com/account/m2m_client \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Deploy pipeline",
-    "description": "Creates maintenance windows during releases",
-    "scopes": ["read:monitors", "write:incidents"]
-  }'
-```
-
-| Field | Required | Notes |
-|---|---|---|
-| `name` | yes | 1 to 128 characters after trimming. |
-| `description` | no | Free text. |
-| `scopes` | yes | Non-empty. Every entry must be a documented scope. |
-
-The response carries the client and, **exactly once**, the secret:
-
-```json
-{
-  "data": {
-    "client": {
-      "id": "<siteqwality-uuid>",
-      "client_id": "<oauth-client-id>",
-      "name": "Deploy pipeline",
-      "scopes": ["read:monitors", "write:incidents"],
-      "created_at": "2026-08-02T09:00:00Z",
-      "last_rotated_at": null
-    },
-    "client_secret": "<shown once, never again>",
-    "token_endpoint": "https://api.siteqwality.com/oauth2/token"
-  }
-}
-```
+Creating, rotating and revoking clients takes a signed-in Admin or Super Admin with a verified email address, so they happen in the dashboard; API keys cannot manage clients.
 
 <Aside type="danger" title="The secret is shown once and is never stored">
-Put it into your secrets manager before you close the response. If you lose it, the only path forward is to rotate, which invalidates the old one.
+Put it into your secrets manager before you close the dialog. If you lose it, the only path forward is to rotate, which invalidates the old one.
 </Aside>
-
-Creating a client requires the **owner** role and a verified email address. Listing clients does not.
 
 An account can hold **20 active clients**. Revoke an unused one to make room.
 
 ## Get a token, then call the API
 
-Authentication is a standard OAuth2 client-credentials exchange against the `token_endpoint` the API returned. Do not hardcode that URL; read it from the create, list or rotate response.
+Authentication is a standard OAuth2 client-credentials exchange against the token endpoint shown in the dashboard with your client. Do not hardcode that URL; copy it from there.
 
 <Steps>
 
@@ -76,7 +40,7 @@ Authentication is a standard OAuth2 client-credentials exchange against the `tok
      -d "scope=read:monitors write:incidents"
    ```
 
-   You get back a standard OAuth2 token response (no `data` envelope) with an `access_token`. Scopes are space-separated.
+   `$CLIENT_ID`, `$CLIENT_SECRET` and `$TOKEN_ENDPOINT` are the `client_id`, `client_secret` and `token_endpoint` from the create response. You get back a standard OAuth2 token response (no `data` envelope) with an `access_token`. Scopes are space-separated.
 
 2. **Call the Site Qwality API with it**, exactly like any other bearer token.
 
@@ -91,7 +55,7 @@ Authentication is a standard OAuth2 client-credentials exchange against the `tok
 
 ## Scopes
 
-Scopes are `read:<family>` or `write:<family>`. Eleven families exist:
+Scopes are `read:<family>` or `write:<family>`. Twelve families exist:
 
 | Family | Covers |
 |---|---|
@@ -102,6 +66,7 @@ Scopes are `read:<family>` or `write:<family>`. Eleven families exist:
 | `logs` | Log query, parsers, saved views |
 | `metrics` | Metric query endpoints and saved views |
 | `traces` | Trace search and detail |
+| `errors` | [Errors](/observability/errors/) and their issue workflow |
 | `rum` | RUM applications and analytics |
 | `dashboards` | Dashboards, templates, version history, share links and widget queries |
 | `services` | Services and the escalation policy each one routes to |
@@ -113,7 +78,7 @@ One scope sits outside the families: `read:rum_replay` lets a client watch [sess
 
 `integrations:manage` also sits outside the families. Adding, changing or deleting an [integration](/integrations/overview/#who-can-change-integrations) needs it, because each integration holds a credential; `write:notifications` does not cover those writes. Reading integrations stays under `read:notifications`, with credentials masked.
 
-Scope checking is fail-closed. No family covers account management, billing, authentication, staff endpoints or webhooks, so a client is refused there whatever scopes it holds. That includes managing API clients: a client can never mint another client, so use a session or an API key for those operations. The `users` family does not invite, remove or change the role of anyone on the team.
+Scope checking is fail-closed. No family covers account management, billing, authentication, staff endpoints or webhooks, so a client is refused there whatever scopes it holds. That includes managing API clients: a client can never mint another client, so a signed-in Admin or Super Admin manages clients. The `users` family does not invite, remove or change the role of anyone on the team.
 
 The [partner](/partners/overview/) client-management endpoints need the Admin role, and a client carries no role, so it cannot use them. A client **can** act inside a partner's client account with the `X-SQ-Account` header, subject to its scopes.
 
@@ -121,29 +86,15 @@ A `403` reading `Insufficient scopes` means the client lacks the scope; `This en
 
 ## Rotate a secret
 
-In the dashboard, go to **Settings → API clients**, click the rotate icon on the client's card and confirm with **Rotate secret**. Through the API:
+Under **Settings → API clients**, click the rotate icon on the client's card and confirm with **Rotate secret**.
 
-```bash
-curl -X POST https://api.siteqwality.com/account/m2m_client/$CLIENT_ID/rotate_secret \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
-```
-
-Rotation is **immediate and has no overlap window**. The moment the call returns, the old secret stops working and the new one is shown once. Deploy the new secret before you rotate, not after.
-
-Owner role required.
+Rotation is **immediate and has no overlap window**: the old secret stops working at once and the new one is shown once, so put it in place straight away. To switch without a gap, create a second client with the same scopes, move your automation to it, then revoke the first.
 
 ## Revoke a client
 
-In the dashboard, click the trash icon on the client's card under **Settings → API clients** and confirm with **Revoke client**. Through the API:
-
-```bash
-curl -X DELETE https://api.siteqwality.com/account/m2m_client/$CLIENT_ID \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
-```
+Under **Settings → API clients**, click the trash icon on the client's card and confirm with **Revoke client**.
 
 Revocation takes effect **immediately**: an already-issued token is refused on its next request to the Site Qwality API. The token stays valid at the identity provider until it expires, so revocation means "this client can no longer reach Site Qwality", not "this token is destroyed everywhere".
-
-Owner role required.
 
 ## Other behavior
 

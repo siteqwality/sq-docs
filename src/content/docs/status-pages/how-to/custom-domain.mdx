@@ -7,7 +7,7 @@ owner: jj
 
 import { Steps, Aside, LinkCard } from '@astrojs/starlight/components';
 
-By default a status page lives at `https://statuspage.siteqwality.com/<account-id>/<page-id>`. A custom domain such as `status.yourcompany.com` serves it on your own subdomain, with a TLS certificate Site Qwality provisions through AWS Certificate Manager (ACM).
+By default a status page lives at `https://statuspage.siteqwality.com/<account-id>/<page-id>`. A custom domain such as `status.yourcompany.com` serves it on your own subdomain, one per page, with a TLS certificate Site Qwality provisions through AWS Certificate Manager (ACM).
 
 Each custom domain is a paid status page extra. See [plan limits](/getting-started/plan-limits/#status-pages).
 
@@ -17,13 +17,13 @@ Each custom domain is a paid status page extra. See [plan limits](/getting-start
 
 1. Open the status page in the dashboard and go to its **Custom Domain** tab.
 
-2. Under **Domain**, enter your subdomain, e.g. `status.example.com`, and click **Set Up Domain**.
+2. Under **Domain**, enter your subdomain, e.g. `status.example.com`, and click **Set Up Domain**. An apex domain (`example.com` with no subdomain) can't take a CNAME record, so it isn't supported.
 
-3. The page reloads with two CNAME records to add to your DNS provider, plus a status badge that starts at `pending_validation`.
+3. The tab shows **Pending DNS Validation** with the two CNAME records to add at your DNS provider.
 
 </Steps>
 
-Or via the API:
+Or through the API, with an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY` and the page's `id` as `STATUS_PAGE_ID`:
 
 ```bash
 curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/custom_domain \
@@ -54,8 +54,10 @@ In your DNS provider (Cloudflare, Route53, NS1, etc.) add a **traffic CNAME** th
 
 | Record type | Name | Value | TTL |
 |---|---|---|---|
-| `CNAME` | `status` (i.e. `status.example.com`) | `<cname_target from step 1>` | `300` (or auto) |
-| `CNAME` | `_xyz.status` (the `acm_validation.name`) | `_xyz.acm-validations.aws` (the `acm_validation.value`) | `300` |
+| `CNAME` | `status` (i.e. `status.example.com`) | Record 1's value on the tab (`cname_target` in the API) | `300` (or auto) |
+| `CNAME` | Record 2's name (`acm_validation.name`), e.g. `_xyz.status` | Record 2's value (`acm_validation.value`), e.g. `_xyz.acm-validations.aws` | `300` |
+
+Keep both records for as long as you use the domain: the certificate renews only while the validation record is in place.
 
 <Aside type="caution">
 If you use Cloudflare with the orange-cloud proxy, **set the traffic CNAME to "DNS only" (gray cloud)**. Cloudflare's proxy will break the upstream TLS handshake against ACM's certificate.
@@ -70,7 +72,7 @@ The `status` field progresses through:
 - `active`: fully live; your domain serves the status page.
 - `failed`: something went wrong; check `failure_reason` in the API response.
 
-Refresh the dashboard or poll:
+The **Custom Domain** tab updates on its own. Through the API, poll:
 
 ```bash
 curl https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/custom_domain \
@@ -89,6 +91,16 @@ Open `https://status.example.com` in a fresh browser. You should see:
 
 Your domain also serves the page's [feeds, badge and embed script](/status-pages/how-to/feeds-badge-embed/). Any other path on it answers with a short "Page not found" page that links back to your status page.
 
+## Domain health
+
+Once the domain is live, Site Qwality checks every 6 hours that your hostname still points at the `cname_target` and that the certificate is issued and renewing. The **Custom Domain** tab shows when it was last checked and when the certificate expires. If something is wrong it shows **Needs attention** with what to fix, such as a CNAME that was removed or now points elsewhere, or a renewal waiting on the validation record. The API returns the same in the `health` field.
+
+## Email from your domain (optional)
+
+With the page white-labeled, subscriber email carries your page's name, and it can also come from your domain, as `notifications@status.example.com`, signed for it. Add the third, optional CNAME the **Custom Domain** tab shows as **Record 3 (optional): Email from your domain**. Once the domain is live, Site Qwality checks the record every 15 minutes until it is verified, then every 6 hours. The API returns the same in the `sender` field.
+
+Until the record is verified, or if it is later removed, subscriber email goes out from Site Qwality's address. Without white-label it always does.
+
 ## Removing a custom domain
 
 On the **Custom Domain** tab, click **Remove Domain**. Through the API:
@@ -98,24 +110,8 @@ curl -X DELETE https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/custom_do
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-The domain stops serving at once. Deleting the status page removes its custom domain the same way. In either case, delete the two CNAME records from your DNS so they do not dangle.
-
-## Notes
-
-- Only one custom domain per status page.
-- Apex domains (`example.com` with no subdomain) aren't supported because of the CNAME-at-apex restriction in DNS. Use a subdomain like `status` or `health`.
-- The certificate auto-renews as long as the validation CNAME stays in place, so keep both records for as long as you use the domain.
-
-## Domain health
-
-Once the domain is live, Site Qwality checks every 6 hours that your hostname still points at the `cname_target` and that the certificate is issued and renewing. The **Custom domain** tab shows when it was last checked and when the certificate expires. If something is wrong it shows **Needs attention** with what to fix, such as a CNAME that was removed or now points elsewhere, or a renewal waiting on the validation record. The API returns the same in the `health` field.
-
-## Email from your domain (optional)
-
-With the page white-labeled, subscriber email carries your page's name, and it can also come from your domain, as `notifications@status.example.com`, signed for it. Add the third, optional CNAME the **Custom domain** tab shows under **Email from your domain**. Once the domain is live, Site Qwality checks the record every 15 minutes until it is verified, then every 6 hours. The API returns the same in the `sender` field.
-
-Until the record is verified, or if it is later removed, subscriber email goes out from Site Qwality's address. Without white-label it always does.
+The domain stops serving at once. Deleting the status page removes its custom domain the same way. In either case, delete the CNAME records you added from your DNS so they do not dangle.
 
 ## See also
 
-<LinkCard title="Status page quickstart" description="If you haven't created the page yet, start here." href="/status-pages/quickstart/" />
+<LinkCard title="Status page reference" description="Custom domain fields, statuses and health." href="/status-pages/reference/#custom-domain" />

@@ -53,8 +53,8 @@ A step that throws fails the whole check. Every step captures a screenshot, pass
    - **Name:** `Demo login flow`.
    - **Frequency:** **Every 15 minutes**.
    - **Timeout (seconds):** `90`.
-   - **Regions:** `aws-us-east-1`.
-   - **Notification groups:** pick one.
+   - **Locations:** keep the default.
+   - **Notification groups:** leave the **Default** group selected.
 
 3. Paste the script into the editor.
 
@@ -65,38 +65,24 @@ A step that throws fails the whole check. Every step captures a screenshot, pass
 </TabItem>
 <TabItem label="API">
 
-With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`, save the script from step 1 as `login.js`, then:
 
 ```bash
-SCRIPT='await step("Open homepage", async () => {
-  await page.goto("https://demo.siteqwality.com", { waitUntil: "networkidle" });
-});
-await step("Click sign-in", async () => {
-  await page.click("text=Sign in");
-});
-await step("Submit credentials", async () => {
-  await page.fill("input[name=email]", "demo@example.com");
-  await page.fill("input[name=password]", "demo-password-1234");
-  await page.click("button[type=submit]");
-});
-await step("Confirm dashboard", async () => {
-  await page.waitForSelector("h1:has-text(\"Dashboard\")", { timeout: 10000 });
-});'
-
 curl -X POST https://api.siteqwality.com/browser_check \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "$(jq -n --arg script "$SCRIPT" '{
+  -d "$(jq -n --rawfile script login.js '{
     name: "Demo login flow",
     script: $script,
     frequency: "15m",
     timeout_seconds: 90,
     check_regions: ["aws-us-east-1"],
-    min_healthy_regions: 1
+    min_healthy_regions: 1,
+    rerun_on_failure: true
   }')"
 ```
 
-The response includes the new check's `id`. Save it.
+The response includes the new check's `id`. The steps below use it as `$CHECK_ID`.
 
 </TabItem>
 </Tabs>
@@ -120,10 +106,12 @@ curl -X POST https://api.siteqwality.com/browser_check/$CHECK_ID/run \
 curl https://api.siteqwality.com/browser_check/$CHECK_ID/results \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 
-# Get the HAR/video URL for a specific result
-curl https://api.siteqwality.com/browser_check/$CHECK_ID/results/$RESULT_ID/artifact_url \
+# Get the HAR URL for one result; use artifact_type=video for the video
+curl "https://api.siteqwality.com/browser_check/$CHECK_ID/results/$RESULT_ID/artifact_url?artifact_type=har" \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
+
+`$RESULT_ID` is a result's `id` from the list.
 
 </TabItem>
 </Tabs>
@@ -138,7 +126,7 @@ curl https://api.siteqwality.com/browser_check/$CHECK_ID/results/$RESULT_ID/arti
 To iterate, edit the script, save, and click **Check now**.
 
 <Aside type="tip">
-For login flows in real apps, store the credentials in your secrets manager and reference them via your CI's environment when you `terraform apply` or `curl` the API. Don't bake real production secrets into the script field.
+The script is stored as written, so anyone who can read the check can read credentials in it. For login flows in real apps, use a dedicated test account, not real production credentials.
 </Aside>
 
 ## What's next

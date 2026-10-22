@@ -67,7 +67,7 @@ curl -X POST https://api.siteqwality.com/notification \
 - One integration per Discord channel. Create multiple integrations for multiple destinations.
 - A failed send is not retried later, so a send that Discord rate-limits can fail. See [delivery guarantees](/incident-management/notifications/channels/#delivery-guarantees-by-channel).
 - Heartbeat (cron) monitors and DNS record changes do not post to Discord. See the [coverage table](/integrations/coverage/#discord).
-- Webhook URLs are secrets, since anyone with the URL can post to the channel. Rotate (delete + recreate) if leaked.
+- Webhook URLs are secrets, since anyone with the URL can post to the channel. If one leaks, delete the webhook in Discord, add a new integration with a new URL and move your channels to it, then delete the old integration.
 
 ## See also
 

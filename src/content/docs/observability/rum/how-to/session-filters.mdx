@@ -16,6 +16,8 @@ This is the main cost control: capture every user lightly, and only the interest
 
 Manage rules in the dashboard on the application's **Recording rules** page (**Observe → RUM**, then open the application), or through the API under `/rum/{app_id}/rules`. The SDK evaluates them in the browser; see [rule evaluation](/sdk/v2/#rule-evaluation).
 
+The API examples on this page use an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY` and the application's ID as `APP_ID`.
+
 ## The rules a new application starts with
 
 | Name | Capture | Sample | Conditions | Gates |
@@ -59,11 +61,11 @@ A `url` regex must mean the same in the browser and on the server, so it is limi
 
 An Auto rule's rate is recomputed every hour so that replays spread over the billing period within your replay quota, after what errored sessions are expected to use. Errored sessions always win over sampled ones; when they alone would use more than the budget, the error rules are slowed too, so errored sessions are spread over the period.
 
-The budget is shared across your applications by their traffic. An application with `replay_monthly_target` set (see [`PATCH /rum/{app_id}`](/observability/rum/reference/)) takes what keeps it on that target first. The rate never goes above the rule's `sample_rate` or below 0.01%, and a new Auto rule records at 0.01% until its first hourly run. The rate in force is the rule's `effective_sample_rate`.
+The budget is shared across your applications by their traffic. An application with `replay_monthly_target` set (see [`PATCH /rum/{app_id}`](/observability/rum/reference/#rum-application)) takes what keeps it on that target first. The rate never goes above the rule's `sample_rate` or below 0.01%, and a new Auto rule records at 0.01% until its first hourly run. The rate in force is the rule's `effective_sample_rate`.
 
 ## Estimate a rule before saving
 
-In the dashboard, the rule builder's **Preview** section shows this estimate while you edit. Through the API, `POST /rum/{app_id}/rules/preview` takes a rule body (`name` optional) and estimates what it would record from the last 7 days of sessions. Read access is enough.
+In the dashboard, the rule builder shows this estimate when you click **Preview rule**, which it requires before **Save rule**. Through the API, `POST /rum/{app_id}/rules/preview` takes a rule body (`name` optional) and estimates what it would record from the last 7 days of sessions. Read access is enough.
 
 ```bash
 curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules/preview" \
@@ -94,7 +96,7 @@ The estimate is the matching sessions times the sample rate, scaled to 30 days; 
 
 ## Examples
 
-Each example is a rule you can build in the dashboard. Open the application's **Recording rules** page and click **New recording rule**. Give it a **Rule name**, choose **Replay** or **Analyze** under **What to capture**, add conditions under **Sessions to match**, set the **Sample rate**, then click **Save rule**. The API calls below create the same rules.
+Each example is a rule you can build in the dashboard. Open the application's **Recording rules** page and click **New recording rule**. Give it a **Rule name**, choose **Replay** or **Analyze** under **What to capture**, add conditions under **Sessions to match**, set the **Sample rate**, then click **Preview rule** and **Save rule**. The API calls below create the same rules.
 
 ### Replay sessions that reach checkout, half of them
 
@@ -131,7 +133,7 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
 
 In the dashboard, turn off the rule's **Enabled** switch to pause it, and choose **Delete** from its actions menu to remove it.
 
-Through the API, `PUT /rum/{app_id}/rules/{rule_id}` changes only the fields you send, and validates the result as a whole:
+Through the API, `PUT /rum/{app_id}/rules/{rule_id}` changes only the fields you send, and validates the result as a whole. Set `RULE_ID` to the rule's `id`, returned when it is created and by `GET /rum/{app_id}/rules`:
 
 ```bash
 curl -X PUT "https://api.siteqwality.com/rum/$APP_ID/rules/$RULE_ID" \

@@ -1,6 +1,6 @@
 ---
 title: Status page quickstart
-description: Create a branded status page with components and your first published incident in under 10 minutes.
+description: Create a branded status page with components and your first published incident.
 last_verified: 2026-10-16
 owner: jj
 ---
@@ -16,9 +16,9 @@ By the end of this guide you'll have a public status page at `https://statuspage
 
 <Steps>
 
-1. Go to **Manage → Status Page** and click **+ Create status page**.
+1. Go to **Manage → Status Pages** and click **+ Create status page**.
 
-2. Set the **Name**. This is the public page title, so use your product name, e.g. `Acme Cloud`.
+2. Set the **Name**, e.g. `Acme Cloud`. Subscriber email uses it; the public page shows the **Page Title** you set when you [brand the page](#3-brand-the-page).
 
 3. Click **Add**, then click the new page in the list to open it. Its public URL is shown at the top.
 
@@ -36,7 +36,7 @@ curl -X POST https://api.siteqwality.com/status_page \
   -d '{ "friendly_name": "Acme Cloud" }'
 ```
 
-Returns the new page's `id`.
+Returns the new page's `id`. Export it as `STATUS_PAGE_ID` for the next steps.
 
 </TabItem>
 </Tabs>
@@ -52,9 +52,9 @@ A *component* is a public-facing label for one of your monitors. Here you attach
 
 1. On the page, open the **Monitors** tab and click **Add Monitor**. For a browser check, use the **Browser Checks** tab and **Add Browser Check**.
 
-2. Pick the check under **HTTP Site** and give it a public **Name** if the internal one is too technical (`prod-api-eu-west-1` → `API`). Click **Add**.
+2. Pick the check under **HTTP Site** (**Browser Check** for a browser check) and give it a public **Name** if the internal one is too technical (`prod-api-eu-west-1` → `API`). Click **Add**.
 
-3. Optionally click the pencil on its row and set an **SLA target** (e.g. `99.9`). The page compares the uptime over the range the visitor picked (7, 30, 60 or 90 days) with this target.
+3. Optionally click the pencil on its row, set an **SLA Target (%)** (e.g. `99.9`) and click **Edit**. For an HTTP check, the page compares the uptime over the range the visitor picked (7, 30, 60 or 90 days) with this target.
 
 </Steps>
 
@@ -63,6 +63,8 @@ Repeat for each monitor you want public.
 </TabItem>
 <TabItem label="API">
 
+`$HTTP_JOB_ID` and `$BROWSER_CHECK_ID` are your checks' ids.
+
 ```bash
 # Attach an HTTP check
 curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/http_job/$HTTP_JOB_ID \
@@ -70,7 +72,7 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/http_job/$H
   -H "Content-Type: application/json" \
   -d '{ "friendly_name": "API" }'
 
-# Attach a browser check
+# Attach a browser check, if you have one
 curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/browser_check/$BROWSER_CHECK_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
@@ -91,13 +93,11 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/browser_che
 
 2. Under **Images**, click **Upload** next to **Logo** and pick your file (PNG, JPEG, SVG or WebP, up to 2 MB). Add a **Dark theme logo** the same way if your logo needs one. Each file is saved as soon as it uploads.
 
-3. Set the **Primary Color** (`#RRGGBB`) for the page title and the **Accent Color** for links and the Subscribe button.
+3. Under **Theme**, pick a **Default Theme** (**Light**, **Dark**, or **System (auto)** to follow the visitor's preference), and set the **Primary Color** (`#RRGGBB`) for the page title and the **Accent Color** for links and the Subscribe button.
 
 4. Under **Page Info**, set a **Page Title** (browser tab) and optional **Header Text** and **Footer Text**.
 
-5. Under **Theme**, pick a **Default Theme**: **Light**, **Dark**, or **System (auto)** to follow the visitor's preference.
-
-6. Click **Save Settings**.
+5. Click **Save Settings**.
 
 </Steps>
 
@@ -156,9 +156,7 @@ Create an incident by hand to confirm the page shows it. Incidents also reach a 
 
 3. In **Initial Update**, paste: `Our monitoring detected increased latency on the API. We're looking into it now.` Optionally pick the **Affected Monitors**.
 
-4. Click **Report Incident**. The incident appears immediately on the public page.
-
-5. To resolve, open the incident from the **Incidents** tab and click **Mark Resolved**. That posts a public **Resolved** update, emails the page's subscribers and closes the incident on the page. For a closing message of your own, first write it under **Post Update** and click **Post Update**.
+4. Click **Report Incident**. The incident appears on the public page within about a minute.
 
 </Steps>
 
@@ -176,26 +174,9 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident \
     "message": "Our monitoring detected increased latency on the API. We are looking into it now.",
     "affected_http_job_ids": ["<http-job-id>"]
   }'
-
-# Post the closing update (emails confirmed subscribers)
-curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident/$INCIDENT_ID/update \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "status": "resolved",
-    "message": "Latency has returned to baseline."
-  }'
-
-# Mark the incident resolved so the page shows it as closed
-curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident/$INCIDENT_ID \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Investigating elevated API latency",
-    "severity": "minor",
-    "status": "resolved"
-  }'
 ```
+
+Returns the incident's `id`. Export it as `INCIDENT_ID` for step 6.
 
 </TabItem>
 </Tabs>
@@ -205,14 +186,38 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident/$IN
 Open `https://statuspage.siteqwality.com/<account-id>/<page-id>` in an incognito window. You should see:
 
 - Your logo and brand colors.
-- Each component with its current status (green check if healthy, red if failing).
-- The published incident at the top with its updates in chronological order.
+- Each component with its current status (**Operational** with a green dot when healthy, **Down** in red when failing).
+- The open incident at the top, with its updates newest first.
 - For each HTTP check, a 90-day uptime bar chart and response-time percentiles. Browser checks show their current status and SLA label only.
 
-The page's data is at most about 30 seconds old, and an open page refreshes its live status every 60 seconds.
+Changes reach the page within about a minute, and an open page refreshes itself every 60 seconds.
+
+## 6. Resolve the incident
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+Open the incident from the **Incidents** tab and click **Mark Resolved**. That posts a public **Resolved** update, emails the page's subscribers and closes the incident on the page. For a closing message of your own, pick **Resolved** under **Post Update** instead, write the message and click **Post Update**.
+
+</TabItem>
+<TabItem label="API">
+
+```bash
+# A resolved update closes the incident and emails confirmed subscribers
+curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident/$INCIDENT_ID/update \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "resolved",
+    "message": "Latency has returned to baseline."
+  }'
+```
+
+</TabItem>
+</Tabs>
 
 ## What's next
 
 <LinkCard title="Custom domain" description="Move the page from siteqwality.com to status.yourcompany.com." href="/status-pages/how-to/custom-domain/" />
 <LinkCard title="Subscribers" description="Let visitors subscribe to incident updates by email." href="/status-pages/how-to/subscribers/" />
-<LinkCard title="Maintenance windows" description="Publish scheduled maintenance ahead of planned work." href="/incident-management/maintenance/overview/" />
+<LinkCard title="Publish maintenance" description="Publish scheduled maintenance ahead of planned work." href="/status-pages/how-to/publish-maintenance/" />

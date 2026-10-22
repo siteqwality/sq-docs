@@ -1,17 +1,13 @@
 ---
-title: Sign up and your first monitor
-description: From zero to a working HTTP check that emails you when it fails.
+title: Sign up and create your first monitor
+description: Create an account, add an HTTP check, and see how its alerts reach you.
 last_verified: 2026-10-14
 owner: jj
 ---
 
-import { Steps, Tabs, TabItem, LinkCard, CardGrid } from '@astrojs/starlight/components';
+import { Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-By the end of this guide you will have:
-
-1. A Site Qwality account.
-2. An HTTP check running every 5 minutes against `https://mock.codes/200`.
-3. Watched the check fail and recover, with a down and a recovery email in your inbox.
+Sign up, then add your first monitor. Alerts work from the start: every new account has a notification group named **Default** that emails your sign-up address.
 
 ## 1. Create an account
 
@@ -23,83 +19,19 @@ By the end of this guide you will have:
 
 </Steps>
 
-Every new account has a notification group named **Default** that emails your sign-up address after a 3-minute delay. New monitors use it unless you choose otherwise, so you can skip notification setup for now. See [who gets notified](/incident-management/notifications/default-routing/) to change it.
+## 2. Add your first monitor
 
-## 2. Create the HTTP check
+Go to **Observe → Monitors**, open **Add Monitor** and choose **HTTP Monitor**. Enter a name and the URL to check, leave the rest as it is (a check every 5 minutes, alerts to the Default group) and click **Submit**.
 
-<Tabs syncKey="interface">
-<TabItem label="Dashboard">
+To create it through the API, or to force a failure and watch the alert arrive, follow the [HTTP check quickstart](/uptime-monitoring/http-checks/quickstart/).
 
-<Steps>
+## How alerts reach you
 
-1. Go to **Observe → Monitors**, open **Add Monitor** and choose **HTTP Monitor**.
+- When the monitor fails, the Default group waits 3 minutes and emails you if it is still down. A failure that clears within those 3 minutes sends nothing.
+- After a down email, you get an all-clear email once the monitor passes 2 checks in a row.
+- No incident opens: monitor alerts go straight to notification groups. An incident opens when the monitor is linked to a [service](/incident-management/services/overview/) that creates incidents, or when you open one by hand.
 
-2. Fill in the form:
-   - **Name:** `Mock 200 endpoint`
-   - **URL or IP:** `https://mock.codes/200`
-   - **Check Interval:** `5m`, the free-plan minimum
-   - **Method:** `GET` (under **Request**, the default)
-   - Leave the notification groups under **Alerting** on their default. Your account's auto-created group is pre-selected.
-   - Leave everything else as default.
-
-3. Click **Submit**. The check runs immediately; the first result appears within a few seconds.
-
-</Steps>
-
-</TabItem>
-<TabItem label="API">
-
-Generate a key under **Settings → API keys**, export it, and create the monitor:
-
-```bash
-export SITEQWALITY_API_KEY="<your API key>"
-
-curl -X POST https://api.siteqwality.com/http/job \
-  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "friendly_name": "Mock 200 endpoint",
-    "method": "GET",
-    "uri": "https://mock.codes/200",
-    "timeout_ms": 15000,
-    "run_interval_seconds": 300,
-    "monitor_tls": false,
-    "monitor_dns": false
-  }'
-```
-
-The response is the new monitor. Save its `id` to fetch results, update the check or delete it later.
-
-Without `group_notification_ids` the monitor uses the **Default** group. To target other groups, pass their IDs (`GET /notification_group` lists them); an explicit `[]` creates a monitor that notifies no one.
-
-</TabItem>
-</Tabs>
-
-## 3. Confirm it's working
-
-<Steps>
-
-1. Open the monitor's detail page. The status badge should flip to **Success** within one minute.
-
-2. Scroll down to **Recent Checks**. You'll see one row per check result with status code, latency, and the location it ran from.
-
-3. Force a failure: edit the check, change the URL to `https://mock.codes/500`, save.
-
-4. On the next tick the monitor flips to **Failure**. The Default group waits 3 minutes, then emails you if the monitor is still down.
-
-5. Flip the URL back to `/200`. The monitor recovers, and you'll get a recovery email right away.
-
-</Steps>
-
-If the email never arrives, check your spam folder and that the group's email channel matches your inbox. See [notification channels](/incident-management/notifications/channels/).
-
-## What just happened
-
-- The check ran from the default [check location](/uptime-monitoring/overview/#check-locations), `aws-us-east-1` (Virginia, AWS), and compared the response with the monitor's assertions (here, the status code).
-- The status change sent a down alert to the monitor's **notification group**, which waited its 3-minute delay and then fanned out to its channels. The recovery message went out at once.
-- No incident opened: monitor alerts go straight to notification groups. An incident opens when the monitor is linked to a service that creates incidents, or when you open one by hand.
-
-From here, link the monitor to a service so a failure opens an incident, let on-call schedules and escalation policies decide who gets paged, and publish incidents on a status page. See [Incident Management](/incident-management/overview/).
+To change who gets alerts, see [who gets notified](/incident-management/notifications/default-routing/). To page an on-call rotation and publish incidents on a status page, see [Incident Management](/incident-management/overview/).
 
 ## What's next
 
@@ -111,11 +43,11 @@ From here, link the monitor to a service so a failure opens an incident, let on-
   />
   <LinkCard
     title="Account and team setup"
-    description="Invite teammates, set up SSO, generate API keys."
+    description="Invite teammates, assign roles, generate API keys."
     href="/getting-started/account-and-team/"
   />
   <LinkCard
-    title="HTTP checks deep dive"
+    title="HTTP checks"
     description="Custom headers, body assertions, paired TLS/DNS checks, confirmation thresholds."
     href="/uptime-monitoring/http-checks/overview/"
   />

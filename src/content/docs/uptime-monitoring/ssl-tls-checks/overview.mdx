@@ -1,6 +1,6 @@
 ---
 title: SSL/TLS checks
-description: Track certificate expiry, chain validity, and host-mismatch errors, either standalone or paired with an HTTP check.
+description: Track certificate expiry on an HTTP check's hostname and get warned before the certificate lapses.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -17,15 +17,17 @@ A **TLS check** verifies that a domain's TLS certificate is valid and tells you 
 
 ## How it works
 
-TLS checks are **paired with an HTTP check**. Set `monitor_tls: true` when creating an HTTP check; Site Qwality auto-provisions a paired TLS check that targets the same domain on a slower schedule.
+TLS checks are **paired with an HTTP check**. With `monitor_tls` on (the default for a new HTTP check), Site Qwality provisions a paired TLS check that connects to the same hostname once a day.
 
-The TLS check's `current_status` reflects the most recent handshake outcome:
+The TLS check's `current_status` reflects the most recent handshake:
 
-- **Healthy**: cert valid, hostname matches, chain trusted, expiry > 14 days away.
-- **Pending failure**: handshake failed in one tick; flips to fail after another.
-- **Failed**: chain invalid, hostname mismatch, or cert expired.
+- **`good`**: the handshake succeeded and the certificate has not expired.
+- **`bad`**: the certificate has expired.
+- **`unknown`**: the check has not run yet, or could not connect or read a certificate.
 
-`expiry_date` is recorded so the dashboard can render a countdown. Standard advance-warning periods (30 days, 14 days, 7 days) trigger increasingly severe notifications.
+Only the expiry date decides the status. The chain and hostname match are recorded on each result but do not fail the check.
+
+`expiry_date` is recorded so the dashboard can render a countdown. Warnings go out 30, 14, 7 and 1 days before expiry and on the day it expires, through the HTTP check's notification groups.
 
 You don't need a TLS check for every HTTPS endpoint: enable `monitor_tls` on one HTTP check per host and that hostname is covered.
 
@@ -33,7 +35,7 @@ You don't need a TLS check for every HTTPS endpoint: enable `monitor_tls` on one
 
 - **Standalone TLS checks** (without an HTTP host) aren't supported.
 - **CT log checks** (confirming new certs appear in Certificate Transparency logs) aren't supported.
-- **Custom expiry-warning thresholds** are inherited from the HTTP check's notification group.
+- **Custom expiry-warning thresholds** aren't supported.
 
 ## See also
 

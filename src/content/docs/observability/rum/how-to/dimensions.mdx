@@ -18,8 +18,6 @@ RUM sessions carry four context dimensions, so you can ask questions like "is LC
 | `device_type` | The User-Agent, parsed server side |
 | `country` | The client IP address, looked up at ingest |
 
-Your SDK payload can also set any of these explicitly, and an explicit value always wins over the derived one.
-
 Country comes from an IP-to-country database bundled with the ingest service, so the address never leaves it, and it is never stored or logged. A visitor on a VPN or corporate proxy is placed where that exit is. Country headers sent by the client are ignored. [IP geolocation by DB-IP](https://db-ip.com), CC BY 4.0.
 
 ### Values you will see
@@ -32,11 +30,13 @@ Country comes from an IP-to-country database bundled with the ingest service, so
 
 **`country`** is an uppercase ISO 3166-1 alpha-2 code such as `US` or `DE`. Anything that is not exactly two letters is discarded, so `USA` or `United States` will not be stored.
 
-Unknown values are stored as an **empty string**, not the literal text `unknown`. The dashboard renders that bucket as `(unknown)`. Sessions recorded before a dimension was introduced stay empty, so a range spanning that date shows a large `(unknown)` block for the earlier period: missing data, not a change in your traffic.
+Unknown values are stored as an **empty string**, not the literal text `unknown`. Dashboard breakdowns show that bucket as **Unknown** for countries and **Not set** for the other dimensions. Sessions recorded before a dimension was introduced stay empty, so a range spanning that date shows a large empty-value block for the earlier period: missing data, not a change in your traffic.
 
 ## Filtering and breaking down
 
 Dimension filters are **exact, case-sensitive** matches on the stored value: `Chrome`, not `chrome`; `US`, not `us`. To see which values exist, ask the facets endpoint (below) rather than guessing.
+
+The examples use an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY` and the application's ID as `APP_ID`.
 
 ### Overview
 
@@ -49,7 +49,7 @@ curl -G "https://api.siteqwality.com/rum/$APP_ID/overview" \
   --data-urlencode "device_type=mobile"
 ```
 
-`from` and `to` are required. Optional filters: `country`, `browser`, `os`, `device_type`, and `url` (a case-insensitive substring of the page URL).
+`from` and `to` default to the last 30 days. Optional filters: `country`, `browser`, `os`, `device_type`, and `url` (a case-insensitive substring of the page URL).
 
 The response includes two breakdowns:
 
@@ -93,7 +93,7 @@ curl -G "https://api.siteqwality.com/rum/$APP_ID/facets" \
 }
 ```
 
-Each list holds the top 50 non-empty values by session count. Counts above about 1,500 sessions are approximate, within about 0.2%.
+Each list holds the top 50 non-empty values by session count, with exact counts.
 
 ## Errors and dimensions
 

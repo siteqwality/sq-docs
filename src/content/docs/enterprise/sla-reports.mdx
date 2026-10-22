@@ -25,7 +25,7 @@ curl -G "https://api.siteqwality.com/monitors/sla" \
   --data-urlencode "months=6"
 ```
 
-`months` defaults to **3** and is clamped to 1 to 24, so `months=99` gives you 24. The dashboard offers 3, 6 and 12, defaulting to 6.
+`$JOB_ID` is the monitor's `id`. `months` defaults to **3** and is clamped to 1 to 24, so `months=99` gives you 24. The dashboard offers 3, 6 and 12, defaulting to 6.
 
 Each month returns:
 

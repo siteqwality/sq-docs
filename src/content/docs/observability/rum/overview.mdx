@@ -44,38 +44,16 @@ The SDK has **two layers**:
 Each install of the SDK targets a **RUM application**, typically one per domain or one per major build. Each app has:
 
 - A unique `application_id` and a public `client_token`.
-- A `domain` for the dashboard's "Open in app" links.
+- A `domain`, linked from the application's dashboard header.
 - Privacy settings: a [privacy level](/observability/rum/how-to/remote-config/#privacy-levels) and selectors.
 - Recording rules that activate detail and replay capture.
 - [Excluded resources](/observability/rum/how-to/remote-config/#excluded-resources): resource URLs it never records.
 
-Create one with **Add application** under **Observe → RUM**.
+Create one under **Observe → RUM**.
 
 ## Install
 
-### NPM
-
-```bash
-npm install @siteqwality/rum
-```
-
-```javascript
-import { SiteQwalityRUM } from '@siteqwality/rum';
-
-SiteQwalityRUM.init({
-  applicationId: 'abc123',
-  clientToken: 'pub_def456',
-  // version: '1.4.2', // your release; enables source-mapped stack traces
-});
-```
-
-Calls made before `init()` are ignored with the npm package, so call it first.
-
-### CDN
-
-For static sites, paste the [CDN snippet](/sdk/v2/#cdn-snippet) into the page's `<head>`. It loads `https://cdn.siteqwality.com/rum/v2/sdk.min.js` asynchronously and queues calls and errors until it arrives. It is a classic script and defines a single global, `SiteQwalityRUM`.
-
-If your site sets a Content Security Policy, see [CSP and intake endpoints](/observability/rum/how-to/csp/).
+Install the SDK from npm or paste the CDN snippet into your pages; the [RUM quickstart](/observability/rum/quickstart/#2-install-the-sdk) has both. If your site sets a Content Security Policy, see [CSP and intake endpoints](/observability/rum/how-to/csp/).
 
 ## Tracking custom data
 

@@ -38,7 +38,7 @@ In the dashboard, go to **Manage → Clients** and click **+ Add client**. Fill 
    | `contact_email` | yes | The client's real contact address. Must not be in use by any Site Qwality account, including your other clients, compared case-insensitively. |
    | `contact_name` | no | Free text, up to 300 characters. |
 
-   The response is the client summary, and `account_id` is the value you will use everywhere else:
+   The response is the client summary, and its `account_id` is the `$CLIENT_ACCOUNT_ID` used everywhere else:
 
    ```json
    {
@@ -68,7 +68,7 @@ In the dashboard, go to **Manage → Clients** and click **+ Add client**. Fill 
 | Creates an identity-provider organization so a later invite has somewhere to land | Invite anybody or create a session |
 | Records you as the account's partner | Create a payment method or a billing customer |
 
-To give your client a login, invite them from inside the account; they get an ordinary invitation then.
+To give your client a login, ask us to invite them; they get an ordinary invitation then. You cannot invite them yourself, because [`/account` refuses](/partners/context-switching/#endpoints-that-refuse-the-header) the `X-SQ-Account` header.
 
 The default notification group alerts `contact_email`, so an outage on your client's site reaches your client. To hear first, change that group inside the client account before you build monitors, or add yourself alongside them.
 
@@ -88,7 +88,7 @@ Removed clients are absent, so the list is a fair basis for reconciling your inv
 ## Set a client's bundle
 
 ```bash
-curl -X PUT https://api.siteqwality.com/partner/accounts/$CLIENT_ID/plan \
+curl -X PUT https://api.siteqwality.com/partner/accounts/$CLIENT_ACCOUNT_ID/plan \
   -H "Authorization: Bearer $SESSION_JWT" \
   -H "Content-Type: application/json" \
   -d '{"bundle": "client_pro"}'
@@ -124,16 +124,16 @@ The response tells you what changed. Moving a client from `client_standard` to `
 
 Setting the bundle a client is already on grants nothing, cancels nothing and moves no billing date (`granted` and `cancelled` are both `0`), so a script can re-assert it on every run.
 
-Only the bundle's own entitlements are added and removed. Anything the client bought retail on their own account, or our staff granted them, stays.
+Only the bundle's own entitlements are added and removed. Anything our staff granted the client stays.
 
 ## Check a client's usage
 
 ```bash
-curl https://api.siteqwality.com/partner/accounts/$CLIENT_ID/usage \
+curl https://api.siteqwality.com/partner/accounts/$CLIENT_ACCOUNT_ID/usage \
   -H "Authorization: Bearer $SESSION_JWT"
 ```
 
-This returns per-product counters in each product's customer-facing unit, matching what the client sees on their own billing page.
+This returns per-product counters in each product's customer-facing unit, matching what the client sees on their own **Usage** page.
 
 ```json
 {
@@ -164,7 +164,7 @@ Removal stops everything in the client's account. A removed client's contact add
 Removal is API only:
 
 ```bash
-curl -X DELETE https://api.siteqwality.com/partner/accounts/$CLIENT_ID \
+curl -X DELETE https://api.siteqwality.com/partner/accounts/$CLIENT_ACCOUNT_ID \
   -H "Authorization: Bearer $SESSION_JWT"
 ```
 

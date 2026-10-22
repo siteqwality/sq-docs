@@ -20,7 +20,7 @@ For ping-style "is the box up" checks where there's no HTTP server, use a [cron 
 
 ## How it works
 
-Every HTTP check has a **schedule** (default: every 10 minutes; minimum 30 seconds on paid uptime plans) and a **target URL**. On each tick:
+Every HTTP check has a **schedule** (5 minutes by default in the dashboard; intervals under 5 minutes, down to 30 seconds, need a paid uptime plan) and a **target URL**. On each tick:
 
 1. Site Qwality issues the configured HTTP request from each [check location](/uptime-monitoring/overview/#check-locations) you selected (see [default locations](/uptime-monitoring/http-checks/reference/#default-locations)).
 2. Each response is evaluated against your **assertions**: status code, response body keyword search, response time. With several locations, `min_healthy_regions` decides how many must pass.
@@ -39,14 +39,14 @@ A single HTTP check can also automatically provision a paired:
 |---|---|
 | **Request** | method, URI, custom headers, request body, content type, follow-redirects |
 | **Auth** | Basic, Digest, or Bearer token |
-| **Assertions** | success/failure status code lists, keyword search (substring or regex, optionally case-sensitive or inverted), timeout |
+| **Assertions** | success/failure status code lists, keyword search (substring or regex, optionally case-sensitive or inverted), JSON path, timeout |
 | **Schedule** | run interval, check locations and minimum healthy locations (intervals under 5 minutes and more than one location need a paid uptime plan) |
 | **Notifications** | one or more notification groups |
 
 ## Next steps
 
 <CardGrid>
-	<LinkCard title="Quickstart" description="Create your first HTTP check in 5 minutes." href="../quickstart/" />
+	<LinkCard title="Quickstart" description="Create your first HTTP check and test its alert." href="../quickstart/" />
 	<LinkCard title="Settings reference" description="Every field on an HTTP check, explained." href="../reference/" />
 	<LinkCard title="API: Create HTTP monitor" description="The underlying POST /http/job endpoint." href="/api-reference/operations/create_http_job/" />
 </CardGrid>

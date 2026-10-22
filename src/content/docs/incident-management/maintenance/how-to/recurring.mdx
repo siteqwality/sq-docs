@@ -15,7 +15,7 @@ A recurring window repeats `daily`, or `weekly` on chosen days, instead of runni
 
 1. Go to **Respond → Notifications**, click **Maintenance windows**, then **+ Add Maintenance Window**.
 
-2. Give it a **Name** and the **Tags** of the monitors it should silence.
+2. Give it a **Name**, then the **Tags** or **Services** (or both) whose monitors it should silence.
 
 3. Set **Schedule Type** to **Recurring** and pick the **Timezone**.
 
@@ -28,6 +28,8 @@ A recurring window repeats `daily`, or `weekly` on chosen days, instead of runni
 To change or remove a window later, use **Edit window** or **Delete window** on its row.
 
 ## Daily: same window every day
+
+Through the API, with an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
 
 ```bash
 curl -X POST https://api.siteqwality.com/maintenance_windows \
@@ -76,7 +78,7 @@ Set `timezone` explicitly. It defaults to `UTC`, so "02:00" means 02:00 UTC unle
 
 ## Updating a recurring window
 
-Sending a `PUT` to the same window with a partial body updates only those fields:
+Sending a `PUT` to the window's `id` (from `GET /maintenance_windows`) with a partial body updates only those fields:
 
 ```bash
 curl -X PUT https://api.siteqwality.com/maintenance_windows/$WINDOW_ID \

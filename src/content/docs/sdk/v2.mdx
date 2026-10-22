@@ -7,7 +7,7 @@ owner: jj
 
 import { Aside } from '@astrojs/starlight/components';
 
-Field-by-field reference for **`@siteqwality/rum`**, the browser SDK for RUM, error tracking and [session replay](/observability/replay/overview/). This page describes the published SDK 2.2.1. For a first install, follow the [RUM quickstart](/observability/rum/quickstart/).
+Field-by-field reference for **`@siteqwality/rum`**, the browser SDK for RUM, error tracking and [session replay](/observability/replay/overview/). This page describes the published SDK 2.3.1. For a first install, follow the [RUM quickstart](/observability/rum/quickstart/).
 
 SDK 1.x is retired: its endpoints accept no data, and its CDN paths (`/rum/v1/` and the pinned 1.x releases) are removed. Install SDK 2 as described below.
 
@@ -21,10 +21,9 @@ Release channels:
 
 | Channel | Availability |
 |---|---|
-| npm `@siteqwality/rum`, `latest` | SDK 2.2.1. |
-| CDN `/rum/v2/` | Moving 2.x alias, pointing to SDK 2.2.1. |
-| CDN `/rum/v2.2.1/` | Immutable SDK 2.2.1 and matching lazy chunks. |
-| npm `next` | 2.1.0, older than `latest`. Install `latest` or an explicit version. |
+| npm `@siteqwality/rum`, `latest` | SDK 2.3.1. |
+| CDN `/rum/v2/` | Moving 2.x alias, pointing to SDK 2.3.1. |
+| CDN `/rum/v2.3.1/` | Immutable SDK 2.3.1 and matching lazy chunks. |
 
 Use the application's public `applicationId` and `clientToken`, never an account API key. npm integrates with your bundler; the CDN exposes `window.SiteQwalityRUM`.
 
@@ -37,18 +36,16 @@ SiteQwalityRUM.init({
   service: 'web',
   env: 'production',
   version: '1.4.2', // Your application release, not the SDK version.
-  trackingConsent: 'pending', // Grant through your consent manager when appropriate.
 });
-
-// Run this when the visitor grants consent.
-// SiteQwalityRUM.setTrackingConsent('granted');
 ```
 
 Call `init` before mounting your app. Collection starts synchronously: the session, the collectors and the first page view are running before `init` returns. It then fetches the config and returns a promise that settles once the config is applied or has failed, with a 3-second timeout. The promise never rejects, and you do not need to await it. A second `init` is ignored. Without an `applicationId` and a `clientToken`, `init` logs a console warning and does nothing. No public method throws.
 
+On a site that needs consent first, add `trackingConsent: 'pending'` to `init` in either snippet: nothing is sent until you call `SiteQwalityRUM.setTrackingConsent('granted')`. See [consent](#consent-and-browser-signals).
+
 ### CDN snippet
 
-This snippet loads the moving 2.x CDN alias. Use `/rum/v2.2.1/sdk.min.js` to pin a release. Authorize the inline bootstrap using your site's CSP nonce or hash; see [CSP and endpoint configuration](/observability/rum/how-to/csp/).
+This snippet loads the moving 2.x CDN alias. Use `/rum/v2.3.1/sdk.min.js` to pin a release. Authorize the inline bootstrap using your site's CSP nonce or hash; see [CSP and endpoint configuration](/observability/rum/how-to/csp/).
 
 ```html
 <script>
@@ -64,15 +61,14 @@ This snippet loads the moving 2.x CDN alias. Use `/rum/v2.2.1/sdk.min.js` to pin
 
   SiteQwalityRUM.init({
     applicationId: 'YOUR_APPLICATION_ID',
-    clientToken: 'YOUR_CLIENT_TOKEN',
-    trackingConsent: 'pending'
+    clientToken: 'YOUR_CLIENT_TOKEN'
   });
 </script>
 ```
 
 The stub queues all 16 public methods and the errors the page throws before the SDK arrives. When the bundle loads it runs `init` first, then the other calls in order, and reports the early errors with their original times. If `init` has not run yet (for example, it waits for consent), the SDK keeps up to 100 page errors until it does. A queued getter has no synchronous return value; call `getStatus`, `getSessionUrl` and `isOptedOut` after the real SDK loads when you need their results.
 
-The bundle is a classic script whose only global is `window.SiteQwalityRUM`; it also works when loaded with `type="module"`, and a second copy of it does nothing. Immutable releases use `/rum/v<version>/sdk.min.js`. Keep the matching `recorder-<version>.min.js`, `gzip-<version>.min.js` and `canvas-<version>.min.js` beside the core when self-hosting SDK 2.2.1. The canvas chunk loads only when canvas recording is opted in and permitted. The gzip fallback loads only when native compression is unavailable.
+The bundle is a classic script whose only global is `window.SiteQwalityRUM`; it also works when loaded with `type="module"`, and a second copy of it does nothing. Immutable releases use `/rum/v<version>/sdk.min.js`. Keep the matching `recorder-<version>.min.js`, `gzip-<version>.min.js` and `canvas-<version>.min.js` beside the core when self-hosting. The canvas chunk loads only when canvas recording is opted in and permitted. The gzip fallback loads only when native compression is unavailable.
 
 ## Endpoints and config
 
@@ -305,7 +301,7 @@ The body is a JSON array of rrweb events. Gzip uses `Content-Type: application/o
 
 Segments normally close at 20 seconds or about 2.5 MB of serialized JSON, and on tab hide. The first full snapshot is sent promptly. A snapshot larger than 4 MB after stylesheet references stops recording for that page load (`too_large`). These are SDK segmentation thresholds, not intake limits: intake allows at most 2 MB on the wire and 16 MB inflated.
 
-Requests are sent in order, one at a time. Network errors, 408, ordinary 429 responses and 5xx retry with backoff; `Retry-After` holds sends, including unload. SDK 2.2.1 distinguishes two explicit response reasons: a 403 with `reason: "not_enabled"` stops replay for the page load while Observe and Analyze continue, and a 429 with `reason: "session_cap"` stops replay for that session. Other 401 or 403 responses and an exhausted request budget stop delivery. Other 4xx responses drop a segment. A missing snapshot also drops dependent segments and requests a fresh snapshot. Identical retry bodies are deduplicated by intake.
+Requests are sent in order, one at a time. Network errors, 408, ordinary 429 responses and 5xx retry with backoff; `Retry-After` holds sends, including unload. The SDK distinguishes two explicit response reasons: a 403 with `reason: "not_enabled"` stops replay for the page load while Observe and Analyze continue, and a 429 with `reason: "session_cap"` stops replay for that session. Other 401 or 403 responses and an exhausted request budget stop delivery. Other 4xx responses drop a segment. A missing snapshot also drops dependent segments and requests a fresh snapshot. Identical retry bodies are deduplicated by intake.
 
 At page close, the SDK attempts a keepalive tail using already-compressed bytes or JSON within the shared 60 KB keepalive budget. Delivery and the final marker are best-effort. Inspect `getStatus().dropped`, including `replay_tail_dropped` and `replay_segments_dropped`, rather than assuming every closing event arrived.
 
@@ -315,7 +311,7 @@ Before a match, the recorder keeps the current and previous full-snapshot interv
 
 This can include roughly 60 to 120 seconds before a later error. It does **not** guarantee a minute of history: a fresh page, delayed config or consent, a pause, memory pressure or a large snapshot may leave less. Nothing from an unmatched replay buffer is uploaded or persisted. It is discarded on page close, stop, consent withdrawal, opt-out, GPC restrictions or a do-not-record decision.
 
-| Privacy mode | Behavior in SDK 2.2.1 |
+| Privacy mode | Behavior |
 |---|---|
 | Strict | Masks page text except configured unmask selectors, masks inputs and blocks media. Block selectors always win. |
 | Balanced | Masks inputs; page text is visible with configured PII patterns scrubbed. Default patterns cover emails, card-like numbers and long digit runs. |

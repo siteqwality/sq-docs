@@ -126,7 +126,7 @@ Connecting an assistant is logged too: an `oauth.authorize` entry records who al
 
 Reads are clamped to the **last 90 days**. A `since` older than that is silently pulled forward, and omitting `since` gives you exactly 90 days.
 
-The window is a read limit, not a retention policy: **older rows are not deleted**, but no retention beyond 90 days is promised either. If you must keep entries beyond 90 days, export them on a schedule.
+The window is a read limit, not a retention policy: **older rows are not deleted**, but no retention beyond 90 days is promised either. If you must keep entries beyond 90 days, save them regularly with **Export CSV** on the audit log page.
 
 ## Reliability
 
@@ -135,4 +135,4 @@ Audit writes are best-effort: if a write fails, the request still succeeds, so t
 ## See also
 
 <LinkCard title="M2M API clients" description="The actor type you will see most from automation." href="/enterprise/api-clients/" />
-<LinkCard title="CSV exports" description="Getting data out for longer-term storage." href="/enterprise/csv-exports/" />
+<LinkCard title="CSV exports" description="Check results and uptime summaries as CSV." href="/enterprise/csv-exports/" />

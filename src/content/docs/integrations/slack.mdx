@@ -47,7 +47,7 @@ The app can post to any public channel without joining it. For a private channel
 
 </Steps>
 
-Through the API, create the channel with [`POST /notification`](/api-reference/operations/create_notification/):
+Through the API, find the integration's `id` with [`GET /integration`](/api-reference/operations/list_integrations/), then create the channel with [`POST /notification`](/api-reference/operations/create_notification/):
 
 ```bash
 curl -X POST https://api.siteqwality.com/notification \
@@ -72,7 +72,7 @@ Monitor alerts post as a Slack message attachment with a colored bar:
 
 Messages have no buttons and no link back to Site Qwality. A recovery is a new message, not an edit of the down message.
 
-A send is tried once. If Slack rejects or throttles it, there is no later retry.
+A send is tried once, and a refusal from Slack is recorded as rejected. Any other failure, a throttle included, runs the send again up to twice, so a duplicate post is possible. If those runs fail too, the alert is dropped with no record in alert history. See [delivery guarantees](/incident-management/notifications/channels/#delivery-guarantees-by-channel).
 
 ## Incidents
 
@@ -83,7 +83,7 @@ A service's Slack broadcast target can send with this integration (pick it and a
 Go to **Manage → Integrations**, find the Slack integration under **Existing Integrations** and delete it. Through the API, call [`DELETE /integration/{integration_id}`](/api-reference/operations/delete_integration/):
 
 ```bash
-curl -X DELETE https://api.siteqwality.com/integration/$INTEGRATION_ID \
+curl -X DELETE https://api.siteqwality.com/integration/<slack-integration-id> \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 

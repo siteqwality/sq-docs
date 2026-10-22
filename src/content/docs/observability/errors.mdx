@@ -9,7 +9,7 @@ Errors lists browser issues and backend exception groups together, labeled by so
 
 Open an issue to inspect its fingerprint, title, culprit, event samples, affected versions and activity. Grouping normalizes supported language stacks; unrelated exception families should not be merged solely because their messages match. Samples can be absent after retention or under your access restrictions, so a count does not mean every original stack is still available.
 
-Use the issue workflow to assign, resolve, ignore or reopen issues. Before a backend merge, check the selected service, environment and fingerprint: a merge changes future grouping and workflow. Browser issue actions follow the RUM workflow and access policy. Source maps and replay require their own uploaded artifacts and permissions.
+Use the issue workflow to assign, resolve, ignore or reopen issues. Before a backend merge, check the selected service, environment and fingerprint: a merge changes future grouping and workflow. Browser issue actions follow the RUM workflow and access policy. Readable browser stacks need uploaded [source maps](/observability/rum/how-to/source-maps/), and replay needs a [recording rule](/observability/rum/how-to/session-filters/) and replay access.
 
 | API path | Purpose |
 |---|---|

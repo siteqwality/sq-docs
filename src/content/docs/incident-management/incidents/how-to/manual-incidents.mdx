@@ -7,25 +7,25 @@ owner: jj
 
 import { LinkCard } from '@astrojs/starlight/components';
 
-Most incidents are opened by monitors. A manual incident with a **Service** pages exactly like one: see [making it page someone](#making-it-page-someone).
+Monitors open incidents on their own only through a [service](/incident-management/services/overview/) in `auto` mode. A manual incident with a **Service** pages exactly like one of those: see [making it page someone](#making-it-page-someone).
 
 ## When to create one manually
 
 - **A third-party dependency broke something user-visible**: Stripe is degraded, AWS is throttling, your CDN is intermittently returning 502s.
 - **A bug surfaced in production that no monitor catches**: UI broken for a specific browser, auth flow broken only for SSO users.
 - **Coordinating a multi-team outage** in one canonical incident.
-- **Planned maintenance went sideways.** A deploy you protected with a [maintenance window](/incident-management/maintenance/overview/) broke something. The window suppressed the auto-incident, so create one manually.
+- **Planned maintenance went sideways.** A deploy you protected with a [maintenance window](/incident-management/maintenance/overview/) broke something. The window held back the auto-created incident, so create one manually.
 
 ## When *not* to
 
-- Don't manually create an incident for an outage a monitor will catch in 60 seconds. The auto-incident will be cleaner.
+- Don't manually create an incident for an outage that a monitor on an `auto` [service](/incident-management/services/overview/) will catch. Its auto-created incident will be cleaner.
 - Don't create an incident as a stand-in for a Slack message. If you don't intend to publish it on a status page or trigger paging, message the team directly.
 
 ## Two flavors of manual incident
 
 ### Standalone incident (no status page)
 
-Use this for internal tracking: you get the timeline and paging without publishing.
+Use this for internal tracking: you get the timeline without publishing, and paging once it has a [service](#making-it-page-someone).
 
 In the dashboard, go to **Respond → Incidents** and click **Report incident**. Give it a **Title**, a **Severity** and an **Initial Message**, then click **Report Incident**.
 
@@ -46,28 +46,26 @@ curl -X POST https://api.siteqwality.com/incident \
 
 Use this when the outage affects customers and they should know.
 
-In the dashboard, go to **Manage → Status Page** and open the page. On its **Incidents** tab, click **Report Incident**, fill in the **Title**, **Severity** and **Initial Update**, optionally pick the **Affected Monitors**, and click **Report Incident**.
+In the dashboard, go to **Manage → Status Pages** and open the page. On its **Incidents** tab, click **Report Incident**, fill in the **Title**, **Severity** and **Initial Update**, optionally pick the **Affected Monitors**, and click **Report Incident**.
 
 Through the API:
 
 ```bash
-curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/incident \
+curl -X POST https://api.siteqwality.com/status_page/<status-page-id>/incident \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "status_page_id": "<status-page-id>",
     "title": "Some webhook deliveries delayed",
     "severity": "minor",
-    "message": "We are seeing increased latency on outbound webhooks. Investigating with our delivery provider.",
-    "affected_http_job_ids": []
+    "message": "We are seeing increased latency on outbound webhooks. Investigating with our delivery provider."
   }'
 ```
 
-The incident appears immediately on the public page. Creating it through `POST /status_page/{id}/incident` also emails the page's confirmed subscribers.
+The incident appears immediately on the public page, and the page's confirmed subscribers are emailed.
 
 ## Publish later, and keep notes internal
 
-An incident you started without a page can go on one later. In the dashboard, open it and click **Publish to status page**: pick the page, check the public title and the first public update customers will read, and choose whether to email the page's subscribers. The same panel lists the pages it is on, each with **Unpublish**. Through the API:
+An incident you started without a page can go on one later. In the dashboard, open it and click **Publish to status page**: pick the page, check the public title and the first public update customers will read, choose whether to email the page's subscribers, and click **Publish**. Once it is on a page, the button reads **Status pages**, and its panel lists each page with **Unpublish**. Through the API:
 
 ```bash
 curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/publish \
@@ -105,7 +103,7 @@ You can add, re-grade and remove monitors after creation too: see [affected moni
 
 ## Making it page someone
 
-A manual incident only pages when it has a service, and that [service](/getting-started/concepts/) has an escalation policy attached. In the dashboard, pick the **Service** in the **Report incident** form. Through the API, send `service_id` at creation:
+A manual incident only pages when it has a service, and that [service](/incident-management/services/overview/) has an escalation policy attached. In the dashboard, pick the **Service** in the **Report incident** form. Through the API, send `service_id` at creation:
 
 ```bash
 curl -X POST https://api.siteqwality.com/incident \
@@ -121,7 +119,7 @@ curl -X POST https://api.siteqwality.com/incident \
 
 From there it behaves exactly like a monitor-opened incident: level 1 of the service's policy fires immediately, the timeout is scheduled, and acknowledging (from the dashboard, the API, or a paged responder's [email or SMS link](/incident-management/incidents/how-to/one-click-actions/)) cancels the escalation.
 
-The service's broadcast targets, if it has any, are also notified, even when the service has no escalation policy. An incident with no service creates the record and nothing else. If a manual incident did not page, check that it has a service and that the service has an escalation policy.
+The service's broadcast targets, if it has any, are also notified, even when the service has no escalation policy. An incident with no service pages nobody. If a manual incident did not page, check that it has a service and that the service has an escalation policy.
 
 ## Move an incident to another service
 

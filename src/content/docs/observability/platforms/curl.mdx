@@ -37,9 +37,9 @@ Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.
 
 ## Production checklist
 
-Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
+Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review [redaction and processors](/observability/pipelines/) before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pipelines, access and privacy](/observability/privacy/)
+- [Access, exports and erasure](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream curl / HTTP documentation](https://opentelemetry.io/docs/specs/otlp/)

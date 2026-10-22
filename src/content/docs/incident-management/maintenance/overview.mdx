@@ -22,8 +22,8 @@ A single `starts_at` / `ends_at` pair, for one specific deploy or operation.
   "name": "Friday API deploy",
   "tags": ["service:api"],
   "schedule_type": "one_time",
-  "starts_at": "2026-05-10T14:00:00Z",
-  "ends_at": "2026-05-10T14:30:00Z"
+  "starts_at": "2027-01-15T14:00:00Z",
+  "ends_at": "2027-01-15T14:30:00Z"
 }
 ```
 
@@ -76,7 +76,7 @@ A window can name services in `service_ids` instead of, or as well as, tags. Eve
 }
 ```
 
-A window needs tags, services or both. A telemetry alert rule is also covered when the window lists it in `alert_rule_ids`, which includes RUM issue alerts.
+A window needs tags, services or both.
 
 ## How tags match
 
@@ -89,7 +89,7 @@ Useful patterns: `service:<name>` for everything in a service, `env:<name>` for 
 
 ## What "silenced" means precisely
 
-Suppression applies to monitor notifications that carry monitor context (HTTP monitors, heartbeats, browser checks, TLS certificate, domain registration, DNS record and page speed checks, and alert rules, including RUM issue alerts). TLS, domain and page speed checks match by their HTTP monitor's tags; all of them match by the service they are linked to. Each RUM issue is held on its own. While a matching window is active:
+Suppression applies to HTTP monitors, heartbeats, browser checks, TLS certificate and page speed checks, and alert rules, including RUM issue alerts. TLS and page speed checks match by their HTTP monitor's tags; all of them match by the service they are linked to. Each RUM issue is held on its own. Domain registration and DNS record alerts are never held. While a matching window is active:
 
 - **Failure notifications are held, not dropped.** They are stored and re-evaluated when the window's current occurrence ends, so a monitor that is still down after the window pages then.
 - **Recovery notifications are suppressed** and clear the held failure for that monitor, so a blip fully inside the window pages no one.

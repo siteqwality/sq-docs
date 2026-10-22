@@ -115,11 +115,11 @@ Every replay view is written to the [audit log](/enterprise/audit-log/) as `rum.
 
 ## Replay links
 
-The dashboard player opens at a given moment from its URL, `https://app.siteqwality.com/rum/{app_id}/replay/{session_id}`:
+The dashboard player opens at a given moment from its URL, `https://app.siteqwality.com/rum/{app_id}/sessions/{session_id}`:
 
 | Query | Effect |
 |---|---|
-| `?t=754`, `?t=12:34`, `?t=1:02:03` | Opens at that offset into the recording (seconds, `m:ss` or `h:mm:ss`), clamped to the recording. **Copy link at current time** writes this form. |
+| `?t=754`, `?t=12:34`, `?t=1:02:03` | Opens at that offset into the recording (seconds, `m:ss` or `h:mm:ss`), clamped to the recording. **Copy link to this moment** writes this form. |
 | `?at=<epoch ms>&event=<event_id>` | Opens 5 seconds before that absolute time (never before the start) and highlights the event row with that ID. An error's **Watch replay** link uses the error's `error_ts_ms` and `event_id`. |
 
 When both are present, `t` wins.

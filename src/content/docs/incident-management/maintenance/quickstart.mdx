@@ -7,7 +7,7 @@ owner: jj
 
 import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have a one-time maintenance window scheduled for Friday 14:00–14:30 UTC that silences any monitor tagged `service:api`.
+By the end of this guide you'll have a one-time maintenance window scheduled for Friday, January 15, 2027, 14:00–14:30 UTC, that silences any monitor tagged `service:api`.
 
 ## 1. Tag your monitors
 
@@ -21,14 +21,16 @@ Open the monitor and choose **Edit monitor**. In the **Monitor** section, add `s
 </TabItem>
 <TabItem label="API">
 
-With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`, and the monitor's `id` from `GET /http/jobs` as `JOB_ID`:
 
 ```bash
 curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{ "tags": ["service:api", "env:prod"] }'
+  -d '{ "tags": ["service:api"] }'
 ```
+
+`tags` replaces the monitor's whole list, so include any tags it already has.
 
 </TabItem>
 </Tabs>
@@ -46,8 +48,7 @@ curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
    - **Name:** `Friday API deploy`.
    - **Tags:** `service:api`.
    - **Schedule Type:** **One-time**.
-   - **Timezone:** `UTC`.
-   - **Start:** `2026-05-10 14:00`. **End:** `2026-05-10 14:30`.
+   - **Start:** `2027-01-15 14:00`. **End:** `2027-01-15 14:30`. The pickers use your browser's time zone, so enter the local time for 14:00–14:30 UTC.
 
 3. Click **Create Window**.
 
@@ -55,6 +56,8 @@ curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
 
 </TabItem>
 <TabItem label="API">
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
 
 ```bash
 curl -X POST https://api.siteqwality.com/maintenance_windows \
@@ -64,19 +67,19 @@ curl -X POST https://api.siteqwality.com/maintenance_windows \
     "name": "Friday API deploy",
     "tags": ["service:api"],
     "schedule_type": "one_time",
-    "starts_at": "2026-05-10T14:00:00Z",
-    "ends_at": "2026-05-10T14:30:00Z"
+    "starts_at": "2027-01-15T14:00:00Z",
+    "ends_at": "2027-01-15T14:30:00Z"
   }'
 ```
+
+The response has `is_currently_active: false` until the window starts.
 
 </TabItem>
 </Tabs>
 
-The response has `is_currently_active: false` until the window starts.
-
 ## 3. Verify
 
-The window appears on the **Maintenance Windows** page as **Scheduled**, then **Active** while it runs and **Ended** after. While it is active, each matching monitor's status badge gets a "Maintenance" overlay.
+The window appears on the **Maintenance Windows** page as **Scheduled**, then **Active** while it runs and **Ended** after. To see which monitors it covers, open it with **Edit window**: the form lists them under **Held now**.
 
 To test suppression, break a monitor during the window: the check still shows `failure` in recent results, but no notification goes out while the window is active.
 
@@ -87,4 +90,3 @@ To tell customers, also [publish a status page maintenance](/status-pages/how-to
 ## What's next
 
 <LinkCard title="Recurring windows" description="Daily and weekly schedules for ongoing maintenance." href="/incident-management/maintenance/how-to/recurring/" />
-<LinkCard title="Status page maintenance" description="Customer-facing companion to maintenance windows." href="/status-pages/how-to/publish-maintenance/" />

@@ -9,7 +9,7 @@ Open Services to explore services observed in telemetry. Use stable `service.nam
 
 Service and endpoint RED shows received request rate, errors and duration with sampling and quality indicators. RED is derived from received spans, before your trace exclusion or sampling rules where supported. It does not reconstruct traffic the SDK never sent, and weighted counts can be estimates. A dependency map needs actual matching client/server trace relationships; missing spans and short retention can leave edges incomplete.
 
-Deployment markers come from observed service versions and deployment information. They help compare error, rate and duration changes, but they show reported versions, not proof that a whole fleet deployed. Open related logs, metrics, trace samples and Errors with the same time range. Use the service controls to link owners, tier, incident service and runbook.
+Deployment markers come from observed service versions and deployment information. They help compare error, rate and duration changes, but they show reported versions, not proof that a whole fleet deployed. Open related logs, metrics, trace samples and Errors with the same time range. An admin links a telemetry service to its incident service with **Catalog links**.
 
 | Read endpoint | Purpose |
 |---|---|

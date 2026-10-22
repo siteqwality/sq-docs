@@ -29,7 +29,7 @@ A status page has a light and a dark theme, and visitors can switch between them
 </TabItem>
 <TabItem label="API">
 
-With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY` and the page's `id` as `STATUS_PAGE_ID`:
 
 ```bash
 curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/branding \
@@ -106,8 +106,8 @@ Every region carries `data-sq="<name>"`:
 | `maintenance-item` | One maintenance window. |
 | `components` | The card that lists the components. |
 | `group` | One section of components. |
-| `component` | One component row. |
-| `component-name` | A component's name. |
+| `component` | One HTTP check or browser check row. Heartbeat and manual component rows carry only `component-status`. |
+| `component-name` | An HTTP check's or browser check's name. |
 | `component-status` | A component's status dot and label. |
 | `uptime-percentage` | A component's uptime figure. |
 | `uptime-bars` | A component's daily uptime bars. |

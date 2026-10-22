@@ -122,14 +122,14 @@ For every result:
 | Artifact | Format | API endpoint |
 |---|---|---|
 | Step results | JSON | `GET /browser_check/{id}/results` |
-| Screenshots | Per-step PNGs | embedded in step results |
-| HAR file | Full network capture | `GET /browser_check/{id}/results/{result_id}/artifact_url` |
-| Video | 1280×720 MP4 of the run | same artifact_url endpoint |
+| Screenshots | Per-step PNGs | `GET /browser_check/{id}/results/{result_id}/artifact_url?artifact_type=screenshot&screenshot_index=N` |
+| HAR file | Full network capture | `GET /browser_check/{id}/results/{result_id}/artifact_url?artifact_type=har` |
+| Video | 1280×720 WebM of the run | same endpoint with `artifact_type=video` |
 | Web vitals | JSON: `{lcp_ms, fcp_ms, cls, ttfb_ms}` | `GET /browser_check/{id}/vitals` |
 | Console errors | JSON array | embedded in result |
 | Trace IDs | Trace IDs of the `traceparent` headers added to outgoing requests; they resolve only for backends that send traces to Site Qwality | embedded in result |
 
-The HAR and video URLs are presigned and expire in 1 hour.
+The artifact URLs are presigned and expire in 1 hour.
 
 ## Endpoints
 
@@ -142,7 +142,7 @@ The HAR and video URLs are presigned and expire in 1 hour.
 | `DELETE` | `/browser_check/{id}` | Delete. |
 | `POST` | `/browser_check/{id}/run` | Trigger an immediate run. The response reports the location the run executed in. |
 | `GET` | `/browser_check/{id}/results` | List recent results. |
-| `GET` | `/browser_check/{id}/results/{result_id}/artifact_url` | Presigned HAR + video URLs. |
+| `GET` | `/browser_check/{id}/results/{result_id}/artifact_url` | A presigned URL for one artifact: `artifact_type` is `har`, `video` or `screenshot` (with `screenshot_index`). |
 | `GET` | `/browser_check/{id}/vitals` | Aggregated web vitals over time. |
 
 ## See also

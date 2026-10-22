@@ -23,7 +23,7 @@ https://mcp.siteqwality.com/mcp
 
 2. The assistant opens a Site Qwality consent page in your browser. Sign in if you are not already.
 
-3. Choose **read-only** or **read and write**, then approve.
+3. Turn on **Read-only** if the assistant should only look, then click **Allow**.
 
 </Steps>
 
@@ -205,7 +205,7 @@ codex mcp add siteqwality --url https://mcp.siteqwality.com/mcp \
 
 ## Permissions
 
-Access is granted per area, as `read:<area>` and `write:<area>`. On the consent page, read-only grants every `read:` scope and read and write grants both. On an API key you tick them one by one, and write does not include read, so tick both if the agent needs both.
+Access is granted per area, as `read:<area>` and `write:<area>`. On the consent page, **Read-only** grants the `read:` scopes it offers, and leaving it off grants their `write:` scopes too. On an API key you tick them one by one, and write does not include read, so tick both if the agent needs both.
 
 | Area | Scopes | Covers |
 |---|---|---|
@@ -267,7 +267,7 @@ Assistants pick the tool themselves. **Write** tools need the matching `write:` 
 
 ### Status pages
 
-These tools use the Status Pages scopes, except the four incident tools (`list_status_page_incidents`, `publish_incident`, `update_status_page_incident` and `delete_status_page_incident`), which use the Incidents scopes.
+These tools use the Status Pages scopes, except the three incident tools (`list_status_page_incidents`, `update_status_page_incident` and `delete_status_page_incident`), which use the Incidents scopes.
 
 | Tool | What it does | Access |
 |---|---|---|
@@ -322,7 +322,7 @@ Two more tools reach everything else the [Site Qwality API](/api-reference/) can
 
 ## Safety
 
-- **Risky actions are marked.** `delete_monitor`, `call_api` and the status page tools that delete, remove or replace something (marked "asks first" above) are flagged as destructive, so assistants that honor the flag ask you before running them. Read tools are flagged read-only.
+- **Risky actions are marked.** Every tool marked "asks first" above is flagged as destructive, so assistants that honor the flag ask you before running it. Read tools are flagged read-only.
 - **Your data is data.** Results include text you and your services control, such as monitor names and log lines. The tools tell the assistant to treat that text as data, never as instructions.
 - **Changes are audited.** Every change an assistant makes goes through the same API as the dashboard and shows up in your [audit log](/enterprise/audit-log/#ai-assistants) as the member who approved it, with the assistant's name, "via MCP" and the tool it used. Connecting and disconnecting an assistant are logged too.
 - **Grant the least you need.** Choose read-only when you only want answers. You can reconnect with write access later.

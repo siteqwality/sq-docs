@@ -29,7 +29,7 @@ A user with no rule for the incident's urgency, or whose rules all fail (an unve
 
 ## Recommended high-urgency stack
 
-Three rules at increasing delays: SMS at 0 minutes, Slack DM at 5, email at 15. An SMS is tried once, so the later rules catch a message that did not arrive. Your starting `high` rule on your sign-in email is the third one; move it to 15 minutes instead of adding another.
+Three rules at increasing delays: SMS at 0 minutes, Slack DM at 5, email at 15. SMS delivery is best-effort, so the later rules catch a message that did not arrive. Your starting `high` rule on your sign-in email is the third one; move it to 15 minutes instead of adding another.
 
 Add the SMS number and the Slack DM first. A rule cannot use an SMS number until it is [verified](/incident-management/notifications/how-to/contact-methods/#verify-a-contact-method); email and Slack DM methods can be used straight away. Then, under **Paging rules**:
 
@@ -45,7 +45,7 @@ Add the SMS number and the Slack DM first. A rule cannot use an SMS number until
 
 **Send it** offers **Immediately**, 5, 10, 15 and 30 minutes and 1 hour, or a custom delay of up to 1440 minutes.
 
-Through the API, list your contact methods to get their ids:
+Through the API, with your user ID from `GET /account/info` as `USER_ID`, list your contact methods to get their ids:
 
 ```bash
 curl https://api.siteqwality.com/user/$USER_ID/contact_method \
@@ -94,7 +94,7 @@ Deleting your `low` rule does not stop low-urgency pages: with no rule, they go 
 
 ## How the stack interacts with escalation
 
-Escalation policy timeouts and personal-rule delays are **independent timers**. If your escalation policy fires a level at minute 0 and you have rules at 0/5/15 min:
+Escalation policy timeouts and personal-rule delays are **independent timers**. If an escalation level with a 5-minute timeout pages you at minute 0 and you have rules at 0/5/15 min:
 
 | Time | Event |
 |---|---|

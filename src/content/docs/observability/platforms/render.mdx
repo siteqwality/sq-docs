@@ -11,9 +11,11 @@ This guide covers logs, traces and metrics. Replace `YOUR_INGEST_KEY` with your 
 
 <BeforeYouStart />
 
+Your application sends OTLP/HTTP directly, independent of Render log streams. Render's native log streams send syslog, and [syslog over TLS](/observability/platforms/syslog/) is not available yet. For platform stdout, run a forwarder of your own (for example the [OpenTelemetry Collector](/observability/platforms/collector/) or [Vector](/observability/platforms/vector/)) that receives Render's stream and exports OTLP/HTTP.
+
 ## 1. Set server environment variables
 
-Set these on the running service. Keep the key out of source control, client bundles and build logs.
+You add these to the service in step 3. Keep the key out of source control, client bundles and build logs.
 
 ```bash
 export OTEL_SERVICE_NAME='my-service'
@@ -30,21 +32,21 @@ export OTEL_TRACES_EXPORTER=otlp
 export OTEL_METRICS_EXPORTER=otlp
 ```
 
-## 2. Configure your Render service
+## 2. Use a Node.js start command
 
-Your application sends OTLP/HTTP directly, independent of Render log streams. Render's native log streams send syslog, and [syslog over TLS](/observability/platforms/syslog/) is not available yet. For platform stdout, run a forwarder of your own (for example the [OpenTelemetry Collector](/observability/platforms/collector/) or [Vector](/observability/platforms/vector/)) that receives Render's stream and exports OTLP/HTTP.
+Install packages from the Node.js guide first, or use the start command from your language guide.
+
+```bash
+node --require @opentelemetry/auto-instrumentations-node/register app.js
+```
+
+## 3. Configure your Render service
 
 ```text
 Open the service Environment settings and add the selected OTEL variables as secret values. Use your language guide to install and start instrumentation, then save and redeploy.
 ```
 
-## 3. Use a Node.js start command
-
-Install packages from the Node.js guide first, or use the start command from your language guide. Then generate a request and a log record.
-
-```bash
-node --require @opentelemetry/auto-instrumentations-node/register app.js
-```
+After the redeploy, generate a request and a log record.
 
 ## See your data
 
@@ -52,9 +54,9 @@ Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.
 
 ## Production checklist
 
-Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
+Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review [redaction and processors](/observability/pipelines/) before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pipelines, access and privacy](/observability/privacy/)
+- [Access, exports and erasure](/observability/privacy/)
 - [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
 - [Upstream Render documentation](https://render.com/docs/log-streams)

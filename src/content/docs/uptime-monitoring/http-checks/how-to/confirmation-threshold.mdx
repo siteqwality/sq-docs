@@ -7,13 +7,13 @@ owner: jj
 
 import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
 
-By default an HTTP check pages you the moment one check fails. For a noisy target (a flaky third-party dependency, an endpoint behind an aggressive bot-management edge), set `confirmation_threshold` to `N` and the monitor only transitions to `failed` after **N consecutive failed checks**.
+By default an HTTP check alerts you the moment one check fails. For a noisy target (a flaky third-party dependency, an endpoint behind an aggressive bot-management edge), set `confirmation_threshold` to `N` and the monitor only transitions to `failed` after **N consecutive failed checks**.
 
 ## Set it
 
 <Steps>
 
-1. **Open the monitor**, choose **Edit monitor** and set **Confirmation Threshold** under **Alerting** (`1` to `10`, default `1`), or send the field through the API.
+1. **Open the monitor**, choose **Edit monitor** and set **Confirmation Threshold** under **Alerting** (`1` to `10`, default `1`), or send the field through the API, with an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY` and `$JOB_ID` set to the check's `id`:
 
    ```bash
    curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
@@ -21,6 +21,8 @@ By default an HTTP check pages you the moment one check fails. For a noisy targe
      -H "Content-Type: application/json" \
      -d '{ "confirmation_threshold": 3 }'
    ```
+
+   Send the check's current `auth_type`, `content_type` and `custom_http_headers` in the same `PUT` if it uses them: leaving them out clears them.
 
 2. **Work out what it costs you in detection time.** The alert fires on the Nth failed check itself, so:
 
@@ -44,7 +46,7 @@ What waits for confirmation:
 - automatic incident creation, and the escalation that hangs off it;
 - the downtime window used by `GET /http/job/{job_id}/uptime_percentage`.
 
-Because the downtime window opens at confirmation time, an incident's recorded duration is up to `(N - 1) × interval` shorter than the raw check history suggests. Uptime as a ratio of checks counts every failed check; uptime as a duration counts confirmed downtime.
+Because the downtime window opens at confirmation time, an outage's recorded duration is up to `(N - 1) × interval` shorter than the raw check history suggests. Uptime as a ratio of checks counts every failed check; uptime as a duration counts confirmed downtime.
 
 ## Recovery is not threshold-gated
 
@@ -98,4 +100,4 @@ The TLS, DNS, and page-speed monitors that get provisioned alongside an HTTP che
 
 <LinkCard title="HTTP check reference" description="Every field on an HTTP check, with defaults and limits." href="/uptime-monitoring/http-checks/reference/" />
 <LinkCard title="Notification groups" description="delay_send_after_minutes and resend_every_minutes." href="/incident-management/notifications/overview/" />
-<LinkCard title="Incidents" description="What opens when a confirmed failure lands." href="/incident-management/incidents/overview/" />
+<LinkCard title="Incidents" description="What a service opens when a confirmed failure lands." href="/incident-management/incidents/overview/" />

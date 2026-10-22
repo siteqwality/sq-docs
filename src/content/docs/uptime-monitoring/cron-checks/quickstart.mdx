@@ -1,6 +1,6 @@
 ---
 title: Cron check quickstart
-description: Set up a heartbeat for a daily job and confirm it pages you when the job stops running.
+description: Set up a heartbeat for a daily job and confirm it alerts you when the job stops running.
 last_verified: 2026-05-03
 owner: jj
 ---
@@ -21,7 +21,7 @@ By the end of this guide you'll have a cron check expecting a ping every 24 hour
 2. Configure:
    - **Name:** `Nightly backup`.
    - **Check Interval Minutes:** the `24h` mark (one day, `86400` seconds in the API).
-   - **Notification groups:** pick your default group.
+   - **Notification groups:** leave the **Default** group selected.
 
 3. Click **Submit**. The check page now shows **Your Cron Push URL** at the top.
 
@@ -38,12 +38,11 @@ curl -X POST https://api.siteqwality.com/cron/job \
   -H "Content-Type: application/json" \
   -d '{
     "friendly_name": "Nightly backup",
-    "check_interval_seconds": 86400,
-    "group_notification_ids": ["<group-id>"]
+    "check_interval_seconds": 86400
   }'
 ```
 
-The response includes `id`, `account_id`, and the inferred ping URL: `https://ping.siteqwality.com/<account_id>/<id>`.
+With `group_notification_ids` left out, the check uses your **Default** group, as in the dashboard. The response includes `id` and `account_id`, which make the ping URL: `https://ping.siteqwality.com/<account_id>/<id>`. The steps below use the `id` as `$CRON_JOB_ID`.
 
 </TabItem>
 </Tabs>
@@ -65,7 +64,7 @@ fi
 # Python
 import requests
 
-PING_URL = "https://ping.siteqwality.com/acct_abc123/job_xyz789"
+PING_URL = "https://ping.siteqwality.com/<account-id>/<cron-job-id>"
 
 def ping():
     try:
@@ -80,7 +79,7 @@ ping()
 
 ```javascript
 // Node
-const PING_URL = "https://ping.siteqwality.com/acct_abc123/job_xyz789";
+const PING_URL = "https://ping.siteqwality.com/<account-id>/<cron-job-id>";
 
 async function ping() {
   try {
@@ -105,7 +104,7 @@ The check's **Recent Received Pings** list shows each ping, when it arrived and 
 <TabItem label="API">
 
 ```bash
-curl https://api.siteqwality.com/cron/job/$JOB_ID/recent \
+curl https://api.siteqwality.com/cron/job/$CRON_JOB_ID/recent \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
@@ -120,8 +119,8 @@ To verify the alerting path:
 
 1. Edit the cron check and drop **Check Interval Minutes** to `5m` (`check_interval_seconds: 300` in the API).
 2. Don't ping for 10 minutes.
-3. The check flips to `failed`, an incident opens, your notification group fires.
-4. Send a ping manually (`curl <ping-url>`). The check flips back to `success` and the incident auto-resolves.
+3. The check flips to `failed` and your notification group fires.
+4. Send a ping manually (`curl <ping-url>`). At the next evaluation the check flips back to `success` and the group gets the all clear.
 
 Don't forget to set the interval back to `24h` (`86400`) when done testing.
 

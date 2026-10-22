@@ -5,7 +5,7 @@ last_verified: 2026-10-18
 owner: jj
 ---
 
-Open [Usage and settings](https://app.siteqwality.com/account/telemetry) and the **Processing pipelines** editor. An admin can create an ordered pipeline for logs, traces or metrics, choose a filter, edit its typed processors and preview sample or recent stored data before saving. There are at most 50 pipelines per signal and 20 processors per pipeline. Changes apply to new input only; they do not reparse historical records.
+Open **Pipelines** in [Telemetry settings](https://app.siteqwality.com/account/telemetry/pipelines). An admin can create an ordered pipeline for logs, traces or metrics, choose a filter, edit its typed processors and preview sample or recent stored data before saving. There are at most 50 pipelines per signal and 20 processors per pipeline. Changes apply to new input only; they do not reparse historical records.
 
 ## Safe workflow
 
@@ -13,7 +13,7 @@ Open [Usage and settings](https://app.siteqwality.com/account/telemetry) and the
 2. Use the processor forms for parsing, attribute changes, redaction, filtering, retention and supported metric derivation.
 3. Run the preview. Inspect each processor's diagnostics, match counts and resulting records.
 4. Check typed fields, service/environment identity, trace IDs and metric labels. Keep low-cardinality labels for log-derived metrics.
-5. Save, send a fresh record, then inspect the explorer and ingest outcomes. A change takes effect once its configuration revision is published, not instantly.
+5. Save. A change takes effect once its configuration revision is published, not instantly, so send a fresh record after that and inspect the explorer and ingest outcomes.
 
 Default redaction runs before your processors on bodies, string attributes and exceptions. Card, authorization, bearer, AWS-secret-shaped and password-key defaults protect common credentials. Email and IP policies are configurable. No pattern library removes all personal information, so avoid collecting it and test your own payloads. Do not copy real secrets into a parser sample.
 
@@ -29,4 +29,4 @@ A configuration contains `signal`, `name`, `enabled`, nonnegative `position`, a 
 
 Supported parser choices include JSON, regex with named captures, grok, common access-log templates, syslog, CSV and key/value formats where offered by the editor. Processors can also set, rename or delete attributes, remap severity or service, parse time, redact, exclude or sample, set supported trace-retention policies and derive supported log metrics. A restrictive retention or exclusion rule discards data: test it before enabling and keep an export when required.
 
-Parsers created with the legacy `/log_parsers` endpoint are not converted to pipelines. Recreate each one in the [pipelines editor](https://app.siteqwality.com/account/telemetry), and do not POST a legacy rule body to `/telemetry/pipelines`.
+Parsers created with the legacy `/log_parsers` endpoint are not converted to pipelines. Recreate each one in the [pipelines editor](https://app.siteqwality.com/account/telemetry/pipelines), and do not POST a legacy rule body to `/telemetry/pipelines`.

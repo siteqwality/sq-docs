@@ -21,7 +21,7 @@ Services are the only way a monitor failure becomes an incident, and the only wa
 
 <Steps>
 
-1. Open **Manage → Services** and choose **+ Add Service**.
+1. Open **Manage → Services** and choose **Add service**.
 
 2. Give it a name and, optionally, a description.
 
@@ -50,6 +50,8 @@ curl -X POST https://api.siteqwality.com/service \
     "default_incident_severity": "major"
   }'
 ```
+
+Then [link its monitors](#link-monitors).
 
 Scoped API keys, M2M API clients and AI assistants need `read:services` to read services and `write:services` to change them. An AI assistant connected to [MCP](/integrations/mcp/#services) with an API key can list, create and update services, and link or unlink their monitors.
 
@@ -135,13 +137,13 @@ A broadcast target tells someone outside the escalation chain about the service'
 
 - **Email:** any address. An address outside your members' email domains needs a confirmation.
 - **Slack channel:** a channel of a connected [Slack integration](/integrations/slack/), or a bot token you paste in. With the integration, nothing secret is stored on the target. A pasted token is write-only and is never shown again.
-- **Webhook:** a connected [webhook integration](/integrations/webhooks/), or a public URL you paste in. Deliveries use the [webhook envelope](/integrations/webhooks/#payload) with `incident.created` and `incident.resolved` events and are signed. A webhook integration signs with its own secret and shows the deliveries in its log; a pasted URL gets a signing secret of its own, shown once when you add it.
+- **Webhook:** a connected [webhook integration](/integrations/webhooks/), or a public URL you paste in. Deliveries use the [webhook envelope](/integrations/webhooks/#incident-webhooks) with `incident.created` and `incident.resolved` events and are signed. A webhook integration signs with its own secret and shows the deliveries in its log; a pasted URL gets a signing secret of its own, shown once when you add it.
 
 Each target can take only some incidents: a minimum severity, compared with the highest severity the incident reaches, so a target that hears an escalation also hears how it ends, and a list of the lifecycle events it wants.
 
 The Slack, email and webhook targets deliver **opened** and **resolved**. The other lifecycle events (acknowledged, updated, reopened, merged and service changed) are recorded but not sent.
 
-Add targets on the service's detail page in the dashboard (it opens from a monitor or incident linked to the service), or through the API. See the [reference](/incident-management/services/reference/#broadcast-targets).
+In the dashboard, open the service from **Manage → Services** and click **+ Add Target** under **Notification Targets**. Through the API, see the [reference](/incident-management/services/reference/#broadcast-targets).
 
 ## Manual incidents
 

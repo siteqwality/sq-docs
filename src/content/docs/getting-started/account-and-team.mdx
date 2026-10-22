@@ -19,7 +19,7 @@ Open **Sign-in & security** from the menu under your name (bottom left) to add a
 
 1. Open **Settings → Users**.
 
-2. Click **Invite User**, enter their email, and pick a role (defaults to **Member**). Only a Super Admin can invite an Admin, Billing Admin or Super Admin. To invite a group, choose **Invite several people** and paste up to 25 addresses, one per line or separated by commas.
+2. Click **Invite user**, enter their email, and pick a role (defaults to **Member**). Only a Super Admin can invite an Admin, Billing Admin or Super Admin. To invite a group, choose **Invite several people** and paste up to 25 addresses, one per line or separated by commas.
 
 3. Invites expire after **14 days**. **Resend** on a pending invite sends the link again and restarts the 14 days, even for an expired invite.
 
@@ -33,6 +33,7 @@ Any Super Admin can change a role later from the Users table.
 
 - **Super Admin**: everything, including billing, role assignment, and SSO/SCIM. The account's original user is always a Super Admin and cannot be demoted or deleted.
 - **Admin**: team and credential management (invites, API keys, integrations, the audit log) and deleting escalation policies, on-call schedules and services. Everything except billing, roles, and SSO/SCIM.
+- **Billing Admin**: everything a Member can do, plus billing (plans, payment methods, invoices). No team, credential or role management.
 - **Member**: full product access (monitors, incidents, dashboards), but no team, credential or billing management, and no deleting escalation policies, on-call schedules or services. Members see integrations with credentials masked. New users start here.
 - **Auditor**: read-only across the product, plus the [audit log](/enterprise/audit-log/). For compliance reviewers.
 - **Viewer**: read-only, except acknowledging and resolving incidents. Viewers cannot read the audit log.
@@ -61,9 +62,11 @@ Anything you can do in the dashboard, you can do through the API.
 
 2. Name it after where it will be used (`local-dev`, `terraform-prod`, `ci`). One key per use lets you rotate them independently.
 
-3. Copy the value when shown. It is displayed only once, so store it in your secrets manager.
+3. Under **Access**, choose **Ingest only** for a key that only sends telemetry, or **Full access** for one that can also call the API. A full-access key can be limited under **Scopes**; with none ticked it can do everything the account can.
 
-4. Use it as a Bearer token:
+4. Click **Create key** and copy the value. It is displayed only once, so store it in your secrets manager.
+
+5. Use a full-access key as a Bearer token:
 
    ```bash
    curl https://api.siteqwality.com/http/jobs \
@@ -72,7 +75,7 @@ Anything you can do in the dashboard, you can do through the API.
 
 </Steps>
 
-Keys belong to the account, not the user. Rotating a key ends the old one at once, so deploy the new value right away. A key with no scopes can do everything the account can, so give each key only the scopes it needs. For automation limited to specific resources, or run by a third party, use an [M2M API client](/enterprise/api-clients/) instead.
+Keys belong to the account, not the user. Rotating a key ends the old one at once, so deploy the new value right away. For long-lived automation, or automation a third party runs, use an [M2M API client](/enterprise/api-clients/), which trades its secret for short-lived tokens.
 
 ## Configure billing
 

@@ -1,6 +1,6 @@
 ---
 title: Dashboards quickstart
-description: Build a dashboard from a template, add a widget and a variable, and share it with a public link in 10 minutes.
+description: Build a dashboard from a template, add a widget and a variable, and share it with a public link.
 last_verified: 2026-10-11
 owner: jj
 ---
@@ -19,7 +19,7 @@ You also need at least one [monitor](/getting-started/signup-and-first-monitor/)
 
 1. Open **Dashboards** in the sidebar and choose **New dashboard**.
 
-2. Pick **Template** and choose **Uptime overview**.
+2. Choose **From a template**, pick **Uptime overview** and choose **Create dashboard**.
 
 </Steps>
 
@@ -33,17 +33,15 @@ You will chart the share of checks that failed. That takes two queries and a for
 
 1. Choose **Edit** (or press `e`). The header turns into an edit bar.
 
-2. Choose **Add widget**, search for **Time series** and click it to place it on the grid.
+2. Choose **Add widget**, search for **Time series** and click it. The widget editor opens as a drawer.
 
-3. Open the new widget's menu and choose **Edit**. The widget editor opens as a drawer.
+3. Set query **a** to source **Monitors** and measure **Checks**.
 
-4. Set query **a** to source **Monitors** and measure **Checks**.
+4. Choose **Add query**. Set query **b** to source **Monitors** and measure **Failed checks**. Hide queries **a** and **b** so only the formula is drawn.
 
-5. Add a second query. Set query **b** to source **Monitors** and measure **Failed checks**. Hide queries **a** and **b** so only the formula is drawn.
+5. Choose **Add formula** and enter `b / a * 100` (see [formulas](/dashboards/queries/#formulas)). Set its unit to **Percent** and its alias to `Failure rate`.
 
-6. Add a [formula](/dashboards/queries/#formulas): `b / a * 100`. Set its unit to **Percent** and its alias to `Failure rate`.
-
-7. Leave the title empty to use the suggested one, or type your own. Close the drawer.
+6. Leave the title empty to use the suggested one, or type your own. Choose **Apply** to place the widget on the grid.
 
 </Steps>
 
@@ -55,11 +53,11 @@ Drag the widget to move it, or drag its corner to resize it. Nothing is saved ye
 
 1. Still in edit mode, open **Settings** in the edit bar.
 
-2. Add a variable named `region`. Bind it to source **Monitors**, field **Region**. Turn on multi select and **All**, and keep **All** as the default.
+2. On the **Variables** tab, choose **Add variable**. Name it `region`, set **Source** to Monitors and **Field** to Region. Leave **Allow multiple selections** and **Include an All option** on, with **All** as the default.
 
-3. Apply the changes. A `Region` dropdown appears in the variables bar.
+3. Choose **Apply**. A `region` dropdown appears in the variables bar.
 
-4. Open the menu of the response time by region chart and choose **Edit**. Add a filter on **Region** and choose `$region` as the value. Close the drawer.
+4. Open the menu of the **Average response time by region** chart and choose **Edit**. Add a filter on **Region** and choose `$region` as the value. Choose **Apply**.
 
 </Steps>
 
@@ -69,21 +67,23 @@ The chart now follows the dropdown: **All** shows every region, and picking one 
 
 <Steps>
 
-1. Open the time picker. Choose **7d**, or type `yesterday` or `Oct 1 - Oct 3` and press Enter.
+1. Open the time picker. Choose **Past 7 days**, or type `yesterday` or `Oct 1 - Oct 3` and press Enter.
 
-2. Drag across a time chart to zoom in on a spike. Choose **Back** to return to the previous range.
+2. Drag across a time chart to zoom in on a spike. Press `z` to zoom back out.
 
 3. Press `[` to step back one window and `]` to step forward.
 
+4. Choose **Save as default time** in the edit bar to make the current range the one everyone opens the dashboard on.
+
 </Steps>
 
-A time change lives in the URL and does not change the dashboard. To store a default range for everyone who opens it, set the range you want and choose **Save as default** while in edit mode.
+A time change on its own lives in the URL and does not change the dashboard. **Save as default time** is what stores it.
 
 ## 5. Save
 
 <Steps>
 
-1. Choose **Save** in the edit bar, or press `Cmd+S`.
+1. Choose **Save** in the edit bar. The dashboard leaves edit mode.
 
 2. Open **Version history** from the actions menu. Your save is the newest entry, with a short summary of what changed.
 
@@ -95,19 +95,19 @@ A time change lives in the URL and does not change the dashboard. To store a def
 
 1. Choose **Share** in the header.
 
-2. Create a public link. Choose which time ranges viewers may pick and which range the page opens with. Leave `region` selectable, or lock it to a value. Set a theme and, if you want one, an expiry date.
+2. Choose **Create public link**. Pick the time ranges viewers can use and the range the page **Opens on**. Leave `region` on **Viewers choose**, or set it to **Locked**. Set a theme and, if you want one, an expiry date. Choose **Create link**.
 
-3. Copy the link. It looks like `https://app.siteqwality.com/share/d/<token>`.
+3. Choose **Copy link**. It looks like `https://app.siteqwality.com/share/d/<token>`.
 
 4. Open it in a private window to see what viewers see.
 
 </Steps>
 
-Anyone with the link can see the data in the widgets, read-only. Log stream and Trace list widgets show no data on a shared link. To stop sharing, pause or revoke the link from the same dialog. See [sharing](/dashboards/sharing/).
+Anyone with the link can see the data in the widgets, read-only. To stop sharing, pause or revoke the link from the same dialog. See [sharing](/dashboards/sharing/).
 
 ## Prefer the API?
 
-This call creates the same board from the template:
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`, this call creates the same board from the template:
 
 ```bash
 curl -X POST https://api.siteqwality.com/dashboards/templates/uptime-overview \

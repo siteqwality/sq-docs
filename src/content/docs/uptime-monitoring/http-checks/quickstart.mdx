@@ -24,7 +24,7 @@ By the end of this guide you'll have an HTTP check running, with a notification 
    - **Check Interval:** `5m`
    - **Method:** `GET` (under **Request**)
 
-3. **Pick a notification group** under **Alerting** (or create one). Email is the fastest channel to test.
+3. **Leave the Default notification group selected** under **Alerting**.
 
 4. **Click Submit.**
 
@@ -37,7 +37,7 @@ The check runs immediately, and the first result lands within seconds.
 
 <Steps>
 
-1. **Create an API key** under **Settings → API keys** and export it:
+1. **Create a Full access API key** under **Settings → API keys** and export it:
 
    ```bash
    export SITEQWALITY_API_KEY="<your API key>"
@@ -54,9 +54,7 @@ The check runs immediately, and the first result lands within seconds.
        "method": "GET",
        "uri": "https://mock.codes/200",
        "timeout_ms": 15000,
-       "run_interval_seconds": 300,
-       "monitor_tls": false,
-       "monitor_dns": false
+       "run_interval_seconds": 300
      }'
    ```
 
@@ -77,17 +75,17 @@ The full request schema is in the [API Reference](/api-reference/operations/crea
 
 <Steps>
 
-1. **Wait for the first result.** The monitor's status changes from "pending" to "success."
-
-2. **Look at the recent results.**
-   - Dashboard: open the monitor, scroll to **Recent Checks**.
+1. **Wait for the first result, then look at it.**
+   - Dashboard: open the monitor's **Recent Checks** tab.
    - API: `GET /http/job/{job_id}/recent`.
 
-3. **Force a failure to test notifications.** Edit the check and change the URL to `https://mock.codes/500`. The next tick will fail, the monitor's status will flip, and your notification group will fire.
+2. **Force a failure to test notifications.** Edit the check and change the URL to `https://mock.codes/500`. The next check fails, and the Default group waits 3 minutes, then emails you if the monitor is still down.
 
-4. **Flip it back.** Restore the URL to `https://mock.codes/200`. The all clear goes out after the recovery period (2 healthy checks on a new monitor).
+3. **Flip it back** once the down email arrives. Restore the URL to `https://mock.codes/200`. The all-clear email follows after 2 healthy checks in a row.
 
 </Steps>
+
+If the email never arrives, check your spam folder and the group's email channel. No incident opens in this flow: monitor alerts go to notification groups, and an incident opens only when the monitor is linked to a [service](/incident-management/services/overview/) that creates them.
 
 ## What's next
 

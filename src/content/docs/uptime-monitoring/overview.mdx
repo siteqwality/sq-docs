@@ -12,18 +12,18 @@ Every uptime monitor in Site Qwality follows the same lifecycle: configure → r
 | Check type | What it checks | Use for |
 |---|---|---|
 | [HTTP](/uptime-monitoring/http-checks/overview/) | A URL responds with the expected status, body, and latency | Websites, APIs, webhook receivers |
-| [SSL/TLS](/uptime-monitoring/ssl-tls-checks/overview/) | A certificate's expiry, chain, and validity | Anything served over HTTPS |
+| [SSL/TLS](/uptime-monitoring/ssl-tls-checks/overview/) | A certificate's expiry date | Anything served over HTTPS |
 | [Domain expiry](/uptime-monitoring/dns-checks/overview/) | A domain's registration at the registry: expiry date, registry holds, registrar and nameserver changes | Any domain you would lose if a renewal failed |
 | [Cron heartbeat](/uptime-monitoring/cron-checks/overview/) | A scheduled job *pinged* on time | Backups, ETL, batch jobs |
 | [Browser](/uptime-monitoring/browser-checks/overview/) | A full Playwright script passes in a real Chromium | Login flows, checkout, multi-page journeys |
 
 ## Picking the right check
 
-- **You have a URL that should be `200 OK`.** Use [HTTP checks](/uptime-monitoring/http-checks/overview/). You can also opt in to a paired TLS check (cert expiry) and domain expiry check (domain registration) on the same monitor.
-- **You only care about cert expiry, not whether the site is up.** Use [SSL/TLS checks](/uptime-monitoring/ssl-tls-checks/overview/). Otherwise, enable the TLS sub-check on your HTTP monitor.
+- **You have a URL that should be `200 OK`.** Use [HTTP checks](/uptime-monitoring/http-checks/overview/). Each one also gets a paired TLS check (cert expiry) and domain expiry check (domain registration) unless you turn them off.
+- **You only care about cert expiry.** [SSL/TLS checks](/uptime-monitoring/ssl-tls-checks/overview/) always pair with an HTTP monitor, so create one for the host and keep **Monitor TLS/SSL** on.
 - **You want to hear before a domain registration lapses.** Enable the [domain expiry check](/uptime-monitoring/dns-checks/overview/) on an HTTP monitor for that domain.
 - **You have a cron job that should run every N minutes.** Use a [cron heartbeat](/uptime-monitoring/cron-checks/overview/). Your job pings Site Qwality at the end of each successful run, and Site Qwality alerts when it doesn't.
-- **You need to validate a multi-step user flow.** Use [browser checks](/uptime-monitoring/browser-checks/overview/). You write a Playwright script and Site Qwality runs it on schedule, capturing a HAR + video on failure.
+- **You need to validate a multi-step user flow.** Use [browser checks](/uptime-monitoring/browser-checks/overview/). You write a Playwright script and Site Qwality runs it on schedule, capturing a HAR and a video of every run.
 
 ## Cross-cutting concerns
 

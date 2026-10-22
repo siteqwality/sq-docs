@@ -17,6 +17,8 @@ A site that comes back for one check and fails again sends you an all clear and 
 | `recovery_period_runs` | int | `2` | `1` to `10`. `1` sends the all clear on the first healthy check. |
 | `flap_hold_override` | bool \| null | `null` | `null` follows the account setting, `true` always holds, `false` never holds. |
 
+In the monitor form they are **Recovery Period** and **Hold alerts while flapping**, under **Alerting**. Through the API, with an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY` and `$JOB_ID` set to the check's `id`:
+
 ```bash
 curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
@@ -24,14 +26,16 @@ curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
   -d '{ "recovery_period_runs": 2, "flap_hold_override": null }'
 ```
 
+Send the check's current `auth_type`, `content_type` and `custom_http_headers` in the same `PUT` if it uses them: leaving them out clears them.
+
 ## Recovery period
 
 The monitor goes back to `success` on the first healthy check. Uptime, SLA reports and the outage's recorded duration all use that first healthy check. What waits for the recovery period:
 
 - the all clear notification on every channel;
-- automatic resolution of the incident the outage opened.
+- automatic resolution of the incident, if the outage opened one through a [service](/incident-management/services/overview/).
 
-A failed check inside the period resets the count. If the monitor goes back down before the all clear was due, nobody is told twice: the open incident stays open, and the outage alert that already went out still stands. When the all clear does go out, it gives the time of the last recovery.
+A failed check inside the period resets the count. If the monitor goes back down before the all clear was due, nobody is told twice: any open incident stays open, and the outage alert that already went out still stands. When the all clear does go out, it gives the time of the last recovery.
 
 A 60 second monitor with `recovery_period_runs: 2` sends the all clear one minute after the first healthy check.
 
@@ -40,7 +44,7 @@ A 60 second monitor with `recovery_period_runs: 2` sends the all clear one minut
 A monitor is flapping after **4 status changes within 30 minutes**. While it flaps:
 
 - One **Flapping** notice goes out to the monitor's email, Slack, Microsoft Teams, Discord, Google Chat, Mattermost, Telegram and Pushbullet channels.
-- Each new outage is held. If the monitor recovers within **5 minutes**, the held outage and its recovery are dropped together. If it is still down after 5 minutes, the held outage is sent to every channel, paging ones included, and the incident opens.
+- Each new outage is held. If the monitor recovers within **5 minutes**, the held outage and its recovery are dropped together. If it is still down after 5 minutes, the held outage is sent to every channel, paging ones included, and a linked service opens its incident.
 - Once the monitor has had no status change for **15 minutes**, a **Stable** summary says how many outages were held.
 
 SMS, PagerDuty, Opsgenie and Pushover never get the Flapping or Stable notices, only outages that broke through. Webhooks get no flap notices.

@@ -26,9 +26,9 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 
 | Status | Meaning |
 |---|---|
-| `good` | Most recent handshake succeeded and the certificate is valid. |
-| `bad` | The certificate is invalid or has expired. Triggers notifications. |
-| `unknown` | The check could not connect or read a certificate (DNS failure, refused or timed-out connection, nothing serving TLS on the port). |
+| `good` | Most recent handshake succeeded and the certificate has not expired. The chain and hostname match are recorded but do not change the status. |
+| `bad` | The certificate has expired. |
+| `unknown` | The check has not run yet, or could not connect or read a certificate (DNS failure, refused or timed-out connection, nothing serving TLS on the port). |
 
 A TLS check that stays `unknown` for more than 24 hours means certificate expiry is not being watched. Site Qwality emails the account owners once per stretch and records a `tls_unknown` [monitor event](/uptime-monitoring/http-checks/reference/#monitor-events) on the HTTP check. A wrong port is a common cause: set `tls_port`.
 

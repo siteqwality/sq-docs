@@ -43,7 +43,7 @@ An email address that bounces permanently, or reports a page as spam, stops rece
 
 ## Add one with the API
 
-Contact methods live under `/user/{user_id}/contact_method`.
+Contact methods live under `/user/{user_id}/contact_method`. In the examples, `USER_ID` is your user ID from `GET /account/info`.
 
 ```bash
 curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method \
@@ -117,7 +117,7 @@ Through the API:
 
 <Steps>
 
-1. Send a code. Site Qwality sends a 6-digit code by email, SMS or Slack DM, depending on the method.
+1. Send a code to the method, with its `id` from the create response as `METHOD_ID`. Site Qwality sends a 6-digit code by email, SMS or Slack DM, depending on the method.
 
    ```bash
    curl -X POST https://api.siteqwality.com/user/$USER_ID/contact_method/$METHOD_ID/verification \

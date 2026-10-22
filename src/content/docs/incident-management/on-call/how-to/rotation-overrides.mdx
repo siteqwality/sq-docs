@@ -11,6 +11,8 @@ An **override** is a hard "user X is on call from time A to time B" entry that b
 
 Overrides do *not* modify the underlying rotation. Once the override expires, the rotation continues as if it never happened.
 
+Overrides go on an existing [on-call schedule](/incident-management/on-call/quickstart/).
+
 ## Add an override
 
 <Tabs syncKey="interface">
@@ -29,7 +31,7 @@ Overrides do *not* modify the underlying rotation. Once the override expires, th
 </TabItem>
 <TabItem label="API">
 
-With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`, and the schedule's `id` from `GET /on_call_schedule` as `SCHEDULE_ID`:
 
 ```bash
 curl -X POST https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/override \
@@ -42,7 +44,7 @@ curl -X POST https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/override 
   }'
 ```
 
-Times are RFC 3339 with timezone. The schedule's own timezone doesn't apply to override timestamps; they're absolute.
+`user_id` takes a user ID that `GET /account/info` lists. Times are RFC 3339 with timezone. The schedule's own timezone doesn't apply to override timestamps; they're absolute.
 
 </TabItem>
 </Tabs>
@@ -55,16 +57,27 @@ Times are RFC 3339 with timezone. The schedule's own timezone doesn't apply to o
 
 ## Overlapping overrides
 
-If two overrides cover the same time, the **most recently created one wins**. Don't rely on this; instead, delete or shorten the earlier one before adding a conflicting one.
+If two overrides cover the same time, the **most recently created one wins**. Don't rely on this; delete the earlier one before adding a conflicting one. Overrides cannot be edited, so to shorten one, delete it and add it again with the new times.
 
 ## Removing an override
 
-In the schedule's **Overrides** list, open the row's actions menu and choose **Delete override**. Through the API:
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+In the schedule's **Overrides** list, open the row's actions menu and choose **Delete override**.
+
+</TabItem>
+<TabItem label="API">
+
+`OVERRIDE_ID` is the override's `id`, from `GET /on_call_schedule/$SCHEDULE_ID/override`.
 
 ```bash
 curl -X DELETE https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/override/$OVERRIDE_ID \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
+
+</TabItem>
+</Tabs>
 
 You can delete an override that is in effect. The next page routes per the underlying layers.
 

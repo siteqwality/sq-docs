@@ -11,6 +11,8 @@ The Microsoft Teams integration posts alerts to a Teams channel through a Workfl
 
 Microsoft retired Office 365 Connectors in Teams, so Incoming Webhook connector URLs (`outlook.office.com/webhook/...` or `*.webhook.office.com`) do not deliver and are refused when you save them, as are Workflows URLs on the retired `logic.azure.com` hosts. If a Teams integration has a connector URL, create a new integration with a Workflows URL and point your notification channels at it.
 
+Your organization must allow Workflows in Teams.
+
 ## Set up
 
 <Steps>
@@ -37,7 +39,7 @@ curl -X POST https://api.siteqwality.com/integration/microsoft_teams \
   }'
 ```
 
-Your organization must allow Workflows in Teams. A flow belongs to the person who created it and stops if they leave your organization, so add a co-owner to the flow in Power Automate. On some Microsoft 365 plans, Microsoft turns off a flow that has had no successful run for 90 days, so check the flow if a channel for a quiet monitor has been silent for a long time.
+A flow belongs to the person who created it and stops if they leave your organization, so add a co-owner to the flow in Power Automate. On some Microsoft 365 plans, Microsoft turns off a flow that has had no successful run for 90 days, so check the flow if a channel for a quiet monitor has been silent for a long time.
 
 ## Add it to a notification group
 

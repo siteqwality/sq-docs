@@ -46,7 +46,7 @@ pipeline:
 
 ## 2. Validate, then start
 
-Write a fresh line to the configured file, then check exporter errors and Logs. Keep batches below 4,000,000 wire bytes; per-record limits can truncate a record.
+After it starts, write a fresh line to the configured file, then check exporter errors and Logs. Keep batches below 4,000,000 wire bytes; per-record limits can truncate a record.
 
 ```bash
 fluent-bit --dry-run --config fluent-bit.yaml
@@ -55,13 +55,13 @@ fluent-bit --config fluent-bit.yaml
 
 ## See your data
 
-Open [Logs](https://app.siteqwality.com/logs), [Traces](https://app.siteqwality.com/traces) or [Metrics](https://app.siteqwality.com/metrics). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
+Open [Logs](https://app.siteqwality.com/logs). New data usually shows up within a minute. Nothing arriving? See [failure handling](/observability/ingest/#failure-handling).
 
 ## Production checklist
 
-Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Set a stable service.name and deployment.environment.name; avoid user IDs or unbounded values in metric labels. Prefer a persistent queue, bounded retries and exporter failure monitoring. Review redaction and processors before increasing traffic.
+Store the key in your platform secret mechanism, rotate it when exposed and remove test keys. Keep service and environment names stable. Prefer a persistent queue, bounded retries and delivery failure monitoring. Review [redaction and processors](/observability/pipelines/) before increasing traffic.
 
 - [Ingest routes and limits](/observability/ingest/)
-- [Pipelines, access and privacy](/observability/privacy/)
-- [Logs](/observability/logs/reference/), [metrics](/observability/metrics/reference/) and [traces](/observability/traces/reference/)
+- [Access, exports and erasure](/observability/privacy/)
+- [Logs reference](/observability/logs/reference/)
 - [Upstream Fluent Bit documentation](https://docs.fluentbit.io/manual/pipeline/outputs/http)

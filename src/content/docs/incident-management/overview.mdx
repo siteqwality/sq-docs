@@ -7,7 +7,7 @@ owner: jj
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-When a monitor breaks, five things have to happen in order:
+When a monitor breaks, five things have to happen:
 
 1. **An incident is opened** that records what's broken and when.
 2. **Someone is identified** as the on-call responder.
@@ -22,7 +22,7 @@ Site Qwality's incident management module wires these together. You can also use
 <CardGrid>
   <LinkCard
     title="Incidents"
-    description="Record + timeline of an outage. Auto-opened by monitors linked to a service, or created manually for non-monitor events."
+    description="Record + timeline of an outage. Auto-opened by monitors of a service in auto mode, or created manually for non-monitor events."
     href="/incident-management/incidents/overview/"
   />
   <LinkCard

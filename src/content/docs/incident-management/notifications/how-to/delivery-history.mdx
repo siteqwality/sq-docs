@@ -31,8 +31,8 @@ An email channel whose address hard-bounced, or whose recipient marked an alert 
 ## REST
 
 ```bash
-curl https://api.siteqwality.com/notification/history?limit=50&status=failed \
-  -H "Authorization: Bearer $SQ_API_KEY"
+curl "https://api.siteqwality.com/notification/history?limit=50&status=failed" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
 | Query parameter | Meaning |

@@ -7,17 +7,17 @@ owner: jj
 
 import { LinkCard } from '@astrojs/starlight/components';
 
-Pick a template from the gallery under **New dashboard**, and you get an ordinary dashboard that you can edit, clone, share and delete like any other. Changing it never changes the template.
+Choose **New dashboard** > **From a template**, pick a template and choose **Create dashboard**. You get an ordinary dashboard that you can edit, clone, share and delete like any other. Changing it never changes the template.
 
-The gallery marks each template **Has data** or **No data yet** for your account:
+Each template shows whether your account has its data, such as **Uses your monitors** or **Needs monitors**:
 
-- The uptime boards need monitors.
+- The uptime boards and Executive summary need monitors.
 - Incidents and reliability needs at least one incident, at any time.
 - Web vitals needs a RUM application with sessions in the last 7 days.
 - Logs overview needs logs in the last 7 days.
 - Service health needs spans in the last 7 days.
 
-You can create a template that has no data yet. Its widgets show **No data** until the data arrives.
+You can create a dashboard from a template that has no data yet. Its widgets show **No data** until the data arrives.
 
 To learn the widgets, open a template widget's editor and see how its queries, filters and formulas are set up.
 
@@ -104,4 +104,4 @@ For: a one-screen status report.
 
 Variables in templates default to **All**. The exceptions are `$monitor` and `$app`, which default to your first monitor or first RUM application when the dashboard is created. See [variables](/dashboards/queries/#variables).
 
-<LinkCard title="Quickstart" description="Create a template, add a widget and a variable, and share it." href="/dashboards/quickstart/" />
+<LinkCard title="Quickstart" description="Create a board from a template, add a widget and a variable, and share it." href="/dashboards/quickstart/" />
