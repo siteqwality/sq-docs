@@ -163,7 +163,7 @@ Deliveries follow [Standard Webhooks](https://www.standardwebhooks.com/), so its
 | `webhook-signature` | `v1,` followed by the base64 HMAC. Two space-separated entries after a rotation. |
 | `X-SiteQwality-Delivery` | The message ID again. |
 | `X-SiteQwality-Event` | The event name. Not signed. |
-| `X-SiteQwality-Attempt` | `1` to `6`. Not signed. |
+| `X-SiteQwality-Attempt` | `1` to `8`. Not signed. |
 | `X-SiteQwality-Replay-Of` | On a replay only: the ID of the delivery it replays. Not signed. |
 | `X-SiteQwality-Timestamp`, `X-SiteQwality-Signature` | The older signature, still sent for now (see [below](#the-older-x-siteqwality-signature-header)). |
 
@@ -176,7 +176,7 @@ signed_payload    = "{webhook-id}.{webhook-timestamp}.{raw body}"
 webhook-signature = "v1," + base64(HMAC_SHA256(key, signed_payload))
 ```
 
-The key is the base64-decoded part of the secret after `whsec_`. Each attempt is signed again with a fresh timestamp, so a retry 30 minutes later still passes the libraries' 5-minute tolerance check. Pass the raw request body, not a re-serialized object.
+The key is the base64-decoded part of the secret after `whsec_`. Each attempt is signed again with a fresh timestamp, so a retry hours later still passes the libraries' 5-minute tolerance check. Pass the raw request body, not a re-serialized object.
 
 <Tabs syncKey="language">
 <TabItem label="Node">
@@ -273,11 +273,13 @@ Each attempt times out after 15 seconds. Your endpoint should answer with a 2xx 
 |---|---|
 | 2xx | Delivered. |
 | 3xx | Failed, not retried. Redirects are not followed. |
-| 408 or 429 | Retried. A `Retry-After` header can push the next attempt later, but not past the last retry. |
+| 408 or 429 | Retried. A `Retry-After` header in seconds sets the earliest time for the next attempt, up to 10 hours later. |
 | Other 4xx | Failed, not retried. |
 | 5xx, timeout or connection error | Retried. |
 
-Retries run 10 seconds, 30 seconds, 2 minutes, 8 minutes and 30 minutes after the first attempt: six attempts at most. A delivery that has not succeeded by then is marked failed. Deleting the integration cancels any remaining attempts.
+After the first attempt, retries wait 5 seconds, 5 minutes, 30 minutes, 2 hours, 5 hours, 10 hours and 10 hours, each counted from the end of the attempt before it. Each wait varies by up to 10% so that retries from one busy minute do not arrive together. That is eight attempts over about 27.6 hours, so an endpoint that is down overnight still gets the alert. A delivery that has not succeeded after the eighth attempt is marked failed. Deleting the integration cancels any remaining attempts.
+
+A retry can arrive hours after the event. Compare the payload's `created_at` (when the event happened) with `webhook-timestamp` (when this attempt was signed), or read `X-SiteQwality-Attempt`, to decide whether a late alert still matters to you.
 
 ### What the alert records
 

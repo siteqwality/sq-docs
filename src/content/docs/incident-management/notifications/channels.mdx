@@ -251,7 +251,7 @@ What each channel does when a send fails:
 
 | Channels | On failure |
 |---|---|
-| Webhooks | Up to 6 attempts over 30 minutes. Every attempt is in the endpoint's [delivery log](/integrations/webhooks/#delivery-log-and-replay). While retries are pending the alert's receipt reads `delayed`; when they end it becomes `delivered`, `failed` or `rejected`. |
+| Webhooks | Up to 8 attempts over about 27.6 hours. Every attempt is in the endpoint's [delivery log](/integrations/webhooks/#delivery-log-and-replay). While retries are pending the alert's receipt reads `delayed`; when they end it becomes `delivered`, `failed` or `rejected`. |
 | PagerDuty, Jira Service Management (Opsgenie) | 3 attempts. A `4xx` other than `408` or `429` is recorded as rejected. Other failures run the send again up to twice; after that the alert is **dropped with no record**. |
 | Pushover, Pushbullet | 1 attempt. A `4xx` is recorded as rejected. A Pushover `429` means the Pushover account used its monthly message limit, and is recorded as rejected too. Other failures run the send again up to twice; after that the alert is dropped with no record. |
 | Email, SMS, Slack, Telegram | 1 attempt. A refusal is recorded as rejected, and an SMS to a number that opted out is skipped (`recipient_suppressed`). Other failures run the send again up to twice; after that the alert is dropped with no record. |
