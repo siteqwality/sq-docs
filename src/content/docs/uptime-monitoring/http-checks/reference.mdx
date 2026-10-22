@@ -5,7 +5,7 @@ last_verified: 2026-10-19
 owner: jj
 ---
 
-The full request/response schema is in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for `POST /http/job` and `PUT /http/job/{job_id}`.
+The full request/response schema is in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for `POST /http/job` and `PUT /http/job/{job_id}`. The same endpoints create [TCP port checks](/uptime-monitoring/tcp-checks/) and [ping checks](/uptime-monitoring/ping-checks/), whose own fields are on their pages.
 
 ## Request settings
 
@@ -13,8 +13,9 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 |---|---|---|---|
 | `friendly_name` | string | none | Display name shown in the dashboard. 1 to 99 characters. |
 | `service_id` | uuid \| null | none | Create only: assign the monitor to a service in your account. Unknown or foreign service IDs return `404`. Change an existing assignment from Services. |
-| `uri` | string | required | Target URL. Must parse as an absolute URI with a host. `https` is required unless `monitor_tls` is explicitly `false`. |
-| `method` | string | required | Any valid HTTP method token (`GET`, `POST`, `HEAD`, ...). |
+| `check_type` | string | `http` | `http`, `tcp` or `ping`. Create only: an update that sends another value is refused with `check_type cannot be changed`. |
+| `uri` | string | required | Target URL. Must parse as an absolute URI with a host, with the `http` or `https` scheme. `https` is required unless `monitor_tls` is explicitly `false`. Any other scheme, `tcp://` and `ping://` included, is refused with `Invalid uri scheme`. |
+| `method` | string | required | Any valid HTTP method token (`GET`, `POST`, `HEAD`, ...). Required for HTTP checks. A TCP port or ping check takes none, or `TCP` or `PING` to match its type. |
 | `run_interval_seconds` | int | required | Seconds between checks. Must be at least `60` and a multiple of `60`. |
 | `run_interval_thirty_seconds` | bool | `false` | Run every 30 seconds instead. Only valid together with `run_interval_seconds: 60`. |
 | `timeout_ms` | int | required | Per-request timeout in milliseconds. Maximum `60000`. |
@@ -117,7 +118,7 @@ Location ids follow `<provider>-<region>`, for example `aws-us-east-1` or `gcp-a
       "id": "gcp-asia-southeast1", "provider": "gcp", "provider_name": "Google Cloud",
       "provider_region": "asia-southeast1", "city": "Singapore", "country_code": "SG",
       "continent": "asia", "label": "Singapore · Google Cloud", "status": "live",
-      "is_default": false, "capabilities": ["http"]
+      "is_default": false, "capabilities": ["http", "tcp", "icmp"]
     }
   ]
 }
@@ -125,7 +126,7 @@ Location ids follow `<provider>-<region>`, for example `aws-us-east-1` or `gcp-a
 
 Discover ids through this endpoint rather than hardcoding a city list.
 
-Only locations with `status: "live"` and `"http"` in `capabilities` can be selected for an HTTP check. The list also carries `draining` and `retired` locations so older results keep a readable label: a `draining` location keeps serving monitors that already use it but cannot be newly selected, and a `retired` one no longer runs.
+Only locations with `status: "live"` and `"http"` in `capabilities` can be selected for an HTTP check. A TCP port check needs `"tcp"`, which every location has, and a ping check needs `"icmp"`, which only the Google Cloud locations have. The list also carries `draining` and `retired` locations so older results keep a readable label: a `draining` location keeps serving monitors that already use it but cannot be newly selected, and a `retired` one no longer runs.
 
 How `check_regions` is validated on create and update:
 
@@ -143,11 +144,11 @@ Outages list each failing location: `GET /http/job/{job_id}/events` returns `fai
 
 ### Default locations
 
-A create that leaves out `check_regions` (or sends `[]`) runs from `aws-us-east-1`. On a paid uptime plan it runs from two locations instead: `aws-us-east-1` plus a healthy location on another cloud provider in the same country (the same city first), with `min_healthy_regions: 1`, so you are alerted only when both fail. Each create picks again, and an existing monitor never changes.
+A create that leaves out `check_regions` (or sends `[]`) runs from `aws-us-east-1`. On a paid uptime plan it runs from two locations instead: `aws-us-east-1` plus a healthy location on another cloud provider in the same country (the same city first), with `min_healthy_regions: 1`, so you are alerted only when both fail. Each create picks again, and an existing monitor never changes. A ping check, which `aws-us-east-1` cannot run, defaults to one live Google Cloud location in the United States on every plan, because no other cloud provider runs ping: a healthy one first, otherwise a degraded one. In practice that is `gcp-us-east4` (Virginia), or `gcp-us-west2` (Los Angeles) while Virginia is unhealthy, and never a location abroad. With no live ping location in the United States, a ping create without `check_regions` is refused with `Invalid check_regions aws-us-east-1: location does not run icmp checks`.
 
 The pair is the default only while the account's projected monthly checks, the new monitor included, stay within half of its monthly uptime check quota (the free allowance plus the uptime plan). Otherwise the default is one location. Choosing locations yourself is never refused by this rule.
 
-`GET /check-locations/default` returns what a create would get, and the projection behind it. Pass the new monitor's `run_interval_seconds` (60 to 86400), and optionally `run_interval_thirty_seconds`, `monitor_tls` and `monitor_dns` (both default to `true`). An invalid interval returns `400`. API keys need `read:monitors`.
+`GET /check-locations/default` returns what a create would get, and the projection behind it. Pass the new monitor's `run_interval_seconds` (60 to 86400), and optionally `check_type` (`http`, `tcp` or `ping`; default `http`), `run_interval_thirty_seconds`, `monitor_tls` and `monitor_dns`. For an HTTP check `monitor_tls` and `monitor_dns` default to `true`; for a TCP port or ping check `monitor_tls` does not apply and `monitor_dns` defaults to `false`. An invalid interval returns `400`. API keys need `read:monitors`.
 
 ```json
 {
@@ -195,7 +196,7 @@ The negotiated version observed on each run is recorded on the check result.
 | `GET` | `/http/job/{job_id}` | Fetch one check. |
 | `PUT` | `/http/job/{job_id}` | Update (partial). |
 | `DELETE` | `/http/job/{job_id}` | Delete. |
-| `GET` | `/http/jobs` | List, with sort/filter query params. |
+| `GET` | `/http/jobs` | List, with sort/filter query params. `check_type=http`, `tcp` or `ping` keeps one kind. |
 | `GET` | `/http/tags` | Distinct tags across your checks. |
 | `GET` | `/http/job/{job_id}/recent` | Recent check runs. |
 | `GET` | `/http/job/{job_id}/recent-checks` | Recent check results per location. |
@@ -208,6 +209,9 @@ The negotiated version observed on each run is recorded on the check result.
 | `GET` | `/http/job/result/{job_result_id}/details` | Full detail for one recorded result. |
 | `GET` | `/http/job/result/{job_result_id}/body` | Pre-signed download for a failed check's full response body. |
 | `GET` | `/http/job/{job_id}/results/export` | Check results as CSV (timings and outcome, no bodies). |
+| `POST` | `/http/jobs/import` | Create monitors from a CSV. An optional `check_type` column (`http`, `tcp` or `ping`) sets each row's type; a blank one follows the URL's `tcp://` or `ping://`. |
+| `GET` | `/monitors` | Every monitor of every type, paged. `check_type=http`, `tcp` or `ping` keeps uptime monitors of that kind, and each uptime row carries `check_type`. |
+| `GET` | `/monitors/totals` | Monitor counts. `by_type.http` covers every uptime monitor, and `by_check_type` splits those counts into `http`, `tcp` and `ping`. |
 | `GET` | `/http/job/{job_id}/page_speed` | Latest page-speed result. |
 | `GET` | `/http/job/{job_id}/page_speed/history` | Page-speed history. |
 

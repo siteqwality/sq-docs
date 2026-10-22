@@ -16,7 +16,7 @@ An **HTTP check** sends a request to a URL on a schedule, asserts on the respons
 - A webhook receiver that needs to be reachable.
 - Internal services with public health endpoints.
 
-For ping-style "is the box up" checks where there's no HTTP server, use a [cron heartbeat](../../cron-checks/overview/) the box pings.
+For a service with no HTTP server, use a [TCP port check](/uptime-monitoring/tcp-checks/) on its port or a [ping check](/uptime-monitoring/ping-checks/) on its host. For a box that can call out but cannot be reached from the internet, use a [cron heartbeat](../../cron-checks/overview/) the box pings.
 
 ## How it works
 

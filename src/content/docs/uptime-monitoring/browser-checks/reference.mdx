@@ -59,7 +59,7 @@ Browser checks run from 20 AWS locations in 18 countries and territories:
 | `aws-ap-southeast-3` | Jakarta |
 | `aws-ap-southeast-2` | Sydney |
 
-The Google Cloud and Microsoft Azure locations run HTTP checks only. `GET /check-locations` is the live list: a location that runs browser checks lists `"browser"` in its `capabilities`. See [check locations](/uptime-monitoring/http-checks/reference/#check-locations) for the response shape.
+The Google Cloud and Microsoft Azure locations do not run browser checks. `GET /check-locations` is the live list: a location that runs browser checks lists `"browser"` in its `capabilities`. See [check locations](/uptime-monitoring/http-checks/reference/#check-locations) for the response shape.
 
 How `check_regions` is validated on create and update:
 

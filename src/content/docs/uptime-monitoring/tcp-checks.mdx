@@ -1,0 +1,163 @@
+---
+title: TCP port checks
+description: Check that a TCP port accepts connections, optionally over TLS and with data to send and a response to expect, from any check location.
+last_verified: 2026-10-22
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+
+A **TCP port check** opens a connection to a host and port on a schedule and alerts you when the port stops answering. Use it for services that do not speak HTTP: databases, mail servers, SSH, message brokers and custom protocols.
+
+A TCP port check is an uptime monitor with a different check type from an [HTTP check](/uptime-monitoring/http-checks/overview/). Check locations and location quorum, the confirmation threshold, the recovery period, flap hold, notification groups, incidents, services, maintenance windows, status pages and running a check on demand all work the same way.
+
+## When to use TCP port checks
+
+- A database, cache or message broker port that must accept connections.
+- A mail server on port 465 or 587 that should send its greeting.
+- An SSH server, or any service that sends a banner when you connect.
+- A non-HTTP service behind TLS whose certificate must verify.
+
+To see whether a host answers at all, use a [ping check](/uptime-monitoring/ping-checks/).
+
+## How it works
+
+On every scheduled run, each selected [check location](/uptime-monitoring/overview/#check-locations) does the following:
+
+1. Resolves the host name and connects to its addresses in the order the resolver returns them. An address that refuses the connection or cannot be reached moves the check on to the next one; a connection that times out ends the attempt.
+2. With TLS on, completes a TLS handshake and verifies the server's certificate. The server name it sends (SNI) is the host, unless the host is an IP address.
+3. Writes the data to send, if you set any.
+4. With an expected response set, reads until that text appears, 4 KiB have arrived, the server closes the connection, or the timeout runs out.
+
+Without an expected response, the check passes once the connection is open (and the TLS handshake done, with TLS on). The timeout covers the whole attempt: the DNS lookup, connecting, the TLS handshake, sending and waiting for the response.
+
+A refused or reset connection and a failed DNS lookup are retried once, 300 ms later, with the full timeout again, and only the second attempt is recorded. Nothing that timed out is retried, and neither is a destination refused for not being public.
+
+Each result records the time for the DNS lookup, the TCP connect, the TLS handshake, the first byte of the response (with an expected response set) and the total, plus the address the check connected to. The total is the check's response time, so response time charts, uptime and SLA figures work as they do for HTTP checks.
+
+## What passes and what fails
+
+A check passes when the connection opens, the TLS handshake succeeds (with TLS on) and the expected response arrives (when set). Otherwise it fails with one of these reasons:
+
+| Failure reason | What happened |
+|---|---|
+| `Connection refused` | The host answered, but nothing accepts connections on that port. |
+| `Connection timed out` | The connection did not open, or the data to send could not be written, within the timeout. |
+| `Connection reset` | The server reset or aborted the connection. |
+| `Connection failed: ...` | Another connection error, such as an unreachable network. The rest of the message names it. |
+| `DNS resolution failed: ...` | The host name did not resolve. The rest of the message says why: `timed out` when the lookup used up the timeout, `the name resolved to no addresses` when it returned none. |
+| `Destination refused: ...` | The host name resolved only to addresses that are not public, for example `Destination refused: 10.0.0.8 is not a public address (private)`. |
+| `TLS handshake failed: ...` | With TLS on, the handshake failed or the certificate did not verify. The rest of the message says why, or reads `timed out` when the handshake used up the timeout. |
+| `Expected response not received` | 4 KiB arrived without the expected text, or the timeout ran out while waiting for it. |
+| `Connection closed before the expected response` | The server closed the connection before the expected text arrived. |
+
+Checks reach public addresses only. A private, loopback or link-local IP address in `uri` is refused when you save the monitor, with a message such as `Invalid uri host: 10.0.0.8 is not a public address (private)`. A host name that resolves only to such addresses fails the check with `Destination refused`.
+
+When the expected response is missing, `response_body` keeps what the server did send, up to 1 KiB, so the dashboard and your alerts show what came back. Backslash, carriage return, line feed and tab are written as `\\`, `\r`, `\n` and `\t`, and other unprintable bytes as `\xHH`. `body_bytes` counts every byte received, and `body_truncated` is `true` when the snippet was cut short.
+
+## Port 25
+
+Port 25 cannot be monitored. Every cloud provider we check from blocks outbound connections to it, so creating or updating a TCP port check on port 25 is refused with `400` and this message:
+
+```
+Port 25 is blocked by every cloud provider we check from. Monitor 465 or 587 instead.
+```
+
+Ports 465 and 587 work.
+
+## Create a TCP port check
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Go to Observe → Monitors, open Add Monitor and choose TCP port.**
+
+2. **Enter a name, the host and the port**, and choose a check interval.
+
+3. **Set the options you need:** TLS, data to send and the expected response. With none of them, an open connection is enough.
+
+4. **Pick check locations and a notification group**, then submit.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`, create the monitor with [`POST /http/job`](/api-reference/operations/create_http_job/) and `check_type: "tcp"`. This one expects an SSH server's banner:
+
+```bash
+curl -X POST https://api.siteqwality.com/http/job \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Bastion SSH",
+    "check_type": "tcp",
+    "uri": "tcp://bastion.example.com:22",
+    "tcp_expect": "SSH-2.0",
+    "timeout_ms": 10000,
+    "run_interval_seconds": 300
+  }'
+```
+
+Save the `id` from the response to read results, change settings or delete the monitor. With `group_notification_ids` left out, the monitor alerts your account's [default group](/incident-management/notifications/default-routing/#the-default-notification-group).
+
+</TabItem>
+</Tabs>
+
+The monitor CSV import, `POST /http/jobs/import`, creates TCP port checks too: give a row `tcp` in an optional `check_type` column, or leave that column blank and start its URL with `tcp://`.
+
+## Settings
+
+TCP port checks use the same endpoints as HTTP checks: create with `POST /http/job`, change with `PUT /http/job/{job_id}`. These fields are specific to them:
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `check_type` | string | `http` | `tcp` for a TCP port check. Set it at create; an update that sends another value is refused with `check_type cannot be changed`. |
+| `uri` | string | required | `tcp://host:port`. A bare `host:port` is accepted and stored with the `tcp://` prefix and the host in lowercase. Put an IPv6 address in brackets: `tcp://[2606:4700:4700::1111]:443`. The port is 1 to 65535, and not 25. |
+| `method` | string | `TCP` | Leave it out, or send `TCP` in any case. Any other value is refused with `method applies to HTTP monitors only`. The monitor reads back with `method: "TCP"`. |
+| `tcp_tls` | bool | `false` | Complete a TLS handshake and verify the certificate before sending or reading. |
+| `tcp_send` | string | none | Data written once the connection is open. At most 1024 bytes after [escapes](#escapes) are applied. An empty string means none; on update, `null` or `""` removes it. |
+| `tcp_expect` | string | none | Text the response must contain, compared byte for byte (so case-sensitive). At most 256 bytes after [escapes](#escapes) are applied. Without it, an open connection passes. An empty string means none; on update, `null` or `""` removes it. |
+| `timeout_ms` | int | required | Time allowed for each attempt, `1000` to `60000`. Outside that range: `timeout_ms must be between 1000 and 60000 for TCP monitors`. |
+| `monitor_dns` | bool | `false` | Pair a [domain expiry check](/uptime-monitoring/dns-checks/overview/) with the host's domain. With an IP address as the host it is refused with `monitor_dns needs a host name, not an IP address`. |
+
+These work exactly as on an HTTP check (see the [HTTP check reference](/uptime-monitoring/http-checks/reference/)): `friendly_name`, `service_id`, `run_interval_seconds`, `run_interval_thirty_seconds`, `check_regions`, `min_healthy_regions`, `confirmation_threshold`, `recovery_period_runs`, `flap_hold_override`, `group_notification_ids`, `tags` and `state`.
+
+The HTTP-only settings (keyword search, JSON path, status code lists, request body, content type, authentication, custom headers, HTTP version, `final_uri`, trace propagation, `monitor_tls`, `tls_port` and `monitor_page_speed`) must be left out or at their defaults. A value that turns one on is refused with `<field> applies to HTTP monitors only`, and `follow_redirects` is ignored. `ping_count` and `ping_loss_threshold` are refused with `<field> applies to ping monitors only`. The paired TLS certificate and page-speed checks exist for HTTP checks only; `tcp_tls` verifies the certificate on every check instead.
+
+### Escapes
+
+`tcp_send` and `tcp_expect` accept these escapes for bytes you cannot type:
+
+| Escape | Byte |
+|---|---|
+| `\r` | Carriage return |
+| `\n` | Line feed |
+| `\t` | Tab |
+| `\0` | Zero byte |
+| `\\` | Backslash |
+| `\xHH` | The byte with hex value `HH`, for example `\x1b` |
+
+For example, `PING\r\n` sends `PING` followed by a carriage return and a line feed. In a JSON request body the backslash is itself escaped, so the same value is written `"PING\\r\\n"`. The value is stored as you wrote it, escapes included.
+
+A backslash followed by anything else is refused, for example `tcp_expect: \q is not an escape (use \r, \n, \t, \0, \\ or \xHH)`. A value too long once its escapes are applied is refused with `tcp_send must be at most 1024 bytes after unescaping` (or `tcp_expect` and 256).
+
+## Check locations
+
+TCP port checks run from every check location: the full list is on the [locations page](https://siteqwality.com/locations/), and `GET /check-locations` marks them with `tcp` in `capabilities`. The [default locations](/uptime-monitoring/http-checks/reference/#default-locations) are the same as for an HTTP check; pass `check_type=tcp` to `GET /check-locations/default` to see what a create would get.
+
+Each location a check runs from counts as one uptime check, from the same monthly volume as HTTP checks. The free plan's limits apply as they do to HTTP checks: a 5-minute minimum interval and one location per monitor. See [plan limits](/getting-started/plan-limits/).
+
+Checks come from cloud address ranges that change, so there are no fixed addresses to allowlist, and a TCP port check sends no headers. The port must be reachable from the internet.
+
+## Results
+
+Results come from the same endpoints as HTTP results, such as `GET /http/job/{job_id}/recent-checks`, and the [results CSV export](/enterprise/csv-exports/#check-results). On a TCP port check, `dns_ms`, `tcp_connect_ms`, `tls_ms` and `ttfb_ms` (first byte of the response) hold the phase timings, `request_duration_ms` the total (`null` when no connection opened), `remote_address` the address connected to and `request_uri` the target as `tcp://host:port`. `failure_reason` holds one of the reasons above, and `response_body` what the server sent when the expected response was missing.
+
+## See also
+
+<LinkCard title="Ping checks" description="Send ICMP echo requests and alert on packet loss." href="/uptime-monitoring/ping-checks/" />
+<LinkCard title="HTTP check reference" description="The settings TCP port checks share with HTTP checks." href="/uptime-monitoring/http-checks/reference/" />
+<LinkCard title="Requiring N failed checks" description="Confirmation threshold and location quorum." href="/uptime-monitoring/http-checks/how-to/confirmation-threshold/" />

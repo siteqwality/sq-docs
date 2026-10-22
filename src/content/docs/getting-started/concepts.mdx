@@ -11,11 +11,11 @@ The nouns below mean one specific thing everywhere in the product and the docs.
 
 ### Monitor
 
-The umbrella term for any scheduled health check. Site Qwality has six monitor families: HTTP, SSL/TLS, domain expiry, DNS record, cron heartbeat, and browser. A [domain expiry check](/uptime-monitoring/dns-checks/overview/) reads a domain's registration from its registry; a [DNS record monitor](/uptime-monitoring/dns-record-monitors/overview/) reads the domain's records from its nameservers. The dashboard's **Monitors** view lists all of them together.
+The umbrella term for any scheduled health check. Site Qwality has six monitor families: HTTP (with the TCP port and ping check types), SSL/TLS, domain expiry, DNS record, cron heartbeat, and browser. A [domain expiry check](/uptime-monitoring/dns-checks/overview/) reads a domain's registration from its registry; a [DNS record monitor](/uptime-monitoring/dns-record-monitors/overview/) reads the domain's records from its nameservers. The dashboard's **Monitors** view lists all of them together.
 
 ### Check
 
-A single execution of a monitor: one HTTP request, one DNS lookup, one TLS handshake. Each check produces a *result* (`success`, `failure`, plus latency and any captured payload). An HTTP monitor with several check locations produces one check per location per tick. A browser check runs its script once in each location, and each run uses browser check minutes.
+A single execution of a monitor: one HTTP request, one TCP connection, one round of pings, one DNS lookup, one TLS handshake. Each check produces a *result* (`success`, `failure`, plus latency and any captured payload). An HTTP monitor with several check locations produces one check per location per tick. A browser check runs its script once in each location, and each run uses browser check minutes.
 
 ### Run interval
 
@@ -23,7 +23,7 @@ How often a monitor's checks fire. The minimum depends on your [plan](/getting-s
 
 ### Check location
 
-A place Site Qwality runs checks from, on AWS, Google Cloud or Microsoft Azure, with a stable id such as `aws-us-east-1` (the API field is `check_regions`). The default is `aws-us-east-1` (Virginia, AWS). HTTP checks can use any live location and browser checks any AWS location; SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1`. See [check locations](/uptime-monitoring/overview/#check-locations).
+A place Site Qwality runs checks from, on AWS, Google Cloud or Microsoft Azure, with a stable id such as `aws-us-east-1` (the API field is `check_regions`). The default is `aws-us-east-1` (Virginia, AWS), and for ping checks `gcp-us-east4` (Virginia, Google Cloud), or `gcp-us-west2` (Los Angeles) while Virginia is unhealthy. HTTP and TCP port checks can use any live location, ping checks the Google Cloud ones and browser checks any AWS location; SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1`. See [check locations](/uptime-monitoring/overview/#check-locations).
 
 ### Min healthy regions
 

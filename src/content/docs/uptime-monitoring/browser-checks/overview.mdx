@@ -86,7 +86,7 @@ The screenshot link in an alert usually stops working within a few hours. After 
 
 ## Locations
 
-Browser checks run from the 20 AWS [check locations](/uptime-monitoring/overview/#check-locations), in 18 countries and territories. The Google Cloud and Microsoft Azure locations run HTTP checks only. In `GET /check-locations`, a location that runs browser checks lists `"browser"` in its `capabilities`; the [reference](/uptime-monitoring/browser-checks/reference/#supported-locations) has the full table.
+Browser checks run from the 20 AWS [check locations](/uptime-monitoring/overview/#check-locations), in 18 countries and territories. The Google Cloud and Microsoft Azure locations do not run browser checks. In `GET /check-locations`, a location that runs browser checks lists `"browser"` in its `capabilities`; the [reference](/uptime-monitoring/browser-checks/reference/#supported-locations) has the full table.
 
 - **Default.** With `check_regions` unset or empty, a new check runs from the default location, Virginia (`aws-us-east-1`).
 - **Plans.** The free plan checks from one location. More than one needs a paid **Synthetic** plan; an uptime plan does not count. Without one the API returns `403` with `multi_region_requires_paid_plan`.

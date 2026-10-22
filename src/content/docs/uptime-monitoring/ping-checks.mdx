@@ -1,0 +1,142 @@
+---
+title: Ping checks
+description: Send ICMP echo requests to a host on a schedule and alert on packet loss, with round-trip times and jitter, from the Google Cloud check locations.
+last_verified: 2026-10-22
+owner: jj
+---
+
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+
+A **ping check** sends ICMP echo requests to a host on a schedule and alerts you when the replies stop or too many are lost. Use it for hosts and network devices that answer ping: servers, routers, VPN gateways and load balancers.
+
+A ping check is an uptime monitor with a different check type from an [HTTP check](/uptime-monitoring/http-checks/overview/). Location quorum, the confirmation threshold, the recovery period, flap hold, notification groups, incidents, services, maintenance windows, status pages and running a check on demand all work the same way. Ping checks run from the [Google Cloud locations](#check-locations) only.
+
+## When to use ping checks
+
+- A server or network device that should answer ping, with no service to connect to.
+- Tracking round-trip time and jitter to a host from several regions.
+- Alerting on packet loss, not only on a host that stops answering.
+
+Many hosts and cloud firewalls drop ICMP echo requests, and such a host fails every ping check even while its services are up. To check a service on such a host, use a [TCP port check](/uptime-monitoring/tcp-checks/).
+
+## How it works
+
+On every scheduled run, each selected check location does the following:
+
+1. Resolves the host name and takes its first IPv4 address, or its first IPv6 address when it has no IPv4 one. The lookup may take up to the timeout.
+2. Sends the number of echo requests you set, 200 ms apart.
+3. Waits for the replies until all have arrived or the timeout, counted from the first request, runs out.
+
+A request not yet sent when the timeout runs out is never sent, and `packets_sent` counts only the requests that went out. With 10 packets the last one leaves 1.8 seconds after the first, so a shorter timeout sends fewer.
+
+The check passes when at least one reply arrived and the share of the sent packets that were lost is below your loss threshold. A loss equal to the threshold fails. The default threshold is 100%, so a check fails only when every packet is lost. With 5 packets and a 50% threshold, 2 lost (40%) passes and 3 lost (60%) fails.
+
+A ping check is not retried in place: sending several packets already covers a single lost one.
+
+Each result records the packets sent and received, the minimum, average and maximum round-trip time, the jitter (the mean deviation of the round trips, which Linux `ping` prints as `mdev`), the DNS lookup time and the address pinged. The average round-trip time is the check's response time, so response time charts, uptime and SLA figures work as they do for HTTP checks.
+
+## What passes and what fails
+
+| Failure reason | What happened |
+|---|---|
+| `No reply (100% packet loss)` | No echo reply arrived before the timeout. |
+| `Packet loss 67% (threshold 50%)` | Replies arrived, but the loss reached your threshold. The figures are that check's, the loss rounded to the nearest percent. |
+| `DNS resolution failed: ...` | The host name did not resolve. The rest of the message says why: `timed out` when the lookup used up the timeout, `the name resolved to no addresses` when it returned none. |
+| `Destination refused: ...` | The host name resolved only to addresses that are not public, for example `Destination refused: 10.0.0.8 is not a public address (private)`. |
+
+Checks reach public addresses only. A private, loopback or link-local IP address in `uri` is refused when you save the monitor, with a message such as `Invalid uri host: 10.0.0.8 is not a public address (private)`. A host name that resolves only to such addresses fails the check with `Destination refused`.
+
+## Create a ping check
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+<Steps>
+
+1. **Go to Observe → Monitors, open Add Monitor and choose Ping.**
+
+2. **Enter a name and the host** (a host name or IP address), and choose a check interval.
+
+3. **Set the packet count and loss threshold** if the defaults (3 packets, fail only when all are lost) do not suit you.
+
+4. **Pick check locations and a notification group**, then submit. Only the Google Cloud locations are offered.
+
+</Steps>
+
+</TabItem>
+<TabItem label="API">
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`, create the monitor with [`POST /http/job`](/api-reference/operations/create_http_job/) and `check_type: "ping"`. This one sends 5 packets and fails when half or more are lost:
+
+```bash
+curl -X POST https://api.siteqwality.com/http/job \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendly_name": "Edge router",
+    "check_type": "ping",
+    "uri": "ping://edge.example.com",
+    "ping_count": 5,
+    "ping_loss_threshold": 50,
+    "timeout_ms": 5000,
+    "run_interval_seconds": 300
+  }'
+```
+
+Save the `id` from the response to read results, change settings or delete the monitor. With `group_notification_ids` left out, the monitor alerts your account's [default group](/incident-management/notifications/default-routing/#the-default-notification-group). With `check_regions` left out, it runs from the [default ping location](#check-locations): `gcp-us-east4` (Virginia), or `gcp-us-west2` (Los Angeles) while Virginia is unhealthy.
+
+</TabItem>
+</Tabs>
+
+The monitor CSV import, `POST /http/jobs/import`, creates ping checks too: give a row `ping` in an optional `check_type` column, or leave that column blank and start its URL with `ping://`. An imported ping check sends 3 packets with a 5000 ms timeout and fails only when every packet is lost.
+
+## Settings
+
+Ping checks use the same endpoints as HTTP checks: create with `POST /http/job`, change with `PUT /http/job/{job_id}`. These fields are specific to them:
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `check_type` | string | `http` | `ping` for a ping check. Set it at create; an update that sends another value is refused with `check_type cannot be changed`. |
+| `uri` | string | required | `ping://host`. A bare host name or IP address is accepted and stored with the `ping://` prefix and the host in lowercase. An IPv6 address may be bare or in brackets and is stored in brackets: `ping://[2606:4700:4700::1111]`. A port is refused. |
+| `method` | string | `PING` | Leave it out, or send `PING` in any case. Any other value is refused with `method applies to HTTP monitors only`. The monitor reads back with `method: "PING"`. |
+| `ping_count` | int | `3` | Echo requests per check, `1` to `10`. Outside that range: `ping_count must be between 1 and 10`. |
+| `ping_loss_threshold` | int | `100` | Fail when at least this percentage of the sent packets is lost, `1` to `100`. `100` fails only when every packet is lost. Outside that range: `ping_loss_threshold must be between 1 and 100`. |
+| `timeout_ms` | int | required | How long to wait for replies, counted from the first request, `1000` to `10000`. Outside that range: `timeout_ms must be between 1000 and 10000 for ping monitors`. The dashboard suggests `5000`. |
+| `monitor_dns` | bool | `false` | Pair a [domain expiry check](/uptime-monitoring/dns-checks/overview/) with the host's domain. With an IP address as the host it is refused with `monitor_dns needs a host name, not an IP address`. |
+
+These work exactly as on an HTTP check (see the [HTTP check reference](/uptime-monitoring/http-checks/reference/)): `friendly_name`, `service_id`, `run_interval_seconds`, `run_interval_thirty_seconds`, `check_regions`, `min_healthy_regions`, `confirmation_threshold`, `recovery_period_runs`, `flap_hold_override`, `group_notification_ids`, `tags` and `state`.
+
+The HTTP-only settings (keyword search, JSON path, status code lists, request body, content type, authentication, custom headers, HTTP version, `final_uri`, trace propagation, `monitor_tls`, `tls_port` and `monitor_page_speed`) must be left out or at their defaults. A value that turns one on is refused with `<field> applies to HTTP monitors only`, and `follow_redirects` is ignored. `tcp_send`, `tcp_expect` and `tcp_tls` are refused with `<field> applies to TCP monitors only`.
+
+## Check locations
+
+Ping needs ICMP, which the AWS and Azure check locations cannot send, so ping checks run from the Google Cloud locations only:
+
+| City | Country | Location id |
+|---|---|---|
+| Virginia | United States | `gcp-us-east4` |
+| Los Angeles | United States | `gcp-us-west2` |
+| Santiago | Chile | `gcp-southamerica-west1` |
+| Frankfurt | Germany | `gcp-europe-west3` |
+| Eemshaven | Netherlands | `gcp-europe-west4` |
+| Delhi | India | `gcp-asia-south2` |
+| Singapore | Singapore | `gcp-asia-southeast1` |
+| Sydney | Australia | `gcp-australia-southeast1` |
+
+`GET /check-locations` marks them with `icmp` in `capabilities`; read that rather than hardcoding this list. A ping check that names another location is refused with `400`, for example `Invalid check_regions aws-us-east-1: location does not run icmp checks`.
+
+Without `check_regions`, a ping check runs from the default ping location. The default location, `aws-us-east-1`, cannot send ICMP, so the ping default is a live Google Cloud location in its country, the United States: a healthy one first, otherwise a degraded one. In practice that is `gcp-us-east4` (Virginia), or `gcp-us-west2` (Los Angeles) while Virginia is unhealthy. It is never a location outside the United States. If no live ping location existed in the United States, there would be no ping default and a create without `check_regions` would be refused with `Invalid check_regions aws-us-east-1: location does not run icmp checks`, so you would pick a location yourself. The two-provider default pair that paid uptime plans get for HTTP checks needs a second cloud provider in the same country, so a ping check starts with one location; add more yourself. `GET /check-locations/default?check_type=ping` shows what a create would get. When a ping check has one location and it cannot report in a run, the default ping location, chosen by the same rule, stands in for it, as the default location does for HTTP checks.
+
+Each location a check runs from counts as one uptime check, from the same monthly volume as HTTP checks. The free plan's limits apply as they do to HTTP checks: a 5-minute minimum interval and one location per monitor. See [plan limits](/getting-started/plan-limits/).
+
+Checks come from cloud address ranges that change, so there are no fixed addresses to allowlist. The host must answer ICMP echo requests from the internet.
+
+## Results
+
+Results come from the same endpoints as HTTP results, such as `GET /http/job/{job_id}/recent-checks`. A ping result adds `packets_sent`, `packets_received`, `rtt_min_us`, `rtt_avg_us`, `rtt_max_us` and `rtt_mdev_us` (round-trip times in microseconds; `rtt_mdev_us` is the jitter). These are `null` on HTTP and TCP port results, and on a ping result whose DNS lookup failed; the round-trip times are `null` when no reply arrived. `request_duration_ms` is the average round trip rounded to the nearest millisecond, at least 1, and `null` when no reply arrived. `dns_ms` and `remote_address` hold the DNS lookup time and the address pinged, and `request_uri` the target as `ping://host`. The [results CSV export](/enterprise/csv-exports/#check-results) carries the same six columns.
+
+## See also
+
+<LinkCard title="TCP port checks" description="Connect to a port, optionally over TLS, and check the response." href="/uptime-monitoring/tcp-checks/" />
+<LinkCard title="HTTP check reference" description="The settings ping checks share with HTTP checks." href="/uptime-monitoring/http-checks/reference/" />
+<LinkCard title="Requiring N failed checks" description="Confirmation threshold and location quorum." href="/uptime-monitoring/http-checks/how-to/confirmation-threshold/" />

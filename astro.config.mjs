@@ -97,7 +97,7 @@ export default defineConfig({
 						'- [Introduction](https://docs.siteqwality.com/getting-started/introduction/): what the platform covers and where to start.',
 						'- [Concepts and glossary](https://docs.siteqwality.com/getting-started/concepts/): monitor, check, incident, on-call, escalation, notification group.',
 						'- [Account and team setup](https://docs.siteqwality.com/getting-started/account-and-team/): roles, API keys and scopes.',
-						'- [Uptime monitoring](https://docs.siteqwality.com/uptime-monitoring/overview/): HTTP, SSL/TLS, domain expiry, DNS record, cron and browser checks.',
+						'- [Uptime monitoring](https://docs.siteqwality.com/uptime-monitoring/overview/): HTTP, TCP port, ping, SSL/TLS, domain expiry, DNS record, cron and browser checks.',
 						'- [Observability](https://docs.siteqwality.com/observability/overview/): logs, metrics, traces, RUM and session replay.',
 						'- [Incident management](https://docs.siteqwality.com/incident-management/overview/): incidents, services, on-call, escalation, notifications, maintenance windows.',
 						'- [Status pages](https://docs.siteqwality.com/status-pages/overview/)',
@@ -151,6 +151,8 @@ export default defineConfig({
 								},
 							],
 						},
+						{ label: 'TCP port checks', slug: 'uptime-monitoring/tcp-checks' },
+						{ label: 'Ping checks', slug: 'uptime-monitoring/ping-checks' },
 						{
 							label: 'SSL/TLS checks',
 							collapsed: true,

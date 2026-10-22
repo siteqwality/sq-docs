@@ -30,13 +30,13 @@ Over two days or more, widgets read hourly summaries of the checks: counts, upti
 | `response_time` | ms | `avg`, `p50`, `p75`, `p90`, `p95`, `p99`, `min`, `max` | Response time of a check. |
 | `checks` | count | fixed | Checks run. |
 | `failed_checks` | count | fixed | Checks that failed. |
-| `dns_time`, `connect_time`, `tls_time`, `ttfb`, `download_time` | ms | `avg`, `p50`, `p95`, `p99` | The phases of an HTTP check. HTTP monitors only. |
+| `dns_time`, `connect_time`, `tls_time`, `ttfb`, `download_time` | ms | `avg`, `p50`, `p95`, `p99` | The phases of a check. HTTP checks record all five, TCP port checks all but `download_time`, ping checks `dns_time` only. |
 | `downtime` | seconds | `sum` | Time spent failing. Includes cron monitors. |
 
 | Field | Kind | Group by | Variable |
 |---|---|---|---|
 | `monitor` | id (shown by name) | Yes | Yes |
-| `monitor_type` | enum: `http`, `browser`, `cron` | Yes | Yes |
+| `monitor_type` | enum: `http` (HTTP, TCP port and ping), `browser`, `cron` | Yes | Yes |
 | `tag` | enum | Yes | Yes |
 | `region` | enum | Yes | Yes |
 | `status_page` | id (shown by name) | No | Yes |

@@ -107,7 +107,7 @@ Every delivery has the same envelope:
 
 - `id` is the delivery ID. It is the same on every retry of one delivery, so use it to drop duplicates.
 - `metadata` appears only if you set some on the endpoint (see [Payload settings](#payload-settings)).
-- `data` depends on the event. For an HTTP monitor going down or recovering it is the check result:
+- `data` depends on the event. For an uptime monitor going down or recovering it is the check result, with `check_type` added beside the result fields:
 
 ```json
 {
@@ -121,11 +121,14 @@ Every delivery has the same envelope:
   "final_uri": "https://api.example.com/health",
   "request_duration_ms": 412,
   "failure_reason": "Expected status 200, got 503",
-  "status": "failed"
+  "status": "failed",
+  "check_type": "http"
 }
 ```
 
 The full result also carries the response headers and body, the timing breakdown and the request headers (with values masked except for a short list of harmless headers). Use `fields` in the payload settings to send only the keys you need.
+
+`data.check_type` says which kind of uptime monitor it is: `http`, [`tcp`](/uptime-monitoring/tcp-checks/) or [`ping`](/uptime-monitoring/ping-checks/). The result also carries the ping statistics `packets_sent`, `packets_received`, `rtt_min_us`, `rtt_avg_us`, `rtt_max_us` and `rtt_mdev_us` (round-trip times in microseconds), which are `null` on HTTP and TCP port results.
 
 ### Events
 

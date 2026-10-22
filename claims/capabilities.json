@@ -444,5 +444,39 @@
       "\"target_team_ids\"",
       "team targets?"
     ]
+  },
+  "uptime.tcp_checks": {
+    "status": "live",
+    "summary": "TCP port checks: check_type tcp on the uptime monitor, with optional TLS, data to send and an expected response, from every check location",
+    "api": [
+      "POST /http/job",
+      "PUT /http/job/{job_id}"
+    ],
+    "source": "core-rs docs/plans/2026-10-21-tcp-and-ping-monitors-design.md (D1, D5, sections 3 and 5)"
+  },
+  "uptime.tcp_port_25_refused": {
+    "status": "live",
+    "summary": "A TCP check on port 25 is refused at create and update; 465 and 587 work",
+    "api": [
+      "POST /http/job"
+    ],
+    "source": "core-rs docs/plans/2026-10-21-tcp-and-ping-monitors-design.md (D6)"
+  },
+  "uptime.ping_checks": {
+    "status": "live",
+    "summary": "Ping (ICMP echo) checks: check_type ping, 1 to 10 packets, a loss threshold defaulting to total loss, from the Google Cloud locations only",
+    "api": [
+      "POST /http/job",
+      "PUT /http/job/{job_id}"
+    ],
+    "source": "core-rs docs/plans/2026-10-21-tcp-and-ping-monitors-design.md (D2, D4, sections 3 and 5)"
+  },
+  "uptime.udp_traceroute": {
+    "status": "absent",
+    "summary": "UDP checks or traceroute. Uptime checks are HTTP, TCP port and ping (ICMP echo)",
+    "patterns": [
+      "\\bUDP (port )?(checks?|monitors?|monitoring)\\b",
+      "traceroute"
+    ]
   }
 }

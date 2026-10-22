@@ -98,7 +98,7 @@ sq-http-<monitor-id>-<state-transition-id>
 sq-browser-<browser-check-id>-<state-transition-id>
 ```
 
-- **Monitor goes down** → `event_action: "trigger"`, summary `Monitor DOWN: <name>`, source set to the monitor URL, plus `custom_details` carrying the monitor, URL, and failure reason.
+- **Monitor goes down** → `event_action: "trigger"`, summary `Monitor DOWN: <name>`, source set to the monitor URL, plus `custom_details` carrying the monitor, URL, and failure reason. For an uptime monitor, `payload.custom_details.check.check_type` is `http`, `tcp` or `ping`.
 - **Monitor recovers** → `event_action: "resolve"` with the same dedup key and nothing else. PagerDuty closes the incident it opened.
 
 Because the key includes the state transition, a *second* outage of the same monitor opens a *new* PagerDuty incident rather than reopening the old one. Repeated triggers within one outage collapse onto the same incident.

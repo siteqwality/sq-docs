@@ -18,7 +18,7 @@ Logs, metrics and traces export through [telemetry exports](/observability/priva
 
 ## Check results
 
-Every recorded check run for one HTTP monitor, oldest first. In the dashboard, open the monitor and choose **Export CSV** from its actions menu; it exports the range currently selected. Through the API, with the monitor's `id` as `JOB_ID`:
+Every recorded check run for one uptime monitor (HTTP, TCP port or ping), oldest first. In the dashboard, open the monitor and choose **Export CSV** from its actions menu; it exports the range currently selected. Through the API, with the monitor's `id` as `JOB_ID`:
 
 ```bash
 curl -G "https://api.siteqwality.com/http/job/$JOB_ID/results/export" \
@@ -32,16 +32,17 @@ Columns, in order:
 
 ```
 timestamp, region, status, http_code, total_ms,
-dns_ms, tcp_connect_ms, tls_ms, ttfb_ms, download_ms, failure_reason
+dns_ms, tcp_connect_ms, tls_ms, ttfb_ms, download_ms, failure_reason,
+packets_sent, packets_received, rtt_min_us, rtt_avg_us, rtt_max_us, rtt_mdev_us
 ```
 
 `from` and `to` are optional: `to` defaults to now, `from` to 30 days before it. `from` must be before `to`.
 
-The per-phase timing columns (`dns_ms`, `tcp_connect_ms`, `tls_ms`, `ttfb_ms`, `download_ms`) are empty for results recorded before mid-2026; `total_ms` is always filled.
+The per-phase timing columns (`dns_ms`, `tcp_connect_ms`, `tls_ms`, `ttfb_ms`, `download_ms`) are empty for results recorded before mid-2026. `total_ms` is empty on a TCP port check that never connected and on a ping check that got no reply. The last six columns are the [ping statistics](/uptime-monitoring/ping-checks/#results), round trips in microseconds, and are empty except on ping checks.
 
 ## Monitor uptime summary
 
-One row per HTTP monitor, summarizing the range. API only.
+One row per uptime monitor (HTTP, TCP port or ping), summarizing the range. API only.
 
 ```bash
 curl -G "https://api.siteqwality.com/monitors/export" \
@@ -54,11 +55,11 @@ curl -G "https://api.siteqwality.com/monitors/export" \
 Columns, in order:
 
 ```
-monitor_id, name, url, state, uptime_percentage,
+monitor_id, name, url, check_type, state, uptime_percentage,
 avg_response_time_ms, days_with_data, range_from, range_to
 ```
 
-- **HTTP monitors only**, despite the endpoint name. Browser, cron, DNS and TLS monitors are not included. Paused monitors are, with empty metrics.
+- **Uptime monitors only**, despite the endpoint name: `check_type` is `http`, `tcp` or `ping`. Browser, cron, DNS and TLS monitors are not included. Paused monitors are, with empty metrics.
 - **`uptime_percentage` is the unweighted average of daily uptime percentages**, from the same daily rollup as the [SLA report](/enterprise/sla-reports/#how-the-number-is-calculated), so the current day is usually missing.
 
 ## When you exceed the cap

@@ -1,6 +1,6 @@
 ---
 title: Uptime monitoring
-description: Six check types (HTTP, SSL/TLS, domain expiry, DNS records, cron heartbeats, and full-browser synthetic) running on a schedule, with HTTP and browser checks from the locations you choose.
+description: Eight check types (HTTP, TCP port, ping, SSL/TLS, domain expiry, DNS records, cron heartbeats, and full-browser synthetic) running on a schedule, with HTTP, TCP port, ping and browser checks from the locations you choose.
 last_verified: 2026-10-22
 owner: jj
 ---
@@ -12,6 +12,8 @@ Every uptime monitor in Site Qwality follows the same lifecycle: configure → r
 | Check type | What it checks | Use for |
 |---|---|---|
 | [HTTP](/uptime-monitoring/http-checks/overview/) | A URL responds with the expected status, body, and latency | Websites, APIs, webhook receivers |
+| [TCP port](/uptime-monitoring/tcp-checks/) | A port accepts connections, optionally over TLS and with an expected response | Databases, mail servers, SSH, custom protocols |
+| [Ping](/uptime-monitoring/ping-checks/) | A host answers ICMP echo requests within your packet loss threshold | Servers, routers, network devices |
 | [SSL/TLS](/uptime-monitoring/ssl-tls-checks/overview/) | A certificate's expiry date | Anything served over HTTPS |
 | [Domain expiry](/uptime-monitoring/dns-checks/overview/) | A domain's registration at the registry: expiry date, registry holds, registrar and nameserver changes | Any domain you would lose if a renewal failed |
 | [DNS record](/uptime-monitoring/dns-record-monitors/overview/) | A domain's records at its authoritative nameservers: changes, missing records, nameservers that disagree | Catching unplanned changes to web, mail and nameserver records |
@@ -21,6 +23,8 @@ Every uptime monitor in Site Qwality follows the same lifecycle: configure → r
 ## Picking the right check
 
 - **You have a URL that should be `200 OK`.** Use [HTTP checks](/uptime-monitoring/http-checks/overview/). Each one also gets a paired TLS check (cert expiry) and domain expiry check (domain registration) unless you turn them off.
+- **Your service is not HTTP.** Use a [TCP port check](/uptime-monitoring/tcp-checks/) to connect to its port, optionally over TLS, and match what it sends back.
+- **You want to know a host answers at all, and how much packet loss it has.** Use a [ping check](/uptime-monitoring/ping-checks/).
 - **You only care about cert expiry.** [SSL/TLS checks](/uptime-monitoring/ssl-tls-checks/overview/) always pair with an HTTP monitor, so create one for the host and keep **Monitor TLS/SSL** on.
 - **You want to hear before a domain registration lapses.** Enable the [domain expiry check](/uptime-monitoring/dns-checks/overview/) on an HTTP monitor for that domain.
 - **You want to know when a domain's DNS records change.** Create a [DNS record monitor](/uptime-monitoring/dns-record-monitors/overview/) for the domain. It runs on its own, without an HTTP monitor.
@@ -31,11 +35,11 @@ Every uptime monitor in Site Qwality follows the same lifecycle: configure → r
 
 ### Check locations
 
-HTTP checks can run from **24 check locations across 18 countries and territories**, on AWS, Google Cloud and Microsoft Azure. Browser checks can run from the **20 AWS locations**, in 18 countries and territories; the Google Cloud and Microsoft Azure locations run HTTP checks only. Each location is a provider and region combination, so a city can have more than one option. The live list is on the [locations page](https://siteqwality.com/locations/); for API clients, see [check locations](/uptime-monitoring/http-checks/reference/#check-locations) in the HTTP reference.
+HTTP and TCP port checks can run from **30 check locations across 20 countries and territories**, on AWS, Google Cloud and Microsoft Azure. Ping checks run from the 8 Google Cloud locations among them, and browser checks from the **20 AWS locations**, in 18 countries and territories. Each location is a provider and region combination, so a city can have more than one option. The live list is on the [locations page](https://siteqwality.com/locations/); for API clients, see [check locations](/uptime-monitoring/http-checks/reference/#check-locations) in the HTTP reference.
 
-- **Default.** A new HTTP monitor runs from `aws-us-east-1` (Virginia, AWS) unless you choose. On a paid uptime plan, when the extra checks fit the account's quota, it starts on two locations on different cloud providers and alerts only when both fail; see [default locations](/uptime-monitoring/http-checks/reference/#default-locations). A new browser check runs from `aws-us-east-1` unless you choose.
-- **Plans.** More than one location per monitor needs a paid plan for that check type: a paid uptime plan for HTTP checks, a paid Synthetic plan for browser checks.
-- **Billing.** Each location an HTTP check runs from counts as one check toward your monthly check volume. A browser check runs its script once in each location, and each run uses browser check minutes.
+- **Default.** A new HTTP or TCP port monitor runs from `aws-us-east-1` (Virginia, AWS) unless you choose, and a new ping monitor from `gcp-us-east4` (Virginia, Google Cloud), or `gcp-us-west2` (Los Angeles, Google Cloud) while Virginia is unhealthy. On a paid uptime plan, when the extra checks fit the account's quota, an HTTP or TCP port monitor starts on two locations on different cloud providers and alerts only when both fail; see [default locations](/uptime-monitoring/http-checks/reference/#default-locations). Ping runs on one cloud provider, so a ping monitor starts on one location. A new browser check runs from `aws-us-east-1` unless you choose.
+- **Plans.** More than one location per monitor needs a paid plan for that check type: a paid uptime plan for HTTP, TCP port and ping checks, a paid Synthetic plan for browser checks.
+- **Billing.** Each location an HTTP, TCP port or ping check runs from counts as one check toward your monthly check volume. A browser check runs its script once in each location, and each run uses browser check minutes.
 - **Other check types.** SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1` only.
 
 Start with a location near your users. Add another cloud provider when you want to compare network paths, and choose locations on other continents to cover a global audience.
@@ -48,7 +52,7 @@ Checks do not come from fixed IP addresses. To let them through a firewall or bo
 
 | Check type | Minimum interval |
 |---|---|
-| HTTP | 30 s (intervals under 5 minutes need a paid uptime plan) |
+| HTTP, TCP port, ping | 30 s (intervals under 5 minutes need a paid uptime plan) |
 | Cron heartbeat | n/a (driven by your job's ping cadence) |
 | Browser | 5 min |
 | TLS, domain expiry (paired with HTTP) | daily, not configurable |
@@ -70,6 +74,8 @@ Beyond tags, you can attach a monitor to a [service](/incident-management/servic
 
 <CardGrid>
   <LinkCard title="HTTP checks" description="The most common monitor. Request a URL, assert on the response." href="/uptime-monitoring/http-checks/overview/" />
+  <LinkCard title="TCP port checks" description="Connect to a port, optionally over TLS, and check the response." href="/uptime-monitoring/tcp-checks/" />
+  <LinkCard title="Ping checks" description="ICMP echo requests with packet loss, round-trip time and jitter." href="/uptime-monitoring/ping-checks/" />
   <LinkCard title="SSL/TLS checks" description="Track cert expiry on its own or paired with HTTP." href="/uptime-monitoring/ssl-tls-checks/overview/" />
   <LinkCard title="Domain expiry checks" description="Read the registration from the registry and alert before it lapses." href="/uptime-monitoring/dns-checks/overview/" />
   <LinkCard title="DNS record monitors" description="Watch a domain's records at its nameservers and alert when they change." href="/uptime-monitoring/dns-record-monitors/overview/" />
