@@ -32597,6 +32597,7 @@
         "tags": [
           "API Keys"
         ],
+        "summary": "Roll an API key.",
         "operationId": "v1_roll_api_key",
         "parameters": [
           {
@@ -32720,6 +32721,7 @@
         "tags": [
           "Audit Log"
         ],
+        "summary": "List audit events.",
         "operationId": "v1_list_audit_events",
         "parameters": [
           {
@@ -32873,11 +32875,2028 @@
         ]
       }
     },
+    "/v1/browser-monitors": {
+      "get": {
+        "tags": [
+          "Browser Monitors"
+        ],
+        "summary": "List browser monitors.",
+        "operationId": "v1_list_browser_monitors",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 200, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account's browser monitors, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_BrowserCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `limit` or `cursor`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Browser Monitors"
+        ],
+        "summary": "Create a browser monitor.",
+        "operationId": "v1_create_browser_monitor",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBrowserCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The monitor",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "The plan's monitor limit is reached",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The browser monitor limit is reached, or several regions need a paid plan",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/browser-monitors/{browser_monitor_id}": {
+      "get": {
+        "tags": [
+          "Browser Monitors"
+        ],
+        "summary": "Get a browser monitor.",
+        "operationId": "v1_get_browser_monitor",
+        "parameters": [
+          {
+            "name": "browser_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The monitor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserCheck"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such monitor in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Browser Monitors"
+        ],
+        "summary": "Delete a browser monitor.",
+        "operationId": "v1_delete_browser_monitor",
+        "parameters": [
+          {
+            "name": "browser_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted, or already gone"
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Browser Monitors"
+        ],
+        "summary": "Change a browser monitor.",
+        "operationId": "v1_edit_browser_monitor",
+        "parameters": [
+          {
+            "name": "browser_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBrowserCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The monitor as saved; fields left out keep their values",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Resuming needs a paid plan or a free monitor slot",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The browser monitor limit is reached, or several regions need a paid plan",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such monitor in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/browser-monitors/{browser_monitor_id}/run": {
+      "post": {
+        "tags": [
+          "Browser Monitors"
+        ],
+        "summary": "Run a browser monitor now.",
+        "operationId": "v1_run_browser_monitor",
+        "parameters": [
+          {
+            "name": "browser_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A run started in each of the monitor's regions",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunNowResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such monitor in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/dns-record-monitors": {
+      "get": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "List DNS record monitors.",
+        "operationId": "v1_list_dns_record_monitors",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 200, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account's DNS record monitors, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_DnsRecordMonitor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `limit` or `cursor`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "Create a DNS record monitor.",
+        "operationId": "v1_create_dns_record_monitor",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDnsRecordMonitorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The monitor. `warnings` lists alert sources a channel in its groups cannot reach",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DnsRecordMonitor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "The plan's DNS monitor limit is reached",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The check interval is below the free plan's floor",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A monitor already watches this domain",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/dns-record-monitors/{dns_record_monitor_id}": {
+      "get": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "Get a DNS record monitor.",
+        "operationId": "v1_get_dns_record_monitor",
+        "parameters": [
+          {
+            "name": "dns_record_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The monitor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DnsRecordMonitor"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such monitor in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "Delete a DNS record monitor.",
+        "operationId": "v1_delete_dns_record_monitor",
+        "parameters": [
+          {
+            "name": "dns_record_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted, or already gone"
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "DNS Monitors"
+        ],
+        "summary": "Change a DNS record monitor.",
+        "operationId": "v1_edit_dns_record_monitor",
+        "parameters": [
+          {
+            "name": "dns_record_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDnsRecordMonitorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The monitor as saved; fields left out keep their values. `warnings` as on create",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DnsRecordMonitor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "The DNS monitor limit is reached, or resuming below the plan's interval",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The check interval is below the free plan's floor",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such monitor in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/heartbeat-monitors": {
+      "get": {
+        "tags": [
+          "Heartbeat Monitors"
+        ],
+        "summary": "List heartbeat monitors.",
+        "operationId": "v1_list_heartbeat_monitors",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 200, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account's heartbeat monitors, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_CronJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `limit` or `cursor`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Heartbeat Monitors"
+        ],
+        "summary": "Create a heartbeat monitor.",
+        "operationId": "v1_create_heartbeat_monitor",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCronJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The monitor. `warnings` lists alert sources a channel in its groups cannot reach",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CronJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "The plan's monitor limit is reached",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/heartbeat-monitors/{heartbeat_monitor_id}": {
+      "get": {
+        "tags": [
+          "Heartbeat Monitors"
+        ],
+        "summary": "Get a heartbeat monitor.",
+        "operationId": "v1_get_heartbeat_monitor",
+        "parameters": [
+          {
+            "name": "heartbeat_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The monitor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CronJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such monitor in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Heartbeat Monitors"
+        ],
+        "summary": "Delete a heartbeat monitor.",
+        "operationId": "v1_delete_heartbeat_monitor",
+        "parameters": [
+          {
+            "name": "heartbeat_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted, or already gone"
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Heartbeat Monitors"
+        ],
+        "summary": "Change a heartbeat monitor.",
+        "operationId": "v1_edit_heartbeat_monitor",
+        "parameters": [
+          {
+            "name": "heartbeat_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCronJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The monitor as saved; fields left out keep their values. `warnings` as on create",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CronJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Resuming would pass the plan's monitor limit",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such monitor in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/http-monitors": {
+      "get": {
+        "tags": [
+          "HTTP Monitors"
+        ],
+        "summary": "List HTTP, TCP port and ping monitors.",
+        "operationId": "v1_list_http_monitors",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 200, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account's HTTP, TCP and ping monitors, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_HttpJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `limit` or `cursor`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "HTTP Monitors"
+        ],
+        "summary": "Create an HTTP, TCP port or ping monitor.",
+        "operationId": "v1_create_http_monitor",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHttpJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The monitor. `warnings` lists alert sources a channel in its groups cannot reach",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body, or a feature the plan lacks",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "The plan's monitor limit is reached",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The feature needs a paid plan",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such service in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/http-monitors/{http_monitor_id}": {
+      "get": {
+        "tags": [
+          "HTTP Monitors"
+        ],
+        "summary": "Get an HTTP, TCP port or ping monitor.",
+        "operationId": "v1_get_http_monitor",
+        "parameters": [
+          {
+            "name": "http_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The monitor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such monitor in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "HTTP Monitors"
+        ],
+        "summary": "Delete an HTTP, TCP port or ping monitor.",
+        "operationId": "v1_delete_http_monitor",
+        "parameters": [
+          {
+            "name": "http_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted, or already gone"
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "HTTP Monitors"
+        ],
+        "summary": "Change an HTTP, TCP port or ping monitor.",
+        "operationId": "v1_edit_http_monitor",
+        "parameters": [
+          {
+            "name": "http_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHttpJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The monitor as saved; fields left out keep their values. `warnings` as on create",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Resuming needs a paid plan or a free monitor slot",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The feature needs a paid plan",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such monitor or service in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`tls_port` needs `monitor_tls: true`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/http-monitors/{http_monitor_id}/run": {
+      "post": {
+        "tags": [
+          "HTTP Monitors"
+        ],
+        "summary": "Run an HTTP, TCP port or ping check now.",
+        "operationId": "v1_run_http_monitor",
+        "parameters": [
+          {
+            "name": "http_monitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "A check is queued; its result arrives like any other",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunHttpJobNowResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such monitor in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many manual runs for this monitor",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/v1/integrations": {
       "get": {
         "tags": [
           "Integrations"
         ],
+        "summary": "List integrations.",
         "operationId": "v1_list_integrations",
         "parameters": [
           {
@@ -32964,6 +34983,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "List integration notices.",
         "operationId": "v1_integration_notices",
         "responses": {
           "200": {
@@ -33019,6 +35039,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "Dismiss an integration notice.",
         "operationId": "v1_dismiss_integration_notice",
         "parameters": [
           {
@@ -33088,6 +35109,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "Get an integration.",
         "operationId": "v1_get_integration",
         "parameters": [
           {
@@ -33162,6 +35184,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "Delete an integration.",
         "operationId": "v1_delete_integration",
         "parameters": [
           {
@@ -33238,6 +35261,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "Change an integration.",
         "operationId": "v1_edit_integration",
         "parameters": [
           {
@@ -33372,6 +35396,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "List an integration's deliveries.",
         "operationId": "v1_integration_deliveries",
         "parameters": [
           {
@@ -33477,6 +35502,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "Turn off an integration.",
         "operationId": "v1_disable_integration",
         "parameters": [
           {
@@ -33571,6 +35597,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "Turn on an integration.",
         "operationId": "v1_enable_integration",
         "parameters": [
           {
@@ -33665,6 +35692,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "Send an integration's alerts to a group.",
         "operationId": "v1_route_integration",
         "parameters": [
           {
@@ -33799,6 +35827,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "Rotate a webhook signing secret.",
         "operationId": "v1_rotate_signing_secret",
         "parameters": [
           {
@@ -33922,6 +35951,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "Send a test through an integration.",
         "operationId": "v1_test_integration",
         "parameters": [
           {
@@ -34046,6 +36076,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "Confirm a Microsoft Teams test arrived.",
         "operationId": "v1_confirm_integration_test",
         "parameters": [
           {
@@ -34145,6 +36176,7 @@
         "tags": [
           "Integrations"
         ],
+        "summary": "List what uses an integration.",
         "operationId": "v1_integration_usage",
         "parameters": [
           {
@@ -34221,6 +36253,7 @@
         "tags": [
           "User Contact Methods"
         ],
+        "summary": "Send a test to one of your contact methods.",
         "operationId": "v1_test_contact_method",
         "parameters": [
           {
@@ -34335,6 +36368,7 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "List notification groups.",
         "operationId": "v1_list_notification_groups",
         "parameters": [
           {
@@ -34419,6 +36453,7 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "Create a notification group.",
         "operationId": "v1_create_notification_group",
         "parameters": [
           {
@@ -34514,6 +36549,7 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "Get a notification group.",
         "operationId": "v1_get_notification_group",
         "parameters": [
           {
@@ -34588,6 +36624,7 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "Delete a notification group.",
         "operationId": "v1_delete_notification_group",
         "parameters": [
           {
@@ -34645,6 +36682,7 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "Change a notification group.",
         "operationId": "v1_edit_notification_group",
         "parameters": [
           {
@@ -34759,6 +36797,7 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "List notification channels.",
         "operationId": "v1_list_notifications",
         "parameters": [
           {
@@ -34843,6 +36882,7 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "Create a notification channel.",
         "operationId": "v1_create_notification",
         "parameters": [
           {
@@ -34958,6 +36998,7 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "Get a notification channel.",
         "operationId": "v1_get_notification",
         "parameters": [
           {
@@ -35032,6 +37073,7 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "Delete a notification channel.",
         "operationId": "v1_delete_notification",
         "parameters": [
           {
@@ -35089,6 +37131,7 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "Change a notification channel.",
         "operationId": "v1_edit_notification",
         "parameters": [
           {
@@ -35223,6 +37266,7 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "Send a test to a notification channel.",
         "operationId": "v1_test_notification",
         "parameters": [
           {
@@ -37993,6 +40037,146 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "BrowserCheck": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "name",
+          "script",
+          "frequency",
+          "timeout_seconds",
+          "check_regions",
+          "min_healthy_regions",
+          "state",
+          "current_status",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "script": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "check_regions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "min_healthy_regions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "state": {
+            "$ref": "#/components/schemas/BrowserCheckState"
+          },
+          "paused_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why a paused monitor is paused: `user` or `dormancy` (older rows may say `billing`)."
+          },
+          "current_status": {
+            "$ref": "#/components/schemas/BrowserCheckStatus"
+          },
+          "last_run_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_status_change_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "group_notifications": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/NotificationGroupWithNotifications"
+            },
+            "description": "Notification groups resolved from `group_notification_ids`. This is\nwhat the dashboard edit form seeds from."
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "confirmation_threshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Consecutive failed runs before DOWN; `null` means 1."
+          },
+          "rerun_on_failure": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether a failed run is rerun once from the same location before it\ncounts; `null` means off."
+          },
+          "trace_propagation": {
+            "type": "boolean"
+          },
+          "not_checked_reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NotCheckedReason",
+                "description": "Set while the monitor is active but not being checked: `quota` when\nthe account's quota for it is used up. Omitted otherwise."
+              }
+            ]
           }
         }
       },
@@ -40966,6 +43150,110 @@
           }
         ],
         "description": "A new feed. `url` holds the token and is shown only in this response."
+      },
+      "CronJob": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "created_at",
+          "current_status",
+          "check_interval_seconds",
+          "state"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "current_status": {
+            "$ref": "#/components/schemas/CronJobStatus"
+          },
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_received_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_status_change_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "check_interval_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "group_notification_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "group_notifications": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/NotificationGroupWithNotifications"
+            }
+          },
+          "state": {
+            "$ref": "#/components/schemas/CronJobState"
+          },
+          "paused_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why a paused monitor is paused: `user` or `dormancy` (older rows may say `billing`)."
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
       },
       "CronJobState": {
         "type": "string",
@@ -44308,6 +46596,416 @@
           },
           "unit": {
             "type": "string"
+          }
+        }
+      },
+      "HttpJob": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "state",
+          "current_status",
+          "follow_redirects",
+          "method",
+          "timeout_ms",
+          "uri",
+          "run_interval_seconds",
+          "run_interval_thirty_seconds",
+          "monitor_tls",
+          "monitor_dns",
+          "monitor_page_speed",
+          "created_at",
+          "http_version",
+          "confirmation_threshold"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the HTTP job."
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the account associated with the HTTP job."
+          },
+          "state": {
+            "$ref": "#/components/schemas/HttpJobState",
+            "description": "The current state of the HTTP job (e.g., active, paused)."
+          },
+          "paused_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why a paused monitor is paused: `user` or `dormancy` (older rows may say `billing`)."
+          },
+          "current_status": {
+            "$ref": "#/components/schemas/HttpJobStatus",
+            "description": "The current status of the HTTP job (e.g., success, failure)."
+          },
+          "check_regions": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "The regions from which the HTTP job will be checked."
+          },
+          "min_healthy_regions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The minimum number of healthy regions required for the HTTP job to be considered healthy."
+          },
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A name set by the user to identify the HTTP job."
+          },
+          "follow_redirects": {
+            "type": "boolean",
+            "description": "Indicates whether the HTTP job should follow redirects."
+          },
+          "final_uri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "This field actually isn't in use right now.\nOriginally, I think it's intention was related to having a validation that the final\nresolved URI equals this value (as another validation method).\nBut we may end up just getting rid of this. - JJ 12 May 2025"
+          },
+          "method": {
+            "type": "string",
+            "description": "The HTTP method used for the request (e.g., GET, POST)."
+          },
+          "keyword_search": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A keyword to search for in the response body."
+          },
+          "keyword_search_inverted": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Indicates whether the keyword search is inverted (i.e., the job fails if the keyword is found)."
+          },
+          "keyword_search_case_sensitive": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Indicates whether the keyword search is case-sensitive, default is false."
+          },
+          "keyword_search_regex": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Indicates whether to interpret the keyword search as a regex."
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The timeout for the HTTP request in milliseconds."
+          },
+          "uri": {
+            "type": "string",
+            "description": "The URI to which the HTTP request is sent."
+          },
+          "check_type": {
+            "$ref": "#/components/schemas/CheckType",
+            "description": "`http`, `tcp` or `ping`; fixed once created."
+          },
+          "tcp_send": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "TCP: sent once connected, with `\\r \\n \\t \\0 \\\\ \\xHH` escapes."
+          },
+          "tcp_expect": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "TCP: the response must contain this, with the same escapes."
+          },
+          "tcp_tls": {
+            "type": "boolean",
+            "description": "TCP: complete a verified TLS handshake before send and expect."
+          },
+          "ping_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Ping: echo requests per check."
+          },
+          "ping_loss_threshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Ping: fail at or above this percent of packets lost."
+          },
+          "request_body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The body of the HTTP request to be sent."
+          },
+          "content_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HttpJobContentType",
+                "description": "The content type of the HTTP request (e.g., application/json)."
+              }
+            ]
+          },
+          "auth_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HttpJobAuthType",
+                "description": "The type of authentication used for the HTTP request (e.g., Basic, Bearer)."
+              }
+            ]
+          },
+          "auth_username": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The username used for authentication."
+          },
+          "has_auth": {
+            "type": "boolean",
+            "description": "True when a basic-auth password or a bearer token is stored for this\nmonitor. This is what a read gets in place of the secret itself; see\n`auth_type` for which kind of credential it is."
+          },
+          "success_http_codes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "A list of HTTP status codes that indicate a successful response."
+          },
+          "failure_http_codes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "A list of HTTP status codes that indicate a failed response."
+          },
+          "custom_http_headers": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "A map of custom HTTP headers to be included in the request.\n\nNames are returned. Values are readable only for the seven headers in\n`secrets::RETURNABLE_REQUEST_HEADERS`, matched case-insensitively.\nOther values become `secrets::REDACTED`; sending that placeholder back\npreserves the stored value (`secrets::restore_redacted_header_values`).",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "last_run_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The last time the HTTP job was run."
+          },
+          "last_status_change_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The last time the status of the HTTP job changed, (e.g., from success to failure)."
+          },
+          "run_interval_seconds": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The interval in seconds at which the HTTP job runs."
+          },
+          "run_interval_thirty_seconds": {
+            "type": "boolean",
+            "description": "Indicates whether the HTTP job runs every 30 seconds."
+          },
+          "group_notifications": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/NotificationGroupWithNotifications"
+            },
+            "description": "A list of notification groups associated with the HTTP job. This is the same as\n`group_notification_ids`, but with the full notification group object."
+          },
+          "tls_job_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The ID of the TLS job associated with the HTTP job."
+          },
+          "monitor_tls": {
+            "type": "boolean",
+            "description": "Indicates whether the HTTP job monitors TLS."
+          },
+          "dns_job_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The ID of the DNS job associated with the HTTP job."
+          },
+          "monitor_dns": {
+            "type": "boolean",
+            "description": "Indicates whether the HTTP job monitors DNS."
+          },
+          "page_speed_job_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The ID of the page speed job associated with the HTTP job."
+          },
+          "monitor_page_speed": {
+            "type": "boolean",
+            "description": "Indicates whether the HTTP job monitors page speed."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the HTTP job was created."
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "A list of tags associated with the HTTP job."
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The ID of the service this HTTP job belongs to."
+          },
+          "http_version": {
+            "$ref": "#/components/schemas/HttpJobHttpVersion",
+            "description": "Preferred HTTP version for the check client (`auto` / `http1_1` / `http2` / `http2_with_fallback`)."
+          },
+          "confirmation_threshold": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of consecutive failed checks required before the monitor is\nconsidered down and notifications are sent. 1 = alert on the first\nfailed check."
+          },
+          "json_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "json_path_expected": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "uptime_24h": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Uptime percentage over the last 24h (successful checks / total)\nchecks). Only populated on the monitor list endpoint; omitted when\nthe monitor has no checks in the window."
+          },
+          "not_checked_reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NotCheckedReason",
+                "description": "Set while the monitor is active but not being checked: `quota` when\nthe account's quota for it is used up. Omitted otherwise."
+              }
+            ]
+          },
+          "tls_port": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Port the paired TLS check connects to. Only on `GET /http/job/{id}`\nwhen TLS is monitored."
+          },
+          "recovery_period_runs": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Healthy runs in a row before a recovery is notified. 1 = notify on the first."
+          },
+          "flap_hold": {
+            "type": "boolean",
+            "description": "Whether alerts are held while the monitor flaps: the override, or else the\naccount's notification setting."
+          },
+          "flap_hold_override": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "This monitor's own flap hold; `null` follows the account's notification setting."
+          },
+          "trace_propagation": {
+            "type": "boolean"
+          },
+          "partial_failure": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartialFailure",
+                "description": "Set while runs pass but some locations fail. Omitted otherwise."
+              }
+            ]
           }
         }
       },
@@ -49605,6 +52303,288 @@
           }
         }
       },
+      "Page_BrowserCheck": {
+        "type": "object",
+        "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "account_id",
+                "name",
+                "script",
+                "frequency",
+                "timeout_seconds",
+                "check_regions",
+                "min_healthy_regions",
+                "state",
+                "current_status",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "account_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "script": {
+                  "type": "string"
+                },
+                "frequency": {
+                  "type": "string"
+                },
+                "timeout_seconds": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "check_regions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "min_healthy_regions": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "state": {
+                  "$ref": "#/components/schemas/BrowserCheckState"
+                },
+                "paused_reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Why a paused monitor is paused: `user` or `dormancy` (older rows may say `billing`)."
+                },
+                "current_status": {
+                  "$ref": "#/components/schemas/BrowserCheckStatus"
+                },
+                "last_run_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "last_status_change_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "group_notifications": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationGroupWithNotifications"
+                  },
+                  "description": "Notification groups resolved from `group_notification_ids`. This is\nwhat the dashboard edit form seeds from."
+                },
+                "service_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "tags": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "confirmation_threshold": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "Consecutive failed runs before DOWN; `null` means 1."
+                },
+                "rerun_on_failure": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "Whether a failed run is rerun once from the same location before it\ncounts; `null` means off."
+                },
+                "trace_propagation": {
+                  "type": "boolean"
+                },
+                "not_checked_reason": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NotCheckedReason",
+                      "description": "Set while the monitor is active but not being checked: `quota` when\nthe account's quota for it is used up. Omitted otherwise."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Send back as `cursor` for the next page; `null` on the last one."
+          }
+        }
+      },
+      "Page_CronJob": {
+        "type": "object",
+        "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "account_id",
+                "created_at",
+                "current_status",
+                "check_interval_seconds",
+                "state"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "account_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "current_status": {
+                  "$ref": "#/components/schemas/CronJobStatus"
+                },
+                "friendly_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "last_received_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "last_status_change_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "last_checked_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "check_interval_seconds": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "group_notification_ids": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "group_notifications": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationGroupWithNotifications"
+                  }
+                },
+                "state": {
+                  "$ref": "#/components/schemas/CronJobState"
+                },
+                "paused_reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Why a paused monitor is paused: `user` or `dormancy` (older rows may say `billing`)."
+                },
+                "tags": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "service_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Send back as `cursor` for the next page; `null` on the last one."
+          }
+        }
+      },
       "Page_CustomerAuditLogEntry": {
         "type": "object",
         "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
@@ -49770,6 +52750,551 @@
                     },
                     {
                       "$ref": "#/components/schemas/AuditConfigurationChange"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Send back as `cursor` for the next page; `null` on the last one."
+          }
+        }
+      },
+      "Page_DnsRecordMonitor": {
+        "type": "object",
+        "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A DNS record monitor as the api returns it.",
+              "required": [
+                "id",
+                "account_id",
+                "created_at",
+                "domain",
+                "watched",
+                "interval_seconds",
+                "paused",
+                "current_status",
+                "group_notification_ids"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "account_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "http_job_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "friendly_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "domain": {
+                  "type": "string"
+                },
+                "watched": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "interval_seconds": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "paused": {
+                  "type": "boolean"
+                },
+                "current_status": {
+                  "type": "string",
+                  "description": "`pending` | `baselined` | `changed` | `unreachable`.\n\nDeliberately never `success`: a monitor that has never run says so\ninstead of claiming to be fine."
+                },
+                "last_run_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "last_status_change_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "last_failure_reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "When set, everything displayed for this monitor is LAST KNOWN, not\ncurrent: a failed check keeps the previous values rather than nulling\nthem, so this field is what makes the staleness legible."
+                },
+                "last_failure_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "group_notification_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Send back as `cursor` for the next page; `null` on the last one."
+          }
+        }
+      },
+      "Page_HttpJob": {
+        "type": "object",
+        "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "account_id",
+                "state",
+                "current_status",
+                "follow_redirects",
+                "method",
+                "timeout_ms",
+                "uri",
+                "run_interval_seconds",
+                "run_interval_thirty_seconds",
+                "monitor_tls",
+                "monitor_dns",
+                "monitor_page_speed",
+                "created_at",
+                "http_version",
+                "confirmation_threshold"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Unique identifier for the HTTP job."
+                },
+                "account_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Unique identifier for the account associated with the HTTP job."
+                },
+                "state": {
+                  "$ref": "#/components/schemas/HttpJobState",
+                  "description": "The current state of the HTTP job (e.g., active, paused)."
+                },
+                "paused_reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Why a paused monitor is paused: `user` or `dormancy` (older rows may say `billing`)."
+                },
+                "current_status": {
+                  "$ref": "#/components/schemas/HttpJobStatus",
+                  "description": "The current status of the HTTP job (e.g., success, failure)."
+                },
+                "check_regions": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The regions from which the HTTP job will be checked."
+                },
+                "min_healthy_regions": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "The minimum number of healthy regions required for the HTTP job to be considered healthy."
+                },
+                "friendly_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "A name set by the user to identify the HTTP job."
+                },
+                "follow_redirects": {
+                  "type": "boolean",
+                  "description": "Indicates whether the HTTP job should follow redirects."
+                },
+                "final_uri": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "This field actually isn't in use right now.\nOriginally, I think it's intention was related to having a validation that the final\nresolved URI equals this value (as another validation method).\nBut we may end up just getting rid of this. - JJ 12 May 2025"
+                },
+                "method": {
+                  "type": "string",
+                  "description": "The HTTP method used for the request (e.g., GET, POST)."
+                },
+                "keyword_search": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "A keyword to search for in the response body."
+                },
+                "keyword_search_inverted": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "Indicates whether the keyword search is inverted (i.e., the job fails if the keyword is found)."
+                },
+                "keyword_search_case_sensitive": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "Indicates whether the keyword search is case-sensitive, default is false."
+                },
+                "keyword_search_regex": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "Indicates whether to interpret the keyword search as a regex."
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The timeout for the HTTP request in milliseconds."
+                },
+                "uri": {
+                  "type": "string",
+                  "description": "The URI to which the HTTP request is sent."
+                },
+                "check_type": {
+                  "$ref": "#/components/schemas/CheckType",
+                  "description": "`http`, `tcp` or `ping`; fixed once created."
+                },
+                "tcp_send": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "TCP: sent once connected, with `\\r \\n \\t \\0 \\\\ \\xHH` escapes."
+                },
+                "tcp_expect": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "TCP: the response must contain this, with the same escapes."
+                },
+                "tcp_tls": {
+                  "type": "boolean",
+                  "description": "TCP: complete a verified TLS handshake before send and expect."
+                },
+                "ping_count": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "Ping: echo requests per check."
+                },
+                "ping_loss_threshold": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "Ping: fail at or above this percent of packets lost."
+                },
+                "request_body": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The body of the HTTP request to be sent."
+                },
+                "content_type": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HttpJobContentType",
+                      "description": "The content type of the HTTP request (e.g., application/json)."
+                    }
+                  ]
+                },
+                "auth_type": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HttpJobAuthType",
+                      "description": "The type of authentication used for the HTTP request (e.g., Basic, Bearer)."
+                    }
+                  ]
+                },
+                "auth_username": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The username used for authentication."
+                },
+                "has_auth": {
+                  "type": "boolean",
+                  "description": "True when a basic-auth password or a bearer token is stored for this\nmonitor. This is what a read gets in place of the secret itself; see\n`auth_type` for which kind of credential it is."
+                },
+                "success_http_codes": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "description": "A list of HTTP status codes that indicate a successful response."
+                },
+                "failure_http_codes": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "description": "A list of HTTP status codes that indicate a failed response."
+                },
+                "custom_http_headers": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "A map of custom HTTP headers to be included in the request.\n\nNames are returned. Values are readable only for the seven headers in\n`secrets::RETURNABLE_REQUEST_HEADERS`, matched case-insensitively.\nOther values become `secrets::REDACTED`; sending that placeholder back\npreserves the stored value (`secrets::restore_redacted_header_values`).",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "type": "string"
+                  }
+                },
+                "last_run_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "The last time the HTTP job was run."
+                },
+                "last_status_change_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "The last time the status of the HTTP job changed, (e.g., from success to failure)."
+                },
+                "run_interval_seconds": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The interval in seconds at which the HTTP job runs."
+                },
+                "run_interval_thirty_seconds": {
+                  "type": "boolean",
+                  "description": "Indicates whether the HTTP job runs every 30 seconds."
+                },
+                "group_notifications": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationGroupWithNotifications"
+                  },
+                  "description": "A list of notification groups associated with the HTTP job. This is the same as\n`group_notification_ids`, but with the full notification group object."
+                },
+                "tls_job_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "The ID of the TLS job associated with the HTTP job."
+                },
+                "monitor_tls": {
+                  "type": "boolean",
+                  "description": "Indicates whether the HTTP job monitors TLS."
+                },
+                "dns_job_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "The ID of the DNS job associated with the HTTP job."
+                },
+                "monitor_dns": {
+                  "type": "boolean",
+                  "description": "Indicates whether the HTTP job monitors DNS."
+                },
+                "page_speed_job_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "The ID of the page speed job associated with the HTTP job."
+                },
+                "monitor_page_speed": {
+                  "type": "boolean",
+                  "description": "Indicates whether the HTTP job monitors page speed."
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the HTTP job was created."
+                },
+                "tags": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "A list of tags associated with the HTTP job."
+                },
+                "service_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "The ID of the service this HTTP job belongs to."
+                },
+                "http_version": {
+                  "$ref": "#/components/schemas/HttpJobHttpVersion",
+                  "description": "Preferred HTTP version for the check client (`auto` / `http1_1` / `http2` / `http2_with_fallback`)."
+                },
+                "confirmation_threshold": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Number of consecutive failed checks required before the monitor is\nconsidered down and notifications are sent. 1 = alert on the first\nfailed check."
+                },
+                "json_path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "json_path_expected": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "uptime_24h": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "format": "double",
+                  "description": "Uptime percentage over the last 24h (successful checks / total)\nchecks). Only populated on the monitor list endpoint; omitted when\nthe monitor has no checks in the window."
+                },
+                "not_checked_reason": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NotCheckedReason",
+                      "description": "Set while the monitor is active but not being checked: `quota` when\nthe account's quota for it is used up. Omitted otherwise."
+                    }
+                  ]
+                },
+                "tls_port": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "Port the paired TLS check connects to. Only on `GET /http/job/{id}`\nwhen TLS is monitored."
+                },
+                "recovery_period_runs": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Healthy runs in a row before a recovery is notified. 1 = notify on the first."
+                },
+                "flap_hold": {
+                  "type": "boolean",
+                  "description": "Whether alerts are held while the monitor flaps: the override, or else the\naccount's notification setting."
+                },
+                "flap_hold_override": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "This monitor's own flap hold; `null` follows the account's notification setting."
+                },
+                "trace_propagation": {
+                  "type": "boolean"
+                },
+                "partial_failure": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PartialFailure",
+                      "description": "Set while runs pass but some locations fail. Omitted otherwise."
                     }
                   ]
                 }
@@ -50069,6 +53594,32 @@
           "warm",
           "status"
         ]
+      },
+      "PartialFailure": {
+        "type": "object",
+        "description": "The latest run passed, but not in every location.",
+        "required": [
+          "failed_locations",
+          "total_locations",
+          "since"
+        ],
+        "properties": {
+          "failed_locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "total_locations": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the current run of partial failures began."
+          }
+        }
       },
       "ParticipantRole": {
         "type": "string",
@@ -57656,6 +61207,18 @@
               "null"
             ],
             "description": "Case-insensitive substring of the page URL."
+          }
+        }
+      },
+      "RunHttpJobNowResponse": {
+        "type": "object",
+        "required": [
+          "queued"
+        ],
+        "properties": {
+          "queued": {
+            "type": "boolean",
+            "description": "Always true when we accepted the request. The check itself runs\nasynchronously, so this is an acknowledgement that it was queued, never\na claim about its outcome."
           }
         }
       },
