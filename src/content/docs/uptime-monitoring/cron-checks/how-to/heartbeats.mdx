@@ -1,7 +1,7 @@
 ---
 title: Send heartbeats reliably
 description: Patterns for adding ping calls to cron jobs without making them brittle.
-last_verified: 2026-05-03
+last_verified: 2026-10-22
 owner: jj
 ---
 
@@ -9,22 +9,26 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 
 The basic pattern is one line of curl. Production cron jobs need a few more precautions.
 
-## 1. Always ping at the end, after success
+## 1. Ping at the end, and report failures
 
 ```bash
 # Wrong: pings even on partial failure
 do_thing
 curl $PING_URL
 
-# Right: pings only on success
+# Right: success pings the URL, failure adds /fail
+curl -fsS --max-time 10 "$PING_URL/start" || true
 if do_thing; then
-  curl $PING_URL
+  curl -fsS --max-time 10 "$PING_URL" || true
+else
+  curl -fsS --max-time 10 "$PING_URL/fail" || true
 fi
 ```
 
-Pinging at the start gives you "started" signal but masks "started but crashed". Usually you want the success variant.
+Or send the exit code: `do_thing; curl -fsS --max-time 10 "$PING_URL/$?" || true`. A `0` is a success ping and anything up to `255` is a failure with that code.
 
-If you need both signals, run two separate cron checks (one for "job started," one for "job completed") and ping each at the appropriate time.
+- `/start` records that a run began. It is not a ping, so a run that starts and never finishes still alerts once the interval passes. The recent pings list shows how long each run took.
+- `/fail` or a non-zero exit code takes the check down at its next evaluation instead of waiting for a missed ping. The alert says the job reported a failure, with the exit code when you sent one.
 
 ## 2. Never let the ping fail the job
 

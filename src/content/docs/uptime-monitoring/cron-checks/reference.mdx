@@ -1,7 +1,7 @@
 ---
 title: Cron check reference
 description: Every field on a cron / heartbeat check, the ping endpoint contract, and how lateness is evaluated.
-last_verified: 2026-10-14
+last_verified: 2026-10-22
 owner: jj
 ---
 
@@ -39,6 +39,17 @@ POST https://ping.siteqwality.com/{account_id}/{cron_job_id}
 
 - No API key. The URL itself is the credential; treat it like a secret.
 - Only the path is validated (both segments must be valid UUIDs belonging to an existing check). The HTTP method is not checked; `POST` is the convention.
+- One optional segment after the ID says what happened:
+
+| Path | Records | Effect |
+|---|---|---|
+| `/{account_id}/{cron_job_id}` | `ping` | A successful run. |
+| `.../start` | `start` | A run began. Not a ping: it does not reset lateness, and it does not update `last_received_at`. |
+| `.../fail` | `fail` | A failed run. The check goes down at its next evaluation. |
+| `.../{exit_code}` | `ping` for `0`, else `fail` | An exit code from 0 to 255, kept on the receipt. |
+
+Any other segment is a `400`.
+
 - Each received ping is recorded with:
 
 | Field | Description |
@@ -48,12 +59,17 @@ POST https://ping.siteqwality.com/{account_id}/{cron_job_id}
 | `created_at` | Server-side receive timestamp. |
 | `receiving_address` | Caller IP, from `X-Forwarded-For`. |
 | `receiving_headers` | The full request-header map. Useful for identifying which host or runner pinged. |
+| `kind` | `ping`, `start` or `fail`. |
+| `exit_code` | The exit code sent in the path, if any. |
+| `run_ms` | On a ping or failure that directly follows a start: how long the run took. Returned by `GET /cron/job/{job_id}/recent` only. |
 
 Receipts are queryable via `GET /cron/job/{job_id}/recent`.
 
 ## How lateness is evaluated
 
 Each cron check is evaluated on its own schedule, at the same cadence as `check_interval_seconds`. At each evaluation the check fails when the newest ping is older than `check_interval_seconds`, and also when no ping has ever been received. Because evaluation runs at the same cadence as the expected pings, a missed ping is detected between one and two intervals after the last successful ping, depending on how the two schedules line up. The next received ping flips the status back to `success` at the following evaluation.
+
+Only finished runs count: a `start` is ignored here. When the newest finished run is a `fail`, the check fails at that evaluation even though it arrived in time, and the alert says the job reported a failure (with the exit code, if sent) rather than that no ping arrived.
 
 ## Status-transition events
 
