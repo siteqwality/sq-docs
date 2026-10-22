@@ -5246,8 +5246,8 @@
         "tags": [
           "Check Locations"
         ],
-        "summary": "Default locations for a new HTTP monitor.",
-        "description": "What a create that leaves out `check_regions` stores: the default location, or on an\nuptime plan with multi-location checks the default plus a healthy location on another\nprovider in its country, while the account's projected checks stay within half its\nquota. The projection is returned either way.",
+        "summary": "Default locations for a new uptime monitor.",
+        "description": "What a create that leaves out `check_regions` stores: the check type's default location,\nor on an uptime plan with multi-location checks the default plus a healthy location on\nanother provider in its country, while the account's projected checks stay within half\nits quota. A type that only one provider runs in that country gets one location. The\nprojection is returned either way.",
         "operationId": "get_default_check_locations",
         "parameters": [
           {
@@ -5275,7 +5275,7 @@
           {
             "name": "monitor_tls",
             "in": "query",
-            "description": "Pairs a daily TLS check, as on create. Default true.",
+            "description": "Pairs a daily TLS check, as on create. Default true for `http`; always false for\n`tcp` and `ping`.",
             "required": false,
             "schema": {
               "type": [
@@ -5287,12 +5287,28 @@
           {
             "name": "monitor_dns",
             "in": "query",
-            "description": "Pairs a daily domain check, as on create. Default true.",
+            "description": "Pairs a daily domain check, as on create. Default true for `http`, false otherwise.",
             "required": false,
             "schema": {
               "type": [
                 "boolean",
                 "null"
+              ]
+            }
+          },
+          {
+            "name": "check_type",
+            "in": "query",
+            "description": "`http` (the default), `tcp` or `ping`: picks the locations that run that check.",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/CheckType"
+                }
               ]
             }
           }
@@ -8834,8 +8850,8 @@
         "tags": [
           "HTTP Monitors"
         ],
-        "summary": "Create an HTTP monitor.",
-        "description": "Creates a new HTTP check that runs on the specified schedule. Optionally\nalso provisions paired TLS, DNS, and page-speed monitors for the same URL.",
+        "summary": "Create an uptime monitor (HTTP, TCP port or ping).",
+        "description": "Creates a new check that runs on the specified schedule. `check_type` picks HTTP (the\ndefault), a TCP port or ping (ICMP). An HTTP monitor can also provision paired TLS,\ndomain-expiry and page-speed monitors for the same URL; TCP and ping monitors can pair\nthe domain-expiry monitor when the host is a domain name.",
         "operationId": "create_http_job",
         "requestBody": {
           "content": {
@@ -9011,7 +9027,8 @@
         "tags": [
           "HTTP Monitors"
         ],
-        "summary": "Update an HTTP monitor.",
+        "summary": "Update an uptime monitor (HTTP, TCP port or ping).",
+        "description": "`check_type` is fixed at create; `uri` and the type-specific fields follow the stored type.",
         "operationId": "update_http_job",
         "parameters": [
           {
@@ -9427,7 +9444,7 @@
         "tags": [
           "HTTP Monitors"
         ],
-        "summary": "Export a monitor's check results as CSV (chronological). Columns:\ntimestamp, region, status, http_code, total_ms, dns_ms, tcp_connect_ms,\ntls_ms, ttfb_ms, download_ms, failure_reason.",
+        "summary": "Export a monitor's check results as CSV (chronological). Columns:\ntimestamp, region, status, http_code, total_ms, dns_ms, tcp_connect_ms,\ntls_ms, ttfb_ms, download_ms, failure_reason, then the ping statistics\npackets_sent, packets_received, rtt_min_us, rtt_avg_us, rtt_max_us, rtt_mdev_us.",
         "operationId": "export_http_job_results",
         "parameters": [
           {
@@ -9698,6 +9715,15 @@
               "items": {
                 "type": "string"
               }
+            }
+          },
+          {
+            "name": "check_type",
+            "in": "query",
+            "description": "Filter by check type: http, tcp or ping",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -12270,6 +12296,9 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "description": "This workspace was already connected; its integration now has the new token"
+          },
           "201": {
             "description": "Slack integration added"
           },
@@ -16337,6 +16366,18 @@
             }
           },
           {
+            "name": "check_type",
+            "in": "query",
+            "description": "`http`, `tcp` or `ping`: uptime monitors of that check type only.\nBlank or absent selects every check type.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "description": "Page size. Clamped to 1..=100.",
@@ -16447,7 +16488,7 @@
             }
           },
           "400": {
-            "description": "Invalid monitor_type query parameter"
+            "description": "Invalid monitor_type or check_type query parameter"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -16500,7 +16541,7 @@
         "tags": [
           "Monitors"
         ],
-        "summary": "Export an uptime summary per HTTP monitor as CSV. Uptime is the average\nof daily uptime percentages from the daily performance rollup over the\nrequested range (the same math the status page uses). Row count is\nbounded by the account's monitor count, so no row cap applies.",
+        "summary": "Export an uptime summary per uptime monitor (HTTP, TCP or ping) as CSV. Uptime is the average\nof daily uptime percentages from the daily performance rollup over the\nrequested range (the same math the status page uses). Row count is\nbounded by the account's monitor count, so no row cap applies.",
         "operationId": "export_monitors_summary",
         "parameters": [
           {
@@ -16771,7 +16812,7 @@
           "Monitors"
         ],
         "summary": "A branded uptime report for one calendar month, as a printable page.",
-        "description": "Returns **HTML, not JSON**. The page is styled for paper: open it in a\nbrowser and use Print, or \"Save as PDF\", to produce the document you send\non. There is a print button on the page for exactly that.\n\n`month` is a UTC calendar month, `YYYY-MM`. Omit it and you get the last\ncomplete month, which is the one a monthly report normally covers. Asking\nfor the month in progress is allowed and the report says plainly that it\nis not finished.\n\nThe page takes its logo, colors and title from your status page branding.\nAn account with no branding gets a plain, unbranded document rather than\nours, because this is a report you hand to somebody else.\n\nTwo things the report states about itself, and worth knowing before you\nsend it:\n\n* It covers **HTTP monitors only**. Heartbeat monitors and browser checks\n  have no daily uptime figure behind them, so they are named as excluded\n  rather than quietly dropped.\n* Uptime comes from a rollup rebuilt daily at 03:00 UTC, so a report for\n  the current month is month-to-date. The outage log is separate and is\n  current to the minute.",
+        "description": "Returns **HTML, not JSON**. The page is styled for paper: open it in a\nbrowser and use Print, or \"Save as PDF\", to produce the document you send\non. There is a print button on the page for exactly that.\n\n`month` is a UTC calendar month, `YYYY-MM`. Omit it and you get the last\ncomplete month, which is the one a monthly report normally covers. Asking\nfor the month in progress is allowed and the report says plainly that it\nis not finished.\n\nThe page takes its logo, colors and title from your status page branding.\nAn account with no branding gets a plain, unbranded document rather than\nours, because this is a report you hand to somebody else.\n\nTwo things the report states about itself, and worth knowing before you\nsend it:\n\n* It covers **HTTP, TCP port and ping monitors only**. Heartbeat monitors and browser checks\n  have no daily uptime figure behind them, so they are named as excluded\n  rather than quietly dropped.\n* Uptime comes from a rollup rebuilt daily at 03:00 UTC, so a report for\n  the current month is month-to-date. The outage log is separate and is\n  current to the minute.",
         "operationId": "get_monthly_report",
         "parameters": [
           {
@@ -30472,6 +30513,196 @@
         ]
       }
     },
+    "/traces/v2/histogram": {
+      "get": {
+        "tags": [
+          "Telemetry traces"
+        ],
+        "operationId": "histogram",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "t",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "Comma-separated fixed fields or attribute keys.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "prefix",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "service",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "env",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "focus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "span_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistogramResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/traces/v2/search": {
       "get": {
         "tags": [
@@ -32514,6 +32745,10 @@
           "by_type": {
             "$ref": "#/components/schemas/MonitorTotalsByType",
             "description": "The same four counts split per monitor type.\n\nAdditive: the four fields above are unchanged, and still mean every\nmonitor type added together. This exists so a per-type counter tile\ncan read an account-wide number instead of counting the rows of one\npage of the (paged) monitor list. Never omitted, and never partial."
+          },
+          "by_check_type": {
+            "$ref": "#/components/schemas/MonitorTotalsByCheckType",
+            "description": "`by_type.http` (every uptime monitor) split into HTTP, TCP port and ping."
           },
           "uptime_24h": {
             "type": [
@@ -35628,6 +35863,15 @@
           }
         }
       },
+      "CheckType": {
+        "type": "string",
+        "description": "What an uptime monitor checks. Stored as text with a CHECK and decoded strictly.",
+        "enum": [
+          "http",
+          "tcp",
+          "ping"
+        ]
+      },
       "ChooseBillingStatusPage": {
         "type": "object",
         "required": [
@@ -36688,7 +36932,6 @@
       "CreateHttpJobRequest": {
         "type": "object",
         "required": [
-          "method",
           "timeout_ms",
           "uri",
           "run_interval_seconds"
@@ -36737,8 +36980,23 @@
               "null"
             ]
           },
+          "check_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CheckType",
+                "description": "What the monitor checks: `http` (the default), `tcp` or `ping`. Fixed once created."
+              }
+            ]
+          },
           "method": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The HTTP method; required for `http`. TCP and ping monitors store `TCP` and `PING`."
           },
           "keyword_search": {
             "type": [
@@ -36766,10 +37024,49 @@
           },
           "timeout_ms": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "description": "Milliseconds. `http` up to 60000, `tcp` 1000 to 60000, `ping` 1000 to 10000."
           },
           "uri": {
-            "type": "string"
+            "type": "string",
+            "description": "`http`: the URL. `tcp`: `tcp://host:port` or `host:port`. `ping`: `ping://host` or\nthe host alone. IPv6 addresses go in brackets."
+          },
+          "tcp_send": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`tcp` only: sent once connected, with `\\r \\n \\t \\0 \\\\ \\xHH` escapes. At most\n1024 bytes after unescaping."
+          },
+          "tcp_expect": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`tcp` only: the response must contain this (same escapes, case-sensitive), 1 to\n256 bytes after unescaping. Left out, connecting is enough."
+          },
+          "tcp_tls": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`tcp` only: complete a verified TLS handshake first. Defaults to false."
+          },
+          "ping_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "`ping` only: echo requests per check, 1 to 10. Defaults to 3."
+          },
+          "ping_loss_threshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "`ping` only: fail when at least this percent of packets are lost, 1 to 100.\nDefaults to 100, so only total loss fails."
           },
           "request_body": {
             "type": [
@@ -36878,7 +37175,8 @@
             "type": [
               "boolean",
               "null"
-            ]
+            ],
+            "description": "Pair a domain-expiry monitor. Defaults to true for `http` and false for `tcp` and\n`ping`, which allow it only when the host is a domain name."
           },
           "monitor_page_speed": {
             "type": [
@@ -42226,6 +42524,24 @@
                 "description": "Set while it is turned off. The list and the enable and disable answers carry it."
               }
             ]
+          },
+          "monthly_check": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Microsoft Teams only: whether a check card goes out each month to keep the flow running. The list and\nedits that set it carry it."
+          },
+          "webhook_request": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WebhookRequestHint",
+                "description": "Webhooks only: the custom header names and the auth type it sends, never a value. The list and\nedits carry it."
+              }
+            ]
           }
         }
       },
@@ -44524,7 +44840,7 @@
           },
           "kind": {
             "type": "string",
-            "description": "`quota_not_checked`, `schedule_missing`, `tls_unknown`, `inconclusive_run`, `degraded_quorum`,\n`partial_failure`, `recovery_pending`, `recovery_reset`, `recovery_confirmed`, `flap_started`,\n`flap_held`, `flap_break_through` or `flap_ended`. New kinds may be added."
+            "description": "`quota_not_checked`, `schedule_missing`, `tls_unknown`, `inconclusive_run`, `degraded_quorum`,\n`partial_failure`, `recovery_pending`, `recovery_reset`, `recovery_confirmed`, `flap_started`,\n`flap_held`, `flap_break_through`, `flap_ended` or `check_dropped`. New kinds may be added."
           },
           "data": {
             "type": "object",
@@ -44742,6 +45058,26 @@
           "response_time",
           "none"
         ]
+      },
+      "MonitorTotalsByCheckType": {
+        "type": "object",
+        "description": "Uptime monitor counts split by check type. All three keys always present.",
+        "required": [
+          "http",
+          "tcp",
+          "ping"
+        ],
+        "properties": {
+          "http": {
+            "$ref": "#/components/schemas/MonitorTypeTotals"
+          },
+          "tcp": {
+            "$ref": "#/components/schemas/MonitorTypeTotals"
+          },
+          "ping": {
+            "$ref": "#/components/schemas/MonitorTypeTotals"
+          }
+        }
       },
       "MonitorTotalsByType": {
         "type": "object",
@@ -56812,7 +57148,8 @@
           "billing_interval",
           "billing_cycle_start",
           "billing_cycle_end",
-          "complimentary"
+          "complimentary",
+          "discounts"
         ],
         "properties": {
           "id": {
@@ -56869,7 +57206,14 @@
               "null"
             ],
             "format": "int64",
-            "description": "What Stripe bills for a legacy plan row (its legacy price on one row, 0 on the rows it\nincludes). `null` for other rows, which bill their pack's price."
+            "description": "What Stripe bills for this row after its discounts. `null` when it bills its pack's list\nprice."
+          },
+          "discounts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Names of the discounts that lower `billed_cents`, e.g. `[\"Loyalty discount\"]`."
           }
         }
       },
@@ -58608,6 +58952,39 @@
           },
           "count": {
             "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "error": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Logs at error or fatal level; spans with error status. The level fields are logs only:\ndebug includes trace, and records without a level are the remainder of `count`.",
+            "minimum": 0
+          },
+          "warn": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "info": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "debug": {
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "minimum": 0
           }
@@ -60768,6 +61145,17 @@
             "format": "int32",
             "description": "Milliseconds. Browser checks store seconds; the value is converted so\nthe Timeout column reads true for them instead of blanking."
           },
+          "check_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CheckType",
+                "description": "What an uptime monitor checks: `http`, `tcp` or `ping`. Null on\nheartbeats and browser checks."
+              }
+            ]
+          },
           "uri": {
             "type": [
               "string",
@@ -61715,6 +62103,54 @@
             ],
             "format": "uuid",
             "description": "The service this monitor belongs to; `null` detaches it and omission keeps it."
+          },
+          "check_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CheckType",
+                "description": "The monitor's own `check_type` may be sent back; any other is a 400 (it is fixed)."
+              }
+            ]
+          },
+          "tcp_send": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`tcp` only. Absent keeps it; `null` or `\"\"` sends nothing."
+          },
+          "tcp_expect": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`tcp` only. Absent keeps it; `null` or `\"\"` makes connecting enough."
+          },
+          "tcp_tls": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`tcp` only."
+          },
+          "ping_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "`ping` only, 1 to 10."
+          },
+          "ping_loss_threshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "`ping` only, 1 to 100."
           }
         }
       },
@@ -63559,6 +63995,31 @@
           }
         },
         "additionalProperties": false
+      },
+      "WebhookRequestHint": {
+        "type": "object",
+        "description": "What a read shows: header names in order, the auth type and a basic username. Never a value.",
+        "properties": {
+          "headers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "auth": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`bearer` or `basic`; absent when there is none."
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
       },
       "Widget": {
         "allOf": [
