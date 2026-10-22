@@ -8,5 +8,10 @@
     "route": "GET /notification/history",
     "source": "core-rs api/src/handlers/notification/history.rs",
     "note": "Added with the alerts A5.6 release. Remove this entry once openapi.json lists it."
+  },
+  {
+    "route": "POST /v1/integrations/{integration_id}/signing-secret/rotate",
+    "source": "core-rs api/src/routes/v1.rs (integrations::webhook::secret::rotate_signing_secret_v1)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
   }
 ]

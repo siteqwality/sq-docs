@@ -1,11 +1,11 @@
 ---
 title: Webhook integrations
 description: Send a signed JSON POST to your own URL for monitor, alert and RUM events, with retries and a delivery log.
-last_verified: 2026-10-16
+last_verified: 2026-10-22
 owner: jj
 ---
 
-import { Steps, LinkCard } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 A **webhook integration** POSTs a JSON event to a URL you control. Use it when there is no native integration for your tool: an internal event bus, a ticketing system, a data warehouse ingest URL. For [PagerDuty](/integrations/pagerduty/) or [Jira Service Management (Opsgenie)](/integrations/opsgenie/), use the native integration instead: it closes the alert when the monitor recovers.
 
@@ -33,7 +33,7 @@ curl -X POST https://api.siteqwality.com/integration/webhook \
   }'
 ```
 
-The response carries the secret in `details.signing_secret`. It starts with `sqwh_`. If you never saw an endpoint's secret, [rotate it](#rotate-the-secret) to get one you can see.
+The response carries the secret in `details.signing_secret`. It starts with `whsec_`. Endpoints added before 22 October 2026 have a secret that starts with `sqwh_` until you rotate it (see [older `sqwh_` secrets](#older-sqwh_-secrets)). If you never saw an endpoint's secret, [rotate it](#rotate-the-secret) to get one you can see.
 
 Adding, changing or removing a webhook integration takes an account admin, or an API key or API client with `integrations:manage` (see [who can change integrations](/integrations/overview/#who-can-change-integrations)).
 
@@ -128,54 +128,118 @@ The full result also carries the response headers and body, the timing breakdown
 
 ## Request headers
 
+Deliveries follow [Standard Webhooks](https://www.standardwebhooks.com/), so its libraries verify them.
+
 | Header | Value |
 |---|---|
 | `Content-Type` | `application/json` |
-| `X-SiteQwality-Delivery` | The delivery ID, equal to `id` in the body. |
-| `X-SiteQwality-Timestamp` | Unix seconds when this attempt was signed. |
-| `X-SiteQwality-Signature` | `v1=` followed by the hex HMAC. |
+| `User-Agent` | `SiteQwality-Webhooks/1` |
+| `webhook-id` | The message ID, equal to `id` in the body. It stays the same on every retry and replay, so use it to drop duplicates. |
+| `webhook-timestamp` | Unix seconds when this attempt was signed. |
+| `webhook-signature` | `v1,` followed by the base64 HMAC. Two space-separated entries after a rotation. |
+| `X-SiteQwality-Delivery` | The message ID again. |
 | `X-SiteQwality-Event` | The event name. Not signed. |
 | `X-SiteQwality-Attempt` | `1` to `6`. Not signed. |
+| `X-SiteQwality-Replay-Of` | On a replay only: the ID of the delivery it replays. Not signed. |
+| `X-SiteQwality-Timestamp`, `X-SiteQwality-Signature` | The older signature, still sent for now (see [below](#the-older-x-siteqwality-signature-header)). |
 
 ## Verify the signature
 
-The signature is an HMAC-SHA256 over the delivery ID, the timestamp and the raw request body, joined with dots:
+The signature is an HMAC-SHA256 over the message ID, the timestamp and the raw request body, joined with dots:
 
 ```text
-signed_payload = "{X-SiteQwality-Delivery}.{X-SiteQwality-Timestamp}.{raw body}"
-signature      = "v1=" + hex(HMAC_SHA256(secret, signed_payload))
+signed_payload    = "{webhook-id}.{webhook-timestamp}.{raw body}"
+webhook-signature = "v1," + base64(HMAC_SHA256(key, signed_payload))
 ```
 
-The key is the secret exactly as shown, `sqwh_` included. Each attempt is signed again with a fresh timestamp, so a retry 30 minutes later still passes the 5-minute tolerance check below.
+The key is the base64-decoded part of the secret after `whsec_`. Each attempt is signed again with a fresh timestamp, so a retry 30 minutes later still passes the libraries' 5-minute tolerance check. Pass the raw request body, not a re-serialized object.
+
+<Tabs syncKey="language">
+<TabItem label="Node">
 
 ```js
-const crypto = require('crypto');
+// npm install standardwebhooks
+const { Webhook } = require('standardwebhooks');
 
-function verify(secret, headers, rawBody) {
-  const id = headers['x-siteqwality-delivery'];
-  const ts = headers['x-siteqwality-timestamp'];
-  if (Math.abs(Date.now() / 1000 - Number(ts)) > 300) return false;
+const wh = new Webhook(secret); // the secret exactly as shown
 
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(`${id}.${ts}.${rawBody}`) // the raw body, not a re-serialized object
-    .digest('hex');
-
-  // After a rotation the header carries two space-separated entries.
-  return String(headers['x-siteqwality-signature'] || '')
-    .split(' ')
-    .some((entry) => {
-      if (!entry.startsWith('v1=')) return false;
-      const got = entry.slice(3);
-      return got.length === expected.length &&
-        crypto.timingSafeEqual(Buffer.from(got), Buffer.from(expected));
-    });
-}
+app.post('/sq-webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  const event = wh.verify(req.body, req.headers); // throws if invalid or too old
+  res.sendStatus(204);
+});
 ```
+
+</TabItem>
+<TabItem label="Python">
+
+```python
+# pip install standardwebhooks
+from standardwebhooks import Webhook
+
+wh = Webhook(secret)  # the secret exactly as shown
+
+# Raises WebhookVerificationError if invalid or too old.
+event = wh.verify(request.get_data(), dict(request.headers))
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go
+// go get github.com/standard-webhooks/standard-webhooks/libraries
+import standardwebhooks "github.com/standard-webhooks/standard-webhooks/libraries/go"
+
+wh, err := standardwebhooks.NewWebhook(secret) // the secret exactly as shown
+
+body, err := io.ReadAll(r.Body)
+err = wh.Verify(body, r.Header) // nil when valid and recent
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby
+# gem install standardwebhooks
+require 'standardwebhooks'
+
+wh = StandardWebhooks::Webhook.new(secret) # the secret exactly as shown
+
+# Raises if invalid or too old.
+event = wh.verify(request.raw_post, request.headers)
+```
+
+</TabItem>
+</Tabs>
+
+### Older `sqwh_` secrets
+
+A secret that starts with `sqwh_` signs with the secret's own characters as the key, not a base64-decoded one. Give the libraries the raw key, or [rotate](#rotate-the-secret) to get a `whsec_` secret:
+
+| Library | Raw key |
+|---|---|
+| Node | `new Webhook(secret, { format: 'raw' })` |
+| Python | `Webhook(secret.encode())` |
+| Go | `standardwebhooks.NewWebhookRaw([]byte(secret))` |
+| Ruby | `StandardWebhooks::Webhook.new(Base64.strict_encode64(secret))` |
+
+### The older `X-SiteQwality-Signature` header
+
+Every delivery still carries the signature scheme from before Standard Webhooks. It will be removed, with notice in the changelog, so verify `webhook-signature` instead. It is `v1=` followed by the hex HMAC-SHA256 of `"{X-SiteQwality-Delivery}.{X-SiteQwality-Timestamp}.{raw body}"`, keyed with the secret's own characters (`whsec_` or `sqwh_` included), with two space-separated entries after a rotation.
 
 ### Rotate the secret
 
-Open the webhook integration from **Manage → Integrations** and choose **Rotate secret**, or call `POST /integration/webhook/{id}/rotate_secret` from an admin session. API keys cannot rotate secrets. The new secret is shown once. For the next 24 hours every delivery carries two signatures in `X-SiteQwality-Signature`, one under each secret, so a verifier that checks each entry keeps working while you deploy the new secret.
+Open the webhook integration from **Manage → Integrations**, choose **Rotate secret** and pick how long the old secret keeps working. Or call the API as an account admin, or with an API key or API client that has `integrations:manage`:
+
+```bash
+curl -X POST https://api.siteqwality.com/v1/integrations/<webhook-integration-id>/signing-secret/rotate \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "overlap_hours": 24 }'
+```
+
+The response carries the new secret once, in `signing_secret`, with `previous_secret_expires_at`. Until then every delivery carries two entries in `webhook-signature`, one under each secret, and the libraries accept either, so your receiver keeps working while you deploy the new secret. `overlap_hours` is 0 to 168 and defaults to 24; 0 stops the old secret at once, for a secret that leaked.
+
+Rotating again while the old secret still works answers `409`, because it would stop that secret early. Send `"expire_previous_now": true` to do it anyway. The older `POST /integration/webhook/{id}/rotate_secret` still works from an admin session, with a 24-hour overlap.
 
 ## Delivery and retries
 
@@ -209,7 +273,15 @@ Through the API:
 
 With an API key, reading the log needs `read:notifications` and replaying needs `write:notifications` (not `integrations:manage`).
 
-A replay is a new delivery with its own ID header, timestamp and signature under the current secret, and no alert receipt of its own. The body is unchanged, so `id` in the body still names the original delivery. A request body over 64 KiB is sent in full, but the log keeps only its first 64 KiB, so that delivery cannot be replayed.
+A replay is a new delivery with its own timestamp and a signature under the current secret, and no alert receipt of its own. It keeps the original's body and `webhook-id`, so a receiver that drops duplicates by ID drops it too when the original already arrived. `X-SiteQwality-Replay-Of` names the delivery it replays, and each delivery in the log carries its `message_id`. A request body over 64 KiB is sent in full, but the log keeps only its first 64 KiB, so that delivery cannot be replayed.
+
+## Turn an endpoint off
+
+**Turn off** on the integration's card stops deliveries without deleting anything: alerts to it are skipped until you turn it back on, and retries still pending end with "Not delivered: the webhook endpoint is turned off". Through the API, call `POST /v1/integrations/{id}/disable` and `POST /v1/integrations/{id}/enable` with `integrations:manage`.
+
+The integration's page shows how the endpoint did over the last 24 hours and 5 days. When you turn it back on, Site Qwality offers to replay what failed since it last worked: up to 1,000 deliveries, oldest first, ten a second, each one once. `POST /integration/webhook/{id}/replay_failed` does the same with `integrations:manage`.
+
+Replaying one delivery is limited to 10 a minute and 100 a day per endpoint, counting what a bulk replay sent, and answers `429` above that. No replay is sent while the endpoint is off (`409`).
 
 ## Payload settings
 
