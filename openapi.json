@@ -32592,6 +32592,2736 @@
         ]
       }
     },
+    "/v1/api-keys/{api_key_id}/roll": {
+      "post": {
+        "tags": [
+          "API Keys"
+        ],
+        "operationId": "v1_roll_api_key",
+        "parameters": [
+          {
+            "name": "api_key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe, but the new secret is shown once and never stored: a retry with the same key and body is refused with 409 `secret_not_replayable` instead of running again.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Optional",
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RollApiKeyRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new key and its secret, shown once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolledApiKey"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such key in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The key's successor is already live, or an overlap would pass the active key limit",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid `overlap_hours`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/audit-events": {
+      "get": {
+        "tags": [
+          "Audit Log"
+        ],
+        "operationId": "v1_list_audit_events",
+        "parameters": [
+          {
+            "name": "actor_user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "actor_api_key_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "actor_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CustomerAuditActorType"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "description": "An action and its dot-children: `http.job` matches `http.job.regions`, not `http.jobs`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "target_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "target_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "RFC 3339; events at or after it, within the last 90 days.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "description": "RFC 3339; events at or before it.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 200, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The audit log, newest first. Keys need the `read:audit` scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_CustomerAuditLogEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter, `limit` or `cursor`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_list_integrations",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 200, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account's integrations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_Integration"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `limit` or `cursor`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations/notices": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_integration_notices",
+        "responses": {
+          "200": {
+            "description": "Problems with the account's integrations that need attention",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationNoticeList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations/notices/{notice_id}/dismiss": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_dismiss_integration_notice",
+        "parameters": [
+          {
+            "name": "notice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Dismissed"
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations/{integration_id}": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_get_integration",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The integration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Integration"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such integration in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_delete_integration",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "description": "Delete even while channels, groups or services still use it.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted, or already gone"
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Channels, groups or services still use it (send `force=true` to delete anyway), or a newer version created it",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_edit_integration",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditIntegrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The integration as saved; fields left out keep their values",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Integration"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such integration in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A newer version created this integration; it cannot be edited yet",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A field does not apply to this integration's type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations/{integration_id}/deliveries": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_integration_deliveries",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 100, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The integration's delivery log, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDeliveryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `limit` or `cursor`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such integration in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations/{integration_id}/disable": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_disable_integration",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The integration, which sends nothing until enabled",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Integration"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such integration in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations/{integration_id}/enable": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_enable_integration",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The integration, sending again",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Integration"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such integration in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations/{integration_id}/routes": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_route_integration",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "A channel for the integration in the group, attached to the monitors",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such integration in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The group already sends to it, or holds the most channels allowed, or the account does",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The integration cannot take a channel, or the group or a monitor is not in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations/{integration_id}/signing-secret/rotate": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_rotate_signing_secret",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe, but the new secret is shown once and never stored: a retry with the same key and body is refused with 409 `secret_not_replayable` instead of running again.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Optional",
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RotateSigningSecretRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new secret, shown once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotatedSigningSecret"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such webhook integration in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The previous secret is still signing; send `expire_previous_now`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid `overlap_hours`, or not a webhook integration",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations/{integration_id}/test": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_test_integration",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the vendor answered; `result` says whether it arrived",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestSendReply"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such integration in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "This type is tested from a channel instead",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many tests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The test could not be sent",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The test took too long",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations/{integration_id}/test/confirm": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_confirm_integration_test",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The Microsoft Teams test was confirmed as arrived"
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such integration in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No test was delivered in the last hour",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Only Microsoft Teams tests need confirming",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations/{integration_id}/usage": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "v1_integration_usage",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The channels, groups and services that use it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationUsage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such integration in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/me/contact-methods/{contact_method_id}/test": {
+      "post": {
+        "tags": [
+          "User Contact Methods"
+        ],
+        "operationId": "v1_test_contact_method",
+        "parameters": [
+          {
+            "name": "contact_method_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the vendor answered; `result` says whether it arrived",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestSendReply"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Only a signed-in member tests their own contact methods",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such contact method of yours",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The contact method is not verified",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "This contact method cannot be tested",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/notification-groups": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "v1_list_notification_groups",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 200, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account's notification groups with their channels",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_NotificationGroupWithNotifications"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `limit` or `cursor`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "v1_create_notification_group",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotificationGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The group",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/notification-groups/{notification_group_id}": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "v1_get_notification_group",
+        "parameters": [
+          {
+            "name": "notification_group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The group with its channels",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationGroupWithNotifications"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "v1_delete_notification_group",
+        "parameters": [
+          {
+            "name": "notification_group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted, or already gone"
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "v1_edit_notification_group",
+        "parameters": [
+          {
+            "name": "notification_group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotificationGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The group as saved; fields left out keep their values",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such group in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "v1_list_notifications",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 200, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account's channels",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_Notification"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `limit` or `cursor`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "v1_create_notification",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The channel",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notification"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body, or the group is not in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller's email address is not verified",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The group or the account holds the most channels allowed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The integration is not in this account, or is another type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/{notification_id}": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "v1_get_notification",
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The channel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notification"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such channel in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "v1_delete_notification",
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted, or already gone"
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "v1_edit_notification",
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The channel as saved; fields left out keep their values",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notification"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller's email address is not verified",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such channel in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A newer version created this channel; it cannot be edited yet",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The integration is not in this account, or is another type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/{notification_id}/test": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "v1_test_notification",
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the vendor answered; `result` says whether it arrived",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestSendReply"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such channel in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "This channel cannot be tested",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/webhook/stytch": {
       "post": {
         "tags": [
@@ -36542,7 +39272,11 @@
             "items": {
               "type": "string"
             },
-            "description": "Optional scope restriction for a `full` key. Omitted or empty means\nunrestricted, which is how every existing key behaves. Must be drawn\nfrom the same `read:<family>` / `write:<family>` taxonomy as M2M\nclients. Rejected on an `ingest` key, which never reaches the scope\nchokepoint at all."
+            "description": "Scope restriction for a `full` key, drawn from the same `read:<family>` / `write:<family>` taxonomy as M2M\nclients. Rejected on an `ingest` key, which never reaches the scope chokepoint at all."
+          },
+          "full_access": {
+            "type": "boolean",
+            "description": "`true` asks for a `full` key with no scope list, which reaches the whole customer API. A `full` key with no\nscopes is refused without it (integrations design 5.8.6). Ignored when scopes are given or on `ingest` keys."
           },
           "expires_in_days": {
             "type": [
@@ -38358,6 +41092,23 @@
           }
         }
       },
+      "CustomHeader": {
+        "type": "object",
+        "description": "One custom header. `Debug` never prints the value.",
+        "required": [
+          "name",
+          "value"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "CustomerAuditActorType": {
         "type": "string",
         "description": "Who performed an audited action. Mirrors `customer_audit_log.actor_type`.",
@@ -40102,6 +42853,53 @@
         },
         "additionalProperties": false
       },
+      "EditIntegrationRequest": {
+        "type": "object",
+        "properties": {
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "credentials": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The type's credential fields, replaced whole. Present but `null` is refused."
+          },
+          "monthly_check": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Microsoft Teams only: send a check card each month so the flow keeps running (design 5.6.3)."
+          },
+          "headers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CustomHeader"
+            },
+            "description": "Webhooks only: the custom headers to send, replacing the set; `[]` clears them (design 5.5.6)."
+          },
+          "auth": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WebhookAuth",
+                "description": "Webhooks only: `{\"type\": \"bearer\", \"token\"}`, `{\"type\": \"basic\", \"username\", \"password\"}` or\n`{\"type\": \"none\"}`."
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "EmailConfirmRequest": {
         "type": "object",
         "description": "`POST /auth/email/confirm`: redeems a `verify_email` link, never a session.",
@@ -41135,6 +43933,22 @@
           },
           "variable": {
             "type": "boolean"
+          }
+        }
+      },
+      "FieldError": {
+        "type": "object",
+        "description": "One validation failure; `pointer` is an RFC 6901 pointer into the request body.",
+        "required": [
+          "pointer",
+          "detail"
+        ],
+        "properties": {
+          "pointer": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
           }
         }
       },
@@ -42542,6 +45356,13 @@
                 "description": "Webhooks only: the custom header names and the auth type it sends, never a value. The list and\nedits carry it."
               }
             ]
+          },
+          "routed": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether anything sends through it: a channel in a group, a service target or a contact method.\nOnly the list carries it."
           }
         }
       },
@@ -42637,6 +45458,28 @@
           }
         }
       },
+      "IntegrationDeliveryPage": {
+        "type": "object",
+        "description": "One page of an integration's delivery log, newest first.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationDelivery"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass back as `cursor` for the next page; `null` on the last."
+          }
+        }
+      },
       "IntegrationDisabled": {
         "type": "object",
         "description": "Why an integration sends nothing: its channels skip with `integration_disabled`.",
@@ -42684,6 +45527,63 @@
           }
         }
       },
+      "IntegrationNotice": {
+        "type": "object",
+        "required": [
+          "id",
+          "integration_id",
+          "integration_name",
+          "integration_type",
+          "reason",
+          "sent_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "integration_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "integration_name": {
+            "type": "string"
+          },
+          "integration_type": {
+            "type": "string",
+            "description": "slack | webhook | pagerduty | …"
+          },
+          "reason": {
+            "type": "string",
+            "description": "failing | config_broken"
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The vendor's words for the newest failure, URLs cut to hosts."
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IntegrationNoticeList": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationNotice"
+            }
+          }
+        }
+      },
       "IntegrationType": {
         "type": "string",
         "enum": [
@@ -42699,6 +45599,67 @@
           "pushover",
           "pushbullet"
         ]
+      },
+      "IntegrationUsage": {
+        "type": "object",
+        "description": "Everything that sends through an integration, directly or through a channel.",
+        "required": [
+          "in_use",
+          "channels",
+          "groups",
+          "monitors",
+          "services",
+          "contact_methods",
+          "escalation_policies"
+        ],
+        "properties": {
+          "in_use": {
+            "type": "boolean",
+            "description": "True when any list below is non-empty; a delete then needs `force`."
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsageChannel"
+            },
+            "description": "The channels it delivers, by notification type."
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsageItem"
+            },
+            "description": "Groups holding one of those channels."
+          },
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsageMonitor"
+            },
+            "description": "Monitors and alert rules alerting one of those groups."
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsageItem"
+            },
+            "description": "Services with a notification target on it."
+          },
+          "contact_methods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsageContactMethod"
+            },
+            "description": "People's contact methods on it."
+          },
+          "escalation_policies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsageItem"
+            },
+            "description": "Escalation policies paging one of those people, directly or by schedule."
+          }
+        }
       },
       "InvoiceAdjustments": {
         "type": "object",
@@ -45546,6 +48507,50 @@
           }
         ]
       },
+      "NotificationGroup": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "friendly_name",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "friendly_name": {
+            "type": "string"
+          },
+          "delay_send_after_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "resend_every_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "is_default": {
+            "type": "boolean",
+            "description": "The group monitors get when they are created without `group_notification_ids`."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "NotificationGroupWithNotifications": {
         "type": "object",
         "required": [
@@ -46597,6 +49602,435 @@
               "null"
             ],
             "description": "Set while money is outstanding: only Pay now, Update card and Cancel\nare offered, and this says why (SM7)."
+          }
+        }
+      },
+      "Page_CustomerAuditLogEntry": {
+        "type": "object",
+        "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One row in the customer audit-log list response. `request_ip` is\nstringified for JSON transport (Postgres `INET` round-trips as\n`IpNetwork`).",
+              "required": [
+                "id",
+                "occurred_at",
+                "actor_type",
+                "action",
+                "http_method",
+                "http_path"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "occurred_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "actor_type": {
+                  "type": "string"
+                },
+                "actor_user_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "actor_api_key_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "The API key that acted, when `actor_type` is `api_key`. Null on rows\nwritten before attribution landed (2026-08-06)."
+                },
+                "actor_api_key_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The key's friendly name at read time (keys are revoked, never\ndeleted, so this resolves for historical rows too)."
+                },
+                "actor_m2m_client_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "impersonated_by": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "Staff user id when the action was performed under impersonation."
+                },
+                "action": {
+                  "type": "string"
+                },
+                "target_kind": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "target_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "http_method": {
+                  "type": "string"
+                },
+                "http_path": {
+                  "type": "string"
+                },
+                "http_status": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32"
+                },
+                "request_ip": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "user_agent": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "actor_user_email": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The acting user's email: the person behind a session, an AI assistant\nor a partner action (or the user staff impersonated)."
+                },
+                "connected_app": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AuditConnectedApp",
+                      "description": "The AI assistant or other OAuth app involved: the one that acted when\n`actor_type` is `connected_app`, or the one approved, denied or\nrevoked on an `oauth.authorize` or `account.connected_apps` row."
+                    }
+                  ]
+                },
+                "via": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "`mcp` when the change came through the MCP server (an AI assistant's\ntool call), whatever credential it used."
+                },
+                "mcp_tool": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The MCP tool that made the change, when `via` is `mcp`."
+                },
+                "consent_granted": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "On an `oauth.authorize` row: whether the member allowed the app."
+                },
+                "scopes": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "On an `oauth.authorize` row: the scopes the member granted."
+                },
+                "configuration_change": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AuditConfigurationChange"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Send back as `cursor` for the next page; `null` on the last one."
+          }
+        }
+      },
+      "Page_Integration": {
+        "type": "object",
+        "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "account_id",
+                "friendly_name",
+                "type",
+                "details",
+                "created_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "account_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "friendly_name": {
+                  "type": "string"
+                },
+                "type": {
+                  "$ref": "#/components/schemas/IntegrationType"
+                },
+                "details": {
+                  "$ref": "#/components/schemas/ApiIntegrationDetails",
+                  "description": "The stored details with every credential masked by\n[`crate::credential_mask::integration_rules`]."
+                },
+                "external_ref": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApiIntegrationExternalRef",
+                      "description": "Where a PagerDuty or JSM/Opsgenie integration sends. `null` on every other type."
+                    }
+                  ]
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "health": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/IntegrationHealth",
+                      "description": "How deliveries through it are going. Only the list carries it."
+                    }
+                  ]
+                },
+                "disabled": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/IntegrationDisabled",
+                      "description": "Set while it is turned off. The list and the enable and disable answers carry it."
+                    }
+                  ]
+                },
+                "monthly_check": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "Microsoft Teams only: whether a check card goes out each month to keep the flow running. The list and\nedits that set it carry it."
+                },
+                "webhook_request": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/WebhookRequestHint",
+                      "description": "Webhooks only: the custom header names and the auth type it sends, never a value. The list and\nedits carry it."
+                    }
+                  ]
+                },
+                "routed": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "Whether anything sends through it: a channel in a group, a service target or a contact method.\nOnly the list carries it."
+                }
+              }
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Send back as `cursor` for the next page; `null` on the last one."
+          }
+        }
+      },
+      "Page_Notification": {
+        "type": "object",
+        "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "account_id",
+                "type",
+                "details",
+                "created_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "account_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": {
+                  "$ref": "#/components/schemas/NotificationType"
+                },
+                "details": {
+                  "$ref": "#/components/schemas/NotificationDetails"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "health": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChannelHealth",
+                      "description": "How this channel's recent deliveries went: whether the last alert\nreached anyone, and why not when it did not (a revoked Slack token, a\nbouncing inbox). Present on the read endpoints; absent on create and\nupdate responses."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Send back as `cursor` for the next page; `null` on the last one."
+          }
+        }
+      },
+      "Page_NotificationGroupWithNotifications": {
+        "type": "object",
+        "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "account_id",
+                "friendly_name",
+                "created_at",
+                "notifications"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "account_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "friendly_name": {
+                  "type": "string"
+                },
+                "delay_send_after_minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32"
+                },
+                "resend_every_minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32"
+                },
+                "is_default": {
+                  "type": "boolean",
+                  "description": "The group monitors get when they are created without `group_notification_ids`."
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "notifications": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notification"
+                  }
+                },
+                "numb_of_sites": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int64"
+                }
+              }
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Send back as `cursor` for the next page; `null` on the last one."
           }
         }
       },
@@ -47655,6 +51089,52 @@
           "balanced",
           "relaxed"
         ]
+      },
+      "Problem": {
+        "type": "object",
+        "description": "An RFC 9457 problem, the body of every `/v1` error.",
+        "required": [
+          "type",
+          "title",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "`https://docs.siteqwality.com/errors/` and the failure's code, such as `not_found`."
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instance": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`urn:uuid:` and the request id."
+          },
+          "errors": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            },
+            "description": "The invalid fields, when the request body was refused."
+          }
+        }
       },
       "ProductUsage": {
         "type": "object",
@@ -49801,6 +53281,91 @@
         },
         "additionalProperties": false
       },
+      "RollApiKeyRequest": {
+        "type": "object",
+        "properties": {
+          "overlap_hours": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "How long the old key keeps working: 0 to 168, default 24. Zero ends it now.",
+            "default": null
+          }
+        },
+        "additionalProperties": false
+      },
+      "RolledApiKey": {
+        "type": "object",
+        "required": [
+          "api_key",
+          "secret",
+          "previous_api_key_id",
+          "previous_expires_at"
+        ],
+        "properties": {
+          "api_key": {
+            "$ref": "#/components/schemas/ApiKeySummary"
+          },
+          "secret": {
+            "type": "string",
+            "description": "Shown exactly once."
+          },
+          "previous_api_key_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "previous_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the old key stops working."
+          }
+        }
+      },
+      "RotateSigningSecretRequest": {
+        "type": "object",
+        "description": "`POST /v1/integrations/{id}/signing-secret/rotate`. Both fields are optional.",
+        "properties": {
+          "overlap_hours": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "How long the outgoing secret keeps signing: 0 to 168, default 24.",
+            "default": null
+          },
+          "expire_previous_now": {
+            "type": "boolean",
+            "description": "Rotate during a live overlap, ending the previous secret now.",
+            "default": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "RotatedSigningSecret": {
+        "type": "object",
+        "required": [
+          "signing_secret",
+          "previous_secret_expires_at",
+          "previous_secret_valid_for_hours"
+        ],
+        "properties": {
+          "signing_secret": {
+            "type": "string",
+            "description": "Shown exactly once."
+          },
+          "previous_secret_expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "previous_secret_valid_for_hours": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "RotationAnchorResponse": {
         "type": "object",
         "description": "The local date of one handoff and the participant (0-based index) who starts there.",
@@ -49826,6 +53391,57 @@
           "weekly",
           "custom"
         ]
+      },
+      "RouteRequest": {
+        "type": "object",
+        "required": [
+          "group"
+        ],
+        "properties": {
+          "group": {
+            "type": "object",
+            "description": "`{\"id\": \"<group id>\"}` for one of the account's groups, or `{\"name\": \"...\"}` to create one."
+          },
+          "monitors": {
+            "type": "object",
+            "description": "`\"group\"` (the default) leaves monitors as they are, `\"all\"` adds the group to every monitor, or a list of\nup to 1,000 monitor ids."
+          },
+          "slack_channel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The channel to post to; required for Slack and refused otherwise."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteResponse": {
+        "type": "object",
+        "required": [
+          "notification_group_id",
+          "notification_id",
+          "group_created",
+          "monitors_attached"
+        ],
+        "properties": {
+          "notification_group_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "notification_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "group_created": {
+            "type": "boolean"
+          },
+          "monitors_attached": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
       },
       "RuleCapture": {
         "type": "string",
@@ -60251,6 +63867,59 @@
           }
         }
       },
+      "TestResult": {
+        "type": "string",
+        "enum": [
+          "delivered",
+          "failed",
+          "rejected",
+          "unsupported",
+          "not_found"
+        ]
+      },
+      "TestSendReply": {
+        "type": "object",
+        "required": [
+          "result",
+          "latency_ms"
+        ],
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/TestResult"
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vendor_status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The vendor's reason or ours, never a credential."
+          },
+          "latency_ms": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "resolved": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Paging tests only: whether the test incident was closed again."
+          }
+        }
+      },
       "ThresholdDirection": {
         "type": "string",
         "enum": [
@@ -63391,6 +67060,43 @@
           "regex"
         ]
       },
+      "UsageChannel": {
+        "type": "object",
+        "required": [
+          "id",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "UsageContactMethod": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
       "UsageHistoryResponse": {
         "type": "object",
         "required": [
@@ -63409,6 +67115,43 @@
             "items": {
               "$ref": "#/components/schemas/TelemetryUsageHistory"
             }
+          }
+        }
+      },
+      "UsageItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "UsageMonitor": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "monitor_type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "monitor_type": {
+            "type": "string",
+            "description": "http | cron | browser | dns_record | alert_rule"
           }
         }
       },
@@ -63982,6 +67725,65 @@
             "type": "string"
           }
         }
+      },
+      "WebhookAuth": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "none"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "token",
+              "type"
+            ],
+            "properties": {
+              "token": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "bearer"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "username",
+              "password",
+              "type"
+            ],
+            "properties": {
+              "username": {
+                "type": "string"
+              },
+              "password": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "basic"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "How the endpoint authenticates us. `None` clears it. `Debug` never prints a secret."
       },
       "WebhookNotificationDetails": {
         "type": "object",
