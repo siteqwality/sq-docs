@@ -62,7 +62,7 @@ Anything you can do in the dashboard, you can do through the API.
 
 2. Name it after where it will be used (`local-dev`, `terraform-prod`, `ci`). One key per use lets you rotate them independently.
 
-3. Under **Access**, choose **Ingest only** for a key that only sends telemetry, or **Full access** for one that can also call the API. A full-access key can be limited under **Scopes**; with none ticked it can do everything the account can.
+3. Under **Access**, choose **Ingest only** for a key that only sends telemetry, or **Full access** for one that can also call the API. A full-access key can be limited under **Scopes**. To leave it unrestricted, tick **Allow everything**: it then reaches the whole customer API, including deleting monitors. Through the API, a full key with no scopes needs `"full_access": true`.
 
 4. Click **Create key** and copy the value. It is displayed only once, so store it in your secrets manager.
 
