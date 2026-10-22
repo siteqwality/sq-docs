@@ -7,9 +7,7 @@ owner: jj
 
 import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-## Prerequisites
-
-- A RUM application with the SDK installed in your app. See the [RUM quickstart](/observability/rum/quickstart/).
+You need a RUM application with the SDK installed in your app. See the [RUM quickstart](/observability/rum/quickstart/).
 
 ## 1. Check the application's privacy settings
 
@@ -32,6 +30,8 @@ New applications start on the **Balanced** [privacy level](/observability/rum/ho
 
 </TabItem>
 <TabItem label="API">
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
 
 Send only the keys you change; the rest keep their stored values. Changing privacy needs an account admin or an API key with no scope restriction:
 

@@ -30,6 +30,8 @@ By the end of this guide you'll have a cron check expecting a ping every 24 hour
 </TabItem>
 <TabItem label="API">
 
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+
 ```bash
 curl -X POST https://api.siteqwality.com/cron/job \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \

@@ -35,6 +35,8 @@ A [maintenance window](/incident-management/maintenance/overview/) is different:
 </TabItem>
 <TabItem label="API">
 
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+
 ```bash
 curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/maintenance \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \

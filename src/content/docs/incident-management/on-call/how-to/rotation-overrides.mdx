@@ -29,6 +29,8 @@ Overrides do *not* modify the underlying rotation. Once the override expires, th
 </TabItem>
 <TabItem label="API">
 
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+
 ```bash
 curl -X POST https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/override \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY" \

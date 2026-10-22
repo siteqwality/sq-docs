@@ -7,12 +7,7 @@ owner: jj
 
 import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have a public status page at `https://statuspage.siteqwality.com/<account-id>/<page-id>` that shows an HTTP check, carries your logo and brand color, and has one published incident.
-
-## Prerequisites
-
-- An existing HTTP check (or [follow the first-monitor quickstart](/getting-started/signup-and-first-monitor/)).
-- A logo as PNG, JPEG, SVG or WebP, up to 2 MB.
+By the end of this guide you'll have a public status page at `https://statuspage.siteqwality.com/<account-id>/<page-id>` that shows an HTTP check, carries your logo and brand color, and has one published incident. You need an existing HTTP check ([create one](/uptime-monitoring/http-checks/quickstart/) if you don't have one).
 
 ## 1. Create the page
 
@@ -31,6 +26,8 @@ By the end of this guide you'll have a public status page at `https://statuspage
 
 </TabItem>
 <TabItem label="API">
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
 
 ```bash
 curl -X POST https://api.siteqwality.com/status_page \
@@ -92,7 +89,7 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/browser_che
 
 1. On the page, open the **Branding** tab.
 
-2. Under **Images**, click **Upload** next to **Logo** and pick your file. Add a **Dark theme logo** the same way if your logo needs one. Each file is saved as soon as it uploads.
+2. Under **Images**, click **Upload** next to **Logo** and pick your file (PNG, JPEG, SVG or WebP, up to 2 MB). Add a **Dark theme logo** the same way if your logo needs one. Each file is saved as soon as it uploads.
 
 3. Set the **Primary Color** (`#RRGGBB`) for the page title and the **Accent Color** for links and the Subscribe button.
 

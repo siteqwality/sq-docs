@@ -7,10 +7,7 @@ owner: jj
 
 import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/components';
 
-## Prerequisites
-
-- An existing HTTP check. If you do not have one, follow the [HTTP checks quickstart](/uptime-monitoring/http-checks/quickstart/).
-- The HTTP check's URL must be on a domain you register yourself. Hosts on shared platform suffixes (`*.github.io`, `*.herokuapp.com`, `*.vercel.app`) cannot be monitored this way. See [step 3](#3-if-nothing-appears).
+This turns on DNS monitoring for an existing [HTTP check](/uptime-monitoring/http-checks/quickstart/). The check's URL must be on a domain you register yourself: hosts on shared platform suffixes (`*.github.io`, `*.herokuapp.com`, `*.vercel.app`) cannot be monitored this way. See [step 3](#3-if-nothing-appears).
 
 ## 1. Turn it on
 
@@ -27,6 +24,8 @@ import { Steps, Tabs, TabItem, Aside, LinkCard } from '@astrojs/starlight/compon
 
 </TabItem>
 <TabItem label="API">
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
 
 ```bash
 # On an existing check

@@ -1,24 +1,13 @@
 ---
 title: HTTP check quickstart
-description: Create your first HTTP check via the dashboard or the API in under 5 minutes.
+description: Create your first HTTP check from the dashboard or the API, and test its alert.
 last_verified: 2026-10-14
 owner: jj
 ---
 
 import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have an HTTP check running against a URL of your choosing, with a notification that fires when the check fails.
-
-## Prerequisites
-
-- A Site Qwality account ([sign up free](https://app.siteqwality.com)).
-- For the API path, an API key. Generate one in **Settings → API keys**, then export it as an env var:
-
-  ```bash
-  export SITEQWALITY_API_KEY="<your API key>"
-  ```
-
-- A URL to monitor. Use `https://mock.codes/200` to follow along, since it always returns `200 OK`.
+By the end of this guide you'll have an HTTP check running, with a notification that fires when it fails. The examples monitor `https://mock.codes/200`, which always returns `200 OK`; use your own URL if you prefer.
 
 ## Create the check
 
@@ -48,7 +37,13 @@ The check runs immediately, and the first result lands within seconds.
 
 <Steps>
 
-1. **POST to `/http/job`.**
+1. **Create an API key** under **Settings → API keys** and export it:
+
+   ```bash
+   export SITEQWALITY_API_KEY="<your API key>"
+   ```
+
+2. **POST to `/http/job`.**
 
    ```bash
    curl -X POST https://api.siteqwality.com/http/job \
@@ -59,15 +54,15 @@ The check runs immediately, and the first result lands within seconds.
        "method": "GET",
        "uri": "https://mock.codes/200",
        "timeout_ms": 15000,
-       "run_interval_seconds": 600,
+       "run_interval_seconds": 300,
        "monitor_tls": false,
        "monitor_dns": false
      }'
    ```
 
-2. **Save the `id` from the response.** You'll use it to fetch results, update settings, or delete the check later.
+3. **Save the `id` from the response.** You'll use it to fetch results, update settings, or delete the check later.
 
-3. **(Optional) Choose notification groups.**
+4. **(Optional) Choose notification groups.**
 
    With `group_notification_ids` omitted, the monitor is attached to your account's [default group](/incident-management/notifications/default-routing/#the-default-notification-group). To use other groups, pass their UUIDs at create time or later with `PUT /http/job/{job_id}`. An explicit `[]` creates a monitor that notifies no one.
 
@@ -82,7 +77,7 @@ The full request schema is in the [API Reference](/api-reference/operations/crea
 
 <Steps>
 
-1. **Wait one tick** (≤10 minutes). The monitor's status changes from "pending" to "success."
+1. **Wait for the first result.** The monitor's status changes from "pending" to "success."
 
 2. **Look at the recent results.**
    - Dashboard: open the monitor, scroll to **Recent Checks**.
@@ -90,7 +85,7 @@ The full request schema is in the [API Reference](/api-reference/operations/crea
 
 3. **Force a failure to test notifications.** Edit the check and change the URL to `https://mock.codes/500`. The next tick will fail, the monitor's status will flip, and your notification group will fire.
 
-4. **Flip it back.** Restore the URL to `https://mock.codes/200`. The monitor recovers on the next tick. The all clear goes out, and the incident auto-resolves, after the recovery period (2 healthy checks on a new monitor).
+4. **Flip it back.** Restore the URL to `https://mock.codes/200`. The all clear goes out after the recovery period (2 healthy checks on a new monitor).
 
 </Steps>
 

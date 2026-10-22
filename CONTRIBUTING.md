@@ -78,34 +78,37 @@ owner: jj
 
 import { Steps, Tabs, TabItem, Code } from '@astrojs/starlight/components';
 
-<One-sentence promise: "By the end of this guide you'll have <X>.">
+<One-sentence promise: "By the end of this guide you'll have <X>."> <Only if something must already exist that these steps don't create: "You need an existing HTTP check.">
 
-## Prerequisites
-
-- A Site Qwality account ([sign up free](https://app.siteqwality.com)).
-- An API key. See [Authentication](/api-reference/overview/#authentication).
-- <Anything else.>
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
 
 <Steps>
 
 1. **<First action>**
 
-   <Brief instructions. Include screenshots or code blocks.>
-
 2. **<Second action>**
 
-   ```bash
-   curl -X POST https://api.siteqwality.com/<endpoint> \
-     -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
-     -H "Content-Type: application/json" \
-     -d '{ ... }'
-   ```
-
-3. **<Verify it worked>**
-
-   <How the user knows the thing is happening.>
-
 </Steps>
+
+</TabItem>
+<TabItem label="API">
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+
+```bash
+curl -X POST https://api.siteqwality.com/<endpoint> \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ ... }'
+```
+
+</TabItem>
+</Tabs>
+
+## Verify it worked
+
+<How the user knows the thing is happening.>
 
 ## What's next
 
@@ -161,6 +164,7 @@ Each fact has one home; elsewhere, link to it.
 - **Plans and prices.** Numbers, seats, prices and over-limit behavior live only on `getting-started/plan-limits.mdx` (telemetry on `observability/billing.mdx`). A paid feature's page gets one plain sentence after its intro, such as `Requires a paid uptime plan. See [plan limits](/getting-started/plan-limits/).`
 - **HTTP status codes and response field names** in overviews and how-tos. They belong in the API reference. Status codes of the monitored target are product behavior and stay.
 - **Internals** the reader cannot act on (tables, queues, Lambdas, query counts), **history** ("before this shipped", "currently", "no longer") and **reassurance** ("deliberately", "there is no X").
+- **Prerequisites** that every reader already meets (an account, a URL) or that only one path needs. An API key goes at the top of the API tab, not above both paths.
 - **Callouts:** at most two per page, never two in a row. Use `caution` or `danger` only for destructive or irreversible steps. Plan notes, prerequisites and links are body text.
 
 ## Sidebar conventions

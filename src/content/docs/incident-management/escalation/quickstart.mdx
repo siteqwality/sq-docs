@@ -14,10 +14,7 @@ By the end of this guide you'll have an escalation policy that:
 3. If still no ack: pages the engineering manager; waits 15 minutes.
 4. Repeats once if no one ever acks.
 
-## Prerequisites
-
-- An on-call schedule already created. See [On-call quickstart](/incident-management/on-call/quickstart/).
-- A secondary engineer and an engineering manager on your team. The dashboard lets you pick them by name; the API needs their user UUIDs (`GET /account/info`).
+You need an [on-call schedule](/incident-management/on-call/quickstart/), plus a secondary engineer and an engineering manager in the account.
 
 ## 1. Create the policy
 
@@ -34,6 +31,8 @@ By the end of this guide you'll have an escalation policy that:
 
 </TabItem>
 <TabItem label="API">
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
 
 ```bash
 curl -X POST https://api.siteqwality.com/escalation_policy \
@@ -66,6 +65,8 @@ Save the returned `id`.
 
 </TabItem>
 <TabItem label="API">
+
+`target_user_ids` takes user IDs, which `GET /account/info` lists.
 
 ```bash
 # Level 1: page the on-call schedule

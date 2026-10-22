@@ -7,9 +7,7 @@ owner: jj
 
 import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-## Prerequisites
-
-- An existing HTTP check pointing at an `https://` URL. If you don't have one, follow the [HTTP checks quickstart](/uptime-monitoring/http-checks/quickstart/).
+This turns on TLS monitoring for an existing [HTTP check](/uptime-monitoring/http-checks/quickstart/) with an `https://` URL.
 
 ## 1. Enable TLS monitoring
 
@@ -28,6 +26,8 @@ A paired TLS check is provisioned within seconds; the first handshake happens on
 
 </TabItem>
 <TabItem label="API">
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
 
 ```bash
 # On create

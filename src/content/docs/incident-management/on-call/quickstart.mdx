@@ -7,12 +7,7 @@ owner: jj
 
 import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-By the end of this guide you'll have a schedule called `Primary on-call` that hands off every Monday at 09:00 in your timezone, rotating between two engineers.
-
-## Prerequisites
-
-- At least two users in the account ([invite teammates first](/getting-started/account-and-team/)).
-- For the API path, their user UUIDs (`GET /account/info` returns them).
+By the end of this guide you'll have a schedule called `Primary on-call` that hands off every Monday at 09:00 in your timezone, rotating between two engineers. You need at least two users in the account ([invite teammates](/getting-started/account-and-team/#invite-your-team)).
 
 ## 1. Create the schedule
 
@@ -29,6 +24,8 @@ By the end of this guide you'll have a schedule called `Primary on-call` that ha
 
 </TabItem>
 <TabItem label="API">
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
 
 ```bash
 curl -X POST https://api.siteqwality.com/on_call_schedule \
@@ -66,6 +63,8 @@ Save the returned `id`; you'll attach a layer to it next.
 
 </TabItem>
 <TabItem label="API">
+
+`participants` takes user IDs, which `GET /account/info` lists.
 
 ```bash
 curl -X POST https://api.siteqwality.com/on_call_schedule/$SCHEDULE_ID/layer \

@@ -65,6 +65,8 @@ A step that throws fails the whole check. Every step captures a screenshot, pass
 </TabItem>
 <TabItem label="API">
 
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`:
+
 ```bash
 SCRIPT='await step("Open homepage", async () => {
   await page.goto("https://demo.siteqwality.com", { waitUntil: "networkidle" });
