@@ -93,5 +93,10 @@
     "route": "DELETE /v1/notification-groups/{notification_group_id}",
     "source": "core-rs api/src/routes/v1.rs (notification_group::delete::delete_notification_group)",
     "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "GET /v1/audit-events",
+    "source": "core-rs api/src/routes/v1.rs (account::audit_log::list_audit_events_v1)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
   }
 ]

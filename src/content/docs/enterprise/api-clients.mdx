@@ -76,6 +76,8 @@ Scopes are `read:<family>` or `write:<family>`. Twelve families exist:
 
 One scope sits outside the families: `read:rum_replay` lets a client watch [session replays](/observability/replay/reference/#who-can-watch-a-replay). It is never implied, not by `read:rum` and not by a key with no scope list, so a client that downloads replays needs both `read:rum` and `read:rum_replay`.
 
+`read:audit` lets a client read the [audit log](/enterprise/audit-log/#read-it-over-the-api). It is never implied either.
+
 `integrations:manage` also sits outside the families. Adding, changing or deleting an [integration](/integrations/overview/#who-can-change-integrations) needs it, because each integration holds a credential; `write:notifications` does not cover those writes. Reading integrations stays under `read:notifications`, with credentials masked.
 
 Scope checking is fail-closed. No family covers account management, billing, authentication, staff endpoints or webhooks, so a client is refused there whatever scopes it holds. That includes managing API clients: a client can never mint another client, so a signed-in Admin or Super Admin manages clients. The `users` family does not invite, remove or change the role of anyone on the team.

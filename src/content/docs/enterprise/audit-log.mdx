@@ -92,7 +92,18 @@ In **Settings → Audit log**, narrow the list with **Actor type**, an **Action 
 
 An action prefix matches exactly or by dot-prefix: `http.job` also matches `http.job.regions`, never `http.jobs`. Entries are newest first and the page loads at most 500; if you see 500, narrow the range to reach older entries. **Export CSV** saves the loaded entries.
 
-The log is read in the dashboard only: API keys and M2M clients cannot read it, so there is no programmatic export for SIEM ingestion.
+## Read it over the API
+
+`GET /v1/audit-events` returns the same entries for a SIEM or a script, newest first, 50 per page by default (up to 200):
+
+```bash
+curl "https://api.siteqwality.com/v1/audit-events?action=http.job&limit=200" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+- It answers `{"data": [...], "next_cursor": "..."}`. Send `next_cursor` back as `cursor` for older entries; it is `null` on the last page.
+- Filters: `actor_type`, `actor_user_id`, `actor_api_key_id`, `action` (exact or dot-prefix, as above), `target_kind`, `target_id`, `since` and `until` (RFC 3339). The 90-day window applies.
+- API keys and [API clients](/enterprise/api-clients/) need the `read:audit` scope, which a key with no scope list does not have. Tick **Audit log** when you create the key or client. Signed-in members need the same roles as in the dashboard. AI assistants are never offered the scope.
 
 ## AI assistants
 
