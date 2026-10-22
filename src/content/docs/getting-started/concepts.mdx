@@ -15,7 +15,7 @@ The umbrella term for any scheduled health check. Site Qwality has six monitor f
 
 ### Check
 
-A single execution of a monitor: one HTTP request, one DNS lookup, one TLS handshake. Each check produces a *result* (`success`, `failure`, plus latency and any captured payload). An HTTP monitor with several check locations produces one check per location per tick.
+A single execution of a monitor: one HTTP request, one DNS lookup, one TLS handshake. Each check produces a *result* (`success`, `failure`, plus latency and any captured payload). An HTTP monitor with several check locations produces one check per location per tick. A browser check runs its script once in each location, and each run uses browser check minutes.
 
 ### Run interval
 
@@ -23,7 +23,7 @@ How often a monitor's checks fire. The minimum depends on your [plan](/getting-s
 
 ### Check location
 
-A place Site Qwality runs checks from, on AWS, Google Cloud or Microsoft Azure, with a stable id such as `aws-us-east-1` (the API field is `check_regions`). The default is `aws-us-east-1` (Virginia, AWS). HTTP checks can use any live location; browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1`. See [check locations](/uptime-monitoring/overview/#check-locations).
+A place Site Qwality runs checks from, on AWS, Google Cloud or Microsoft Azure, with a stable id such as `aws-us-east-1` (the API field is `check_regions`). The default is `aws-us-east-1` (Virginia, AWS). HTTP checks can use any live location and browser checks any AWS location; SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1`. See [check locations](/uptime-monitoring/overview/#check-locations).
 
 ### Min healthy regions
 

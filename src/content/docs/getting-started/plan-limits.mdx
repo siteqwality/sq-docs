@@ -1,7 +1,7 @@
 ---
 title: Plans and limits
 description: What the free plan includes, what a paid plan adds, and what happens at a limit, when a plan ends, or when a payment fails.
-last_verified: 2026-10-16
+last_verified: 2026-10-22
 owner: jj
 ---
 
@@ -17,12 +17,13 @@ Every product has a free tier and is priced on its own; prices are on the [prici
 | [DNS record monitors](/uptime-monitoring/dns-record-monitors/overview/) | 3 | Unlimited |
 | DNS record check interval | 1 hour minimum | 5 minutes minimum |
 
-The check interval and check locations follow the **uptime** plan, not any paid plan:
+These limits follow one product's plan, not any paid plan: the check interval and HTTP check locations follow the **uptime** plan, and browser check locations the **Synthetic** plan.
 
-| Limit | Free | Paid uptime plan |
-|---|---|---|
-| Uptime check interval | 5 minutes minimum | 30 seconds minimum |
-| HTTP check locations per monitor | 1 | Any number |
+| Limit | Free | Paid | Unlocked by |
+|---|---|---|---|
+| Uptime check interval | 5 minutes minimum | 30 seconds minimum | A paid uptime plan |
+| HTTP check locations per monitor | 1 | Any number | A paid uptime plan |
+| Browser check locations per check | 1 | Any number | A paid Synthetic plan |
 
 ## Team
 

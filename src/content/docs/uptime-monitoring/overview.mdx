@@ -1,7 +1,7 @@
 ---
 title: Uptime monitoring
-description: Six check types (HTTP, SSL/TLS, domain expiry, DNS records, cron heartbeats, and full-browser synthetic) running on a schedule, with HTTP checks from the locations you choose.
-last_verified: 2026-10-11
+description: Six check types (HTTP, SSL/TLS, domain expiry, DNS records, cron heartbeats, and full-browser synthetic) running on a schedule, with HTTP and browser checks from the locations you choose.
+last_verified: 2026-10-22
 owner: jj
 ---
 
@@ -31,12 +31,12 @@ Every uptime monitor in Site Qwality follows the same lifecycle: configure → r
 
 ### Check locations
 
-HTTP checks can run from **24 check locations across 18 countries and territories**, on AWS, Google Cloud and Microsoft Azure. Each location is a provider and region combination, so a city can have more than one option. The live list is on the [locations page](https://siteqwality.com/locations/); for API clients, see [check locations](/uptime-monitoring/http-checks/reference/#check-locations) in the HTTP reference.
+HTTP checks can run from **24 check locations across 18 countries and territories**, on AWS, Google Cloud and Microsoft Azure. Browser checks can run from the **20 AWS locations**, in 18 countries and territories; the Google Cloud and Microsoft Azure locations run HTTP checks only. Each location is a provider and region combination, so a city can have more than one option. The live list is on the [locations page](https://siteqwality.com/locations/); for API clients, see [check locations](/uptime-monitoring/http-checks/reference/#check-locations) in the HTTP reference.
 
-- **Default.** A new HTTP monitor runs from `aws-us-east-1` (Virginia, AWS) unless you choose. On a paid uptime plan, when the extra checks fit the account's quota, it starts on two locations on different cloud providers and alerts only when both fail; see [default locations](/uptime-monitoring/http-checks/reference/#default-locations).
-- **Plans.** More than one location per monitor needs a paid uptime plan.
-- **Billing.** Each location a check runs from counts as one check toward your monthly check volume.
-- **Other check types.** Browser, SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1` only.
+- **Default.** A new HTTP monitor runs from `aws-us-east-1` (Virginia, AWS) unless you choose. On a paid uptime plan, when the extra checks fit the account's quota, it starts on two locations on different cloud providers and alerts only when both fail; see [default locations](/uptime-monitoring/http-checks/reference/#default-locations). A new browser check runs from `aws-us-east-1` unless you choose.
+- **Plans.** More than one location per monitor needs a paid plan for that check type: a paid uptime plan for HTTP checks, a paid Synthetic plan for browser checks.
+- **Billing.** Each location an HTTP check runs from counts as one check toward your monthly check volume. A browser check runs its script once in each location, and each run uses browser check minutes.
+- **Other check types.** SSL/TLS, domain expiry and DNS record checks run from `aws-us-east-1` only.
 
 Start with a location near your users. Add another cloud provider when you want to compare network paths, and choose locations on other continents to cover a global audience.
 

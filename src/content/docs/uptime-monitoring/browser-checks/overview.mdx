@@ -1,7 +1,7 @@
 ---
 title: Browser checks
 description: Run a Playwright script in a real Chromium on a schedule. Captures HAR, video, web vitals, and console errors per run.
-last_verified: 2026-08-02
+last_verified: 2026-10-21
 owner: jj
 ---
 
@@ -23,18 +23,18 @@ A **browser check** is a synthetic monitor that runs a Playwright script in a re
 ## When NOT to use them
 
 - For "is my API up?" use [HTTP checks](/uptime-monitoring/http-checks/overview/). Browser checks cost ~30× more compute and are slower.
-- For "is my page fast for real users?" use [RUM](/observability/rum/overview/). Browser checks measure synthetic latency from one IP, not your users' experience.
+- For "is my page fast for real users?" use [RUM](/observability/rum/overview/). Browser checks measure synthetic latency from the cloud locations you pick, not your users' experience.
 - For low-priority pages. Reserve browser checks for the 5–10 most important user flows.
 
 ## How it works
 
 1. You write a Playwright script in JavaScript, driving the browser with the `page` API and `step()` helpers.
-2. Site Qwality runs your script in headless Chromium on the schedule (`5m`, `10m`, `15m`, `30m`, `1h`).
+2. Site Qwality runs your script in headless Chromium on the schedule (`5m`, `10m`, `15m`, `30m`, `1h`), once in each [location](#locations) you select.
 3. Each step's pass/fail, duration, and a screenshot are captured.
 4. On every run, a HAR file (full network log) and a video are recorded.
 5. Web vitals (LCP, FCP, CLS, TTFB) are extracted from the page and reported.
 6. Console errors and unhandled exceptions are captured.
-7. Status flips to `failed` when steps fail, and alerts fire on that first confirmed failure (see [rerun and confirmation](/uptime-monitoring/browser-checks/reference/#rerun-and-confirmation)). A check that keeps passing and failing is held like a flapping HTTP monitor: one notice instead of an alert pair per change. See [flap hold](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/#heartbeat-and-browser-monitors).
+7. A run fails when fewer locations pass than `min_healthy_regions` requires. Status flips to `failed` when a run fails, and alerts fire on that first confirmed failure (see [rerun and confirmation](/uptime-monitoring/browser-checks/reference/#rerun-and-confirmation)). A check that keeps passing and failing is held like a flapping HTTP monitor: one notice instead of an alert pair per change. See [flap hold](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/#heartbeat-and-browser-monitors).
 
 The script runs inside a sandboxed `async` function with `page` (Playwright Page) and `step` (your wrapper for tracked steps) injected:
 
@@ -84,14 +84,26 @@ You get this only when:
 
 The screenshot link in an alert usually stops working within a few hours. After that, open the screenshot from the check's run detail in the dashboard, where it does not expire.
 
-## Location
+## Locations
 
-Every browser check runs in `aws-us-east-1` (Virginia, AWS), the only location that can run them. Unlike HTTP checks, they cannot be spread across several [check locations](/uptime-monitoring/overview/#check-locations). Leave `check_regions` unset, or set it to `["aws-us-east-1"]`. See [supported locations](/uptime-monitoring/browser-checks/reference/#supported-locations).
+Browser checks run from the 20 AWS [check locations](/uptime-monitoring/overview/#check-locations), in 18 countries and territories. The Google Cloud and Microsoft Azure locations run HTTP checks only. In `GET /check-locations`, a location that runs browser checks lists `"browser"` in its `capabilities`; the [reference](/uptime-monitoring/browser-checks/reference/#supported-locations) has the full table.
+
+- **Default.** With `check_regions` unset or empty, a new check runs from the default location, Virginia (`aws-us-east-1`).
+- **Plans.** The free plan checks from one location. More than one needs a paid **Synthetic** plan; an uptime plan does not count. Without one the API returns `403` with `multi_region_requires_paid_plan`.
+- **Minutes.** The script runs once in every selected location, and each run uses browser check minutes, so a check on three locations uses about three times the minutes of a check on one.
+- **Minimum healthy locations.** `min_healthy_regions` (**Minimum Healthy Locations** in the dashboard) sets how many locations must pass. The check is down when fewer than that many pass.
+- **No data is not a failure.** A location with no result for two runs plus 10 minutes (20 minutes on a `5m` check) is left out of the count. The minimum is capped at the number of locations reporting, so a silent location never holds a check down.
+- **Confirmation.** `confirmation_threshold` counts failed runs of that quorum, and `rerun_on_failure` reruns a failed attempt once from the same location.
+- **Run now.** `POST /browser_check/{id}/run` runs the script in every location the check selects, and the response's `regions` lists them.
+- **Storage.** Wherever the script runs, its results, screenshots, HAR and video are stored in `us-east-1`.
+
+Start with a location near your users, and add locations on other continents to cover a global audience.
 
 ## Constraints
 
 - **Script size**: under 50KB.
 - **Timeout**: `1`–`300` seconds per run, including browser startup; the user script gets `timeout - 30s`.
+- **Locations**: AWS locations only; see [locations](#locations) above.
 
 ## See also
 
