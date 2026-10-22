@@ -75,7 +75,18 @@ Anything you can do in the dashboard, you can do through the API.
 
 </Steps>
 
-Keys belong to the account, not the user. Rotating a key ends the old one at once, so deploy the new value right away. For long-lived automation, or automation a third party runs, use an [M2M API client](/enterprise/api-clients/), which trades its secret for short-lived tokens.
+Keys belong to the account, not the user. **Rotate** mints a replacement with the same name, type, scopes and expiry, shown once, and lets you keep the current key working for an hour, 24 hours or 7 days while you deploy the new one (or stop it at once). Through the API:
+
+```bash
+curl -X POST https://api.siteqwality.com/v1/api-keys/$KEY_ID/roll \
+  -H "Authorization: Bearer $SQ_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"overlap_hours": 24}'
+```
+
+`overlap_hours` is 0 to 168 (default 24); `0` ends the old key now. The response holds the new key, its `secret` and `previous_expires_at`, when the old key stops. A key already rolled can be rolled again once its successor is revoked. Rolling needs an account admin.
+
+For long-lived automation, or automation a third party runs, use an [M2M API client](/enterprise/api-clients/), which trades its secret for short-lived tokens.
 
 ### Rate limits
 

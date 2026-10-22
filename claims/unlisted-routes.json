@@ -23,5 +23,10 @@
     "route": "POST /v1/integrations/{integration_id}/routes",
     "source": "core-rs api/src/routes/v1.rs (integrations::routes::route_integration)",
     "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
+  },
+  {
+    "route": "POST /v1/api-keys/{api_key_id}/roll",
+    "source": "core-rs api/src/routes/v1.rs (account::api_keys::roll::roll_api_key)",
+    "note": "The /v1 nest is not in openapi.json yet. Remove this entry once the spec lists it."
   }
 ]
