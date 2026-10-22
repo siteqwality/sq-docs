@@ -92,6 +92,25 @@ curl "https://api.siteqwality.com/v1/notification-groups?limit=50" \
 - Errors are `application/problem+json` with `type`, `title`, `status` and `detail`.
 - Reads need `read:notifications`, channel and group changes `write:notifications`, and integration changes `integrations:manage`.
 
+### Retry a write safely
+
+Send an `Idempotency-Key` header (1 to 255 visible ASCII characters, such as a UUID) on any `/v1` `POST` or `PATCH`, and a retry with the same key and the same request runs at most once:
+
+```bash
+curl -X POST https://api.siteqwality.com/v1/notification-groups \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 6f1d2c3a-6b0e-4d3c-9a51-2c8f0e7b4d19" \
+  -d '{"friendly_name": "Ops alerts"}'
+```
+
+- A repeat after the first one finished gets the first response again, with `Idempotent-Replayed: true`. Refusals such as a `400` are kept too, so change the key when you fix the request.
+- A repeat while the first is still running answers `409` (`idempotency_key_in_use`); retry a moment later.
+- The same key with a different method, path or body answers `422` (`idempotency_key_reused`).
+- A `5xx` or `429` is not kept: a retry with the same key runs again.
+- Keys are kept for 24 hours per API key, API client or user.
+- Responses that show a secret once (rolling an API key, rotating a webhook signing secret) are never stored. A repeat answers `409` (`secret_not_replayable`) with the id, so roll again if you lost the secret.
+
 ## Who can change integrations
 
 Each integration holds a credential, so only account admins can add, change or remove one. Members, auditors and viewers can see them.
