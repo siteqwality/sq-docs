@@ -90,6 +90,7 @@ curl "https://api.siteqwality.com/v1/notification-groups?limit=50" \
 - `PATCH` takes the fields that create takes. A field you leave out keeps its value, and a field you send replaces it.
 - `DELETE` answers `204`, also when the item is already gone. Deleting an integration that channels, groups or services still use answers `409` unless you add `?force=true`.
 - Errors are `application/problem+json` with `type`, `title`, `status` and `detail`.
+- The OpenAPI document for the whole API, `/v1` included, is at `https://api.siteqwality.com/v1/openapi.json`. It needs no key.
 - Reads need `read:notifications`, channel and group changes `write:notifications`, and integration changes `integrations:manage`.
 
 ### Retry a write safely
