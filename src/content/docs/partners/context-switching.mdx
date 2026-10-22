@@ -42,7 +42,7 @@ The header does not widen what a credential may do: an M2M client scoped to `rea
 
 ## Endpoints that refuse the header
 
-Five prefixes return `404` in client context:
+These prefixes return `404` in client context:
 
 | Prefix | Why |
 |---|---|
@@ -51,6 +51,7 @@ Five prefixes return `404` in client context:
 | `/billing` | A client has no payment method; its entitlements come from the [bundle you set](/partners/client-accounts/#set-a-clients-bundle). |
 | `/partner` | Client accounts cannot have client accounts. |
 | `/admin` | Internal staff surface. |
+| `/v1/api-keys`, `/v1/audit-events` | A client's API keys and audit log, which sit under `/account` on the older paths. |
 
 To invite a client's own user to their account, ask us and we will do it for you.
 
