@@ -70,6 +70,25 @@ HTTP, cron and browser monitors accept a `tags: string[]` field. Use tags consis
 
 Beyond tags, you can attach a monitor to a [service](/incident-management/services/overview/) (`service_id`), a higher-level grouping.
 
+### Manage monitors over the `/v1` API
+
+| Monitor type | Routes |
+|---|---|
+| HTTP, TCP port and ping | `GET` and `POST /v1/http-monitors`; `GET`, `PATCH` and `DELETE` on `/v1/http-monitors/{id}`; `POST /v1/http-monitors/{id}/run` |
+| Cron heartbeat | `GET` and `POST /v1/heartbeat-monitors`; `GET`, `PATCH` and `DELETE` on `/v1/heartbeat-monitors/{id}` |
+| Browser | `GET` and `POST /v1/browser-monitors`; `GET`, `PATCH` and `DELETE` on `/v1/browser-monitors/{id}`; `POST /v1/browser-monitors/{id}/run` |
+| DNS record | `GET` and `POST /v1/dns-record-monitors`; `GET`, `PATCH` and `DELETE` on `/v1/dns-record-monitors/{id}` |
+
+```bash
+curl "https://api.siteqwality.com/v1/http-monitors?limit=50" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+- They take the same fields as `/http/job`, `/cron/job`, `/browser_check` and `/dns/record-monitor`, and answer in the [`/v1` shapes](/integrations/overview/#read-and-change-them-over-the-api): lists newest first as `{"data": [...], "next_cursor": "..."}`, one monitor as the object itself, errors as `application/problem+json`. `Idempotency-Key` works on every `POST` and `PATCH`.
+- `PATCH` changes only the fields you send. `DELETE` answers `204`, also when the monitor is already gone.
+- Reads need `read:monitors`, and changes `write:monitors`.
+- Results, events, uptime and SLA reads stay on the older routes for now.
+
 ## See also
 
 <CardGrid>
