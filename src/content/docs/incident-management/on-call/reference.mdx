@@ -1,7 +1,7 @@
 ---
 title: On-call schedule reference
 description: Every field on schedules, layers, and overrides, how "who's on call" is resolved, layer edits and history, calendar feeds, handoff notices, the on-call report, and the endpoints.
-last_verified: 2026-10-21
+last_verified: 2026-10-23
 owner: jj
 ---
 
@@ -213,7 +213,7 @@ The MCP server has tools for who is on call, shifts, the report and editing a la
 
 ### From Slack
 
-In a workspace connected through the [Slack integration](/integrations/slack/), `/oncall` answers privately with who is on call, until when, and who is next. Add part of a schedule name to ask about one schedule, for example `/oncall platform`. It answers for people who added Slack as a contact method on their profile.
+In a workspace connected through the [Slack integration](/integrations/slack/), `/oncall` answers privately with who is on call, until when, and who is next. Add part of a schedule name to ask about one schedule, for example `/oncall platform`. It answers people who have a [Slack DM contact method](/incident-management/notifications/how-to/contact-methods/) on their profile with their Slack member id (it starts with `U`) as the channel. A workspace connected before October 22, 2026 needs connecting again once: click **Add to Slack** and pick the same workspace.
 
 ## Handoff notices
 
