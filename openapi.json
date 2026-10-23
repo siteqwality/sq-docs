@@ -44718,7 +44718,7 @@
               "string",
               "null"
             ],
-            "description": "`events_v2` (PagerDuty Events v2, the default), `alertmanager` or `grafana`."
+            "description": "`events_v2` (PagerDuty Events v2, the default), `alertmanager`, `grafana`, `cloudwatch_sns` (CloudWatch alarms\nthrough an SNS topic) or `datadog`."
           }
         }
       },
