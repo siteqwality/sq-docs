@@ -309,6 +309,8 @@ A replay is a new delivery with its own timestamp and a signature under the curr
 
 The integration's page shows how the endpoint did over the last 24 hours and 5 days. When you turn it back on, Site Qwality offers to replay what failed since it last worked: up to 1,000 deliveries, oldest first, ten a second, each one once. `POST /integration/webhook/{id}/replay_failed` does the same with `integrations:manage`.
 
+An endpoint that keeps failing is turned off for you. The first failed delivery after one that worked emails the account's owners and admins. When deliveries have failed for 4 days with none delivered (at least 3 of them), a second email says the endpoint goes off the next day, and after 5 days it is turned off with a third email. An endpoint that answers `410 Gone` is turned off at once. A delivery that gets through starts the count over. Turn it back on from its card when it works again.
+
 Replaying one delivery is limited to 10 a minute and 100 a day per endpoint, counting what a bulk replay sent, and answers `429` above that. No replay is sent while the endpoint is off (`409`).
 
 ## Payload settings
