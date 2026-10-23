@@ -17,7 +17,7 @@ Each check gets its own evaluation schedule that fires at the same cadence as it
 now - last_received_at > check_interval_seconds
 ```
 
-(or when no ping has ever been received).
+A check that has never been pinged is measured from when you created it, so it fails only if no ping arrives within one interval of creation.
 
 The threshold is a single interval, but because the evaluation itself only runs once per interval, the *effective* detection delay depends on how the evaluation schedule lines up with your job's pings:
 
