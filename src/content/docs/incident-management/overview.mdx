@@ -81,6 +81,26 @@ The two paths are separate: a monitor alert goes to the monitor's notification g
 
 **Notification groups** are account-level and set where a monitor's alerts go. **Contact methods and rules** are per-user and set how each person is reached. The team configures routing once, and each engineer sets their own delivery preferences.
 
+## Manage it over the `/v1` API
+
+| Resource | Routes |
+|---|---|
+| Services | `GET` and `POST /v1/services`; `GET`, `PATCH` and `DELETE` on `/v1/services/{id}` |
+| Escalation policies | `GET` and `POST /v1/escalation-policies`; `GET`, `PATCH` and `DELETE` on `/v1/escalation-policies/{id}`; `GET` and `POST /v1/escalation-policies/{id}/levels`; `POST /v1/escalation-policies/{id}/levels/reorder`; `DELETE /v1/escalation-policies/{id}/levels/{level_id}` |
+| Incidents | `GET` and `POST /v1/incidents`; `GET`, `PATCH` and `DELETE` on `/v1/incidents/{id}`; `POST /v1/incidents/{id}/acknowledge`, `/resolve`, `/reopen` and `/updates` |
+
+```bash
+curl "https://api.siteqwality.com/v1/incidents?status=active" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+- They take the same fields as `/service`, `/escalation_policy` and `/incident`, and answer in the [`/v1` shapes](/integrations/overview/#read-and-change-them-over-the-api): lists newest first as `{"data": [...], "next_cursor": "..."}`, one resource as the object itself, errors as `application/problem+json`. `Idempotency-Key` works on every `POST` and `PATCH`.
+- Policies in a list carry their levels. Incidents in a list carry their updates; read one incident for its monitors and participants. `status` filters the incident list: `active`, `resolved` or `all` (the default).
+- `PATCH` changes only the fields you send. `DELETE` answers `204`, also when the resource is already gone.
+- `POST /v1/incidents/{id}/acknowledge` takes an empty body from a signed-in user. An API key or client sends `{"acknowledged_by": "<user id>"}`.
+- Services need `read:services` and `write:services`; incidents and escalation policies need `read:incidents` and `write:incidents`.
+- Service monitors, notification targets, incident participants, postmortems, action items and on-call schedules stay on the older routes for now.
+
 ## When NOT to use this
 
 - **Don't page for transient flakes.** Raise the monitor's confirmation settings so a single failed check does not count as down. A notification group's send delay holds back the monitor alert (HTTP and browser checks only), but it does not stop an incident from opening. See [Notification groups](/incident-management/notifications/overview/#notification-groups).
