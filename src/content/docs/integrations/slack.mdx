@@ -27,7 +27,7 @@ Connecting a workspace that is already connected updates its integration instead
 
 The link to Slack works once, for 10 minutes, and only for the admin who clicked **Add to Slack**. If it expired or was already used, or you canceled on Slack's screen, click **Add to Slack** again.
 
-The app asks for three scopes: `chat:write` to post, `chat:write.public` to post in public channels without joining them, and `commands` for the [`/oncall` command](/incident-management/on-call/reference/#from-slack). A workspace connected before October 22, 2026 has only the first two. To add `/oncall` there, click **Add to Slack** again and pick the same workspace.
+The app asks for five scopes: `chat:write` to post, `chat:write.public` to post in public channels without joining them, `commands` for the [`/oncall` command](/incident-management/on-call/reference/#from-slack), and `channels:read` and `groups:read` to list the channels you can pick from. A workspace connected before October 22, 2026 has only the first two, and one connected before October 23, 2026 has no channel list. To add what is missing, click **Add to Slack** again and pick the same workspace.
 
 The install runs only from the dashboard: API keys, API clients and AI assistants cannot install it. Org-wide Enterprise Grid installs are not supported, so install the app into a single workspace.
 
@@ -45,7 +45,7 @@ Right after you add the integration, the dashboard offers to do this for you: ch
 
 2. Under **Notifications**, click **Add Notification Method**. Set **Notification Type** to **Slack** and choose this integration under **Integration**.
 
-3. In **Channel Name or ID**, enter the Slack channel, such as `#ops`, or its channel ID (`C0123456789`), which survives renames.
+3. In **Channel**, pick the Slack channel from the list. It holds the workspace's public channels and the private channels the app was added to, and stores the channel's ID, which survives renames. To type one instead, such as `#ops` or `C0123456789`, click **Enter a channel ID**; that is also what you get when the list cannot load.
 
 4. Click **Done editing**, then **Update Group** (**Create Group** for a new group).
 
@@ -92,6 +92,8 @@ curl -X DELETE https://api.siteqwality.com/integration/<slack-integration-id> \
 ```
 
 This removes the integration and deletes every channel that used it, so add channels on a different integration first if you don't want to lose alerting. It does not revoke the token in Slack: to remove access, also remove the Site Qwality app from your workspace in Slack.
+
+Removing the app in Slack, or revoking its token there, turns the integration off in Site Qwality right away, so alerts stop trying to post and the integration shows as off with the reason. Connect the workspace again to turn it back on. This works for a workspace connected on or after October 23, 2026; for an older one, click **Add to Slack** again once to get it.
 
 ## Troubleshooting
 

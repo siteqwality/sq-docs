@@ -12363,6 +12363,56 @@
         ]
       }
     },
+    "/integration/slack/{integration_id}/channels": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "The channels the Slack bot can post to, by name. Store a channel's `id` on a Slack channel row.",
+        "operationId": "list_slack_channels",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "description": "The Slack integration",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The channels, or `reconnect` for an install made before the channel picker",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlackChannelsReply"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "No Slack integration with this id"
+          },
+          "502": {
+            "description": "Slack refused the install or did not answer"
+          },
+          "503": {
+            "description": "The list could not be fetched; try again"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/integration/telegram": {
       "post": {
         "tags": [
@@ -32592,6 +32642,524 @@
         ]
       }
     },
+    "/v1/alert-sources": {
+      "get": {
+        "tags": [
+          "Alert Sources"
+        ],
+        "summary": "List alert sources.",
+        "operationId": "v1_list_alert_sources",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 200, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account's alert sources, newest first. Keys are never listed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_AlertSource"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `limit` or `cursor`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Alert Sources"
+        ],
+        "summary": "Create an alert source.",
+        "operationId": "v1_create_alert_source",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe, but the new secret is shown once and never stored: a retry with the same key and body is refused with 409 `secret_not_replayable` instead of running again.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertSourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The source, its key (shown once) and the URL to send events to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertSourceWithKey"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Alert sources are not open on this account yet, or the plan's sources are used",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such service or escalation policy in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid name or format",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/alert-sources/{alert_source_id}": {
+      "get": {
+        "tags": [
+          "Alert Sources"
+        ],
+        "summary": "Get an alert source.",
+        "operationId": "v1_get_alert_source",
+        "parameters": [
+          {
+            "name": "alert_source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The source",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertSource"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such source in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Alert Sources"
+        ],
+        "summary": "Delete an alert source. Its key stops working at once.",
+        "operationId": "v1_delete_alert_source",
+        "parameters": [
+          {
+            "name": "alert_source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted, or already gone"
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Alert Sources"
+        ],
+        "summary": "Change an alert source.",
+        "operationId": "v1_edit_alert_source",
+        "parameters": [
+          {
+            "name": "alert_source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAlertSourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The source",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertSource"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such source, service or escalation policy in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid name",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/alert-sources/{alert_source_id}/roll-key": {
+      "post": {
+        "tags": [
+          "Alert Sources"
+        ],
+        "summary": "Roll an alert source's key. The old key stops working at once.",
+        "operationId": "v1_roll_alert_source_key",
+        "parameters": [
+          {
+            "name": "alert_source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe, but the new secret is shown once and never stored: a retry with the same key and body is refused with 409 `secret_not_replayable` instead of running again.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The source and its new key, shown once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertSourceWithKey"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such source in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/v1/api-keys/{api_key_id}/roll": {
       "post": {
         "tags": [
@@ -38756,6 +39324,95 @@
           }
         }
       },
+      "AlertSource": {
+        "type": "object",
+        "description": "A source as the api returns it. The key is never stored, only its hash and first characters.",
+        "required": [
+          "id",
+          "account_id",
+          "service_id",
+          "name",
+          "format",
+          "key_prefix",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "service_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Incidents open on this service."
+          },
+          "escalation_policy_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Overrides the service's escalation policy for incidents this source opens."
+          },
+          "name": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "key_prefix": {
+            "type": "string",
+            "description": "The key's first characters, to tell keys apart."
+          },
+          "disabled_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_event_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AlertSourceWithKey": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AlertSource"
+          },
+          {
+            "type": "object",
+            "required": [
+              "key",
+              "url"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "The `routing_key` to send. Shown only now."
+              },
+              "url": {
+                "type": "string",
+                "description": "Where to send events."
+              }
+            }
+          }
+        ],
+        "description": "A source with its key, returned once on create and roll."
+      },
       "Analytics": {
         "type": "object",
         "description": "Group-by analytics over an [`EventQuery`]: a time series or a top list.",
@@ -41424,6 +42081,38 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "CreateAlertSourceRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "service_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "service_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Incidents open on this service."
+          },
+          "escalation_policy_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Overrides the service's escalation policy."
+          },
+          "format": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`events_v2` (PagerDuty Events v2), the default and only format so far."
           }
         }
       },
@@ -52303,6 +52992,89 @@
           }
         }
       },
+      "Page_AlertSource": {
+        "type": "object",
+        "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A source as the api returns it. The key is never stored, only its hash and first characters.",
+              "required": [
+                "id",
+                "account_id",
+                "service_id",
+                "name",
+                "format",
+                "key_prefix",
+                "created_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "account_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "service_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Incidents open on this service."
+                },
+                "escalation_policy_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "Overrides the service's escalation policy for incidents this source opens."
+                },
+                "name": {
+                  "type": "string"
+                },
+                "format": {
+                  "type": "string"
+                },
+                "key_prefix": {
+                  "type": "string",
+                  "description": "The key's first characters, to tell keys apart."
+                },
+                "disabled_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "last_event_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Send back as `cursor` for the next page; `null` on the last one."
+          }
+        }
+      },
       "Page_BrowserCheck": {
         "type": "object",
         "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
@@ -62946,6 +63718,65 @@
           }
         }
       },
+      "SlackChannelOption": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "is_private"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "What a Slack channel row stores."
+          },
+          "name": {
+            "type": "string"
+          },
+          "is_private": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SlackChannelsReply": {
+        "type": "object",
+        "required": [
+          "result",
+          "channels",
+          "truncated"
+        ],
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/SlackChannelsResult"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlackChannelOption"
+            },
+            "description": "By name."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "The workspace has more channels than the list holds; enter the others by id."
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SlackChannelsResult": {
+        "type": "string",
+        "enum": [
+          "listed",
+          "reconnect",
+          "failed",
+          "not_found"
+        ]
+      },
       "SlackInstallResponse": {
         "type": "object",
         "required": [
@@ -68740,6 +69571,39 @@
           }
         }
       },
+      "UpdateAlertSourceRequest": {
+        "type": "object",
+        "description": "Leave a field out to keep it; `escalation_policy_id: null` clears the override.",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "escalation_policy_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "disabled": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`true` stops the source; its events are recorded and ignored."
+          }
+        }
+      },
       "UpdateBrowserCheckRequest": {
         "type": "object",
         "properties": {
@@ -72148,6 +73012,10 @@
     {
       "name": "Integrations",
       "description": "Slack, Discord, Teams, Telegram, PagerDuty, OpsGenie, Google Chat, Mattermost, Pushover, Pushbullet, and webhook integrations."
+    },
+    {
+      "name": "Alert Sources",
+      "description": "Endpoints that turn alerts from other tools (PagerDuty Events v2 format) into incidents on a service."
     },
     {
       "name": "Maintenance Windows",
