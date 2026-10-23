@@ -41930,6 +41930,17 @@
             "type": "string",
             "description": "The key's first characters, to tell keys apart."
           },
+          "mapping": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GenericMapping",
+                "description": "Where a `generic_json` source finds each field."
+              }
+            ]
+          },
           "disabled_at": {
             "type": [
               "string",
@@ -44718,7 +44729,18 @@
               "string",
               "null"
             ],
-            "description": "`events_v2` (PagerDuty Events v2, the default), `alertmanager`, `grafana`, `cloudwatch_sns` (CloudWatch alarms\nthrough an SNS topic) or `datadog`."
+            "description": "`events_v2` (PagerDuty Events v2, the default), `alertmanager`, `grafana`, `cloudwatch_sns` (CloudWatch alarms\nthrough an SNS topic), `datadog` or `generic_json`."
+          },
+          "mapping": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GenericMapping",
+                "description": "Required for `generic_json`, refused for the other formats: where each field is in the body."
+              }
+            ]
           }
         }
       },
@@ -49710,6 +49732,68 @@
           "dead_click",
           "error_click"
         ]
+      },
+      "GenericMapping": {
+        "type": "object",
+        "description": "Where a `generic_json` source finds each field: JSON pointers (RFC 6901) such as `/alert/id`.",
+        "required": [
+          "dedup_key"
+        ],
+        "properties": {
+          "dedup_key": {
+            "type": "string",
+            "description": "The dedup key: events with the same one open, update and close one incident."
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The status. Left out, every event triggers."
+          },
+          "trigger_values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Status values that trigger, ignoring case. Empty takes `trigger`, `triggered`, `firing`, `alert`, `alerting`,\n`open`, `problem` and `down`."
+          },
+          "resolve_values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Status values that resolve. Empty takes `resolve`, `resolved`, `ok`, `recovered`, `closed`, `up`, `normal` and\n`cleared`."
+          },
+          "acknowledge_values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Status values that acknowledge. Empty takes `acknowledge`, `acknowledged` and `ack`."
+          },
+          "severity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The severity: `critical`, `error`, `warning`, `info` or a common synonym."
+          },
+          "link": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "An http(s) link back to the alert."
+          }
+        },
+        "additionalProperties": false
       },
       "GoogleChatNotificationDetails": {
         "type": "object",
@@ -55807,6 +55891,17 @@
                 "key_prefix": {
                   "type": "string",
                   "description": "The key's first characters, to tell keys apart."
+                },
+                "mapping": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/GenericMapping",
+                      "description": "Where a `generic_json` source finds each field."
+                    }
+                  ]
                 },
                 "disabled_at": {
                   "type": [
@@ -72915,6 +73010,17 @@
               "null"
             ],
             "description": "`true` stops the source; its events are recorded and ignored."
+          },
+          "mapping": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GenericMapping",
+                "description": "Replaces a `generic_json` source's mapping."
+              }
+            ]
           }
         }
       },
