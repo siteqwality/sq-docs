@@ -99,6 +99,17 @@ RateLimit: "default";r=412;t=23
 
 `r` is the requests left in this minute and `t` the seconds until it resets. Over the limit, the API answers `429` with `Retry-After` in seconds. All API traffic also shares a limit of 100 requests a second, so spread bulk jobs out. Dashboard sessions have no per-minute limit.
 
+### Export your configuration
+
+[`GET /v1/export`](/api-reference/operations/v1_export_account/) returns what your account has configured as one JSON document: HTTP, TCP and ping monitors, heartbeat monitors, browser checks, DNS record monitors, notification groups and channels, integrations, alert sources, services, and escalation policies with their levels. Each list holds the same items as its `/v1` list, without secrets. Keep it as a backup or compare two exports to see what changed.
+
+```bash
+curl https://api.siteqwality.com/v1/export \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" > siteqwality-export.json
+```
+
+The document starts with `version` (`1`) and `exported_at`. A key limited to scopes needs `read:monitors`, `read:notifications` and `read:incidents`. Status pages are not in the export yet.
+
 ## Configure billing
 
 Super Admins and Billing Admins manage billing on **Settings → Billing**: change plans (upgrades apply immediately, downgrades at the end of the billing cycle), manage payment methods, download invoices, or cancel at the end of the period. See [plans and limits](/getting-started/plan-limits/) for what each plan includes and what happens when a plan ends or a payment fails.

@@ -35434,6 +35434,62 @@
         ]
       }
     },
+    "/v1/export": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Export the account's configuration.",
+        "operationId": "v1_export_account",
+        "responses": {
+          "200": {
+            "description": "Monitors, notification groups and channels, integrations, alert sources, services and escalation policies, each in its `/v1` shape and without secrets. A scoped key needs `read:monitors`, `read:notifications` and `read:incidents`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountExport"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/v1/heartbeat-monitors": {
       "get": {
         "tags": [
@@ -40472,6 +40528,96 @@
           }
         },
         "additionalProperties": false
+      },
+      "AccountExport": {
+        "type": "object",
+        "description": "Everything the account has configured, each list in its `/v1` shape. Secrets stay out, as on every read.",
+        "required": [
+          "version",
+          "exported_at",
+          "http_monitors",
+          "heartbeat_monitors",
+          "browser_monitors",
+          "dns_record_monitors",
+          "notification_groups",
+          "notifications",
+          "integrations",
+          "alert_sources",
+          "services",
+          "escalation_policies"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The document's format version, `1`.",
+            "minimum": 0
+          },
+          "exported_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "http_monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HttpJob"
+            }
+          },
+          "heartbeat_monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CronJob"
+            }
+          },
+          "browser_monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BrowserCheck"
+            }
+          },
+          "dns_record_monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DnsRecordMonitor"
+            }
+          },
+          "notification_groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationGroupWithNotifications"
+            }
+          },
+          "notifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notification"
+            }
+          },
+          "integrations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Integration"
+            }
+          },
+          "alert_sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertSource"
+            }
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceResponse"
+            }
+          },
+          "escalation_policies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EscalationPolicyResponse"
+            }
+          }
+        }
       },
       "AccountMonitorTotals": {
         "type": "object",
