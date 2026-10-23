@@ -103,7 +103,7 @@ curl "https://api.siteqwality.com/v1/incidents?status=active" \
 
 ## When NOT to use this
 
-- **Don't page for transient flakes.** Raise the monitor's confirmation settings so a single failed check does not count as down. A notification group's send delay holds back the monitor alert (HTTP and browser checks only), but it does not stop an incident from opening. See [Notification groups](/incident-management/notifications/overview/#notification-groups).
+- **Don't page for transient flakes.** Raise the monitor's confirmation settings so a single failed check does not count as down. A notification group's send delay holds back the monitor alert (HTTP monitors, heartbeats and browser checks), but it does not stop an incident from opening. See [Notification groups](/incident-management/notifications/overview/#notification-groups).
 - **Don't escalate everything.** Reserve escalation policies for high-urgency incidents. For warnings, a single Slack channel notification is enough.
 - **Don't put your CTO on every escalation policy.** Build escalation chains with clear ownership: primary on-call → secondary → engineering manager.
 

@@ -120,7 +120,7 @@ To verify the alerting path:
 1. Edit the cron check and drop **Check Interval Minutes** to `5m` (`check_interval_seconds: 300` in the API).
 2. Don't ping for 10 minutes.
 3. The check flips to `failed` and your notification group fires.
-4. Send a ping manually (`curl <ping-url>`). At the next evaluation the check flips back to `success` and the group gets the all clear.
+4. Send a ping manually (`curl <ping-url>`). The check flips back to `success` right away and the group gets the all clear.
 
 Don't forget to set the interval back to `24h` (`86400`) when done testing.
 

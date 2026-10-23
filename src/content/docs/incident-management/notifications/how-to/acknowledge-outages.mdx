@@ -30,7 +30,7 @@ Slack, PagerDuty and the other chat and paging channels carry no acknowledge but
 - **Recovery alerts are still sent.** Acknowledging never suppresses the all clear.
 - **Repeats stop only when the setting is on.** With [`outage_ack_stops_repeats`](/incident-management/notifications/settings/) on (the default), the outage's repeat alerts stop. With it off, they continue until the monitor recovers.
 
-Repeats come from a notification group's `resend_every_minutes`, which applies to HTTP and browser down alerts. Heartbeat (cron) down alerts are never repeated, so there an acknowledgment only records who is on the outage.
+Repeats come from a notification group's `resend_every_minutes`, which applies to down alerts from HTTP monitors, heartbeats and browser checks.
 
 ## The email link
 

@@ -86,13 +86,13 @@ Through the API, `GET /monitors` returns `notifies_no_one` on each row (it is co
 
 ## The group delay
 
-A group's `delay_send_after_minutes` holds back the first down alert, which then sends only if the monitor is still down. With `0` or no delay, alerts send as soon as a check fails. The delay applies to down alerts from **HTTP monitors and browser checks** only:
+A group's `delay_send_after_minutes` holds back the first down alert, which then sends only if the monitor is still down. With `0` or no delay, alerts send as soon as a check fails. The delay applies to down alerts from **HTTP monitors, heartbeats and browser checks** only:
 
 | Alert | Group delay |
 |---|---|
 | HTTP monitor down | Applies |
 | Browser check down | Applies |
-| Heartbeat (cron) down | Sends at once |
+| Heartbeat (cron) down | Applies |
 | TLS expiry, domain expiry, DNS record, page speed | Sends at once |
 | Recovery (up) alerts, every type | Sends at once |
 

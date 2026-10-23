@@ -35,7 +35,7 @@ Two extra knobs, under **Advanced Settings** in the group, control timing:
 | **Delay after (minutes)** | `delay_send_after_minutes` | Wait this long before sending the first down alert. Clamped 0–60. |
 | **Resend every (minutes)** | `resend_every_minutes` | While the monitor is still down, re-send the down alert every N minutes, at most 10 times. Clamped 0–60. |
 
-Both apply to down alerts from HTTP monitors and browser checks only; every other alert, and every recovery, sends at once (see [the group delay](/incident-management/notifications/default-routing/#the-group-delay)).
+Both apply to down alerts from HTTP monitors, heartbeats and browser checks only; every other alert, and every recovery, sends at once (see [the group delay](/incident-management/notifications/default-routing/#the-group-delay)).
 
 A repeat stops when the monitor recovers, or earlier when someone [acknowledges the outage](/incident-management/notifications/how-to/acknowledge-outages/) and the account's `outage_ack_stops_repeats` [notification setting](/incident-management/notifications/settings/) is on (the default). The recovery alert is still sent. When a repeat is set, the first down alert also waits for the first scheduled send. The same settings page decides whether monitors hold alerts while they flap.
 

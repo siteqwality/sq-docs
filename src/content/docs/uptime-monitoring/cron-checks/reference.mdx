@@ -67,7 +67,7 @@ Receipts are queryable via `GET /cron/job/{job_id}/recent`.
 
 ## How lateness is evaluated
 
-Each cron check is evaluated on its own schedule, at the same cadence as `check_interval_seconds`. At each evaluation the check fails when the newest ping is older than `check_interval_seconds`. A check that has never been pinged is measured from its `created_at`, so it fails only when no ping arrives within `check_interval_seconds` of creation. Because evaluation runs at the same cadence as the expected pings, a missed ping is detected between one and two intervals after the last successful ping, depending on how the two schedules line up. The next received ping flips the status back to `success` at the following evaluation.
+Each cron check is evaluated on its own schedule, at the same cadence as `check_interval_seconds`. At each evaluation the check fails when the newest ping is older than `check_interval_seconds`. A check that has never been pinged is measured from its `created_at`, so it fails only when no ping arrives within `check_interval_seconds` of creation. Because evaluation runs at the same cadence as the expected pings, a missed ping is detected between one and two intervals after the last successful ping, depending on how the two schedules line up. A finished-run ping on a failed check is evaluated right away and brings it back to `success`.
 
 Only finished runs count: a `start` is ignored here. When the newest finished run is a `fail`, the check fails even though it arrived in time, and the alert says the job reported a failure (with the exit code, if sent) rather than that no ping arrived. A `fail` on an active check that is up is evaluated at once instead of waiting for the next scheduled evaluation.
 

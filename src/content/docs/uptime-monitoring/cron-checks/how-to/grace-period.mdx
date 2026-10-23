@@ -24,7 +24,7 @@ The threshold is a single interval, but because the evaluation itself only runs 
 - Best case: the evaluation lands just after the ping goes missing, and the check fails roughly **one interval** after the last successful ping.
 - Worst case: the evaluation lands just before the threshold trips, and the failure isn't seen until the next evaluation, roughly **two intervals** after the last successful ping.
 
-So a daily job (interval = 86400s) alerts somewhere between 24 and 48 hours after its last ping. A 5-minute job alerts after 5 to 10 minutes of silence. The same phase effect applies on recovery: a fresh ping flips the check back to healthy at the next evaluation, not instantly.
+So a daily job (interval = 86400s) alerts somewhere between 24 and 48 hours after its last ping. A 5-minute job alerts after 5 to 10 minutes of silence. Recovery does not wait for an evaluation: a ping on a failed check brings it back to healthy right away.
 
 The evaluation cadence and the one-interval threshold are fixed, so there is no grace period to configure: set `check_interval_seconds` to your job's expected schedule and the slack takes care of itself.
 
@@ -53,12 +53,9 @@ For high-frequency jobs (`check_interval_seconds` under 5 minutes), one-to-two i
 
 ## What about jobs that fail mid-run
 
-Cron checks don't know whether your job *succeeded*, only whether it pinged. If the job crashes after starting but before pinging, a later evaluation will catch it.
+A job that knows it failed can say so: ping `/fail` or send a non-zero exit code and the check goes down right away ([how](/uptime-monitoring/cron-checks/how-to/heartbeats/)). If the job crashes after starting but before pinging, a later evaluation catches the missed ping.
 
-For finer-grained "did the job succeed?" tracking:
-
-- Have the job emit a metric, like `job.runs.completed{name="nightly_backup", status="success"}`, and alert on the failure rate.
-- Or have the job ping a *different* check on success vs. failure (two cron checks, but a precise signal).
+For a failure rate rather than a single run, have the job emit a metric, like `job.runs.completed{name="nightly_backup", status="success"}`, and alert on it.
 
 ## See also
 
