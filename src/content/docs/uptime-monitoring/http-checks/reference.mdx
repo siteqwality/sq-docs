@@ -209,7 +209,7 @@ The negotiated version observed on each run is recorded on the check result.
 | `GET` | `/http/job/result/{job_result_id}/details` | Full detail for one recorded result. |
 | `GET` | `/http/job/result/{job_result_id}/body` | Pre-signed download for a failed check's full response body. |
 | `GET` | `/http/job/{job_id}/results/export` | Check results as CSV (timings and outcome, no bodies). |
-| `POST` | `/http/jobs/import` | Create monitors from a CSV. An optional `check_type` column (`http`, `tcp` or `ping`) sets each row's type; a blank one follows the URL's `tcp://` or `ping://`. |
+| `POST` | `/http/jobs/import` | [Create monitors from a CSV](/uptime-monitoring/csv-import/): HTTP, TCP, ping, heartbeat and DNS rows, duplicates skipped, with `dry_run` for a preview. |
 | `GET` | `/monitors` | Every monitor of every type, paged. `check_type=http`, `tcp` or `ping` keeps uptime monitors of that kind, and each uptime row carries `check_type`. |
 | `GET` | `/monitors/totals` | Monitor counts. `by_type.http` covers every uptime monitor, and `by_check_type` splits those counts into `http`, `tcp` and `ping`. |
 | `GET` | `/http/job/{job_id}/page_speed` | Latest page-speed result. |

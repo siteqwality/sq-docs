@@ -9750,7 +9750,7 @@
         "tags": [
           "HTTP Monitors"
         ],
-        "summary": "Create HTTP monitors from a CSV. Each row goes through `POST /http/job`\nso EventBridge schedules are attached.",
+        "summary": "Create monitors from a CSV: HTTP, TCP, ping, heartbeat and DNS rows. Each row goes\nthrough its type's create endpoint, so schedules and plan limits apply as usual.\nRows that repeat an existing monitor or an earlier row are skipped, and a bad row\ndoes not stop the rest. `dry_run` reports the outcome without creating anything.",
         "operationId": "import_http_jobs",
         "requestBody": {
           "content": {
@@ -9764,7 +9764,7 @@
         },
         "responses": {
           "200": {
-            "description": "Import finished",
+            "description": "Import finished; each row reports its outcome",
             "content": {
               "application/json": {
                 "schema": {
@@ -9774,7 +9774,7 @@
             }
           },
           "400": {
-            "description": "CSV could not be parsed"
+            "description": "CSV could not be read"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -50353,24 +50353,61 @@
         "properties": {
           "csv": {
             "type": "string"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Check every row and report what would happen without creating anything."
           }
         }
       },
       "ImportHttpJobsResponse": {
         "type": "object",
         "required": [
+          "dry_run",
           "created",
-          "errors"
+          "would_create",
+          "skipped",
+          "failed",
+          "not_attempted",
+          "errors",
+          "rows"
         ],
         "properties": {
+          "dry_run": {
+            "type": "boolean"
+          },
           "created": {
             "type": "integer",
+            "minimum": 0
+          },
+          "would_create": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "not_attempted": {
+            "type": "integer",
+            "description": "Rows left when time ran out; importing the same file again adds them.",
             "minimum": 0
           },
           "errors": {
             "type": "array",
             "items": {
               "type": "string"
+            },
+            "description": "`line N: reason` for each failed row."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowResult"
             }
           }
         }
@@ -50387,6 +50424,68 @@
           "invalid",
           "duplicate",
           "page_full"
+        ]
+      },
+      "ImportRowResult": {
+        "type": "object",
+        "required": [
+          "line",
+          "status"
+        ],
+        "properties": {
+          "line": {
+            "type": "integer",
+            "description": "The row's line in the file.",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImportRowStatus"
+          },
+          "check_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`http`, `tcp`, `ping`, `heartbeat` or `dns`; null when the row did not parse."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The url, the heartbeat's name or the DNS zone."
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The new monitor's id."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the row was skipped, failed or not attempted."
+          }
+        }
+      },
+      "ImportRowStatus": {
+        "type": "string",
+        "enum": [
+          "created",
+          "would_create",
+          "skipped",
+          "failed",
+          "not_attempted"
         ]
       },
       "ImportStatusPageSubscribers": {

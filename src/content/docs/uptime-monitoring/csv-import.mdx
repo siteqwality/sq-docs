@@ -1,0 +1,105 @@
+---
+title: Import monitors from a CSV
+description: Create HTTP, TCP, ping, heartbeat and DNS record monitors from a spreadsheet, with a preview of every row before anything is created.
+last_verified: 2026-10-23
+owner: jj
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+A CSV adds many monitors at once, one monitor per row. Before anything is created you see what each row will do: create a monitor, skip a duplicate, or stay out with the reason. A bad row never stops the rest of the file.
+
+## In the dashboard
+
+<Steps>
+
+1. On the dashboard, click **Import CSV** next to **Add Monitor** and choose your file. A new account can also import from the first-monitor screen.
+
+2. Check the preview. Each row shows **Will be created**, **Skipped** with the reason, or **Not imported** with what is wrong. Nothing has been created yet.
+
+3. Click the **Import** button, which names how many rows are marked **Will be created**. Fix any rows with a problem and import the file again; the monitors you just created are skipped.
+
+</Steps>
+
+## Example
+
+```csv
+name,url,check_type,interval,tags
+Homepage,https://example.com,,300,prod
+API health,https://api.example.com/health,,60,"prod,api"
+Postgres,db.example.com:5432,tcp,,
+Edge router,ping://edge.example.com,,,
+Nightly backup,,heartbeat,86400,ops
+Main zone,example.com,dns,,
+```
+
+The first line names the columns, in any order. Column names ignore case, and blank lines are skipped.
+
+## Columns
+
+| Column | Also accepted | Applies to | Description |
+|---|---|---|---|
+| `url` | `uri`, `domain` | HTTP, TCP, ping, DNS | What to check. TCP takes `host:port` or `tcp://host:port`, ping takes a host or `ping://host`, and DNS takes the zone (from a URL, only the host is kept). Leave it blank on heartbeat rows. |
+| `check_type` | `type` | All | `http`, `tcp`, `ping`, `heartbeat` (or `cron`) or `dns`. When blank, a `tcp://` or `ping://` URL sets the type and any other URL is `http`. |
+| `name` | `friendly_name` | All | The monitor's name. Heartbeat rows need one. |
+| `interval` | `interval_seconds`, `run_interval_seconds` | All | Seconds between checks, in whole minutes up to 86400. For a heartbeat, how often the job pings. Default 300, or 3600 for DNS, which also needs at least 300. |
+| `method` | | HTTP | The request method. Default `GET`. |
+| `keyword` | `keyword_search` | HTTP | Text the response must contain. |
+| `json_path` | | HTTP | A [JSON path](/uptime-monitoring/http-checks/reference/) to read from the response. |
+| `json_path_expected` | `expected` | HTTP | The value `json_path` must return. |
+| `tags` | | All but DNS | Tags separated by `,` or `;`. Quote the cell when it holds a comma. |
+
+Imported HTTP checks start with SSL/TLS, domain expiry and page speed checks off; turn them on per monitor. Every imported monitor alerts your [default notification group](/incident-management/notifications/default-routing/#the-default-notification-group). Once a heartbeat monitor exists, open it to copy its ping URL. Browser checks need a script, so create them in the dashboard or with the API.
+
+## Duplicates are skipped
+
+A row is skipped when:
+
+- its URL matches one of your monitors. The scheme and host ignore case and a trailing slash is ignored, but the path must match exactly;
+- it is a heartbeat row named like one of your heartbeat monitors, ignoring case;
+- it is a DNS row for a zone you already monitor;
+- it repeats an earlier row of the same file.
+
+So importing the same file again is safe: it creates only the rows that were not created before.
+
+## Limits
+
+- A file holds at most 500 monitor rows.
+- Each row is created just as if you added it by hand, so your plan's monitor, heartbeat and DNS monitor limits and its shortest interval apply. The preview counts your plan's monitor limit; the other limits show up as a problem on the row when you import.
+- An import stops creating after about 20 seconds. Rows it did not reach show **Not imported yet**. Click **Import the rest**, or import the same file again, and the monitors already created are skipped.
+
+## With the API
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`, send the file's text to [`POST /http/jobs/import`](/api-reference/operations/import_http_jobs/). `dry_run: true` reports what would happen and creates nothing:
+
+```bash
+curl -X POST https://api.siteqwality.com/http/jobs/import \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "$(jq -n --rawfile csv monitors.csv '{csv: $csv, dry_run: true}')"
+```
+
+Send it again without `dry_run` to create the monitors. The response has one entry per row:
+
+```json
+{
+  "data": {
+    "dry_run": true,
+    "created": 0,
+    "would_create": 1,
+    "skipped": 1,
+    "failed": 1,
+    "not_attempted": 0,
+    "errors": ["line 4: interval is not a number"],
+    "rows": [
+      { "line": 2, "status": "would_create", "check_type": "http", "name": "Homepage", "target": "https://example.com", "id": null, "message": null },
+      { "line": 3, "status": "skipped", "check_type": "http", "name": "Docs", "target": "https://example.com/docs", "id": null, "message": "A monitor for this url already exists" },
+      { "line": 4, "status": "failed", "check_type": null, "name": null, "target": null, "id": null, "message": "interval is not a number" }
+    ]
+  }
+}
+```
+
+`status` is `would_create` (dry run only), `created` (with the new monitor's `id`), `skipped`, `failed` or `not_attempted`. `target` is the URL, the heartbeat's name or the DNS zone. `errors` repeats each failed row as `line N: reason`.
+
+A file that cannot be read at all returns `400` with the reason and creates nothing: an empty file, no `url` or `check_type` column, no monitor rows, or more than 500 rows.
