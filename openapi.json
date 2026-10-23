@@ -32825,6 +32825,62 @@
         ]
       }
     },
+    "/v1/alert-sources/usage": {
+      "get": {
+        "tags": [
+          "Alert Sources"
+        ],
+        "summary": "Get alert source usage.",
+        "operationId": "v1_alert_source_usage",
+        "responses": {
+          "200": {
+            "description": "Sources and today's events against the plan's limits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertSourceUsage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/v1/alert-sources/{alert_source_id}": {
       "get": {
         "tags": [
@@ -33047,6 +33103,112 @@
           },
           "422": {
             "description": "Invalid name",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/alert-sources/{alert_source_id}/events": {
+      "get": {
+        "tags": [
+          "Alert Sources"
+        ],
+        "summary": "List the events an alert source received.",
+        "operationId": "v1_list_alert_source_events",
+        "parameters": [
+          {
+            "name": "alert_source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "`next_cursor` from the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 200, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Events from the last 30 days, newest first. Payloads are not kept",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_InboundEvent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `limit` or `cursor`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such source in this account",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -39388,6 +39550,43 @@
           }
         }
       },
+      "AlertSourceUsage": {
+        "type": "object",
+        "description": "Sources and today's events against the plan.",
+        "required": [
+          "can_create",
+          "sources",
+          "events_today",
+          "events_per_day"
+        ],
+        "properties": {
+          "can_create": {
+            "type": "boolean",
+            "description": "Whether this account may create a source now."
+          },
+          "sources": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sources_limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "`null` when the plan has no limit."
+          },
+          "events_today": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Events received since midnight UTC, counted as the receiver limits them."
+          },
+          "events_per_day": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "AlertSourceWithKey": {
         "allOf": [
           {
@@ -39402,11 +39601,18 @@
             "properties": {
               "key": {
                 "type": "string",
-                "description": "The `routing_key` to send. Shown only now."
+                "description": "The key: Events v2's `routing_key`, or the bearer token for the other formats. Shown only now."
               },
               "url": {
                 "type": "string",
                 "description": "Where to send events."
+              },
+              "url_with_key": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The URL with the key in it, for a sender that cannot set an `Authorization` header. Not for Events v2."
               }
             }
           }
@@ -42112,7 +42318,7 @@
               "string",
               "null"
             ],
-            "description": "`events_v2` (PagerDuty Events v2), the default and only format so far."
+            "description": "`events_v2` (PagerDuty Events v2, the default), `alertmanager` or `grafana`."
           }
         }
       },
@@ -47984,6 +48190,64 @@
           },
           "result": {
             "$ref": "#/components/schemas/ImportResult"
+          }
+        }
+      },
+      "InboundEvent": {
+        "type": "object",
+        "description": "One received event as the api lists it.",
+        "required": [
+          "id",
+          "dedup_key",
+          "action",
+          "outcome",
+          "received_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dedup_key": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "description": "`trigger`, `acknowledge` or `resolve`."
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "severity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "link": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "incident_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The incident it opened or changed."
+          },
+          "outcome": {
+            "type": "string",
+            "description": "`opened`, `reopened`, `appended`, `acknowledged`, `resolved` or `ignored`."
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -54069,6 +54333,83 @@
                       "description": "Set while runs pass but some locations fail. Omitted otherwise."
                     }
                   ]
+                }
+              }
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Send back as `cursor` for the next page; `null` on the last one."
+          }
+        }
+      },
+      "Page_InboundEvent": {
+        "type": "object",
+        "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One received event as the api lists it.",
+              "required": [
+                "id",
+                "dedup_key",
+                "action",
+                "outcome",
+                "received_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "dedup_key": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string",
+                  "description": "`trigger`, `acknowledge` or `resolve`."
+                },
+                "summary": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "severity": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "link": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "incident_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "The incident it opened or changed."
+                },
+                "outcome": {
+                  "type": "string",
+                  "description": "`opened`, `reopened`, `appended`, `acknowledged`, `resolved` or `ignored`."
+                },
+                "received_at": {
+                  "type": "string",
+                  "format": "date-time"
                 }
               }
             }
