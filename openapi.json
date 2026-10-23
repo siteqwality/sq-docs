@@ -37093,6 +37093,83 @@
         ]
       }
     },
+    "/v1/incidents/{incident_id}/changes": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "List an incident's changes.",
+        "operationId": "v1_list_incident_changes",
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Change events noted while the incident was open, and those its service's alert sources received in the 2 hours before it opened, newest first, up to 200 on one page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_IncidentChange"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such incident in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/v1/incidents/{incident_id}/reopen": {
       "post": {
         "tags": [
@@ -50796,7 +50873,7 @@
           },
           "action": {
             "type": "string",
-            "description": "`trigger`, `acknowledge` or `resolve`."
+            "description": "`trigger`, `acknowledge`, `resolve` or `change`."
           },
           "summary": {
             "type": [
@@ -50826,11 +50903,47 @@
           },
           "outcome": {
             "type": "string",
-            "description": "`opened`, `reopened`, `appended`, `acknowledged`, `resolved` or `ignored`."
+            "description": "`opened`, `reopened`, `appended`, `acknowledged`, `resolved` or `ignored`; for a change, `noted` (added to the\nservice's open incidents), `recorded` (none was open) or `ignored`."
           },
           "received_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "IncidentChange": {
+        "type": "object",
+        "description": "A change event on an incident's service: noted while the incident was open, or received in the 2 hours before.",
+        "required": [
+          "at",
+          "summary",
+          "before_incident"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "link": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "alert_source_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The alert source it came through."
+          },
+          "before_incident": {
+            "type": "boolean",
+            "description": "Received in the 2 hours before the incident opened."
           }
         }
       },
@@ -57108,7 +57221,7 @@
                 },
                 "action": {
                   "type": "string",
-                  "description": "`trigger`, `acknowledge` or `resolve`."
+                  "description": "`trigger`, `acknowledge`, `resolve` or `change`."
                 },
                 "summary": {
                   "type": [
@@ -57138,11 +57251,66 @@
                 },
                 "outcome": {
                   "type": "string",
-                  "description": "`opened`, `reopened`, `appended`, `acknowledged`, `resolved` or `ignored`."
+                  "description": "`opened`, `reopened`, `appended`, `acknowledged`, `resolved` or `ignored`; for a change, `noted` (added to the\nservice's open incidents), `recorded` (none was open) or `ignored`."
                 },
                 "received_at": {
                   "type": "string",
                   "format": "date-time"
+                }
+              }
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Send back as `cursor` for the next page; `null` on the last one."
+          }
+        }
+      },
+      "Page_IncidentChange": {
+        "type": "object",
+        "description": "`{\"data\": [...], \"next_cursor\": ...}`; the `/v1` shaping keeps it as is.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A change event on an incident's service: noted while the incident was open, or received in the 2 hours before.",
+              "required": [
+                "at",
+                "summary",
+                "before_incident"
+              ],
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "summary": {
+                  "type": "string"
+                },
+                "link": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "alert_source_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "The alert source it came through."
+                },
+                "before_incident": {
+                  "type": "boolean",
+                  "description": "Received in the 2 hours before the incident opened."
                 }
               }
             }
