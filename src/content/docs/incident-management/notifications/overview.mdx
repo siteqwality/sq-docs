@@ -33,7 +33,7 @@ Two extra knobs, under **Advanced Settings** in the group, control timing:
 | Dashboard field | API field | Purpose |
 |---|---|---|
 | **Delay after (minutes)** | `delay_send_after_minutes` | Wait this long before sending the first down alert. Clamped 0–60. |
-| **Resend every (minutes)** | `resend_every_minutes` | While the monitor is still down, re-send the down alert every N minutes, at most 10 times. Clamped 0–60. |
+| **Resend every (minutes)** | `resend_every_minutes` | While the monitor is still down, re-send the down alert every N minutes, at most 10 times. 0 turns repeats off; other values are clamped to 5–60. |
 
 Both apply to down alerts from HTTP monitors, heartbeats and browser checks only; every other alert, and every recovery, sends at once (see [the group delay](/incident-management/notifications/default-routing/#the-group-delay)).
 
