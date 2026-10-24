@@ -327,6 +327,11 @@
       "POST /user/{user_id}/contact_method/{contact_method_id}/verification/confirm"
     ]
   },
+  "notify.slack_link": {
+    "status": "live",
+    "summary": "Link a Slack account from the /oncall link: a verified Slack DM contact method that sends through the workspace's Slack integration, no bot token",
+    "source": "core-rs api/src/handlers/user_contact_method/slack_link.rs (POST /user/{user_id}/contact_method/slack_link), api/src/handlers/on_call_schedule/slack_command.rs"
+  },
   "notify.notification_rules": {
     "status": "live",
     "summary": "Per-user notification rules by urgency with a delay",

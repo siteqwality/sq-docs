@@ -1,7 +1,7 @@
 ---
 title: Slack integration
 description: Install the Site Qwality Slack app via OAuth, then post monitor alerts to any channel.
-last_verified: 2026-05-03
+last_verified: 2026-10-23
 owner: jj
 ---
 
@@ -80,7 +80,7 @@ A send is tried once, and a refusal from Slack is recorded as rejected. Any othe
 
 ## Incidents
 
-A service's Slack broadcast target can send with this integration (pick it and a channel) or with a bot token you paste in, and a Slack contact method takes a pasted bot token. Those messages link to the incident in Site Qwality and carry no buttons: acknowledge and resolve incidents in the dashboard. See [Acknowledge from the alert itself](/incident-management/incidents/how-to/one-click-actions/#slack).
+A service's Slack broadcast target can send with this integration (pick it and a channel) or with a bot token you paste in, and a Slack DM contact method either sends through this integration (linked by running `/oncall` and opening the link) or takes a pasted bot token. Those messages link to the incident in Site Qwality and carry no buttons: acknowledge and resolve incidents in the dashboard. See [Acknowledge from the alert itself](/incident-management/incidents/how-to/one-click-actions/#slack).
 
 ## Removing
 
@@ -91,7 +91,7 @@ curl -X DELETE https://api.siteqwality.com/integration/<slack-integration-id> \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-This removes the integration and deletes every channel that used it, so add channels on a different integration first if you don't want to lose alerting. It does not revoke the token in Slack: to remove access, also remove the Site Qwality app from your workspace in Slack.
+This removes the integration and deletes every channel that used it, so add channels on a different integration first if you don't want to lose alerting. Slack DM contact methods linked through it stay but stop sending: once the workspace is connected again, each owner removes theirs and runs `/oncall` for a new link. It does not revoke the token in Slack: to remove access, also remove the Site Qwality app from your workspace in Slack.
 
 Removing the app in Slack, or revoking its token there, turns the integration off in Site Qwality right away, so alerts stop trying to post and the integration shows as off with the reason. Connect the workspace again to turn it back on. This works for a workspace connected on or after October 23, 2026; for an older one, click **Add to Slack** again once to get it.
 

@@ -1,7 +1,7 @@
 ---
 title: Add and verify contact methods
 description: Add an email, SMS number or Slack DM that incident pages can reach, verify it with a 6-digit code, and edit it later.
-last_verified: 2026-10-16
+last_verified: 2026-10-23
 owner: jj
 ---
 
@@ -19,9 +19,12 @@ A new user (sign-up, accepted invite or SCIM) starts with one contact method: th
 |---|---|---|
 | `email` | `{ "email": "alice@example.com" }` | Optional. Your sign-in email is verified when you add it. |
 | `sms` | A phone number and its country (see below) | Required before a rule can use it. |
-| `slack_dm` | `{ "slack_token": "xoxb-...", "channel": "U0123ABCD" }` | Optional. |
+| `slack_dm` | `{ "slack_token": "xoxb-...", "channel": "U0123ABCD" }`, or `{ "channel": "U0123ABCD" }` when [linked from Slack](#link-your-slack-account-from-slack) | Optional. A Slack DM linked from Slack is verified when it is linked. |
 
-A `slack_dm` method does not use the account's Slack integration. Its token never reads back in full: it shows as `****` followed by its last four characters.
+A Slack DM can reach you two ways:
+
+- **Linked from Slack** (the easy way): run `/oncall` in Slack and open the link it sends. The method holds no token. It sends through the account's Slack integration for that workspace, and reads back with `integration_id` and `linked_via` (the integration's name).
+- **With a bot token** you paste in: the method sends with that token and does not use the account's Slack integration. Its token never reads back in full: it shows as `****` followed by its last four characters.
 
 Phone calls are not delivered, so a `phone_call` method is refused.
 
@@ -38,6 +41,24 @@ Each user can have up to 20 contact methods. You manage your own, and admins can
 3. Click **Add contact method**, then [verify the method](#verify-a-contact-method). An SMS number cannot be used in a rule until you do.
 
 </Steps>
+
+## Link your Slack account from Slack
+
+If your Site Qwality account has connected your Slack workspace through the [Slack integration](/integrations/slack/), you can add a Slack DM without a bot token:
+
+<Steps>
+
+1. In Slack, run `/oncall`. If Site Qwality does not know you yet, it replies, only to you, with a **Link your Slack account** link. The link works for 15 minutes.
+
+2. Open the link and sign in to Site Qwality if asked. The page shows the Slack workspace and the Slack member being linked.
+
+3. Click **Link Slack account**. The new method shows as **Slack DM (linked via** the integration's name**)**, already verified, and `/oncall` now answers you.
+
+</Steps>
+
+Opening the link again does not add a second method. A Slack account can be linked to one member of an account; a link for a Slack account another member already has is refused. If the workspace's Slack integration is turned off or deleted, a linked method stops sending: the [readiness check](/incident-management/escalation/readiness/) shows it as `integration_disabled` or `integration_missing`. Turning the integration back on, or connecting the workspace again with **Add to Slack**, starts it again. If the integration was deleted, remove the method, then run `/oncall` again for a new link once the workspace is connected.
+
+The link calls `POST /user/{user_id}/contact_method/slack_link` with the link's `token`. It accepts only your own dashboard session, not an API key.
 
 An email address that bounces permanently, or reports a page as spam, stops receiving pages: the rule is skipped and the incident records why. The [readiness check](/incident-management/escalation/readiness/) on each escalation policy shows any method like this.
 
@@ -109,7 +130,7 @@ When you add a method that a rule can use (any email or Slack DM method, or a ve
 
 ## Verify a contact method
 
-An email that matches your sign-in email is verified when you add it. Every other method starts unverified. An SMS number must be verified before a notification rule can use it; for email and Slack DM, verifying confirms the destination works.
+An email that matches your sign-in email is verified when you add it, and a Slack DM [linked from Slack](#link-your-slack-account-from-slack) is verified when it is linked. Every other method starts unverified. An SMS number must be verified before a notification rule can use it; for email and Slack DM, verifying confirms the destination works.
 
 In the dashboard, click **Verify** next to the method, then **Send code**. Enter the 6-digit code you receive and click **Confirm**. The method then shows **Verified**.
 
@@ -159,7 +180,8 @@ curl -X PATCH https://api.siteqwality.com/user/$USER_ID/contact_method/$METHOD_I
   -d '{ "details": { "phone_number": "06 12 34 56 78", "country": "FR" } }'
 ```
 
-- `details` takes the same shapes as create. For a Slack DM, send the full bot token again.
+- `details` takes the same shapes as create. For a Slack DM with a bot token, leave the token out to keep the saved one.
+- A Slack DM linked from Slack has nothing to edit. To link another Slack account, run `/oncall` in Slack and open the new link.
 - The type cannot change. To switch from email to SMS, add a new method.
 - Changing the email address or phone number marks the method unverified, unless the new email is your sign-in email. Verify it again; an unverified SMS number cannot be added to a rule.
 

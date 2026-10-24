@@ -1,7 +1,7 @@
 ---
 title: Notifications
 description: Channels, groups, contact methods, and rules. The four-layer system for routing alerts to the right person via the right tool.
-last_verified: 2026-10-19
+last_verified: 2026-10-23
 owner: jj
 ---
 
@@ -51,7 +51,7 @@ Each user sets how they personally can be reached, in their personal settings un
 |---|---|
 | `email` | An email address. New users get their sign-in email added for them, already verified. |
 | `sms` | A phone number in any country. It must be verified with a 6-digit code before a rule can use it. |
-| `slack_dm` | A Slack bot token you paste in, and the channel or user ID to message. It does not use the Slack integration. |
+| `slack_dm` | Linked from Slack: run `/oncall` in a workspace your account has connected and open the link, and it sends through that Slack integration. Or a Slack bot token you paste in, with the channel or user ID to message, which does not use the Slack integration. |
 
 There are no phone calls. Each user can have up to 20 contact methods. See [add and verify contact methods](/incident-management/notifications/how-to/contact-methods/).
 

@@ -5,7 +5,7 @@ last_verified: 2026-10-23
 owner: jj
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Steps } from '@astrojs/starlight/components';
 
 Full request schemas are in the [API Reference](/api-reference/).
 
@@ -213,7 +213,25 @@ The MCP server has tools for who is on call, shifts, the report and editing a la
 
 ### From Slack
 
-In a workspace connected through the [Slack integration](/integrations/slack/), `/oncall` answers privately with who is on call, until when, and who is next. Add part of a schedule name to ask about one schedule, for example `/oncall platform`. It answers people who have a [Slack DM contact method](/incident-management/notifications/how-to/contact-methods/) on their profile with their Slack member id (it starts with `U`) as the channel. A workspace connected before October 22, 2026 needs connecting again once: click **Add to Slack** and pick the same workspace.
+In a workspace connected through the [Slack integration](/integrations/slack/), `/oncall` answers privately with who is on call, until when, and who is next. Add part of a schedule name to ask about one schedule, for example `/oncall platform`.
+
+It answers people it can match to a Site Qwality user. The first time you run it, it may not know you yet. It then replies, only to you, with a **Link your Slack account** link that works for 15 minutes:
+
+<Steps>
+
+1. Run `/oncall` in Slack and click **Link your Slack account**.
+
+2. Sign in to Site Qwality if asked. The page shows the Slack workspace and the Slack member being linked.
+
+3. Click **Link Slack account**. Site Qwality adds a [Slack DM contact method](/incident-management/notifications/how-to/contact-methods/#link-your-slack-account-from-slack) that sends through the workspace's Slack integration, so no bot token is needed.
+
+4. Run `/oncall` again.
+
+</Steps>
+
+If no Site Qwality account has connected the workspace, `/oncall` says so instead: an admin connects it from **Integrations**. A workspace connected before October 22, 2026 needs connecting again once: click **Add to Slack** and pick the same workspace.
+
+You can also add a Slack DM contact method yourself, with a bot token and your Slack member id (it starts with `U`) as the channel. `/oncall` finds you either way.
 
 ## Handoff notices
 
