@@ -1,11 +1,11 @@
 ---
 title: Status page reference
 description: Every field on status pages, components, branding, custom domains, scheduled maintenance, and subscribers.
-last_verified: 2026-10-16
+last_verified: 2026-10-23
 owner: jj
 ---
 
-The full request schemas live in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for the `/status_page` endpoint family.
+The full request schemas live in the auto-generated [API Reference](/api-reference/). This page is the human-readable cheat sheet for the `/status_page` endpoint family and its [`/v1` routes](#manage-pages-over-the-v1-api).
 
 ## Status page
 
@@ -310,6 +310,33 @@ The first import confirmations go out during the import; the rest stay `queued` 
 | `POST` | `/status_page/{id}/branding/upload` | Presigned asset upload. |
 | `DELETE` | `/status_page/{id}/branding/asset/{asset_type}` | Remove an asset. |
 | `POST` / `GET` / `DELETE` | `/status_page/{id}/custom_domain` | Provision / read / remove the custom domain. |
+
+## Manage pages over the `/v1` API
+
+| Resource | Routes under `/v1/status-pages` |
+|---|---|
+| Pages | `GET` and `POST /v1/status-pages`; `GET`, `PATCH` and `DELETE` on `/v1/status-pages/{id}`; `GET` and `PUT` on `/v1/status-pages/{id}/layout` |
+| Monitors on a page | `GET /v1/status-pages/{id}/http-monitors`; `GET`, `POST`, `PATCH` and `DELETE` on `/v1/status-pages/{id}/http-monitors/{monitor_id}`; the same for `browser-monitors` and `heartbeat-monitors` |
+| Manual components | `POST /v1/status-pages/{id}/components`; `PATCH` and `DELETE` on `.../components/{component_id}`; `PUT` and `DELETE` on `.../components/{component_id}/status-override` |
+| Subscribers | `GET` and `POST /v1/status-pages/{id}/subscribers`; `POST .../subscribers/import`; `DELETE .../subscribers/{subscriber_id}` |
+| Incidents | `GET /v1/status-pages/{id}/incidents` |
+| Scheduled maintenance | `GET` and `POST /v1/status-pages/{id}/maintenances`; `GET`, `PATCH` and `DELETE` on `.../maintenances/{maintenance_id}` |
+| Branding | `GET` and `PATCH /v1/status-pages/{id}/branding`; `POST .../branding/upload-url`; `DELETE .../branding/assets/{asset_type}` |
+| Custom domain | `GET`, `POST` and `DELETE /v1/status-pages/{id}/custom-domain` |
+
+```bash
+curl "https://api.siteqwality.com/v1/status-pages?limit=50" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY"
+```
+
+- They take the same fields as the `/status_page` routes above and answer in the [`/v1` shapes](/integrations/overview/#read-and-change-them-over-the-api): lists newest first as `{"data": [...], "next_cursor": "..."}`, one item as the object itself, errors as `application/problem+json`. `Idempotency-Key` works on every `POST` and `PATCH`.
+- Creates answer `201`. `DELETE` answers `204`, also when the item is already gone. Removing a custom domain answers `202` because the teardown finishes afterwards.
+- `PATCH` changes only the fields you send. On a monitor, `"sla_target_percentage": null` clears the target; on scheduled maintenance, `"body": null` clears the text. The whole window is checked again, so a new `scheduled_end_at` must still come after the start.
+- `POST .../http-monitors/{monitor_id}` shows that monitor on the page, with `{"friendly_name": "..."}`. A page lists its monitors in a fixed order, not newest first.
+- Create and change incidents with [`/v1/incidents`](/incident-management/overview/), naming the page in `status_page_ids`. The page's own route only lists them.
+- `POST .../branding/upload-url` takes the same body as `/status_page/{id}/branding/upload`. Its signed URL is never kept, so a request repeated with the same `Idempotency-Key` answers `409` instead of the URL again.
+- Reads need `read:status_pages` and changes `write:status_pages`; a page's incidents need the `incidents` scopes instead.
+- The CSV export stays on `GET /status_page/{id}/subscriber/export`.
 
 ## Public status page API
 
