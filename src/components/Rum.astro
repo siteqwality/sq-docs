@@ -43,6 +43,8 @@
 		if (!c.analytics) {
 			// What the SDK stores about a visit (sdk/rum session.ts clear()).
 			if (cookie('_sq_s')) d.cookie = '_sq_s=; path=/; max-age=0; SameSite=Lax; Secure';
+			// The first-touch cookie follows the analytics choice too (attribution.js settle()).
+			if (cookie('sq_ft')) d.cookie = 'sq_ft=; path=/; domain=.siteqwality.com; max-age=0; SameSite=Lax; Secure';
 			['localStorage', 'sessionStorage'].forEach(function (kind) {
 				try {
 					['_sq_s', '_sq_aid', '_sq_w', '_sq_bgt', '_sq_bgr', '_sq_act', '_sq_rcap', '_sq_cb']
