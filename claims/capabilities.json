@@ -119,9 +119,9 @@
     "source": "core-rs api/src/handlers/service/metrics.rs"
   },
   "service.broadcast_lifecycle": {
-    "status": "held",
-    "summary": "Broadcast targets deliver acknowledged, updated, reopened, merged and service changed too (staged and recorded today; each waits for its channel's renderer)",
-    "source": "core-rs common/src/incident/broadcast.rs (rendered_today), common/src/dispatch/table.rs"
+    "status": "live",
+    "summary": "Email, Slack and webhook broadcast targets deliver acknowledged, updated, reopened, merged and service changed too, with no action links and no internal update text",
+    "source": "core-rs common/src/incident/broadcast.rs (broadcast_change), common/src/model/notification_event.rs (IncidentBroadcastChange), notifier/src/lambda.rs (incident_webhook_data)"
   },
   "service.secure_targets": {
     "status": "live",

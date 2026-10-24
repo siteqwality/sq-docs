@@ -1,7 +1,7 @@
 ---
 title: Webhook integrations
 description: Send a signed JSON POST to your own URL for monitor, alert and RUM events, with retries and a delivery log.
-last_verified: 2026-10-22
+last_verified: 2026-10-23
 owner: jj
 ---
 
@@ -140,6 +140,11 @@ The full result also carries the response headers and body, the timing breakdown
 | `monitor.recover` | info |
 | `incident.created` | critical |
 | `incident.resolved` | info |
+| `incident.acknowledged` | info |
+| `incident.updated` | info |
+| `incident.reopened` | critical |
+| `incident.merged` | info |
+| `incident.service_changed` | info |
 | `tls.expiring` | warning |
 | `dns.expiring` | warning |
 | `dns.record_change` | warning |
@@ -338,7 +343,7 @@ An unknown event or field name, or an empty list, is refused with an error that 
 
 ## Incident webhooks
 
-A service can also send `incident.created` and `incident.resolved` events (no other incident events) to a webhook URL as a broadcast target. Those deliveries use the same envelope and retries and are signed. A target that sends with a webhook integration uses the integration's signing secret and appears in its delivery log; a target with a pasted URL is signed with a secret of its own, returned once when you add it, and verified with the same check.
+A service can also send its incidents' lifecycle events to a webhook URL as a [broadcast target](/incident-management/services/overview/#broadcast-targets). Those deliveries use the same envelope and retries and are signed. A target that sends with a webhook integration uses the integration's signing secret and appears in its delivery log; a target with a pasted URL is signed with a secret of its own, returned once when you add it, and verified with the same check.
 
 `data` for an incident event:
 
@@ -354,7 +359,47 @@ A service can also send `incident.created` and `incident.resolved` events (no ot
 }
 ```
 
-`incident_url` opens the incident in Site Qwality, which needs a sign-in. The payload carries no acknowledge or resolve links; those go only to the paged person by [email and SMS](/incident-management/incidents/how-to/one-click-actions/). The event is `incident.resolved` when `responder_status` is `resolved`, and `incident.created` otherwise.
+`incident_url` opens the incident in Site Qwality, which needs a sign-in. The payload carries no acknowledge or resolve links; those go only to the paged person by [email and SMS](/incident-management/incidents/how-to/one-click-actions/).
+
+| Event | Sent when |
+|---|---|
+| `incident.created` | The incident opened. |
+| `incident.acknowledged` | Someone acknowledged it. |
+| `incident.updated` | An update was posted, or its severity or title changed. |
+| `incident.resolved` | It was resolved. |
+| `incident.reopened` | A resolved incident was reopened. |
+| `incident.merged` | It was merged into another incident. |
+| `incident.service_changed` | It moved to another service. Both services' targets get it. |
+
+`incident.created` and `incident.resolved` carry exactly the fields above. Every other incident event adds these:
+
+| Field | Type | Notes |
+|---|---|---|
+| `change` | string | `acknowledged`, `update_posted`, `severity_changed`, `title_changed`, `reopened`, `merged` or `service_changed`. A value you do not know yet may appear later; treat it as a generic update. |
+| `summary` | string | One plain line, such as `Acknowledged by Ana Diaz` or `Severity changed from minor to major`. |
+| `actor_name` | string | Who acknowledged or posted the update, when known. Omitted otherwise. |
+| `update_visibility` | string | On `update_posted` only: `public` or `internal`. |
+| `update_text` | string | The text of a public update, on `update_posted` and `reopened`. Never sent for an internal update. |
+| `previous_severity` | string or `null` | On `severity_changed`: the severity before. `severity` holds the new one. |
+| `merged_into` | object | On `merged`: `{ "incident_id", "incident_title", "incident_url" }` of the incident it was merged into. |
+| `previous_service_name`, `new_service_name` | string or `null` | On `service_changed`: the old and new service, `null` for none. |
+
+`data` for an acknowledgement:
+
+```json
+{
+  "incident_id": "<incident-uuid>",
+  "incident_title": "checkout-api is down",
+  "severity": "critical",
+  "service_name": "Checkout",
+  "affected_monitors": [],
+  "responder_status": "acknowledged",
+  "incident_url": "https://app.siteqwality.com/incidents/<incident-uuid>",
+  "change": "acknowledged",
+  "summary": "Acknowledged by Ana Diaz",
+  "actor_name": "Ana Diaz"
+}
+```
 
 ## See also
 

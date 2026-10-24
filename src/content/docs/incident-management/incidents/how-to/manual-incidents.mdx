@@ -134,7 +134,7 @@ curl -X PUT https://api.siteqwality.com/incident/$INCIDENT_ID \
   -d '{ "service_id": "<new-service-id>" }'
 ```
 
-Moving an open incident cancels the old service's escalation and starts the new service's [escalation policy](/incident-management/escalation/overview/) at level one, but only while the incident is still `triggered`: an acknowledged incident does not start paging again. The move is recorded as a service-changed [broadcast event](/incident-management/services/overview/#broadcast-targets).
+Moving an open incident cancels the old service's escalation and starts the new service's [escalation policy](/incident-management/escalation/overview/) at level one, but only while the incident is still `triggered`: an acknowledged incident does not start paging again. The move is sent as a service-changed [broadcast](/incident-management/services/overview/#broadcast-targets) to the targets of both services.
 
 An auto-created incident cannot move onto a service that already has an open auto-created incident. Merge the two instead: see [merge incidents](/incident-management/incidents/how-to/merge-incidents/).
 

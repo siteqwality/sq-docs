@@ -1,7 +1,7 @@
 ---
 title: Services
 description: Group monitors into a service, choose who gets paged, and decide whether failures open incidents on their own.
-last_verified: 2026-10-22
+last_verified: 2026-10-23
 owner: jj
 ---
 
@@ -13,7 +13,7 @@ A **service** is a named part of your product, such as `Checkout API` or `Market
 - whether a failing monitor opens an incident on its own;
 - which [escalation policy](/incident-management/escalation/overview/) pages people for its incidents;
 - the severity those incidents start with;
-- who else is told when an incident opens (broadcast targets).
+- who else is told about its incidents (broadcast targets).
 
 Services are the only way a monitor failure becomes an incident, and the only way an incident pages anyone. A monitor with no service still sends its monitor alerts through its [notification groups](/incident-management/notifications/overview/#notification-groups), but it never opens an incident.
 
@@ -137,11 +137,37 @@ A broadcast target tells someone outside the escalation chain about the service'
 
 - **Email:** any address. An address outside your members' email domains needs a confirmation.
 - **Slack channel:** a channel of a connected [Slack integration](/integrations/slack/), or a bot token you paste in. With the integration, nothing secret is stored on the target. A pasted token is write-only and is never shown again.
-- **Webhook:** a connected [webhook integration](/integrations/webhooks/), or a public URL you paste in. Deliveries use the [webhook envelope](/integrations/webhooks/#incident-webhooks) with `incident.created` and `incident.resolved` events and are signed. A webhook integration signs with its own secret and shows the deliveries in its log; a pasted URL gets a signing secret of its own, shown once when you add it.
+- **Webhook:** a connected [webhook integration](/integrations/webhooks/), or a public URL you paste in. Deliveries use the [webhook envelope](/integrations/webhooks/#incident-webhooks), with one `incident.*` event per lifecycle event, and are signed. A webhook integration signs with its own secret and shows the deliveries in its log; a pasted URL gets a signing secret of its own, shown once when you add it.
 
 Each target can take only some incidents: a minimum severity, compared with the highest severity the incident reaches, so a target that hears an escalation also hears how it ends, and a list of the lifecycle events it wants.
 
-The Slack, email and webhook targets deliver **opened** and **resolved**. The other lifecycle events (acknowledged, updated, reopened, merged and service changed) are recorded but not sent.
+The Slack, email and webhook targets deliver every lifecycle event: **opened**, **acknowledged**, **updated**, **resolved**, **reopened**, **merged** and **service changed**. Each message names the incident, its service, severity and status, says what happened in one line, and links to the incident in Site Qwality. A broadcast never carries an acknowledge or resolve link, because a channel or shared inbox is not one person: act on the incident in the dashboard.
+
+| Event | `events` name | What the message says | Webhook `event` |
+|---|---|---|---|
+| Opened | `incident_opened` | The incident and its severity | `incident.created` |
+| Acknowledged | `incident_acknowledged` | Acknowledged by Ana Diaz | `incident.acknowledged` |
+| Update posted | `incident_updated` | Update posted by Ana Diaz, then the update's text | `incident.updated` |
+| Severity changed | `incident_updated` | Severity changed from minor to major | `incident.updated` |
+| Title changed | `incident_updated` | Title changed (the message shows the new title) | `incident.updated` |
+| Resolved | `incident_resolved` | The incident, with status resolved | `incident.resolved` |
+| Reopened | `incident_reopened` | Reopened, then the reopen update's text if there is one | `incident.reopened` |
+| Merged | `incident_merged` | Merged into Payments API errors | `incident.merged` |
+| Service changed | `incident_service_changed` | Moved from service Checkout to service Payments | `incident.service_changed` |
+
+An internal update is announced without its text: the message reads "Internal update posted by Ana Diaz (open the incident to read it)". Only public update text leaves Site Qwality. A service change goes to the targets of both the old and the new service.
+
+For example, an acknowledgement reaches an email target with the subject `[Checkout] Acknowledged by Ana Diaz: checkout-api is down`, and a Slack channel as:
+
+```text
+:large_orange_circle: MAJOR Incident: checkout-api is down
+Acknowledged by Ana Diaz
+Service: Checkout          Severity: major
+Status: acknowledged       Monitors: None
+Open the incident in Site Qwality to acknowledge or resolve it.
+```
+
+Opened and resolved messages look as they always have.
 
 In the dashboard, open the service from **Manage → Services** and click **+ Add Target** under **Notification Targets**. Through the API, see the [reference](/incident-management/services/reference/#broadcast-targets).
 

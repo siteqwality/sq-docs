@@ -1,7 +1,7 @@
 ---
 title: Services reference
 description: Service fields, broadcast target types and every /service endpoint.
-last_verified: 2026-10-22
+last_verified: 2026-10-23
 owner: jj
 ---
 
@@ -153,7 +153,7 @@ Every target also takes these optional fields:
 | `min_severity` | `minor`, `major` or `critical`. Incidents below it are not sent. It is compared with the highest severity the incident has reached. Omitted means every severity. |
 | `events` | Any of `incident_opened`, `incident_acknowledged`, `incident_updated`, `incident_resolved`, `incident_reopened`, `incident_merged`, `incident_service_changed`. Omitted means every event; an empty list or an unknown name is a `400`. |
 
-A filtered-out event leaves no trace on the target: nothing is sent and nothing is recorded.
+A filtered-out event leaves no trace on the target: nothing is sent and nothing is recorded. `incident_updated` covers a posted update, a severity change and a title change. Every event is sent to email, Slack and webhook targets; see [broadcast targets](/incident-management/services/overview/#broadcast-targets) for what each message says and [incident webhooks](/integrations/webhooks/#incident-webhooks) for the webhook fields.
 
 A service can have up to 20 targets; the 21st returns `409` with code `service_target_limit_reached`.
 
