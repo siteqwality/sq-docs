@@ -31,8 +31,8 @@ A pending invite uses a seat until it is accepted, expires or is canceled. See [
 
 Any Super Admin can change a role later from the Users table.
 
-- **Super Admin**: everything, including billing, role assignment, and SSO/SCIM. The account's original user is always a Super Admin and cannot be demoted or deleted.
-- **Admin**: team and credential management (invites, API keys, integrations, the audit log) and deleting escalation policies, on-call schedules and services. Everything except billing, roles, and SSO/SCIM.
+- **Super Admin**: everything, including billing, role assignment, and SSO/SCIM. An account always keeps at least one: the last Super Admin cannot be demoted or deleted.
+- **Admin**: team and credential management (invites, API keys, integrations, the audit log) and deleting escalation policies, on-call schedules and services. Everything except billing, roles, SSO/SCIM and removing a Super Admin.
 - **Billing Admin**: everything a Member can do, plus billing (plans, payment methods, invoices). No team, credential or role management.
 - **Member**: full product access (monitors, incidents, dashboards), but no team, credential or billing management, and no deleting escalation policies, on-call schedules or services. Members see integrations with credentials masked. New users start here.
 - **Auditor**: read-only across the product, plus the [audit log](/enterprise/audit-log/). For compliance reviewers.

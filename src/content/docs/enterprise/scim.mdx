@@ -55,12 +55,11 @@ The user is still created, as Member. A Super Admin can raise the role in **Sett
 
 ## Who cannot be removed
 
-Two people are protected, so the IdP cannot take the account down by deleting them.
+The last Super Admin is protected, so the IdP cannot take the account down by deleting them.
 
 | Who | Dashboard | SCIM deprovision |
 |---|---|---|
-| The account's original user (the primary user) | Cannot be deleted or demoted | The delete is ignored. They stay a Super Admin. |
-| The last Super Admin | Cannot be deleted or demoted | Do not remove their Super Admin group in the IdP until someone else holds `super_admin`. |
+| The last Super Admin | Cannot be deleted or demoted | The delete is ignored and they stay a Super Admin. Do not remove their Super Admin group in the IdP until someone else holds `super_admin`. |
 
 Everyone else is removed when the directory deletes them, even if they are on call. They are taken out of every rotation and escalation level in the same step, the people after them in a rotation move up a place, the removal is recorded in the [audit log](/enterprise/audit-log/), and if they were in any, every Super Admin gets an email listing them. Check that each of those still pages someone.
 

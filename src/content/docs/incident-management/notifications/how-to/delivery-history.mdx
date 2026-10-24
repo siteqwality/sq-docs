@@ -50,6 +50,6 @@ The response is `{ "data": { "data": [...], "next_cursor": "..." } }`, newest fi
 
 - `occurrence` is which send of the event it was: `0` for the first, `3` for the third repeat.
 - `repeat` is the repeat number, `null` for a first send.
-- `fallback` is `true` for an email sent to the account owner instead of a blocked SMS.
+- `fallback` is `true` for an email sent to a Super Admin instead of a blocked SMS.
 
 Scoped API keys and AI assistants need `read:notifications`. The AI assistant tool is `list_notification_history`.
