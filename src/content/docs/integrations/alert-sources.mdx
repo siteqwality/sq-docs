@@ -1,0 +1,130 @@
+---
+title: Alert sources
+description: Open and resolve Site Qwality incidents from Prometheus Alertmanager, Grafana, CloudWatch, Datadog, Sentry, the PagerDuty Events API v2 or any tool that sends a JSON webhook.
+last_verified: 2026-10-24
+owner: jj
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+An **alert source** lets another tool open incidents in Site Qwality. Each source belongs to a [service](/incident-management/services/overview/): its alerts open, acknowledge and resolve incidents on that service, which then page people through the service's escalation policy (or one you set on the source). Every source has its own key and URL.
+
+## Formats
+
+| Format | Send to | Opens an incident | Resolves it |
+|---|---|---|---|
+| PagerDuty Events API v2 (`events_v2`) | `https://events.siteqwality.com/v2/enqueue`, key as `routing_key` | `trigger` | `resolve` with the same `dedup_key` (`acknowledge` acknowledges) |
+| Prometheus Alertmanager (`alertmanager`) | `https://events.siteqwality.com/v1/sources`, key as a bearer token | A firing alert, one incident per fingerprint | The same alert resolved |
+| Grafana (`grafana`) | As Alertmanager, from a Webhook contact point | A firing alert | The same alert resolved |
+| Amazon CloudWatch through SNS (`cloudwatch_sns`) | An SNS HTTPS subscription to the URL with the key | `ALARM` | `OK` (`INSUFFICIENT_DATA` is ignored) |
+| Datadog (`datadog`) | A Datadog webhook with the key in a custom header | A trigger, warning or no-data transition | A recovery |
+| Sentry (`sentry`) | A Sentry internal integration's webhook URL | A new or reopened issue, an issue alert, or a critical or warning metric alert | A resolved or archived issue, or a resolved metric alert |
+| Any JSON webhook (`generic_json`) | `https://events.siteqwality.com/v1/sources`, key as a bearer token | Values you choose at a field you choose | Values you choose |
+
+A tool that cannot set an `Authorization` header can post to `https://events.siteqwality.com/v1/sources/<key>` instead. That URL holds the key, so treat it as a secret.
+
+## Add a source
+
+<Steps>
+
+1. Go to **Manage → Integrations**, click **Open alert sources**, then **Add alert source**.
+
+2. Name it, pick what it **Sends from**, and pick the **Service** its alerts belong to. Leave **Escalation policy** empty to use the service's.
+
+3. Click **Create source**. The key and the setup steps for that tool are shown **once**. Copy them into the tool now.
+
+</Steps>
+
+Only admins, and API keys with `integrations:manage`, can add, change or delete a source. If a key is lost or leaked, **New key** replaces it, and the old key stops working at once.
+
+Through the API, with [`POST /v1/alert-sources`](/api-reference/operations/v1_create_alert_source/):
+
+```bash
+curl -X POST https://api.siteqwality.com/v1/alert-sources \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Production Alertmanager", "service_id": "<service-id>", "format": "alertmanager"}'
+```
+
+The answer carries `key`, `url` and, for every format but `events_v2`, `url_with_key`.
+
+## Sentry
+
+Sentry sends webhooks from an **internal integration**, signed with that integration's Client Secret. The source refuses any webhook whose signature does not match, so it needs the secret before it accepts anything.
+
+<Steps>
+
+1. Add a source that sends from **Sentry** and copy its URL.
+
+2. In Sentry, open **Settings → Custom Integrations** and create an **internal integration**. Set its **Webhook URL** to the source's URL, turn on **Alert Rule Action**, and give it **Read** access to **Issue & Event**.
+
+3. Save it and copy its **Client Secret**. In Site Qwality, click **Signing secret** on the source and paste it.
+
+4. In each Sentry alert rule that should page, add the action **Send a notification via** your integration. Tick the integration's **issue** webhook too if resolving an issue in Sentry should resolve the incident; it also opens an incident for every new issue.
+
+</Steps>
+
+Issue webhooks and issue alerts for the same issue share one incident. User, request, header, cookie and IP fields in Sentry's payload are never stored.
+
+## Any JSON webhook
+
+A `generic_json` source reads each field from a [JSON pointer](https://www.rfc-editor.org/rfc/rfc6901) you set in its **mapping**. `/alert/id` reads `id` inside `alert`. A body holds one event or a JSON list of them.
+
+| Mapping field | Required | What it reads |
+|---|---|---|
+| `dedup_key` | yes | Events with the same value open, update and close one incident. |
+| `summary` | no | The incident title. |
+| `status` | no | What the event does. Left out, every event opens or updates an incident. |
+| `trigger_values` | no | Status values that open an incident. Empty takes `trigger`, `triggered`, `firing`, `alert`, `alerting`, `open`, `problem` and `down`. |
+| `resolve_values` | no | Status values that resolve it. Empty takes `resolve`, `resolved`, `ok`, `recovered`, `closed`, `up`, `normal` and `cleared`. |
+| `acknowledge_values` | no | Status values that acknowledge it. Empty takes `acknowledge`, `acknowledged` and `ack`. |
+| `severity` | no | `critical`, `error`, `warning`, `info` or a common word such as `high` or `low`. |
+| `link` | no | An http(s) link back to the alert. |
+| `signature_header` | no | Where the signature is, once the source has a signing secret. Empty takes `X-Signature`. |
+| `timestamp_header` | no | A header holding the Unix time the body was signed. |
+
+Status values ignore case, and an event with any other status is skipped. Change the mapping with **Mapping** on the source, or [`PATCH /v1/alert-sources/{id}`](/api-reference/operations/v1_edit_alert_source/) with a whole new `mapping`.
+
+### Signed bodies
+
+If your tool signs its webhooks, set the same secret with **Signing secret** on the source (or `signing_secret` in a `PATCH`). From then on each body must carry its HMAC-SHA256, made with that secret, in the signature header, as hex or base64, with or without `sha256=`. GitHub's `X-Hub-Signature-256` is one example. When you also name a `timestamp_header`, the signature covers the timestamp, a dot and the body, and a body signed more than 10 minutes ago is refused. Unsigned or mismatched bodies are answered `401`.
+
+The secret is stored encrypted and never shown again. Remove it (`"signing_secret": null`) and the source takes unsigned bodies again.
+
+## Change events
+
+An Events API v2 source also takes PagerDuty **change events**, such as deploys, at `https://events.siteqwality.com/v2/change/enqueue` with the same key:
+
+```bash
+curl -X POST https://events.siteqwality.com/v2/change/enqueue \
+  -H "Content-Type: application/json" \
+  -d '{"routing_key": "<key>", "payload": {"summary": "Deployed web 1.4.2", "source": "ci"}, "links": [{"href": "https://ci.example.com/runs/142"}]}'
+```
+
+A change shows on the timeline of every incident open on the service, and on incidents that open within the next 2 hours. Only the summary and the first link are kept.
+
+## What is kept
+
+Each event keeps its summary, severity, dedup key, first link and what it did, for 30 days. Open **Events** on a source to see them, or call [`GET /v1/alert-sources/{id}/events`](/api-reference/operations/v1_list_alert_source_events/).
+
+The rest of the body is not stored, unless you turn on **Keep bodies** on the source. For the next 24 hours each event then keeps its body, so you can see what your tool really sends while you set up a mapping. Before a body is stored, credentials are redacted, URLs are cut to their host, and user, request, header, cookie, email and IP fields are removed. A body that was refused, or held no alert, is kept too, with the reason. Only admins can open a body (**Show body** in Events, or [`GET /v1/alert-sources/{id}/events/{event_id}`](/api-reference/operations/v1_get_alert_source_event/)), and bodies are deleted 7 days after they arrive.
+
+## Limits and answers
+
+| Plan | Sources | Events a day (per account) |
+|---|---|---|
+| Free | 1 | 100 |
+| Paid | Unlimited | 10,000 |
+
+A source also takes at most 300 events a minute. The receiver answers:
+
+| Status | Meaning |
+|---|---|
+| `202` | Applied. |
+| `400` | The body or the key was not valid. The answer lists why. |
+| `401` | A signature was missing or did not match. |
+| `413` | The body is over 512 KiB. |
+| `429` | Over a limit. Retry after the `Retry-After` seconds. |
+| `503` | Not applied. Retry; Alertmanager, Grafana, SNS and Events API v2 clients do this on their own. |
+
+A switched-off source, or one whose service is gone, answers `202` and records the event as ignored.

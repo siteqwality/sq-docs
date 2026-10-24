@@ -423,6 +423,7 @@ export default defineConfig({
 						{ label: 'Overview', slug: 'integrations/overview' },
 						{ label: 'AI assistants (MCP)', slug: 'integrations/mcp' },
 						{ label: 'Alert coverage', slug: 'integrations/coverage' },
+						{ label: 'Alert sources', slug: 'integrations/alert-sources' },
 						{ label: 'Slack', slug: 'integrations/slack' },
 						{ label: 'Microsoft Teams', slug: 'integrations/microsoft-teams' },
 						{ label: 'Discord', slug: 'integrations/discord' },
