@@ -19091,7 +19091,7 @@
           "Partner"
         ],
         "summary": "Create a managed client account under the calling partner.",
-        "description": "The client is a perfectly ordinary account with a parent pointer: it has\nits own monitors, its own status pages, its own quotas and its own\nnotification routing, and the partner works in it through the\n`X-SQ-Account` header. Three things make it not-ordinary, all decided here\nrather than inside the shared provisioning seam:\n\n* **No Stripe customer.** The partner is billed on one subscription; a\n  client is never billed directly, so it never gets a customer object to\n  leak or reconcile.\n* **No welcome email.** The contact never asked us for an account. A\n  \"welcome to Site Qwality\" email out of nowhere is the partner's\n  relationship to manage, not ours.\n* **A Stytch organization with no member and no session.** Nobody is\n  signing in yet. The organization exists up front so the partner's later\n  invite has somewhere to land, and the local user row (which the account\n  needs, for `primary_user_id`) carries a NULL `stytch_member_id` until\n  then.",
+        "description": "The client is a perfectly ordinary account with a parent pointer: it has\nits own monitors, its own status pages, its own quotas and its own\nnotification routing, and the partner works in it through the\n`X-SQ-Account` header. Three things make it not-ordinary, all decided here\nrather than inside the shared provisioning seam:\n\n* **No Stripe customer.** The partner is billed on one subscription; a\n  client is never billed directly, so it never gets a customer object to\n  leak or reconcile.\n* **No welcome email.** The contact never asked us for an account. A\n  \"welcome to Site Qwality\" email out of nowhere is the partner's\n  relationship to manage, not ours.\n* **A Stytch organization with no member and no session.** Nobody is\n  signing in yet. The organization exists up front so the partner's later\n  invite has somewhere to land, and the local user row (the client's first\n  Super Admin) carries a NULL `stytch_member_id` until then.",
         "operationId": "create_partner_client",
         "requestBody": {
           "content": {
@@ -32139,6 +32139,82 @@
         ]
       }
     },
+    "/user/{user_id}/contact_method/slack_link": {
+      "post": {
+        "tags": [
+          "User Contact Methods"
+        ],
+        "summary": "Link your Slack account with the token from the link `/oncall` replied with in Slack.",
+        "operationId": "link_slack_account",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "User identifier: the signed-in user",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkSlackAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Already linked: the user's existing Slack DM to this Slack member",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserContactMethodResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Linked: a verified Slack DM that sends with the workspace's Slack integration, and default rules for urgencies the user has none for",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserContactMethodResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The link is invalid (`slack_link_invalid`) or expired (`slack_link_expired`)"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Only the user, signed in to the dashboard, may link their own Slack account"
+          },
+          "404": {
+            "description": "This account has not connected the Slack workspace (`slack_workspace_not_connected`)"
+          },
+          "409": {
+            "description": "The workspace's Slack integration is turned off (`slack_workspace_disabled`), another member of the account already has this Slack account (`slack_member_linked_elsewhere`), or the user has 20 contact methods (`contact_method_limit_reached`)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/user/{user_id}/contact_method/{contact_method_id}": {
       "delete": {
         "tags": [
@@ -32241,7 +32317,7 @@
             }
           },
           "400": {
-            "description": "Invalid details, or a phone number without a country or invalid for its country"
+            "description": "Invalid details, a phone number without a country or invalid for its country, or a changed Slack member on a Slack DM linked from Slack"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -50390,7 +50466,7 @@
           },
           "contact_email": {
             "type": "string",
-            "description": "The client's real contact address. It becomes the child account's\nprimary user and the address its default notification group alerts, so\nan outage on the client's site reaches the client rather than the\npartner.\n\nMust be distinct across the partner's client accounts. See\n`Database::partner_client_account_id_by_contact_email` for why that is\na pricing rule and not a data-hygiene preference."
+            "description": "The client's real contact address. It becomes the child account's first\nSuper Admin and the address its default notification group alerts, so\nan outage on the client's site reaches the client rather than the\npartner.\n\nMust be distinct across the partner's client accounts. See\n`Database::partner_client_account_id_by_contact_email` for why that is\na pricing rule and not a data-hygiene preference."
           },
           "contact_name": {
             "type": [
@@ -52310,7 +52386,7 @@
           },
           "fallback": {
             "type": "boolean",
-            "description": "An email sent to the account owner because the SMS was blocked."
+            "description": "An email sent to a Super Admin because the SMS was blocked."
           },
           "is_test": {
             "type": "boolean",
@@ -57322,6 +57398,19 @@
           "move": {
             "type": "boolean",
             "description": "Move monitors that belong to another service instead of answering 409."
+          }
+        }
+      },
+      "LinkSlackAccountRequest": {
+        "type": "object",
+        "description": "Link a Slack account with the token from a `/oncall` link.",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "The `token` query parameter of the \"Link your Slack account\" link."
           }
         }
       },
@@ -63045,7 +63134,7 @@
               "string",
               "null"
             ],
-            "description": "Nullable because `accounts.primary_user_id` carries no foreign key; see\n`DbPartnerChildAccount::contact_email`."
+            "description": "The client's longest-standing Super Admin's address. Nullable; see\n`DbPartnerChildAccount::contact_email`."
           },
           "created_at": {
             "type": "string",
@@ -72113,7 +72202,7 @@
         "properties": {
           "eligible": {
             "type": "boolean",
-            "description": "The caller is the account owner and the account is at most 14 days old."
+            "description": "The caller created the account and the account is at most 14 days old."
           },
           "has_first_touch": {
             "type": "boolean",
@@ -80273,6 +80362,21 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "integration_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "A Slack DM linked from `/oncall` sends through this Slack integration; no token is stored."
+          },
+          "linked_via": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The linked Slack integration's name, while it is connected."
           }
         }
       },
