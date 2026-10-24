@@ -33102,7 +33102,7 @@
             }
           },
           "422": {
-            "description": "Invalid name",
+            "description": "Invalid name, mapping or signing secret",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -33113,6 +33113,16 @@
           },
           "429": {
             "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The signing secret could not be sealed; nothing changed, try again",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -33168,7 +33178,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Events from the last 30 days, newest first. Payloads are not kept",
+            "description": "Events from the last 30 days, newest first. Bodies are kept only while debug capture is on; `has_body` marks them",
             "content": {
               "application/json": {
                 "schema": {
@@ -33209,6 +33219,92 @@
           },
           "404": {
             "description": "No such source in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/alert-sources/{alert_source_id}/events/{event_id}": {
+      "get": {
+        "tags": [
+          "Alert Sources"
+        ],
+        "summary": "Get an alert source event with its captured body.",
+        "operationId": "v1_get_alert_source_event",
+        "parameters": [
+          {
+            "name": "alert_source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The event, with the redacted body debug capture kept (kept 7 days)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboundEventWithBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admins and keys with integrations:manage only",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event on this source",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -41973,6 +42069,7 @@
           "name",
           "format",
           "key_prefix",
+          "signing_secret_set",
           "created_at"
         ],
         "properties": {
@@ -42017,6 +42114,18 @@
                 "description": "Where a `generic_json` source finds each field."
               }
             ]
+          },
+          "signing_secret_set": {
+            "type": "boolean",
+            "description": "Whether a signing secret is set (`sentry` and `generic_json`). The secret itself is never returned."
+          },
+          "debug_capture_until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "While set, each event keeps its body, redacted, for debugging. Ends 24 hours after it was turned on."
           },
           "disabled_at": {
             "type": [
@@ -44806,7 +44915,7 @@
               "string",
               "null"
             ],
-            "description": "`events_v2` (PagerDuty Events v2, the default), `alertmanager`, `grafana`, `cloudwatch_sns` (CloudWatch alarms\nthrough an SNS topic), `datadog` or `generic_json`."
+            "description": "`events_v2` (PagerDuty Events v2, the default), `alertmanager`, `grafana`, `cloudwatch_sns` (CloudWatch alarms\nthrough an SNS topic), `datadog`, `generic_json` or `sentry` (a Sentry internal integration)."
           },
           "mapping": {
             "oneOf": [
@@ -49868,6 +49977,20 @@
               "null"
             ],
             "description": "An http(s) link back to the alert."
+          },
+          "signature_header": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "With a signing secret set: the header holding the body's HMAC-SHA256, in hex or base64, with or without\n`sha256=`. Left out, `X-Signature`."
+          },
+          "timestamp_header": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "With a signing secret set: a header holding the Unix time the sender signed at. When named, the signature\ncovers `<timestamp>.<body>` and must be under 10 minutes old."
           }
         },
         "additionalProperties": false
@@ -50861,6 +50984,7 @@
           "dedup_key",
           "action",
           "outcome",
+          "has_body",
           "received_at"
         ],
         "properties": {
@@ -50873,7 +50997,7 @@
           },
           "action": {
             "type": "string",
-            "description": "`trigger`, `acknowledge`, `resolve` or `change`."
+            "description": "`trigger`, `acknowledge`, `resolve` or `change`; while debug capture is on, also `invalid` (a refused body)\nand `none` (a body with no alert in it)."
           },
           "summary": {
             "type": [
@@ -50903,13 +51027,33 @@
           },
           "outcome": {
             "type": "string",
-            "description": "`opened`, `reopened`, `appended`, `acknowledged`, `resolved` or `ignored`; for a change, `noted` (added to the\nservice's open incidents), `recorded` (none was open) or `ignored`."
+            "description": "`opened`, `reopened`, `appended`, `acknowledged`, `resolved` or `ignored`; for a change, `noted` (added to the\nservice's open incidents), `recorded` (none was open) or `ignored`; `rejected` for an invalid body."
+          },
+          "has_body": {
+            "type": "boolean",
+            "description": "Whether debug capture kept the body; read it from the event."
           },
           "received_at": {
             "type": "string",
             "format": "date-time"
           }
         }
+      },
+      "InboundEventWithBody": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/InboundEvent"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "body": {
+                "description": "Credentials and user, request, header, cookie, email and IP fields removed; `null` when none was kept."
+              }
+            }
+          }
+        ],
+        "description": "One event with the body debug capture kept, redacted."
       },
       "IncidentChange": {
         "type": "object",
@@ -55971,6 +56115,7 @@
                 "name",
                 "format",
                 "key_prefix",
+                "signing_secret_set",
                 "created_at"
               ],
               "properties": {
@@ -56015,6 +56160,18 @@
                       "description": "Where a `generic_json` source finds each field."
                     }
                   ]
+                },
+                "signing_secret_set": {
+                  "type": "boolean",
+                  "description": "Whether a signing secret is set (`sentry` and `generic_json`). The secret itself is never returned."
+                },
+                "debug_capture_until": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "While set, each event keeps its body, redacted, for debugging. Ends 24 hours after it was turned on."
                 },
                 "disabled_at": {
                   "type": [
@@ -57209,6 +57366,7 @@
                 "dedup_key",
                 "action",
                 "outcome",
+                "has_body",
                 "received_at"
               ],
               "properties": {
@@ -57221,7 +57379,7 @@
                 },
                 "action": {
                   "type": "string",
-                  "description": "`trigger`, `acknowledge`, `resolve` or `change`."
+                  "description": "`trigger`, `acknowledge`, `resolve` or `change`; while debug capture is on, also `invalid` (a refused body)\nand `none` (a body with no alert in it)."
                 },
                 "summary": {
                   "type": [
@@ -57251,7 +57409,11 @@
                 },
                 "outcome": {
                   "type": "string",
-                  "description": "`opened`, `reopened`, `appended`, `acknowledged`, `resolved` or `ignored`; for a change, `noted` (added to the\nservice's open incidents), `recorded` (none was open) or `ignored`."
+                  "description": "`opened`, `reopened`, `appended`, `acknowledged`, `resolved` or `ignored`; for a change, `noted` (added to the\nservice's open incidents), `recorded` (none was open) or `ignored`; `rejected` for an invalid body."
+                },
+                "has_body": {
+                  "type": "boolean",
+                  "description": "Whether debug capture kept the body; read it from the event."
                 },
                 "received_at": {
                   "type": "string",
@@ -73189,6 +73351,20 @@
                 "description": "Replaces a `generic_json` source's mapping."
               }
             ]
+          },
+          "signing_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The secret the sender signs bodies with: Sentry's Client Secret, or a generic JSON sender's own. Never\nreturned. `null` removes it from a `generic_json` source, which then takes unsigned bodies again."
+          },
+          "debug_capture": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`true` keeps each event's body, redacted, for the next 24 hours; `false` stops now."
           }
         }
       },
