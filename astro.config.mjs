@@ -32,7 +32,11 @@ export default defineConfig({
 			favicon: '/favicon.svg',
 			routeMiddleware: './src/routeData.ts',
 			customCss: ['./src/styles/atlas.css'],
-			components: { SocialIcons: './src/components/HeaderLinks.astro' },
+			components: {
+				SocialIcons: './src/components/HeaderLinks.astro',
+				Head: './src/components/Head.astro',
+				Footer: './src/components/Footer.astro',
+			},
 			head: [
 				{
 					tag: 'meta',

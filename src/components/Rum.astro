@@ -1,0 +1,122 @@
+---
+// Site Qwality RUM on the docs (our own "docs.siteqwality.com" application), under the consent
+// recorded on siteqwality.com: landingpage assets/inc/header.php sq_consent_state. No banner here.
+---
+
+<script is:inline>
+	(function () {
+		var w = window, d = document;
+		if (location.hostname !== 'docs.siteqwality.com') return;
+
+		// SQ_CONSENT_POLICY_VERSION in landingpage header.php: change both together.
+		var PV = '2026-10-23';
+		// Time zones outside Europe/ that are in the EEA or the UK (landingpage consent.js).
+		var GATED = ['Asia/Nicosia', 'Asia/Famagusta', 'Atlantic/Reykjavik', 'Atlantic/Canary', 'Atlantic/Madeira',
+			'Atlantic/Azores', 'Atlantic/Faroe', 'Arctic/Longyearbyen', 'Indian/Mayotte', 'Indian/Reunion',
+			'America/Guadeloupe', 'America/Martinique', 'America/Cayenne', 'America/Marigot', 'America/St_Barthelemy'];
+
+		function cookie(name) {
+			var m = new RegExp('(?:^|;\\s*)' + name + '=([^;]*)').exec(d.cookie || '');
+			return m ? m[1] : '';
+		}
+
+		// A refusal always wins; a grant counts from the current policy version or outside the
+		// gated region; with no record, only outside it.
+		function consent() {
+			var off = { analytics: false, replay: false };
+			var dnt = navigator.doNotTrack || w.doNotTrack;
+			if (navigator.globalPrivacyControl === true || dnt === '1' || dnt === 'yes') return off;
+			var zone = '';
+			try { zone = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { zone = ''; }
+			var row = !!zone && zone.indexOf('Europe/') !== 0 && GATED.indexOf(zone) < 0;
+			var rec = null;
+			try { rec = JSON.parse(decodeURIComponent(cookie('sq_consent')) || 'null'); } catch (e) { rec = null; }
+			if (rec && rec.v === 1) {
+				var a = !!rec.analytics;
+				var all = !rec.analytics && !rec.ads && !rec.replay;
+				return rec.pv === PV || row || all ? { analytics: a, replay: a && !!rec.replay } : off;
+			}
+			return row ? { analytics: true, replay: true } : off;
+		}
+
+		var c = consent();
+		if (!c.analytics) {
+			// What the SDK stores about a visit (sdk/rum session.ts clear()).
+			if (cookie('_sq_s')) d.cookie = '_sq_s=; path=/; max-age=0; SameSite=Lax; Secure';
+			['localStorage', 'sessionStorage'].forEach(function (kind) {
+				try {
+					['_sq_s', '_sq_aid', '_sq_w', '_sq_bgt', '_sq_bgr', '_sq_act', '_sq_rcap', '_sq_cb']
+						.forEach(function (k) { w[kind].removeItem(k); });
+				} catch (e) { /* storage blocked */ }
+			});
+			return;
+		}
+
+		var r = w.SiteQwalityRUM = { _q: [] };
+		['init', 'setUser', 'clearUser', 'setGlobalAttribute', 'removeGlobalAttribute', 'addError', 'addAction',
+			'setView', 'setTrackingConsent', 'optOut', 'optIn', 'isOptedOut', 'startReplay', 'stopReplay',
+			'getSessionUrl', 'getStatus'].forEach(function (m) { r[m] = function () { r._q.push([m, arguments]); }; });
+		r._h = function (e) { r._q.push(['_e', [e]]); };
+		w.addEventListener('error', r._h);
+		w.addEventListener('unhandledrejection', r._h);
+		var s = d.createElement('script');
+		s.async = 1;
+		s.src = 'https://cdn.siteqwality.com/rum/v2/sdk.min.js';
+		(d.head || d.documentElement).appendChild(s);
+		r.init({ applicationId: '372c6a49-46da-4907-b324-c0229cfa1a44', clientToken: 'ct_a73e9931ad3b4c84af0a6029be546a28',
+			service: 'docs', env: 'production', trackingConsent: 'granted' });
+		if (!c.replay) r.stopReplay();
+
+		// First touch for a visitor whose first page is the docs: the same sq_ft cookie and
+		// classification as landingpage assets/js/attribution.js, read by the dashboard at signup.
+		if (!cookie('sq_ft')) {
+			var clean = function (v, cap) {
+				return String(v || '').toLowerCase().replace(/[^a-z0-9._:\/ +-]/g, '').replace(/\s+/g, '_').slice(0, cap);
+			};
+			var lookup = function (table, host) {
+				for (var i = 0; i < table.length; i++) if (table[i][0].test(host)) return [table[i][1]];
+				return null;
+			};
+			var AI = [[/^(chatgpt\.com|chat\.openai\.com)$/, 'chatgpt'], [/^(www\.)?perplexity\.ai$/, 'perplexity'],
+				[/^claude\.ai$/, 'claude'], [/^gemini\.google\.com$/, 'gemini'], [/^copilot\.microsoft\.com$/, 'copilot'],
+				[/^(www\.)?(grok\.com|x\.ai)$/, 'grok'], [/^(www\.)?(you\.com|phind\.com|poe\.com|meta\.ai|deepseek\.com)$/, null],
+				[/^chat\.mistral\.ai$/, 'mistral']];
+			var SEARCH = [[/(^|\.)google\.[a-z.]+$/, 'google'], [/(^|\.)bing\.com$/, 'bing'], [/(^|\.)duckduckgo\.com$/, 'duckduckgo'],
+				[/(^|\.)search\.brave\.com$/, 'brave'], [/(^|\.)ecosia\.org$/, 'ecosia'], [/(^|\.)yahoo\.com$/, 'yahoo'],
+				[/(^|\.)kagi\.com$/, 'kagi'], [/(^|\.)startpage\.com$/, 'startpage'], [/(^|\.)baidu\.com$/, 'baidu'],
+				[/(^|\.)yandex\.[a-z.]+$/, 'yandex']];
+			var SOCIAL = [[/(^|\.)(linkedin\.com|lnkd\.in)$/, 'linkedin'], [/^(t\.co|(www\.)?(x|twitter)\.com)$/, 'x'],
+				[/(^|\.)facebook\.com$/, 'facebook'], [/(^|\.)youtube\.com$/, 'youtube']];
+			try {
+				var q = new URLSearchParams(location.search);
+				var ref = '';
+				try { ref = new URL(d.referrer).hostname.toLowerCase().replace(/^www\./, ''); } catch (e) { ref = ''; }
+				var own = /(^|\.)siteqwality\.(com|de|it)$/.test(ref);
+				var src = clean(q.get('utm_source'), 64), med = clean(q.get('utm_medium'), 64), hit;
+				if (src) {
+					src = src.replace(/\.(com|ai)$/, '');
+					if (!med) med = lookup(AI, ref) || /^(chatgpt|perplexity|claude|gemini|copilot|grok)$/.test(src) ? 'ai_assistant' : 'campaign';
+				} else if (q.get('gclid')) { src = 'google'; med = 'cpc'; }
+				else if (own) { src = ''; }
+				else if (!ref) { src = 'direct'; med = 'none'; }
+				else if ((hit = lookup(AI, ref))) { src = hit[0] || clean(ref.split('.')[0], 64); med = 'ai_assistant'; }
+				else if ((hit = lookup(SEARCH, ref))) { src = hit[0]; med = 'organic'; }
+				else if ((hit = lookup(SOCIAL, ref))) { src = hit[0]; med = 'social'; }
+				else { src = clean(ref, 64); med = 'referral'; }
+				if (src) {
+					var touch = { s: src, m: med, c: clean(q.get('utm_campaign'), 64) || undefined, r: ref && !own ? clean(ref, 100) : undefined,
+						h: location.hostname, p: (location.pathname || '/').slice(0, 160), t: Math.floor(Date.now() / 1000) };
+					var v = btoa(JSON.stringify(touch).replace(/[^\x20-\x7e]/g, '')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+					d.cookie = 'sq_ft=' + v + '; path=/; domain=.siteqwality.com; max-age=7776000; SameSite=Lax; Secure';
+				}
+			} catch (e) { /* no first touch */ }
+		}
+
+		// Send the docs page path to the dashboard, so its RUM shows which page a signup came from.
+		var tag = function () {
+			var links = d.querySelectorAll('a[href^="https://app.siteqwality.com"]');
+			for (var i = 0; i < links.length; i++) links[i].referrerPolicy = 'no-referrer-when-downgrade';
+		};
+		if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', tag); else tag();
+	})();
+</script>

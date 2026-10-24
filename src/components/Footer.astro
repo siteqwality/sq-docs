@@ -1,0 +1,27 @@
+---
+// Starlight's footer plus the way to change the analytics choice, which lives on siteqwality.com.
+import Default from '@astrojs/starlight/components/Footer.astro';
+---
+
+<Default />
+<p class="sq-footer-legal">
+	<a href="https://siteqwality.com/privacy-policy/">Privacy</a>
+	<a href="https://siteqwality.com/cookie-policy/#cookie-preferences">Cookie preferences</a>
+</p>
+
+<style>
+	.sq-footer-legal {
+		display: flex;
+		gap: 1.25rem;
+		justify-content: center;
+		margin-top: 2rem;
+		font-size: var(--sl-text-xs);
+	}
+	.sq-footer-legal a {
+		color: var(--sl-color-gray-3);
+		text-decoration: none;
+	}
+	.sq-footer-legal a:hover {
+		color: var(--sl-color-white);
+	}
+</style>
