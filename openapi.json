@@ -74468,7 +74468,8 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "Not used: a resolve goes to every channel told the episode fired."
           },
           "warning": {
             "type": "array",
