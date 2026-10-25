@@ -65,5 +65,7 @@
   { "page": "uptime-monitoring/cron-checks/how-to/grace-period.mdx", "text": "Site Qwality checks every heartbeat against its due time once a minute, so a missed run alerts within about a minute of it.", "needs": ["heartbeat.minute_check"] },
   { "page": "uptime-monitoring/cron-checks/reference.mdx", "text": "Every check is compared with that deadline once a minute, so the alert follows within about a minute of it.", "needs": ["heartbeat.minute_check"] },
   { "page": "uptime-monitoring/cron-checks/reference.mdx", "text": "Changing `check_interval_seconds` or `grace_seconds` applies from the last ping at once", "needs": ["heartbeat.window_change"] },
-  { "page": "uptime-monitoring/cron-checks/reference.mdx", "text": "Resuming a paused check starts the wait over from the resume.", "needs": ["heartbeat.window_change"] }
+  { "page": "uptime-monitoring/cron-checks/reference.mdx", "text": "Resuming a paused check starts the wait over from the resume.", "needs": ["heartbeat.window_change"] },
+  { "page": "observability/alerts.mdx", "text": "**Resolved** notifications go to every channel that was told the instance fired, and to no other.", "needs": ["telemetry.rule_notifications"] },
+  { "page": "observability/alerts.mdx", "text": "**Webhook and Pushover** channels are skipped, with a `source_not_supported` receipt.", "needs": ["telemetry.rule_notifications"] }
 ]

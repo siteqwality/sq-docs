@@ -12,11 +12,12 @@ Not every alert source reaches every channel type. A channel of a type the sourc
 
 | Alert source | Reaches | Skipped |
 |---|---|---|
-| HTTP monitors, browser checks, domain expiry, log/metric/trace alert rules and RUM issues | All 13 channel types | None |
+| HTTP monitors, browser checks, domain expiry and RUM issues | All 13 channel types | None |
 | Heartbeat (cron) monitors | Email, SMS, Slack, Webhook, Telegram, PagerDuty | Discord, Microsoft Teams, Opsgenie, Google Chat, Mattermost, Pushover, Pushbullet |
 | TLS certificate alerts | Email, SMS, Slack, Webhook, Telegram, Discord, Microsoft Teams, PagerDuty, Opsgenie | Google Chat, Mattermost, Pushover, Pushbullet |
 | Page speed | Email, SMS, Slack, Webhook, Telegram, Discord, Microsoft Teams | PagerDuty, Opsgenie, Google Chat, Mattermost, Pushover, Pushbullet |
 | DNS record changes | Email, Webhook, PagerDuty | SMS, Slack, Telegram, Discord, Microsoft Teams, Opsgenie, Google Chat, Mattermost, Pushover, Pushbullet |
+| Log/metric/trace/SLO alert rules | Email, SMS, Slack, Telegram, Discord, Microsoft Teams, PagerDuty, Opsgenie, Google Chat, Mattermost, Pushbullet | Webhook, Pushover |
 
 ## By channel type
 
@@ -28,57 +29,57 @@ Every monitor and rule alert reaches Email channels.
 
 ### SMS
 
-Reached by HTTP monitors, browser checks, heartbeat (cron) monitors, TLS certificate alerts, domain expiry, page speed, log/metric/trace alert rules and RUM issues. Skipped for DNS record changes (`dns_record_channel_unsupported`).
+Reached by HTTP monitors, browser checks, heartbeat (cron) monitors, TLS certificate alerts, domain expiry, page speed, log/metric/trace/SLO alert rules and RUM issues. Skipped for DNS record changes (`dns_record_channel_unsupported`).
 
 ### Slack
 
-Reached by HTTP monitors, browser checks, heartbeat (cron) monitors, TLS certificate alerts, domain expiry, page speed, log/metric/trace alert rules and RUM issues. Skipped for DNS record changes (`dns_record_channel_unsupported`).
+Reached by HTTP monitors, browser checks, heartbeat (cron) monitors, TLS certificate alerts, domain expiry, page speed, log/metric/trace/SLO alert rules and RUM issues. Skipped for DNS record changes (`dns_record_channel_unsupported`).
 
 ### Webhook
 
-Every monitor and rule alert reaches Webhook channels.
+Reached by HTTP monitors, browser checks, heartbeat (cron) monitors, TLS certificate alerts, domain expiry, page speed, DNS record changes and RUM issues. Skipped for log/metric/trace/SLO alert rules (`source_not_supported`).
 
 ### Telegram
 
-Reached by HTTP monitors, browser checks, heartbeat (cron) monitors, TLS certificate alerts, domain expiry, page speed, log/metric/trace alert rules and RUM issues. Skipped for DNS record changes (`dns_record_channel_unsupported`).
+Reached by HTTP monitors, browser checks, heartbeat (cron) monitors, TLS certificate alerts, domain expiry, page speed, log/metric/trace/SLO alert rules and RUM issues. Skipped for DNS record changes (`dns_record_channel_unsupported`).
 
 ### Discord
 
-Reached by HTTP monitors, browser checks, TLS certificate alerts, domain expiry, page speed, log/metric/trace alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
+Reached by HTTP monitors, browser checks, TLS certificate alerts, domain expiry, page speed, log/metric/trace/SLO alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
 
 ### Microsoft Teams
 
-Reached by HTTP monitors, browser checks, TLS certificate alerts, domain expiry, page speed, log/metric/trace alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
+Reached by HTTP monitors, browser checks, TLS certificate alerts, domain expiry, page speed, log/metric/trace/SLO alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
 
 ### PagerDuty
 
-Reached by HTTP monitors, browser checks, heartbeat (cron) monitors, TLS certificate alerts, domain expiry, DNS record changes, log/metric/trace alert rules and RUM issues. Skipped for page speed (`page_speed_channel_unsupported`).
+Reached by HTTP monitors, browser checks, heartbeat (cron) monitors, TLS certificate alerts, domain expiry, DNS record changes, log/metric/trace/SLO alert rules and RUM issues. Skipped for page speed (`page_speed_channel_unsupported`).
 
 ### Opsgenie
 
-Reached by HTTP monitors, browser checks, TLS certificate alerts, domain expiry, log/metric/trace alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`), page speed (`page_speed_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
+Reached by HTTP monitors, browser checks, TLS certificate alerts, domain expiry, log/metric/trace/SLO alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`), page speed (`page_speed_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
 
 ### Google Chat
 
-Reached by HTTP monitors, browser checks, domain expiry, log/metric/trace alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`), TLS certificate alerts (`tls_channel_unsupported`), page speed (`page_speed_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
+Reached by HTTP monitors, browser checks, domain expiry, log/metric/trace/SLO alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`), TLS certificate alerts (`tls_channel_unsupported`), page speed (`page_speed_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
 
 ### Mattermost
 
-Reached by HTTP monitors, browser checks, domain expiry, log/metric/trace alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`), TLS certificate alerts (`tls_channel_unsupported`), page speed (`page_speed_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
+Reached by HTTP monitors, browser checks, domain expiry, log/metric/trace/SLO alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`), TLS certificate alerts (`tls_channel_unsupported`), page speed (`page_speed_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
 
 ### Pushover
 
-Reached by HTTP monitors, browser checks, domain expiry, log/metric/trace alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`), TLS certificate alerts (`tls_channel_unsupported`), page speed (`page_speed_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
+Reached by HTTP monitors, browser checks, domain expiry and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`), TLS certificate alerts (`tls_channel_unsupported`), page speed (`page_speed_channel_unsupported`), DNS record changes (`dns_record_channel_unsupported`) and log/metric/trace/SLO alert rules (`source_not_supported`).
 
 ### Pushbullet
 
-Reached by HTTP monitors, browser checks, domain expiry, log/metric/trace alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`), TLS certificate alerts (`tls_channel_unsupported`), page speed (`page_speed_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
+Reached by HTTP monitors, browser checks, domain expiry, log/metric/trace/SLO alert rules and RUM issues. Skipped for heartbeat (cron) monitors (`heartbeat_channel_unsupported`), TLS certificate alerts (`tls_channel_unsupported`), page speed (`page_speed_channel_unsupported`) and DNS record changes (`dns_record_channel_unsupported`).
 
 ## Incidents, escalation and status pages
 
 Incidents do not use notification channels.
 
-Escalation steps page responders through their [contact methods](/incident-management/notifications/overview/): email, SMS or a Slack DM, linked from Slack through the Slack integration or with a bot token you paste in. Phone call contact methods are never used: each page to one is recorded as skipped with `phone_call_not_delivered`.
+Escalation steps page responders through their [contact methods](/incident-management/notifications/overview/): email, SMS or a Slack DM with a bot token you paste in. Phone call contact methods are never used: each page to one is recorded as skipped with `phone_call_not_delivered`.
 
 A service broadcasts its incidents to its own targets: a Slack channel with a bot token you paste in, a webhook URL or email.
 

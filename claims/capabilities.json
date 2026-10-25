@@ -516,5 +516,10 @@
     "summary": "Invalid certificate alerts: uptime checks and the daily TLS check judge the certificate, two invalid judgments in a row alert and a valid one recovers, without changing the monitor's status, uptime, status pages or incidents",
     "api": ["POST /http/job", "PUT /http/job/{job_id}", "GET /tls/job/{tls_job_id}"],
     "source": "core-rs cron-executor/src/tls_certificate.rs"
+  },
+  "telemetry.rule_notifications": {
+    "status": "live",
+    "summary": "Telemetry alert rules and SLOs notify routed groups through the outbox; resolves go only to channels told the episode fired; Webhook and Pushover are skipped",
+    "source": "core-rs common/src/db/telemetry_alerts_dispatch.rs"
   }
 }

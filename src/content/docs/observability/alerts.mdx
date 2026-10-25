@@ -1,11 +1,11 @@
 ---
 title: Telemetry alerts and SLOs
 description: Configure typed evaluation, preview state transitions and see rule state in the app.
-last_verified: 2026-10-18
+last_verified: 2026-10-25
 owner: jj
 ---
 
-Telemetry alert rules and SLOs evaluate in the app, with instances, state history and SLO summaries, but they do not send notifications yet: a firing rule sends no email, webhook or on-call page and opens no incident or status-page update. Use uptime monitoring and its notifications for production paging.
+Telemetry alert rules and SLOs evaluate in the app, with instances, state history and SLO summaries, and notify the notification groups you route each state to. They do not open incidents or post status-page updates.
 
 ## Threshold rules
 
@@ -19,7 +19,21 @@ States distinguish healthy, pending, warning/firing, no data and evaluation erro
 
 Choose a ratio SLI (good and total with compatible units) or a distribution SLI (query/output, latency threshold and unit), target and period. A distribution SLO needs actual distributions; a percentile scalar is not a count of good events. The standard paired burn windows include long and short windows; configure both so a short spike alone does not imply sustained burn.
 
-Pause stops evaluation and mute changes notification eligibility. Edits are revision-aware: after a conflict, refresh instead of overwriting the other change. A shared rule cannot expose broader samples than its creator could read.
+Edits are revision-aware: after a conflict, refresh instead of overwriting the other change. A shared rule cannot expose broader samples than its creator could read.
+
+## Notifications
+
+A rule routes four states to [notification groups](/incident-management/notifications/overview/): firing, warning, no data and rule error. When an instance enters one of them, every channel in the groups routed for that state gets a notification with the rule, its query, the value against the threshold, the instance's group values and the runbook link.
+
+- **Resolved** notifications go to every channel that was told the instance fired, and to no other.
+- **Reminders** repeat the notification at the interval you set while an instance stays firing, warning or in no data.
+- **Cooldown** is the shortest gap between two notifications for one instance. A resolve, and a warning that escalates to firing, still go out inside it.
+- **Late data** that corrects past minutes updates the history and sends nothing.
+- **Mute** stops notifications for the rule or one instance until the time you pick, and drops any not sent yet. The rule keeps evaluating. **Pause** stops evaluation.
+- **Maintenance windows** that match the rule's tags or service hold its notifications until the window ends, then send them if the instance is still firing. A resolve inside the window drops both. See [maintenance windows](/incident-management/maintenance/overview/).
+- **Webhook and Pushover** channels are skipped, with a `source_not_supported` receipt. See [alert coverage](/integrations/coverage/).
+
+The rule's History tab shows what happened to each transition in its Delivery column, such as Sent, Held, Failed or Skipped.
 
 | Endpoint family | Operations |
 |---|---|
@@ -32,4 +46,4 @@ Pause stops evaluation and mute changes notification eligibility. Edits are revi
 | `/slos/{id}/history`, `/summary` | GET SLO history and summary. |
 | `/slos/{id}/pause`, `/resume`, `/mute` | Evaluation and mute actions. |
 
-Use the editor or the generated API schemas for complete rule bodies and expected revisions. Notification groups and incident settings on a rule are saved but not used for delivery yet.
+Use the editor or the generated API schemas for complete rule bodies and expected revisions.
