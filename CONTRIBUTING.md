@@ -225,4 +225,4 @@ touch these:
 
 ## Deployment
 
-Pushing to `main` triggers a Netlify build (~1-2 min). The site lives at [docs.siteqwality.com](https://docs.siteqwality.com).
+Pushing to `main` deploys to GitHub Pages (`.github/workflows/pages.yml`). The site lives at [docs.siteqwality.com](https://docs.siteqwality.com).

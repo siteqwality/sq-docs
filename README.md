@@ -18,7 +18,6 @@ src/
 └── assets/                    # Images, logos, OG cards.
 public/                        # Static files served as-is.
 astro.config.mjs               # Starlight config + sidebar.
-netlify.toml                   # Build settings for Netlify.
 openapi.json                   # (Phase 2) auto-synced from core-rs.
 ```
 
@@ -56,7 +55,7 @@ owner: jj
 
 ## Deployment
 
-Pushed commits to `main` trigger a Netlify build automatically.
+Pushing to `main` runs `.github/workflows/pages.yml`, which builds the site and deploys it to GitHub Pages.
 
 ## Background
 

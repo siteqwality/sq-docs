@@ -14,7 +14,7 @@ import { LANGUAGES, PLATFORMS } from './src/data/telemetry-guides.ts';
 export default defineConfig({
 	site: 'https://docs.siteqwality.com',
 	markdown: { rehypePlugins: [rehypeTableWrap] },
-	// Retired page; netlify.toml serves the same redirect as a 301.
+	// Retired page.
 	redirects: {
 		'/sdk/reference': '/sdk/v2/',
 	},
