@@ -149,8 +149,8 @@ The Slack, email and webhook targets deliver every lifecycle event: **opened**, 
 | Acknowledged | `incident_acknowledged` | Acknowledged by Ana Diaz | `incident.acknowledged` |
 | Update posted | `incident_updated` | Update posted by Ana Diaz, then the update's text | `incident.updated` |
 | Severity changed | `incident_updated` | Severity changed from minor to major | `incident.updated` |
-| Title changed | `incident_updated` | Title changed (the message shows the new title) | `incident.updated` |
-| Resolved | `incident_resolved` | The incident, with status resolved | `incident.resolved` |
+| Title changed | `incident_updated` | Title changed from Checkout errors (the message shows the new title) | `incident.updated` |
+| Resolved | `incident_resolved` | The incident, with status resolved, then the note posted with the resolve if it is public | `incident.resolved` |
 | Reopened | `incident_reopened` | Reopened, then the reopen update's text if there is one | `incident.reopened` |
 | Merged | `incident_merged` | Merged into Payments API errors | `incident.merged` |
 | Service changed | `incident_service_changed` | Moved from service Checkout to service Payments | `incident.service_changed` |
@@ -167,7 +167,7 @@ Status: acknowledged       Monitors: None
 Open the incident in Site Qwality to acknowledge or resolve it.
 ```
 
-Opened and resolved messages look as they always have.
+Opened messages look as they always have. Resolved messages do too, except that a public note posted with the resolve is quoted under the title. Resolved webhooks still carry only the seven fields, with no note.
 
 In the dashboard, open the service from **Manage → Services** and click **+ Add Target** under **Notification Targets**. Through the API, see the [reference](/incident-management/services/reference/#broadcast-targets).
 
