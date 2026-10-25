@@ -1,7 +1,7 @@
 ---
 title: Webhook integrations
 description: Send a signed JSON POST to your own URL for monitor, alert and RUM events, with retries and a delivery log.
-last_verified: 2026-10-23
+last_verified: 2026-10-24
 owner: jj
 ---
 
@@ -41,7 +41,7 @@ The URL reads back as its scheme and host only, even in the create response.
 
 ## Change the URL, authentication and headers
 
-Open the webhook integration from **Manage → Integrations**. The **Endpoint** card shows the URL, the authentication and the custom header names, and **Change** replaces each one. Through the API, `PATCH /v1/integrations/{id}` with `integrations:manage`:
+Open the webhook integration from **Manage → Integrations** and go to its **Settings** tab. The **Endpoint** section shows the name, the URL, the authentication and the custom header names, and **Change** replaces each one. Through the API, `PATCH /v1/integrations/{id}` with `integrations:manage`:
 
 ```bash
 curl -X PATCH https://api.siteqwality.com/v1/integrations/<webhook-integration-id> \
@@ -259,7 +259,7 @@ Every delivery still carries the signature scheme from before Standard Webhooks.
 
 ### Rotate the secret
 
-Open the webhook integration from **Manage → Integrations**, choose **Rotate secret** and pick how long the old secret keeps working. Or call the API as an account admin, or with an API key or API client that has `integrations:manage`:
+Open the webhook integration from **Manage → Integrations**, go to its **Settings** tab, choose **Rotate secret** and pick how long the old secret keeps working. Or call the API as an account admin, or with an API key or API client that has `integrations:manage`:
 
 ```bash
 curl -X POST https://api.siteqwality.com/v1/integrations/<webhook-integration-id>/signing-secret/rotate \
@@ -294,7 +294,7 @@ In the monitor's alert history, the alert's receipt reads `delayed` while retrie
 
 ## Delivery log and replay
 
-Open the webhook integration from **Manage → Integrations** to see every delivery to the endpoint and, while one is still retrying, when it tries next. Deliveries are kept for 30 days. An account admin can open a delivery to see each attempt and to replay it.
+Click the webhook integration's card in **Manage → Integrations**, or its **Deliveries** button, to open its page. The **Deliveries** tab shows the share delivered over the last 24 hours and 5 days, then every delivery to the endpoint, which you can narrow to **Failed**, **Delivered** or **Retrying**. A delivery still retrying shows when it tries next. Deliveries are kept for 30 days. An account admin can open a delivery to see each attempt and to replay it.
 
 Each attempt records your server's status code, how long it took, and the first 8 KiB of the response body (only its size when it is not UTF-8 text). A failed attempt also records where it stopped in `error_stage`: `dns` (the host name did not resolve), `connect` (no connection), `tls` (the handshake failed), `timeout` or `http` (your server answered with something other than a 2xx, or the connection broke mid-request). Response headers keep their names; only `Content-Type`, `Content-Length`, `Date`, `Retry-After` and `Server` keep their values, and `Location` keeps only its host.
 
@@ -310,17 +310,17 @@ A replay is a new delivery with its own timestamp and a signature under the curr
 
 ## Turn an endpoint off
 
-**Turn off** on the integration's card stops deliveries without deleting anything: alerts to it are skipped until you turn it back on, and retries still pending end with "Not delivered: the webhook endpoint is turned off". Through the API, call `POST /v1/integrations/{id}/disable` and `POST /v1/integrations/{id}/enable` with `integrations:manage`.
+**Turn off** on the integration's page, or in the **⋯** menu on its card, stops deliveries without deleting anything: alerts to it are skipped until you turn it back on, and retries still pending end with "Not delivered: the webhook endpoint is turned off". Through the API, call `POST /v1/integrations/{id}/disable` and `POST /v1/integrations/{id}/enable` with `integrations:manage`.
 
-The integration's page shows how the endpoint did over the last 24 hours and 5 days. When you turn it back on, Site Qwality offers to replay what failed since it last worked: up to 1,000 deliveries, oldest first, ten a second, each one once. `POST /integration/webhook/{id}/replay_failed` does the same with `integrations:manage`.
+While it is off, its page says why and when, and **Turn back on** sits right there (the card has **Turn on**). **Send test** first shows what your server answers now; a test is sent even while the endpoint is off. When you turn it back on, Site Qwality offers to replay what failed since it last worked: up to 1,000 deliveries, oldest first, ten a second, each one once. `POST /integration/webhook/{id}/replay_failed` does the same with `integrations:manage`.
 
-An endpoint that keeps failing is turned off for you. The first failed delivery after one that worked emails the account's owners and admins. When deliveries have failed for 4 days with none delivered (at least 3 of them), a second email says the endpoint goes off the next day, and after 5 days it is turned off with a third email. An endpoint that answers `410 Gone` is turned off at once. A delivery that gets through starts the count over. Turn it back on from its card when it works again.
+An endpoint that keeps failing is turned off for you. The first failed delivery after one that worked emails the account's owners and admins. When deliveries have failed for 4 days with none delivered (at least 3 of them), a second email says the endpoint goes off the next day, and after 5 days it is turned off with a third email. An endpoint that answers `410 Gone` is turned off at once. A delivery that gets through starts the count over. Turn it back on from its page or card when it works again.
 
 Replaying one delivery is limited to 10 a minute and 100 a day per endpoint, counting what a bulk replay sent, and answers `429` above that. No replay is sent while the endpoint is off (`409`).
 
 ## Payload settings
 
-Each endpoint has four optional settings, on the integration's page or through `GET` and `PUT /integration/webhook/{id}/settings`. Changing them takes the same access as creating the integration.
+Each endpoint has four optional settings, under **Payload** on the integration's **Settings** tab or through `GET` and `PUT /integration/webhook/{id}/settings`. Changing them takes the same access as creating the integration.
 
 ```bash
 curl -X PUT https://api.siteqwality.com/integration/webhook/<webhook-integration-id>/settings \
