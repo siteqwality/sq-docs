@@ -32834,7 +32834,7 @@
         },
         "responses": {
           "201": {
-            "description": "The source, its key (shown once) and the URL to send events to",
+            "description": "The source, its key (shown once) and the URL or email address to send events to",
             "content": {
               "application/json": {
                 "schema": {
@@ -32874,7 +32874,7 @@
             }
           },
           "422": {
-            "description": "Invalid name or format",
+            "description": "Invalid name, format, mapping or email rules",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -33178,7 +33178,7 @@
             }
           },
           "422": {
-            "description": "Invalid name, mapping or signing secret",
+            "description": "Invalid name, mapping, email rules or signing secret",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -33412,7 +33412,7 @@
         "tags": [
           "Alert Sources"
         ],
-        "summary": "Roll an alert source's key. The old key stops working at once.",
+        "summary": "Roll an alert source's key. The old key stops working at once, and an email source gets a new address.",
         "operationId": "v1_roll_alert_source_key",
         "parameters": [
           {
@@ -46447,6 +46447,24 @@
             "type": "string",
             "description": "The key's first characters, to tell keys apart."
           },
+          "email_address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where an `email` source receives alerts. Rolling the key replaces it."
+          },
+          "email_rules": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EmailRules",
+                "description": "How an `email` source reads each email."
+              }
+            ]
+          },
           "mapping": {
             "oneOf": [
               {
@@ -46541,11 +46559,11 @@
             "properties": {
               "key": {
                 "type": "string",
-                "description": "The key: Events v2's `routing_key`, or the bearer token for the other formats. Shown only now."
+                "description": "The key: Events v2's `routing_key`, or the bearer token for the other formats. Shown only now. An `email`\nsource does not use it."
               },
               "url": {
                 "type": "string",
-                "description": "Where to send events."
+                "description": "Where to send events; for an `email` source, its address."
               },
               "url_with_key": {
                 "type": [
@@ -49269,7 +49287,7 @@
               "string",
               "null"
             ],
-            "description": "`events_v2` (PagerDuty Events v2, the default), `alertmanager`, `grafana`, `cloudwatch_sns` (CloudWatch alarms\nthrough an SNS topic), `datadog`, `generic_json` or `sentry` (a Sentry internal integration)."
+            "description": "`events_v2` (PagerDuty Events v2, the default), `alertmanager`, `grafana`, `cloudwatch_sns` (CloudWatch alarms\nthrough an SNS topic), `datadog`, `generic_json`, `sentry` (a Sentry internal integration) or `email` (emails\nto an address the source gets)."
           },
           "mapping": {
             "oneOf": [
@@ -49279,6 +49297,17 @@
               {
                 "$ref": "#/components/schemas/GenericMapping",
                 "description": "Required for `generic_json`, refused for the other formats: where each field is in the body."
+              }
+            ]
+          },
+          "email_rules": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EmailRules",
+                "description": "For `email` only: how each email's subject is read."
               }
             ]
           }
@@ -53203,6 +53232,27 @@
         "properties": {
           "email_address": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailRules": {
+        "type": "object",
+        "description": "How an `email` source reads each email's subject. Both are regular expressions that ignore case.",
+        "properties": {
+          "resolve_pattern": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A subject that matches resolves its incident instead of opening one, for example `^(UP|RECOVERY|OK)\\b`."
+          },
+          "dedup_pattern": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its first group, or the whole match, is the dedup key, so each thing it names gets its own incident: for\nexample `(?:DOWN|UP): (.+)`. Left out, or with no match, all of the address's emails share one incident."
           }
         },
         "additionalProperties": false
@@ -60654,6 +60704,24 @@
                 "key_prefix": {
                   "type": "string",
                   "description": "The key's first characters, to tell keys apart."
+                },
+                "email_address": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Where an `email` source receives alerts. Rolling the key replaces it."
+                },
+                "email_rules": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EmailRules",
+                      "description": "How an `email` source reads each email."
+                    }
+                  ]
                 },
                 "mapping": {
                   "oneOf": [
@@ -78439,6 +78507,17 @@
               {
                 "$ref": "#/components/schemas/GenericMapping",
                 "description": "Replaces a `generic_json` source's mapping."
+              }
+            ]
+          },
+          "email_rules": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EmailRules",
+                "description": "Replaces an `email` source's rules."
               }
             ]
           },
