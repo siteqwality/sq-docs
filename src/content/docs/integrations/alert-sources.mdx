@@ -1,13 +1,13 @@
 ---
 title: Alert sources
-description: Open and resolve Site Qwality incidents from Prometheus Alertmanager, Grafana, CloudWatch, Datadog, Sentry, the PagerDuty Events API v2 or any tool that sends a JSON webhook.
-last_verified: 2026-10-24
+description: Open and resolve Site Qwality incidents from Prometheus Alertmanager, Grafana, CloudWatch, Datadog, Sentry, the PagerDuty Events API v2, any tool that sends a JSON webhook, or email.
+last_verified: 2026-10-25
 owner: jj
 ---
 
 import { Steps } from '@astrojs/starlight/components';
 
-An **alert source** lets another tool open incidents in Site Qwality. Each source belongs to a [service](/incident-management/services/overview/): its alerts open, acknowledge and resolve incidents on that service, which then page people through the service's escalation policy (or one you set on the source). Every source has its own key and URL.
+An **alert source** lets another tool open incidents in Site Qwality. Each source belongs to a [service](/incident-management/services/overview/): its alerts open, acknowledge and resolve incidents on that service, which then page people through the service's escalation policy (or one you set on the source). Every source has its own key and URL, or for email, its own address.
 
 ## Formats
 
@@ -20,6 +20,7 @@ An **alert source** lets another tool open incidents in Site Qwality. Each sourc
 | Datadog (`datadog`) | A Datadog webhook with the key in a custom header | A trigger, warning or no-data transition | A recovery |
 | Sentry (`sentry`) | A Sentry internal integration's webhook URL | A new or reopened issue, an issue alert, or a critical or warning metric alert | A resolved or archived issue, or a resolved metric alert |
 | Any JSON webhook (`generic_json`) | `https://events.siteqwality.com/v1/sources`, key as a bearer token | Values you choose at a field you choose | Values you choose |
+| Email (`email`) | The source's address at `inbound.siteqwality.com` | Any email | An email whose subject matches your resolve pattern |
 
 A tool that cannot set an `Authorization` header can post to `https://events.siteqwality.com/v1/sources/<key>` instead. That URL holds the key, so treat it as a secret.
 
@@ -35,7 +36,7 @@ A tool that cannot set an `Authorization` header can post to `https://events.sit
 
 </Steps>
 
-Only admins, and API keys with `integrations:manage`, can add, change or delete a source. If a key is lost or leaked, **New key** replaces it, and the old key stops working at once.
+Only admins, and API keys with `integrations:manage`, can add, change or delete a source. If a key is lost or leaked, **New key** replaces it, and the old key stops working at once. An email source has **New address** instead.
 
 Through the API, with [`POST /v1/alert-sources`](/api-reference/operations/v1_create_alert_source/):
 
@@ -46,7 +47,7 @@ curl -X POST https://api.siteqwality.com/v1/alert-sources \
   -d '{"name": "Production Alertmanager", "service_id": "<service-id>", "format": "alertmanager"}'
 ```
 
-The answer carries `key`, `url` and, for every format but `events_v2`, `url_with_key`.
+The answer carries `key`, `url` and, for every format but `events_v2` and `email`, `url_with_key`. For an `email` source, `url` and `email_address` hold its address.
 
 ## Sentry
 
@@ -91,6 +92,23 @@ If your tool signs its webhooks, set the same secret with **Signing secret** on 
 
 The secret is stored encrypted and never shown again. Remove it (`"signing_secret": null`) and the source takes unsigned bodies again.
 
+## Email
+
+An `email` source gets an address such as `k3x9m2q7wb4ht6ny8rcz5dfa@inbound.siteqwality.com`. Point any tool that can only send email at it: backup plugins, hosting control panels, cron, firewalls and NAS boxes. Each email opens an incident on the source's service, with the email's subject as its title. While that incident is open, later emails join it instead of opening another.
+
+Two optional **Email rules** read the subject. Both ignore case and take a word, a phrase or a [regular expression](https://docs.rs/regex/latest/regex/#syntax):
+
+| Rule | API field | What it does |
+|---|---|---|
+| **Resolve when the subject matches** | `resolve_pattern` | A matching email resolves the incident instead of opening one. `Backup (OK\|succeeded)` resolves on a success report. |
+| **Separate incidents by** | `dedup_pattern` | The first group in parentheses names what an email is about, and emails naming the same thing share an incident. With `(?:DOWN\|UP): (.+)`, "DOWN: Site A" and "UP: site a" share one incident and "DOWN: Site B" opens another. Without it, or with no match, all emails to the address share one incident at a time. |
+
+Set them when you add the source, with **Email rules** on it, or with `email_rules` in [`POST`](/api-reference/operations/v1_create_alert_source/) or [`PATCH /v1/alert-sources/{id}`](/api-reference/operations/v1_edit_alert_source/), which replaces both.
+
+Only the subject is read. The body is never stored. An email is refused unless it passes [DMARC](https://dmarc.org/overview/), the check that proves which domain sent it, so someone who only fakes the From line cannot open incidents. Gmail, Outlook and most email services pass it. Mail sent straight from a web server often does not: send it through your domain's mail service instead. Mail marked as spam or carrying a virus is refused too. Refused emails show under **Events** with the reason.
+
+The address stays on the alert sources page. Anyone who has it can send alerts, so keep it like a password. If it leaks, **New address** replaces it, and the old one stops working at once. Plus addressing works: `<address>+backups@inbound.siteqwality.com` reaches the same source.
+
 ## Change events
 
 An Events API v2 source also takes PagerDuty **change events**, such as deploys, at `https://events.siteqwality.com/v2/change/enqueue` with the same key:
@@ -105,9 +123,9 @@ A change shows on the timeline of every incident open on the service, and on inc
 
 ## What is kept
 
-Each event keeps its summary, severity, dedup key, first link and what it did, for 30 days. Open **Events** on a source to see them, or call [`GET /v1/alert-sources/{id}/events`](/api-reference/operations/v1_list_alert_source_events/).
+Each event keeps its summary, severity, dedup key, first link and what it did, for 30 days. For an email, that is its subject. Open **Events** on a source to see them, or call [`GET /v1/alert-sources/{id}/events`](/api-reference/operations/v1_list_alert_source_events/).
 
-The rest of the body is not stored, unless you turn on **Keep bodies** on the source. For the next 24 hours each event then keeps its body, so you can see what your tool really sends while you set up a mapping. Before a body is stored, credentials are redacted, URLs are cut to their host, and user, request, header, cookie, email and IP fields are removed. A body that was refused, or held no alert, is kept too, with the reason. Only admins can open a body (**Show body** in Events, or [`GET /v1/alert-sources/{id}/events/{event_id}`](/api-reference/operations/v1_get_alert_source_event/)), and bodies are deleted 7 days after they arrive.
+The rest of the body is not stored, unless you turn on **Keep bodies** on the source. For an email source that keeps the subject, the sending domain, the date and the spam, virus, SPF, DKIM and DMARC verdicts, never the email's text or addresses. For the next 24 hours each event then keeps its body, so you can see what your tool really sends while you set up a mapping. Before a body is stored, credentials are redacted, URLs are cut to their host, and user, request, header, cookie, email and IP fields are removed. A body that was refused, or held no alert, is kept too, with the reason. Only admins can open a body (**Show body** in Events, or [`GET /v1/alert-sources/{id}/events/{event_id}`](/api-reference/operations/v1_get_alert_source_event/)), and bodies are deleted 7 days after they arrive.
 
 ## Limits and answers
 
@@ -116,7 +134,7 @@ The rest of the body is not stored, unless you turn on **Keep bodies** on the so
 | Free | 1 | 100 |
 | Paid | Unlimited | 10,000 |
 
-A source also takes at most 300 events a minute. The receiver answers:
+A source also takes at most 300 events a minute, and an email over a limit is dropped. The receiver answers:
 
 | Status | Meaning |
 |---|---|
