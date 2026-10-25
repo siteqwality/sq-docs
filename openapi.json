@@ -49460,6 +49460,14 @@
             "type": "integer",
             "format": "int32"
           },
+          "grace_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Extra seconds, 0 to 86400, after the interval before a missing ping alerts. Default 0."
+          },
           "group_notification_ids": {
             "type": [
               "array",
@@ -49842,6 +49850,17 @@
             ],
             "format": "int32",
             "description": "`ping` only: fail when at least this percent of packets are lost, 1 to 100.\nDefaults to 100, so only total loss fails."
+          },
+          "recheck_on_failure": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RecheckOnFailure",
+                "description": "Check a failed run once more before it counts: `off`, `same_location`,\nor `another_cloud` (paid plans). Omitted takes the plan's default:\n`another_cloud` on a paid plan, `same_location` on the free plan."
+              }
+            ]
           },
           "request_body": {
             "type": [
@@ -51083,6 +51102,11 @@
             "type": "integer",
             "format": "int32"
           },
+          "grace_seconds": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Extra seconds after the interval before a missing ping alerts. 0 alerts as soon as\nthe interval passes."
+          },
           "group_notification_ids": {
             "type": [
               "array",
@@ -52202,7 +52226,8 @@
         "required": [
           "check_regions",
           "min_healthy_regions",
-          "projection"
+          "projection",
+          "recheck_on_failure"
         ],
         "properties": {
           "check_regions": {
@@ -52230,6 +52255,10 @@
           },
           "projection": {
             "$ref": "#/components/schemas/UptimeProjection"
+          },
+          "recheck_on_failure": {
+            "$ref": "#/components/schemas/RecheckOnFailure",
+            "description": "What a create without `recheck_on_failure` stores: `another_cloud` on a paid\nplan where another provider can run the check, `same_location` otherwise."
           }
         }
       },
@@ -54790,6 +54819,10 @@
             ],
             "format": "int32",
             "description": "Ping: fail at or above this percent of packets lost."
+          },
+          "recheck_on_failure": {
+            "$ref": "#/components/schemas/RecheckOnFailure",
+            "description": "Whether a failed run is checked once more before it counts: `off`,\n`same_location` or `another_cloud`."
           },
           "request_body": {
             "type": [
@@ -60900,6 +60933,11 @@
                   "type": "integer",
                   "format": "int32"
                 },
+                "grace_seconds": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Extra seconds after the interval before a missing ping alerts. 0 alerts as soon as\nthe interval passes."
+                },
                 "group_notification_ids": {
                   "type": [
                     "array",
@@ -61561,6 +61599,10 @@
                   ],
                   "format": "int32",
                   "description": "Ping: fail at or above this percent of packets lost."
+                },
+                "recheck_on_failure": {
+                  "$ref": "#/components/schemas/RecheckOnFailure",
+                  "description": "Whether a failed run is checked once more before it counts: `off`,\n`same_location` or `another_cloud`."
                 },
                 "request_body": {
                   "type": [
@@ -65446,6 +65488,15 @@
             "description": "Monitor ids to fetch response-time samples for. Ids that are not HTTP\nmonitors, or that belong to another account, are simply absent from\nthe response."
           }
         }
+      },
+      "RecheckOnFailure": {
+        "type": "string",
+        "description": "How a failed run is checked again before it counts toward DOWN. Stored as\ntext with a CHECK and decoded strictly.",
+        "enum": [
+          "off",
+          "same_location",
+          "another_cloud"
+        ]
       },
       "RecoveryCodesResponse": {
         "type": "object",
@@ -78526,6 +78577,14 @@
             ],
             "format": "int32"
           },
+          "grace_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Extra seconds, 0 to 86400, after the interval before a missing ping alerts."
+          },
           "group_notification_ids": {
             "type": [
               "array",
@@ -79056,6 +79115,17 @@
             ],
             "format": "int32",
             "description": "`ping` only, 1 to 100."
+          },
+          "recheck_on_failure": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RecheckOnFailure",
+                "description": "Check a failed run once more before it counts. Absent leaves it unchanged;\n`another_cloud` needs a paid plan."
+              }
+            ]
           }
         }
       },
