@@ -1,7 +1,7 @@
 ---
 title: Cron check quickstart
 description: Set up a heartbeat for a daily job and confirm it alerts you when the job stops running.
-last_verified: 2026-05-03
+last_verified: 2026-10-25
 owner: jj
 ---
 
@@ -118,7 +118,7 @@ Returns the most recent receipts.
 To verify the alerting path:
 
 1. Edit the cron check and drop **Check Interval Minutes** to `5m` (`check_interval_seconds: 300` in the API).
-2. Don't ping for 10 minutes.
+2. Don't ping for 7 minutes.
 3. The check flips to `failed` and your notification group fires.
 4. Send a ping manually (`curl <ping-url>`). The check flips back to `success` right away and the group gets the all clear.
 
@@ -127,4 +127,4 @@ Don't forget to set the interval back to `24h` (`86400`) when done testing.
 ## What's next
 
 <LinkCard title="Heartbeat best practices" description="Retries, jitter, idempotency, and start-vs-end pinging." href="/uptime-monitoring/cron-checks/how-to/heartbeats/" />
-<LinkCard title="Grace periods" description="How Site Qwality decides 'late enough to alert.'" href="/uptime-monitoring/cron-checks/how-to/grace-period/" />
+<LinkCard title="Grace period" description="How Site Qwality decides 'late enough to alert.'" href="/uptime-monitoring/cron-checks/how-to/grace-period/" />

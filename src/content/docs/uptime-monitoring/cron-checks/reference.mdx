@@ -1,7 +1,7 @@
 ---
 title: Cron check reference
 description: Every field on a cron / heartbeat check, the ping endpoint contract, and how lateness is evaluated.
-last_verified: 2026-10-22
+last_verified: 2026-10-25
 owner: jj
 ---
 
@@ -13,6 +13,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 |---|---|---|---|
 | `friendly_name` | string | none | Display name shown in the dashboard. 1 to 99 characters. |
 | `check_interval_seconds` | int | required | Expected interval between pings. Must be at least `60` and a multiple of `60`. |
+| `grace_seconds` | int | `0` | Extra seconds after the interval before a missing ping alerts, `0` to `86400`. See [how lateness is evaluated](#how-lateness-is-evaluated). |
 | `group_notification_ids` | uuid[] | default group | Notification groups to fire on state change. Maximum 10, no duplicates, must belong to your account. On create, omitting it (or sending `null`) attaches your account's [default group](/incident-management/notifications/default-routing/#the-default-notification-group); `[]` notifies no one. |
 | `tags` | string[] | none | Free-form tags. Used for grouping and [maintenance-window](/incident-management/maintenance/overview/) matching. |
 | `state` | enum | `active` | Update only. `active` or `paused`. Paused checks stop evaluating and alerting. |
@@ -67,9 +68,11 @@ Receipts are queryable via `GET /cron/job/{job_id}/recent`.
 
 ## How lateness is evaluated
 
-Each cron check is evaluated on its own schedule, at the same cadence as `check_interval_seconds`. At each evaluation the check fails when the newest ping is older than `check_interval_seconds`. A check that has never been pinged is measured from its `created_at`, so it fails only when no ping arrives within `check_interval_seconds` of creation. Because evaluation runs at the same cadence as the expected pings, a missed ping is detected between one and two intervals after the last successful ping, depending on how the two schedules line up. A finished-run ping on a failed check is evaluated right away and brings it back to `success`.
+An active check that is up goes down when no finished-run ping arrives within `check_interval_seconds` plus `grace_seconds` of the newest of its last finished-run ping, its `created_at` and its last resume. Every check is compared with that deadline once a minute, so the alert follows within about a minute of it. A ping that arrives late but inside the grace counts for that run, and the next deadline is measured from it. A successful ping on a failed check is evaluated right away and brings it back to `success`. The [grace period guide](/uptime-monitoring/cron-checks/how-to/grace-period/) has a worked example.
 
-Only finished runs count: a `start` is ignored here. When the newest finished run is a `fail`, the check fails even though it arrived in time, and the alert says the job reported a failure (with the exit code, if sent) rather than that no ping arrived. A `fail` on an active check that is up is evaluated at once instead of waiting for the next scheduled evaluation.
+Changing `check_interval_seconds` or `grace_seconds` applies from the last ping at once: the check goes down right away if its last ping is already outside the window, and comes back up if its last ping was a success that fits it. Resuming a paused check starts the wait over from the resume.
+
+Only finished runs count: a `start` is ignored here. When the newest finished run is a `fail`, the check fails even though it arrived in time, and the alert says the job reported a failure (with the exit code, if sent) rather than that no ping arrived. A `fail` on an active check that is up is evaluated at once.
 
 ## Status-transition events
 

@@ -67,7 +67,7 @@ Heartbeat (cron) monitors and browser checks hold flaps the same way: the same 4
 - They follow the account's `flap_hold` setting only, with no per-monitor override.
 - They have no recovery period. The all clear goes out on the first healthy check.
 
-Each held outage appears in the monitor's activity feed as **Outage held**, followed by **Held outage sent** if it broke through. A heartbeat checks on its own interval, so a held outage is decided by the one-minute tick, not by the next ping.
+Each held outage appears in the monitor's activity feed as **Outage held**, followed by **Held outage sent** if it broke through. A held heartbeat outage is decided by the one-minute tick, not by the next ping.
 
 ## See also
 

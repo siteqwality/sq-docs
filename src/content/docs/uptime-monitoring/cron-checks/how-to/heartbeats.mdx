@@ -27,7 +27,7 @@ fi
 
 Or send the exit code: `do_thing; curl -fsS --max-time 10 "$PING_URL/$?" || true`. A `0` is a success ping and anything up to `255` is a failure with that code.
 
-- `/start` records that a run began. It is not a ping, so a run that starts and never finishes still alerts once the interval passes. The recent pings list shows how long each run took.
+- `/start` records that a run began. It is not a ping, so a run that starts and never finishes still alerts once the interval and grace pass. The recent pings list shows how long each run took.
 - `/fail` or a non-zero exit code takes the check down right away instead of waiting for a missed ping. The alert says the job reported a failure, with the exit code when you sent one.
 
 ## 2. Never let the ping fail the job

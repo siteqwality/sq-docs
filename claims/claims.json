@@ -59,5 +59,11 @@
   { "page": "uptime-monitoring/ssl-tls-checks/overview.mdx", "text": "The alert does not change the monitor's status, its uptime or any status page, and it does not open an incident.", "needs": ["uptime.tls_invalid_alerts"] },
   { "page": "uptime-monitoring/http-checks/how-to/confirmation-threshold.mdx", "text": "A recheck never leaves the country of the location that failed.", "needs": ["uptime.recheck_on_failure"] },
   { "page": "uptime-monitoring/http-checks/how-to/confirmation-threshold.mdx", "text": "If the rechecks bring the run up to the quorum, it passes and nobody is alerted.", "needs": ["uptime.recheck_on_failure"] },
-  { "page": "uptime-monitoring/http-checks/how-to/confirmation-threshold.mdx", "text": "A monitor that is already down is not, so it recovers on its first passing check.", "needs": ["uptime.recheck_on_failure"] }
+  { "page": "uptime-monitoring/http-checks/how-to/confirmation-threshold.mdx", "text": "A monitor that is already down is not, so it recovers on its first passing check.", "needs": ["uptime.recheck_on_failure"] },
+  { "page": "uptime-monitoring/cron-checks/how-to/grace-period.mdx", "text": "`grace_seconds` is 0 to 86400 seconds (one day) and defaults to `0`.", "needs": ["heartbeat.grace"] },
+  { "page": "uptime-monitoring/cron-checks/how-to/grace-period.mdx", "text": "A ping that arrives late but inside the grace counts for the run it was late for, and the next due time is measured from that ping.", "needs": ["heartbeat.grace"] },
+  { "page": "uptime-monitoring/cron-checks/how-to/grace-period.mdx", "text": "Site Qwality checks every heartbeat against its due time once a minute, so a missed run alerts within about a minute of it.", "needs": ["heartbeat.minute_check"] },
+  { "page": "uptime-monitoring/cron-checks/reference.mdx", "text": "Every check is compared with that deadline once a minute, so the alert follows within about a minute of it.", "needs": ["heartbeat.minute_check"] },
+  { "page": "uptime-monitoring/cron-checks/reference.mdx", "text": "Changing `check_interval_seconds` or `grace_seconds` applies from the last ping at once", "needs": ["heartbeat.window_change"] },
+  { "page": "uptime-monitoring/cron-checks/reference.mdx", "text": "Resuming a paused check starts the wait over from the resume.", "needs": ["heartbeat.window_change"] }
 ]

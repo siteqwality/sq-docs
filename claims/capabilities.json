@@ -486,6 +486,23 @@
     ],
     "source": "core-rs cron-executor/src/http_dispatch.rs (recheck), common/src/check_locations.rs (recheck_location)"
   },
+  "heartbeat.grace": {
+    "status": "live",
+    "summary": "Heartbeat grace_seconds, 0 to 86400, default 0: down when no finished ping arrives within the interval plus grace of the last finished ping, creation or last resume; a late ping inside the grace counts for that run",
+    "api": ["POST /cron/job", "PUT /cron/job/{cron_job_id}"],
+    "source": "core-rs common/src/model/api/cron_job.rs (MAX_GRACE_SECONDS), common/src/model/db/cron_job.rs (window, deadline), cron-executor/src/cron_job.rs (run_is_healthy)"
+  },
+  "heartbeat.minute_check": {
+    "status": "live",
+    "summary": "Every active heartbeat is compared with its deadline once a minute, so a missed run alerts within about a minute of it",
+    "source": "core-rs cron-executor/src/cron_job.rs (run_cron_deadline_sweep), cron-executor/src/lambda.rs (1-minute tick)"
+  },
+  "heartbeat.window_change": {
+    "status": "live",
+    "summary": "A changed interval or grace is evaluated at once from the last ping, and resuming a paused heartbeat restarts the wait",
+    "api": ["PUT /cron/job/{cron_job_id}"],
+    "source": "core-rs api/src/handlers/cron_job/update.rs (request_check), common/src/db/cron_job.rs (armed_at)"
+  },
   "uptime.udp_traceroute": {
     "status": "absent",
     "summary": "UDP checks or traceroute. Uptime checks are HTTP, TCP port and ping (ICMP echo)",
