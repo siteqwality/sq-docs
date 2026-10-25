@@ -239,7 +239,7 @@ Assistants pick the tool themselves. **Write** tools need the matching `write:` 
 | `list_notification_history` | Shows the account's delivery history, newest first: every alert sent in the last 90 days across monitors and channels, and whether it arrived, failed or was skipped, and why. See [check what was sent](/incident-management/notifications/how-to/delivery-history/). | Read |
 | `acknowledge_monitor_outage` | Acknowledges a monitor's open outage (or the one named by `transition_id`), recording who is on it and, by default, stopping its repeat alerts. See [acknowledge a monitor outage](/incident-management/notifications/how-to/acknowledge-outages/). | Write |
 | `list_check_locations` | Lists the locations a check can run from, with the ids to use when creating or updating a monitor. | Read |
-| `create_http_monitor` | Creates an uptime monitor (HTTP, [TCP port](/uptime-monitoring/tcp-checks/) or [ping](/uptime-monitoring/ping-checks/)) that alerts your account's default notification group. It takes the same `check_type`, `tcp_` and `ping_` fields as the API. | Write |
+| `create_http_monitor` | Creates an uptime monitor (HTTP, [TCP port](/uptime-monitoring/tcp-checks/) or [ping](/uptime-monitoring/ping-checks/)) that alerts your account's default notification group. It takes the same `check_type`, `tcp_`, `ping_` and `recheck_on_failure` fields as the API. | Write |
 | `update_http_monitor` | Changes an uptime monitor's settings, including its TCP port and ping settings. The check type stays as created. | Write |
 | `pause_monitor`, `resume_monitor` | Pauses or resumes a monitor. | Write |
 | `delete_monitor` | Deletes a monitor. | Write, asks first |

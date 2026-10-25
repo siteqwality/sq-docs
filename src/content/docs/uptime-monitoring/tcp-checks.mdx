@@ -9,7 +9,7 @@ import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
 A **TCP port check** opens a connection to a host and port on a schedule and alerts you when the port stops answering. Use it for services that do not speak HTTP: databases, mail servers, SSH, message brokers and custom protocols.
 
-A TCP port check is an uptime monitor with a different check type from an [HTTP check](/uptime-monitoring/http-checks/overview/). Check locations and location quorum, the confirmation threshold, the recovery period, flap hold, notification groups, incidents, services, maintenance windows, status pages and running a check on demand all work the same way.
+A TCP port check is an uptime monitor with a different check type from an [HTTP check](/uptime-monitoring/http-checks/overview/). Check locations and location quorum, [rechecks before alerting](/uptime-monitoring/http-checks/how-to/confirmation-threshold/#3-recheck-before-alerting), the confirmation threshold, the recovery period, flap hold, notification groups, incidents, services, maintenance windows, status pages and running a check on demand all work the same way.
 
 ## When to use TCP port checks
 
@@ -123,7 +123,7 @@ TCP port checks use the same endpoints as HTTP checks: create with `POST /http/j
 | `timeout_ms` | int | required | Time allowed for each attempt, `1000` to `60000`. Outside that range: `timeout_ms must be between 1000 and 60000 for TCP monitors`. |
 | `monitor_dns` | bool | `false` | Pair a [domain expiry check](/uptime-monitoring/dns-checks/overview/) with the host's domain. With an IP address as the host it is refused with `monitor_dns needs a host name, not an IP address`. |
 
-These work exactly as on an HTTP check (see the [HTTP check reference](/uptime-monitoring/http-checks/reference/)): `friendly_name`, `service_id`, `run_interval_seconds`, `run_interval_thirty_seconds`, `check_regions`, `min_healthy_regions`, `confirmation_threshold`, `recovery_period_runs`, `flap_hold_override`, `group_notification_ids`, `tags` and `state`.
+These work exactly as on an HTTP check (see the [HTTP check reference](/uptime-monitoring/http-checks/reference/)): `friendly_name`, `service_id`, `run_interval_seconds`, `run_interval_thirty_seconds`, `check_regions`, `min_healthy_regions`, `confirmation_threshold`, `recheck_on_failure`, `recovery_period_runs`, `flap_hold_override`, `group_notification_ids`, `tags` and `state`.
 
 The HTTP-only settings (keyword search, JSON path, status code lists, request body, content type, authentication, custom headers, HTTP version, `final_uri`, trace propagation, `monitor_tls`, `tls_port` and `monitor_page_speed`) must be left out or at their defaults. A value that turns one on is refused with `<field> applies to HTTP monitors only`, and `follow_redirects` is ignored. `ping_count` and `ping_loss_threshold` are refused with `<field> applies to ping monitors only`. The paired TLS certificate and page-speed checks exist for HTTP checks only; `tcp_tls` verifies the certificate on every check instead.
 

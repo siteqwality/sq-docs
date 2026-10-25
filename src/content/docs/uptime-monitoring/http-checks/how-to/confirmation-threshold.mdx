@@ -1,13 +1,13 @@
 ---
 title: Require N failed checks before alerting
-description: Use confirmation_threshold to alert only after several consecutive failed checks, and understand how it composes with the location quorum and transport retries.
-last_verified: 2026-10-14
+description: Use confirmation_threshold to alert only after several consecutive failed checks, and understand how it composes with the location quorum, rechecks and transport retries.
+last_verified: 2026-10-24
 owner: jj
 ---
 
 import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
 
-By default an HTTP check alerts you the moment one check fails. For a noisy target (a flaky third-party dependency, an endpoint behind an aggressive bot-management edge), set `confirmation_threshold` to `N` and the monitor only transitions to `failed` after **N consecutive failed checks**.
+With the default threshold of `1`, an HTTP check alerts you on its first failed check, once any [recheck](#3-recheck-before-alerting) has failed too. For a noisy target (a flaky third-party dependency, an endpoint behind an aggressive bot-management edge), set `confirmation_threshold` to `N` and the monitor only transitions to `failed` after **N consecutive failed checks**.
 
 ## Set it
 
@@ -37,7 +37,7 @@ By default an HTTP check alerts you the moment one check fails. For a noisy targ
 
 ## Unconfirmed failures are still recorded
 
-The threshold gates the **state transition**, not the check. A failed-but-unconfirmed check still lands in the check results, the per-phase performance record and the per-location status. It shows as a failure in **Recent checks**, and it still drags down the 24 hour uptime ratio, the daily rollup and therefore [SLA reports](/enterprise/sla-reports/).
+The threshold gates the **state transition**, not the check. A failed-but-unconfirmed check still lands in the check results, the per-phase performance record and the per-location status. It shows as a failure in **Recent checks**, and it still drags down the 24 hour uptime ratio, the daily rollup and therefore [SLA reports](/enterprise/sla-reports/). A failure that passes its [recheck](#3-recheck-before-alerting) is the exception: the recheck's result is recorded in its place.
 
 What waits for confirmation:
 
@@ -52,19 +52,21 @@ Because the downtime window opens at confirmation time, an outage's recorded dur
 
 One successful check that satisfies the location quorum closes the state transition immediately, whatever the threshold. The all clear and automatic incident resolution wait only for the monitor's [recovery period](/uptime-monitoring/http-checks/how-to/recovery-and-flapping/).
 
-## How it composes with the other two failure filters
+## How it composes with the other failure filters
 
-Three independent layers sit between a network blip and your phone, in this order:
+Four layers sit between a network blip and your phone, in this order:
 
 ```
 1. transport retry     inside a single check
         ↓
 2. location quorum     decides whether one check evaluation counts as failed
         ↓
-3. confirmation        counts consecutive failed evaluations
+3. recheck             checks each failed location once more, then the quorum decides again
+        ↓
+4. confirmation        counts consecutive failed evaluations
 ```
 
-With one check location, layer 2 is a 1-of-1 pass-through and only layers 1 and 3 do any work.
+With one check location, layer 2 is a 1-of-1 pass-through and only layers 1, 3 and 4 do any work.
 
 ### 1. Transport retry, inside one check
 
@@ -82,9 +84,27 @@ With two or more locations, a run where only one location answered and it failed
 
 A run that passes the quorum while some locations fail leaves the monitor up. The monitor shows **Failed in 1 of 2 locations** (for example) until a run passes everywhere, and nobody is paged.
 
-### 3. Confirmation threshold
+### 3. Recheck before alerting
 
-The threshold then counts how many consecutive ticks the quorum verdict has failed for: with one location, the last N checks all failed. Any tick at which the quorum was healthy resets the streak.
+`recheck_on_failure` gives a failed run one more chance before it counts. When a run fails the location quorum while the monitor is up, each location that failed is checked once more, and the run is judged on those answers:
+
+| Value | Each failed location is checked again |
+|---|---|
+| `off` | Never. The failure counts as it is. |
+| `same_location` | From the same location, about 5 seconds later. |
+| `another_cloud` | Straight away, from a healthy location on another cloud provider in the same country (the same city first) that the monitor does not already run from. When no other provider there can run the check, or the plan no longer includes it, the same location checks again instead. |
+
+A recheck never leaves the country of the location that failed. If the rechecks bring the run up to the quorum, it passes and nobody is alerted. Otherwise the run counts as failed, and the inconclusive rule above, the confirmation threshold, flap hold and the notification group's delay and repeats apply to it as usual. A recheck that returns no result keeps the failure.
+
+The recheck's result replaces the failure in the run's results, under the id of the location that ran it, so a failure its recheck clears does not count against uptime. Each recheck writes a `recheck` [monitor event](/uptime-monitoring/http-checks/reference/#monitor-events) with the first failure's reason and status code and the outcome.
+
+- **Only an up monitor is rechecked.** A monitor that is already down is not, so it recovers on its first passing check. A run that passes the quorum while some locations fail is not rechecked either.
+- **Each recheck is a check.** A recheck that returns a result counts as one check toward your monthly check volume, and only a failure triggers one.
+- **Defaults and plans.** A monitor created without the setting gets `another_cloud` on a paid uptime plan when another cloud provider can run the check, otherwise `same_location`. Ping runs on one cloud provider, so a ping check gets `same_location`. Monitors created before the setting existed have `off`. `another_cloud` needs a paid uptime plan, like more than one location; `same_location` works on every plan. Send `recheck_on_failure` on create or update; the [field reference](/uptime-monitoring/http-checks/reference/#request-settings) has the details.
+
+### 4. Confirmation threshold
+
+The threshold then counts how many consecutive ticks the quorum verdict, after any recheck, has failed for: with one location, the last N checks all failed. Any tick at which the quorum was healthy resets the streak.
 
 <Aside type="tip">
 To skip only blips that clear within a minute, `delay_send_after_minutes` on the [notification group](/incident-management/notifications/overview/#notification-groups) is often the better tool: the group's down alert waits, then sends only if the monitor is still down. It holds back the group alert only; on a monitor linked to a service, the incident still opens on the first failure.
@@ -92,9 +112,9 @@ To skip only blips that clear within a minute, `delay_send_after_minutes` on the
 
 ## What it does not cover
 
-Browser checks have their own `confirmation_threshold`; see [rerun and confirmation](/uptime-monitoring/browser-checks/reference/#rerun-and-confirmation). Cron, DNS and TLS checks alert on the first failure.
+Browser checks have their own `confirmation_threshold` and `rerun_on_failure`, and are not rechecked this way; see [rerun and confirmation](/uptime-monitoring/browser-checks/reference/#rerun-and-confirmation). Cron, DNS and TLS checks alert on the first failure.
 
-The TLS, DNS, and page-speed monitors that get provisioned alongside an HTTP check do **not** inherit the parent's threshold.
+The TLS, DNS, and page-speed monitors that get provisioned alongside an HTTP check do **not** inherit the parent's threshold or recheck.
 
 ## See also
 

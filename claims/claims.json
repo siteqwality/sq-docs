@@ -56,5 +56,8 @@
   { "page": "uptime-monitoring/tcp-checks.mdx", "text": "creating or updating a TCP port check on port 25 is refused", "needs": ["uptime.tcp_port_25_refused"] },
   { "page": "uptime-monitoring/ping-checks.mdx", "text": "ping checks run from the Google Cloud locations only", "needs": ["uptime.ping_checks"] },
   { "page": "uptime-monitoring/ping-checks.mdx", "text": "The default threshold is 100%, so a check fails only when every packet is lost.", "needs": ["uptime.ping_checks"] },
-  { "page": "uptime-monitoring/ssl-tls-checks/overview.mdx", "text": "The alert does not change the monitor's status, its uptime or any status page, and it does not open an incident.", "needs": ["uptime.tls_invalid_alerts"] }
+  { "page": "uptime-monitoring/ssl-tls-checks/overview.mdx", "text": "The alert does not change the monitor's status, its uptime or any status page, and it does not open an incident.", "needs": ["uptime.tls_invalid_alerts"] },
+  { "page": "uptime-monitoring/http-checks/how-to/confirmation-threshold.mdx", "text": "A recheck never leaves the country of the location that failed.", "needs": ["uptime.recheck_on_failure"] },
+  { "page": "uptime-monitoring/http-checks/how-to/confirmation-threshold.mdx", "text": "If the rechecks bring the run up to the quorum, it passes and nobody is alerted.", "needs": ["uptime.recheck_on_failure"] },
+  { "page": "uptime-monitoring/http-checks/how-to/confirmation-threshold.mdx", "text": "A monitor that is already down is not, so it recovers on its first passing check.", "needs": ["uptime.recheck_on_failure"] }
 ]

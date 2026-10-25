@@ -476,6 +476,16 @@
     ],
     "source": "core-rs docs/plans/2026-10-21-tcp-and-ping-monitors-design.md (D2, D4, sections 3 and 5)"
   },
+  "uptime.recheck_on_failure": {
+    "status": "live",
+    "summary": "recheck_on_failure (off, same_location, another_cloud) checks each failed location of an up monitor's failed run once more before it counts; another_cloud needs a paid uptime plan and stays in the failed location's country",
+    "api": [
+      "POST /http/job",
+      "PUT /http/job/{job_id}",
+      "GET /check-locations/default"
+    ],
+    "source": "core-rs cron-executor/src/http_dispatch.rs (recheck), common/src/check_locations.rs (recheck_location)"
+  },
   "uptime.udp_traceroute": {
     "status": "absent",
     "summary": "UDP checks or traceroute. Uptime checks are HTTP, TCP port and ping (ICMP echo)",

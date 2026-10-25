@@ -17,12 +17,13 @@ Every product has a free tier and is priced on its own; prices are on the [prici
 | [DNS record monitors](/uptime-monitoring/dns-record-monitors/overview/) | 3 | Unlimited |
 | DNS record check interval | 1 hour minimum | 5 minutes minimum |
 
-These limits follow one product's plan, not any paid plan: the check interval and HTTP, TCP port and ping check locations follow the **uptime** plan, and browser check locations the **Synthetic** plan.
+These limits follow one product's plan, not any paid plan: the check interval, HTTP, TCP port and ping check locations and rechecks from another cloud follow the **uptime** plan, and browser check locations the **Synthetic** plan.
 
 | Limit | Free | Paid | Unlocked by |
 |---|---|---|---|
 | Uptime check interval | 5 minutes minimum | 30 seconds minimum | A paid uptime plan |
 | Check locations per HTTP, TCP port or ping monitor | 1 | Any number | A paid uptime plan |
+| [Recheck before alerting](/uptime-monitoring/http-checks/how-to/confirmation-threshold/#3-recheck-before-alerting) | Same location | Same location or another cloud | A paid uptime plan |
 | Browser check locations per check | 1 | Any number | A paid Synthetic plan |
 
 ## Team
@@ -66,7 +67,7 @@ Limits agreed for your account replace the ones on this page.
 
 Reaching a limit removes nothing you already have. Whatever would go over it is refused (a new monitor, invite, status page or domain, or a shorter check interval) until you are under the limit or upgrade. Usage-based products never bill overage: once the allowance and any grace buffer are used, they stop until the next period or an upgrade. Account settings show your usage.
 
-Through the API, a request over a limit gets `402 Payment Required`, except check intervals, check locations and the browser check count, which get `403 Forbidden`.
+Through the API, a request over a limit gets `402 Payment Required`, except check intervals, check locations, rechecks from another cloud and the browser check count, which get `403 Forbidden`.
 
 ## When a plan ends
 
@@ -74,6 +75,7 @@ A paid plan ends when you cancel and the period runs out, when you downgrade a p
 
 - Without a paid uptime plan, checks that ran more often than every 5 minutes move to every 5 minutes. Without any paid plan, DNS record checks move to every hour.
 - A monitor with more check locations than your plans allow keeps its first one.
+- A monitor set to recheck from another cloud rechecks from the same location instead, and keeps the setting.
 - Monitors above a limit keep running, but you can't add new ones or resume paused ones until you are under it.
 - Stored response bodies older than the free window stop being readable. The window is a read window, so upgrading again makes them readable straight away.
 - Custom dashboards stay, and you can still list, open, export and delete them. Creating, editing, importing, cloning and querying wait for a paid plan. Share links show "not found" until then, but you can still pause or revoke them.
