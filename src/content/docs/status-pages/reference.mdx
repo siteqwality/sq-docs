@@ -350,6 +350,8 @@ The status page front-end reads a public, unauthenticated JSON API. You can use 
 | `GET` | `/status-page/{account_id}/{status_page_id}/history` | Every incident on the page, newest first, a page at a time: `{"incidents": [...], "next_before": "..."}`. `?limit=` sets the page size (default 20, at most 50). Pass `next_before` back as `?before=` (an RFC 3339 time) for the next, older page; it is absent on the last one. |
 | `POST` | `/status-page/{account_id}/{status_page_id}/subscribe` | Starts an email subscription with `{"email": "you@example.com"}`, plus optional `component_ids` and `kinds` (as in [Subscribers](#subscribers)); leave both out for everything. The address gets a confirmation link and receives nothing until it confirms. A confirmed address's choices do not change here. Returns 200 with `{"message": "Check your email to confirm the subscription."}`. Errors: 400 for an invalid address, or with `Unknown component` for an id the page does not show, 404 for an unknown page, 409 when the page already holds 1000 subscribers and 429 when rate limited. |
 
+Each client address can make 3,000 requests to this API in a five-minute window: at most 600 to `/status-page/` paths other than `/live`, and at most 30 subscription calls, the email links included. Past that the API answers `429` with `rate_limited` and a `Retry-After` header in seconds.
+
 Both ids are in the page's address: `https://statuspage.siteqwality.com/<account-id>/<page-id>`. An unknown page returns 404. Every error comes back as JSON, described in [Errors](#errors) below.
 
 The page response has these fields:
