@@ -7,7 +7,7 @@ owner: jj
 
 import { Aside } from '@astrojs/starlight/components';
 
-Field-by-field reference for **`@siteqwality/rum`**, the browser SDK for RUM, error tracking and [session replay](/observability/replay/overview/). This page describes the published SDK 2.3.1. For a first install, follow the [RUM quickstart](/observability/rum/quickstart/).
+Field-by-field reference for **`@siteqwality/rum`**, the browser SDK for RUM, error tracking and [session replay](/observability/replay/overview/). This page describes SDK 2.3.2. For a first install, follow the [RUM quickstart](/observability/rum/quickstart/).
 
 SDK 1.x is retired: its endpoints accept no data, and its CDN paths (`/rum/v1/` and the pinned 1.x releases) are removed. Install SDK 2 as described below.
 
@@ -22,8 +22,8 @@ Release channels:
 | Channel | Availability |
 |---|---|
 | npm `@siteqwality/rum`, `latest` | SDK 2.3.1. |
-| CDN `/rum/v2/` | Moving 2.x alias, pointing to SDK 2.3.1. |
-| CDN `/rum/v2.3.1/` | Immutable SDK 2.3.1 and matching lazy chunks. |
+| CDN `/rum/v2/` | Moving 2.x alias, pointing to SDK 2.3.2. |
+| CDN `/rum/v2.3.2/` | Immutable SDK 2.3.2 and matching lazy chunks. |
 
 Use the application's public `applicationId` and `clientToken`, never an account API key. npm integrates with your bundler; the CDN exposes `window.SiteQwalityRUM`.
 
@@ -45,7 +45,7 @@ On a site that needs consent first, add `trackingConsent: 'pending'` to `init` i
 
 ### CDN snippet
 
-This snippet loads the moving 2.x CDN alias. Use `/rum/v2.3.1/sdk.min.js` to pin a release. Authorize the inline bootstrap using your site's CSP nonce or hash; see [CSP and endpoint configuration](/observability/rum/how-to/csp/).
+This snippet loads the moving 2.x CDN alias. Use `/rum/v2.3.2/sdk.min.js` to pin a release. Authorize the inline bootstrap using your site's CSP nonce or hash; see [CSP and endpoint configuration](/observability/rum/how-to/csp/).
 
 ```html
 <script>

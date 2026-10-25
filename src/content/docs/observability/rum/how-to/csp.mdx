@@ -5,7 +5,7 @@ last_verified: 2026-10-10
 owner: jj
 ---
 
-For SDK 2.3.1, add these origins to your existing Content Security Policy directives:
+For SDK 2.3.2, add these origins to your existing Content Security Policy directives:
 
 ```text
 script-src 'self' https://cdn.siteqwality.com;
@@ -26,7 +26,7 @@ Merge this fragment into your policy rather than replacing it. Authorize the inl
 
 Set `ingestBase`, `replayBase` and `configBase` to your proxy's host bases. Forward:
 
-- Event `POST /v2/batch` to `in.siteqwality.com`. Forward identity checks too: SDK 2.3.1 sends `GET /v2/identity?h=<hash>`, and the intake also accepts `POST /v2/identity` with a JSON body. Preserve Authorization, Content-Type, the body and the private/no-store response; suppress identity query strings in proxy access logs.
+- Event `POST /v2/batch` to `in.siteqwality.com`. Forward identity checks too: SDK 2.3.2 sends `GET /v2/identity?h=<hash>`, and the intake also accepts `POST /v2/identity` with a JSON body. Preserve Authorization, Content-Type, the body and the private/no-store response; suppress identity query strings in proxy access logs.
 - Config `GET /rum/config/v2/<applicationId>.json` to `cdn.siteqwality.com`, without adding a token.
 - Replay `POST /v2/segments` to `in-replay.siteqwality.com`, preserving `Authorization`, `Content-Type`, `Origin` and `x-sq-replay-index`, and the original gzip or JSON body.
 
