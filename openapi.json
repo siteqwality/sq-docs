@@ -14188,7 +14188,7 @@
         "tags": [
           "Telemetry logs"
         ],
-        "operationId": "histogram",
+        "operationId": "logs_histogram",
         "requestBody": {
           "content": {
             "application/json": {
@@ -30568,7 +30568,7 @@
         "tags": [
           "Telemetry traces"
         ],
-        "operationId": "histogram",
+        "operationId": "traces_histogram",
         "parameters": [
           {
             "name": "range",
