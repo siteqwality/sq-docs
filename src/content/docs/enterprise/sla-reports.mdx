@@ -1,7 +1,7 @@
 ---
 title: SLA reports
 description: Monthly uptime attainment against a target, per monitor or across the account.
-last_verified: 2026-08-02
+last_verified: 2026-10-25
 owner: jj
 ---
 
@@ -65,9 +65,9 @@ SLA figures come from a daily rollup that **refreshes once a day at 03:00 UTC**,
 
 - **HTTP, TCP port and ping monitors only.** Browser, cron, DNS and TLS monitors have no SLA report.
 - **JSON only.** There is no SLA CSV or PDF export; the [monitor uptime CSV](/enterprise/csv-exports/#monitor-uptime-summary) is the closest thing and uses the same daily-average convention.
-- **No scheduled or emailed reports.** Reports are pull-only.
 
 ## See also
 
+<LinkCard title="Reports" description="Uptime, incidents and on-call for a period, in the app or by email." href="/reports/overview/" />
 <LinkCard title="CSV exports" description="Uptime summaries and raw check results." href="/enterprise/csv-exports/" />
 <LinkCard title="Status pages" description="Where the SLA target is configured." href="/status-pages/reference/" />

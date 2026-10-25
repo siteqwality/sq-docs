@@ -1,0 +1,109 @@
+---
+title: Scheduled report emails
+description: Email a report every day, week or month to your team, your leadership or a client, with confirmation for outside addresses and one-click unsubscribe.
+last_verified: 2026-10-25
+owner: jj
+---
+
+import { Steps, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+A schedule emails one [report](/reports/overview/) every day, week or month. The email carries the headline figures and short lists, and links to the full report as sent.
+
+## Create a schedule
+
+<Steps>
+
+1. Open **Reports → Scheduled** and choose **Schedule a report**.
+2. Pick the kind: executive summary, operations report or client uptime report. A client uptime report is monthly only.
+3. Pick daily, weekly or monthly, the hour to send at and the timezone. The timezone defaults to the account's.
+4. Add recipients: team members, outside addresses, or both.
+5. Choose **Create schedule**. **Send test to me** on the schedule's row emails you the last complete period straight away.
+
+</Steps>
+
+On the Overview tab, **Schedule this report** opens the same form set to the report on screen.
+
+## When it is sent
+
+Each period goes out at the chosen hour once it has ended: a daily report the next day, a weekly report on Monday, and a monthly report on the 1st. It never goes out sooner than 20 minutes after the period ends, so a report set for midnight arrives at 00:20.
+
+A client uptime report covers the UTC calendar month and is sent at the chosen hour, but no sooner than 4 hours after that month ends, once the month's last day of uptime data is in.
+
+A new schedule sends its first report after the current period ends. Changing only a schedule's name or recipients keeps its next send time. If sending is held up, only the latest period goes out, never a backlog.
+
+## Recipients
+
+- **Team members** receive the report from the next send.
+- **Outside addresses** get a confirmation email first, and nothing else is sent to them until they confirm. It names you and your account. The link expires after 7 days; resend it from the schedule. Adding outside addresses needs a verified email on your account.
+- An address that bounced or marked an email as spam before gets no confirmation and no report. The Sent tab counts it as suppressed.
+
+Every report email has an unsubscribe link, and mail apps can unsubscribe in one click. An unsubscribed recipient stays unsubscribed when the schedule is saved again.
+
+- A **team member** who unsubscribes leaves that schedule only. To add them again, remove them, save, and add them back.
+- An **outside address** that unsubscribes can't be added to any of your account's reports again until it resubscribes with the button on the unsubscribe page.
+
+Outside addresses see on-call totals only, never the names of the people paged.
+
+Reports from a client account you manage as a [partner](/partners/overview/) carry your brand, and come from your own domain once you verify it, like alert emails.
+
+## Sent reports
+
+**Reports → Sent** lists every period a schedule sent or tried to send, newest first, with how many emails went out. Open one to see the report exactly as it was sent.
+
+| Status | Meaning |
+|---|---|
+| `sent` | Emails went out. A note says if some failed. |
+| `failed` | The report could not be built or no email went out. It is tried again after 30 minutes, until the next period is due. |
+| `skipped` | Nobody could receive it: no recipient has confirmed yet, or every address is suppressed. |
+
+Sent reports are kept for 400 days. An email's link to the full report works for 90 days, and stops working once that address is removed or unsubscribes. Deleting a schedule deletes its sent reports.
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| Schedules per account | 20 |
+| Recipients per schedule | 25 |
+| Confirmation emails per account | 50 in any 24 hours |
+| Confirmation emails to one address | 3 in any 24 hours, from all accounts |
+| Resending one confirmation | Once a minute |
+| Test sends | Once a minute per person, to that person only |
+
+The same limits apply on every plan.
+
+## API
+
+Reading needs the `read:monitors` scope and changing schedules `write:monitors`. A key or token without `read:incidents` gets reports without incidents and on-call, and one without `read:rum` gets them without real user monitoring; the left-out sections are listed in `withheld`. Creating or changing an executive summary or operations report schedule needs both.
+
+| Method and path | Purpose |
+|---|---|
+| `GET /reports/subscriptions` | List schedules with their recipients. |
+| `POST /reports/subscriptions` | Create a schedule. |
+| `GET`, `PUT`, `DELETE /reports/subscriptions/{id}` | Read, replace or delete one. `PUT` replaces the whole schedule, recipients included. |
+| `POST /reports/subscriptions/{id}/test` | Send the last complete period to the signed-in user. API keys are refused. |
+| `POST /reports/subscriptions/{id}/recipients/{recipient_id}/resend` | Resend a pending confirmation. |
+| `GET /reports/runs` | Sent reports, newest first. `subscription_id`, `limit` (1 to 100, default 50) and `before` (an RFC 3339 time, for the next page). |
+| `GET /reports/runs/{id}` | One sent report, with the report as JSON in `snapshot` (`null` for a client uptime report). |
+| `GET /reports/runs/{id}/document` | One sent report as a printable HTML page. |
+
+```bash
+curl -X POST "https://api.siteqwality.com/reports/subscriptions" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Weekly leadership summary",
+    "kind": "executive",
+    "frequency": "weekly",
+    "send_hour": 8,
+    "recipients": [{ "email": "cto@example.com" }]
+  }'
+```
+
+`kind` is `executive`, `operations` or `client_uptime`, and `frequency` is `daily`, `weekly` or `monthly`. A team member is `{ "user_id": "..." }`. A 21st schedule gets `409`, and going over the confirmation or test limits gets `429`.
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Reports" description="What each report shows and how its numbers are calculated." href="/reports/overview/" />
+  <LinkCard title="Monthly client reports" description="The branded document a client uptime report links to." href="/partners/client-reports/" />
+</CardGrid>

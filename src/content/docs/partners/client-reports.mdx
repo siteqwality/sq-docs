@@ -1,13 +1,15 @@
 ---
 title: Monthly client reports
 description: A printable, branded uptime report for a calendar month, ready to send to a client.
-last_verified: 2026-10-21
+last_verified: 2026-10-25
 owner: jj
 ---
 
 import { Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-The report comes from the API; the dashboard has no button for it. With an [M2M client](/enterprise/api-clients/) token that has `read:monitors`, exported as `ACCESS_TOKEN`:
+Open it from **Monthly report** on a client's row in **Manage → Clients**, or from **Client report** on the client's **Reports** page while you work in that account. To send it every month, [schedule it by email](#email-it-every-month).
+
+Through the API, with an [M2M client](/enterprise/api-clients/) token that has `read:monitors`, exported as `ACCESS_TOKEN`:
 
 ```bash
 curl "https://api.siteqwality.com/monitors/report?month=2026-07" \
@@ -66,9 +68,13 @@ Site Qwality branding is never used as a fallback.
 
 If a monitor was failing when it was paused, its outage is measured to its **last actual check**, not to now, so a monitor paused mid-outage stops accruing downtime. Monitors on accounts nobody signs into are paused automatically after long enough dormancy, and those are the clients whose reports you send rather than read.
 
-## Automating it
+## Email it every month
 
-The same M2M token can pull every client's report on a schedule. Copy each client's account ID from **Manage → Clients** into `clients.txt`, one per line:
+In the client's account, open **Reports → Scheduled**, create a **Client uptime report** schedule and add the client's addresses. Each address confirms once, then receives the report after every UTC month ends, with your brand, from your own domain once you verify it. See [scheduled report emails](/reports/scheduled-emails/).
+
+## Pull it with a script
+
+The same M2M token can pull every client's report. Copy each client's account ID from **Manage → Clients** into `clients.txt`, one per line:
 
 ```bash
 # One report per client, for last month. $ACCESS_TOKEN is an M2M token with read:monitors.

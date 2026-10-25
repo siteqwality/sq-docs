@@ -1,0 +1,63 @@
+---
+title: Reports
+description: One page and one email for how a day, week or month went, for leadership, for the team running the monitors, or for an agency's client.
+last_verified: 2026-10-25
+owner: jj
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+A **report** sums up one period: uptime against target, outages and downtime, incidents and how fast they were handled, on-call pages, what needs attention, and real user experience, each figure beside the period before.
+
+Open **Reports** in the sidebar to read one, or [schedule it by email](/reports/scheduled-emails/). Reports are included on every plan.
+
+## Report kinds
+
+| Kind | For | Shows |
+|---|---|---|
+| Executive summary | Leadership | Uptime against target, outages, downtime, incidents opened, mean time to resolve, monitors below target, and real user monitoring |
+| Operations report | The team running the monitors | The executive figures plus what needs attention now (monitors down, open incidents, certificates and domains expiring), the longest outages, every monitor worst first, incidents with mean time to acknowledge and resolve, and on-call pages by person |
+| Client uptime report | An agency's client | The branded [monthly client report](/partners/client-reports/): each monitor's uptime against its target, and the month's outages |
+
+## Periods
+
+The **Overview** tab offers yesterday, last week and last month, and the day, week and month so far. Weeks run Monday to Monday. Days, weeks and months follow the account's timezone (**Timezone** under **Settings → General**), and a schedule can use its own.
+
+Every figure is compared with the period just before, of the same length. A period still in progress says so.
+
+The client uptime report always covers a whole UTC calendar month, the same month the [SLA report](/enterprise/sla-reports/) uses.
+
+## How the numbers are calculated
+
+- **Uptime** is the share of checks that passed in the period, across HTTP, TCP port, ping and browser checks. It is the figure [dashboards](/dashboards/overview/) show. A heartbeat monitor has no checks, so its uptime is the share of the period outside missed-ping outages.
+- **Meeting target** compares each monitor's uptime with the strictest SLA target set for it on a status page, or 99.9% when none is set.
+- **Outages** and **downtime** count every outage that overlapped the period, heartbeats included, and only the part inside the period. Account downtime is the time at least one monitor was down, so overlapping outages count once.
+- A monitor paused for the whole period has no uptime and is not judged against its target.
+- **Incidents** opened in the period, with mean time to acknowledge and resolve, follow the same rules as [incident metrics](/incident-management/incidents/reference/#incident-metrics). Merged incidents are left out.
+- **On-call pages** count every page sent in the period.
+- **Real user monitoring** shows up to five applications with the most sessions: sessions, the share of sessions with an error, and LCP, INP and CLS at the 75th percentile.
+
+The client uptime report keeps the SLA report's definition, the average of each day's uptime, so its monthly figure can differ slightly from the executive summary for the same month.
+
+## Print or share
+
+**Print** on the Overview tab prints the report without the app around it. **Client report** opens the branded monthly report for this month or any of the 13 before it.
+
+## Through the API and AI assistants
+
+`GET /reports/summary` returns the same report as JSON, with `kind` (`executive` or `operations`), `frequency` (`daily`, `weekly` or `monthly`) and `offset` (1, the default, is the last complete period; 0 is the period in progress; up to 12). It needs the `read:monitors` scope. Incidents and on-call also need `read:incidents`, and real user monitoring `read:rum`; a section the key can't read comes back empty and is named in `withheld`. AI assistants read it with the [`get_report` tool](/integrations/mcp/).
+
+```bash
+curl -G "https://api.siteqwality.com/reports/summary" \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  --data-urlencode "kind=executive" \
+  --data-urlencode "frequency=monthly"
+```
+
+## See also
+
+<CardGrid>
+  <LinkCard title="Scheduled report emails" description="Send a report every day, week or month." href="/reports/scheduled-emails/" />
+  <LinkCard title="Monthly client reports" description="The branded document for an agency's client." href="/partners/client-reports/" />
+  <LinkCard title="SLA reports" description="Monthly attainment against a target, as JSON." href="/enterprise/sla-reports/" />
+</CardGrid>

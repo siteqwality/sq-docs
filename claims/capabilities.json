@@ -527,5 +527,22 @@
     "summary": "Import monitors from UptimeRobot, Pingdom, StatusCake and Better Stack, and status pages from UptimeRobot and Better Stack, with the tool's API key, used for that request only and never stored",
     "api": ["POST /monitors/import", "POST /status_page/import"],
     "source": "core-rs api/src/handlers/monitor_import/mod.rs"
+  },
+  "reports.summary": {
+    "status": "live",
+    "summary": "The account report for a day, week or month with the previous period beside it, in the app, the API and the get_report MCP tool",
+    "api": ["GET /reports/summary"],
+    "source": "core-rs common/src/reports/assemble.rs"
+  },
+  "reports.scheduled_email": {
+    "status": "live",
+    "summary": "Email a report on a daily, weekly or monthly schedule to team members and confirmed outside addresses, with one-click unsubscribe and a sent history",
+    "api": ["GET /reports/subscriptions", "POST /reports/subscriptions", "GET /reports/runs", "GET /reports/runs/{id}"],
+    "source": "core-rs api/src/handlers/reports/worker.rs"
+  },
+  "reports.external_confirmation": {
+    "status": "live",
+    "summary": "Outside report recipients get a confirmation email and receive nothing else until they confirm",
+    "source": "core-rs api/src/handlers/reports/mod.rs"
   }
 }

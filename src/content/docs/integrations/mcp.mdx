@@ -1,7 +1,7 @@
 ---
 title: Connect AI assistants (MCP)
 description: Ask Claude, ChatGPT, Cursor and other AI assistants about your monitors, incidents and telemetry, and let them take everyday actions for you.
-last_verified: 2026-10-22
+last_verified: 2026-10-25
 owner: jj
 ---
 
@@ -209,7 +209,7 @@ Access is granted per area, as `read:<area>` and `write:<area>`. On the consent 
 
 | Area | Scopes | Covers |
 |---|---|---|
-| Monitors | `read:monitors`, `write:monitors` | HTTP, TCP port, ping, SSL/TLS, domain expiry, cron and browser checks |
+| Monitors | `read:monitors`, `write:monitors` | HTTP, TCP port, ping, SSL/TLS, domain expiry, cron and browser checks, and reports |
 | Incidents | `read:incidents`, `write:incidents` | Incidents (including those on status pages), escalation policies, on-call schedules, maintenance windows |
 | Notifications | `read:notifications`, `write:notifications` | Notification channels and groups, delivery history, and reading integrations |
 | Status Pages | `read:status_pages`, `write:status_pages` | Status pages with their monitors, layout, maintenance, subscribers, branding and custom domain |
@@ -233,6 +233,7 @@ Assistants pick the tool themselves. **Write** tools need the matching `write:` 
 |---|---|---|
 | `list_attention_items` | Shows what needs attention now: monitors that are down, open incidents, most urgent first. | Read |
 | `list_monitors` | Lists your monitors and their current status. | Read |
+| `get_report` | The [report](/reports/overview/) for a day, week or month, each figure beside the period before: uptime against target, outages and downtime, monitors below target, incidents with mean time to acknowledge and resolve, on-call pages, what needs attention now, and real user monitoring. Incidents and on-call need `read:incidents`, and real user monitoring `read:rum`. | Read |
 | `get_monitor` | Shows one monitor's settings and state. | Read |
 | `get_recent_checks` | Shows a monitor's latest check results, including the failing step of a browser check. | Read |
 | `get_alert_history` | Shows a monitor's recent outages, the alerts each one sent and who acknowledged it. | Read |

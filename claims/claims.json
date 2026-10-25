@@ -69,5 +69,8 @@
   { "page": "observability/alerts.mdx", "text": "**Resolved** notifications go to every channel that was told the instance fired, and to no other.", "needs": ["telemetry.rule_notifications"] },
   { "page": "observability/alerts.mdx", "text": "**Webhook and Pushover** channels are skipped, with a `source_not_supported` receipt.", "needs": ["telemetry.rule_notifications"] },
   { "page": "uptime-monitoring/import-from-other-tools.mdx", "text": "The key is used for that import only and never stored.", "needs": ["import.other_tools"] },
-  { "page": "uptime-monitoring/import-from-other-tools.mdx", "text": "Status pages come across from UptimeRobot and Better Stack.", "needs": ["import.other_tools"] }
+  { "page": "uptime-monitoring/import-from-other-tools.mdx", "text": "Status pages come across from UptimeRobot and Better Stack.", "needs": ["import.other_tools"] },
+  { "page": "reports/scheduled-emails.mdx", "text": "**Outside addresses** get a confirmation email first, and nothing else is sent to them until they confirm.", "needs": ["reports.external_confirmation"] },
+  { "page": "reports/scheduled-emails.mdx", "text": "If sending is held up, only the latest period goes out, never a backlog.", "needs": ["reports.scheduled_email"] },
+  { "page": "reports/overview.mdx", "text": "Every figure is compared with the period just before, of the same length.", "needs": ["reports.summary"] }
 ]

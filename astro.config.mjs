@@ -418,6 +418,14 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'Reports',
+					collapsed: true,
+					items: [
+						{ label: 'Overview', slug: 'reports/overview' },
+						{ label: 'Scheduled emails', slug: 'reports/scheduled-emails' },
+					],
+				},
+				{
 					label: 'Integrations',
 					collapsed: true,
 					items: [
