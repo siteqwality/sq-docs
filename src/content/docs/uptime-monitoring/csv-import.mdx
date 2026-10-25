@@ -1,7 +1,7 @@
 ---
 title: Import monitors from a CSV
 description: Create HTTP, TCP, ping, heartbeat and DNS record monitors from a spreadsheet, with a preview of every row before anything is created.
-last_verified: 2026-10-23
+last_verified: 2026-10-25
 owner: jj
 ---
 
@@ -9,11 +9,13 @@ import { Steps } from '@astrojs/starlight/components';
 
 A CSV adds many monitors at once, one monitor per row. Before anything is created you see what each row will do: create a monitor, skip a duplicate, or stay out with the reason. A bad row never stops the rest of the file.
 
+Moving from UptimeRobot, Pingdom, StatusCake or Better Stack? [Import from that tool](/uptime-monitoring/import-from-other-tools/) with its API key instead, with no file to build.
+
 ## In the dashboard
 
 <Steps>
 
-1. On the dashboard, click **Import CSV** next to **Add Monitor** and choose your file. A new account can also import from the first-monitor screen.
+1. On the dashboard, click **Import** next to **Add Monitor**, choose **From a CSV file** and pick your file. A new account can also import from the first-monitor screen.
 
 2. Check the preview. Each row shows **Will be created**, **Skipped** with the reason, or **Not imported** with what is wrong. Nothing has been created yet.
 
@@ -65,7 +67,7 @@ So importing the same file again is safe: it creates only the rows that were not
 ## Limits
 
 - A file holds at most 500 monitor rows.
-- Each row is created just as if you added it by hand, so your plan's monitor, heartbeat and DNS monitor limits and its shortest interval apply. The preview counts your plan's monitor limit; the other limits show up as a problem on the row when you import.
+- Each row is created just as if you added it by hand, so your plan's monitor, heartbeat and DNS monitor limits and its shortest interval apply. The preview checks your plan's monitor limit and shortest interval; the heartbeat and DNS monitor limits show up as a problem on the row when you import.
 - An import stops creating after about 20 seconds. Rows it did not reach show **Not imported yet**. Click **Import the rest**, or import the same file again, and the monitors already created are skipped.
 
 ## With the API
@@ -92,9 +94,9 @@ Send it again without `dry_run` to create the monitors. The response has one ent
     "not_attempted": 0,
     "errors": ["line 4: interval is not a number"],
     "rows": [
-      { "line": 2, "status": "would_create", "check_type": "http", "name": "Homepage", "target": "https://example.com", "id": null, "message": null },
-      { "line": 3, "status": "skipped", "check_type": "http", "name": "Docs", "target": "https://example.com/docs", "id": null, "message": "A monitor for this url already exists" },
-      { "line": 4, "status": "failed", "check_type": null, "name": null, "target": null, "id": null, "message": "interval is not a number" }
+      { "line": 2, "status": "would_create", "check_type": "http", "name": "Homepage", "target": "https://example.com", "id": null, "message": null, "source_id": null, "warnings": [] },
+      { "line": 3, "status": "skipped", "check_type": "http", "name": "Docs", "target": "https://example.com/docs", "id": null, "message": "A monitor for this url already exists", "source_id": null, "warnings": [] },
+      { "line": 4, "status": "failed", "check_type": null, "name": null, "target": null, "id": null, "message": "interval is not a number", "source_id": null, "warnings": [] }
     ]
   }
 }

@@ -244,6 +244,7 @@ Assistants pick the tool themselves. **Write** tools need the matching `write:` 
 | `pause_monitor`, `resume_monitor` | Pauses or resumes a monitor. | Write |
 | `delete_monitor` | Deletes a monitor. | Write, asks first |
 | `run_browser_check` | Runs a browser check now. | Write |
+| `import_monitors` | Imports monitors from UptimeRobot, Pingdom, StatusCake or Better Stack with your API key for that tool, or from CSV text. It previews unless told to create; see [import from another tool](/uptime-monitoring/import-from-other-tools/). | Write |
 | `list_incidents`, `get_incident` | Lists incidents, or shows one with its timeline. | Read |
 | `incident_metrics` | Counts incidents created in a time window and returns mean, p50 and p90 acknowledgment/resolution durations in seconds. Supports service and severity filters; merged incidents are excluded. | Read |
 | `acknowledge_incident`, `resolve_incident` | Acknowledges or resolves an incident. API-key and M2M acknowledgment needs `acknowledged_by`; sessions act as their own member. Resolve accepts a message and `notify_subscribers`. | Write |
@@ -290,6 +291,7 @@ These tools use the Status Pages scopes, except the three incident tools (`list_
 | `list_status_page_subscribers`, `export_status_page_subscribers` | Lists a page's email subscribers, or exports them all as CSV. | Read |
 | `add_status_page_subscriber` | Sends an address a confirmation link, optionally for only some components or only incidents or maintenance. | Write |
 | `import_status_page_subscribers` | Imports addresses from CSV. Each gets a confirmation link; past the hourly limit they are queued. | Write |
+| `import_status_pages` | Imports status pages from UptimeRobot or Better Stack, showing the monitors you already imported. It previews unless told to create. | Write |
 | `remove_status_page_subscriber` | Removes a subscriber. | Write, asks first |
 | `get_status_page_branding` | Shows a page's branding. | Read |
 | `update_status_page_branding`, `get_status_page_branding_upload_url` | Changes branding, or gets an upload link for a logo, dark-theme logo, favicon or social image. | Write |

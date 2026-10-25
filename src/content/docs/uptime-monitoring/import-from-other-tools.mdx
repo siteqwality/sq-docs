@@ -1,0 +1,106 @@
+---
+title: Import from UptimeRobot, Pingdom, StatusCake or Better Stack
+description: Bring your monitors and status pages over from another monitoring tool with its API key, with a preview of every monitor before anything is created.
+last_verified: 2026-10-25
+owner: jj
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+Paste an API key from UptimeRobot, Pingdom, StatusCake or Better Stack and your monitors come across with their settings. Status pages come across from UptimeRobot and Better Stack. You see what each monitor becomes before anything is created, and the other tool keeps running until you switch it off.
+
+The key is used for that import only and never stored. Use a read-only key where the tool offers one.
+
+## In the dashboard
+
+<Steps>
+
+1. On the dashboard, click **Import** next to **Add Monitor** and choose the tool. A new account can also start from the first-monitor screen.
+
+2. Paste the tool's API key ([where to find it](#where-to-find-the-api-key)) and click **Preview**. Nothing has been created yet.
+
+3. Check the preview. Each monitor shows **Will be created**, **Skipped** with the reason, or **Not imported** with what has no match here. Notes under a monitor say what changes on the way in, such as a slower interval.
+
+4. Click the **Import** button, which names how many monitors will be created. A long list keeps going on its own until every monitor is through.
+
+5. Point your cron jobs at the new ping URLs. The import lists one for each heartbeat it created.
+
+6. For UptimeRobot and Better Stack, click **Next: status pages**, check the preview, then import them. The **Status Pages** list also has an **Import** button for this step on its own.
+
+</Steps>
+
+## What comes across
+
+| In the other tool | Here |
+|---|---|
+| HTTP, HEAD and keyword checks, UptimeRobot API monitors | An [HTTP monitor](/uptime-monitoring/http-checks/overview/) with the same URL, method, headers, body, credentials, keyword (including alerting when it is present), status codes that count as up, timeout and redirect setting |
+| Port and TCP checks; SSH, SMTP, POP3 and IMAP checks | A [TCP port monitor](/uptime-monitoring/tcp-checks/) of the same host and port, with Pingdom's send and expect strings |
+| Ping checks | A [ping monitor](/uptime-monitoring/ping-checks/) |
+| Heartbeat, push and cron checks | A [heartbeat monitor](/uptime-monitoring/cron-checks/overview/) with the same interval and grace period |
+| DNS checks | A [DNS record monitor](/uptime-monitoring/dns-record-monitors/overview/) of the zone, which alerts when its main records change |
+| UDP checks, browser and transaction checks, Pingdom custom HTTP checks, UptimeRobot visual comparison and dependency monitors | Not imported. The preview says why, so you can add them by hand. |
+
+Certificate and domain expiry checks come across when the other tool watched them: UptimeRobot's SSL and domain reminders, Pingdom's certificate check, StatusCake's SSL alert and SSL tests, and Better Stack's SSL and domain expiration. A UptimeRobot API monitor keeps one JSON assertion that checks a value for equality; other assertions are left off and the preview says so.
+
+Some settings change on the way in, and the preview notes each one:
+
+- **Interval.** Checks run every 30 seconds or every whole number of minutes, up to a day, so other intervals round up. Your plan's shortest interval applies, and a faster check is slowed to it. See [plan limits](/getting-started/plan-limits/).
+- **Paused monitors** are imported paused.
+- **Tags** come across. Pingdom's automatic tags are left off, and a Better Stack group becomes a tag with the group's name.
+- **Alerts** go to your [default notification group](/incident-management/notifications/default-routing/#the-default-notification-group). The other tool's alert contacts are not imported.
+- **Locations** are your account's [default locations](/uptime-monitoring/http-checks/reference/#default-locations). The other tool's regions are not copied.
+- **Credentials** come across when the tool's API returns them. StatusCake's does not return basic auth passwords, so add them in the monitor's settings after the import.
+- **Timeouts** past what a check type allows are cut to its longest, and names longer than 99 characters are shortened.
+
+## Heartbeats need new ping URLs
+
+An imported heartbeat has its own ping URL here, and your jobs keep pinging the other tool until you change them. The import lists each new URL, and every heartbeat's page shows its URL too. Until a job calls its new URL, the heartbeat reports it as missing.
+
+## Status pages
+
+UptimeRobot and Better Stack status pages come across with their name and their components in order. Better Stack's sections become groups, and its manually tracked items become manual components whose status you set.
+
+A component shows one of your monitors here, matched to the other tool's monitor by URL, or by name for a heartbeat. Import your monitors first: a component whose monitor is not here yet is left off, and the preview says so. Running the status page import again skips the pages it already created, so add a monitor you import later to its page yourself.
+
+A page is skipped when you already have a status page with the same name. Each new page is published at its own address straight away. Custom domains, passwords, branding, subscribers and past incidents do not carry over; the preview lists what each page leaves behind. Your plan's status page limit applies.
+
+Pingdom's and StatusCake's APIs do not share status pages. Create a [status page](/status-pages/overview/) here and add your imported monitors to it.
+
+## Where to find the API key
+
+### UptimeRobot
+
+In UptimeRobot, open **Integrations & API** and copy the **Read-only API key**. UptimeRobot's free plan answers 10 API requests a minute; if it asks the import to wait, the import waits and carries on.
+
+### Pingdom
+
+In Pingdom, open **Settings**, then **Pingdom API**, and add an API token with **Read access**.
+
+### StatusCake
+
+In StatusCake, open your account page and copy an API key. StatusCake has no read-only keys.
+
+### Better Stack
+
+In Better Stack, open **API tokens** and copy a team-based **Uptime** API token for the team whose monitors you are moving.
+
+## Running the import again
+
+Monitors you already have are skipped, by the same rules as a [CSV import](/uptime-monitoring/csv-import/#duplicates-are-skipped): the same URL, a heartbeat with the same name, or a DNS monitor of the same zone. So importing again after fixing something in the other tool creates only what is new.
+
+## With the API
+
+With an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY`, send the tool and its key to [`POST /monitors/import`](/api-reference/operations/import_monitors/). `source` is `uptimerobot`, `pingdom`, `statuscake` or `betterstack`, and `dry_run: true` reports what would happen and creates nothing:
+
+```bash
+curl -X POST https://api.siteqwality.com/monitors/import \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"source\": \"uptimerobot\", \"api_key\": \"$UPTIMEROBOT_API_KEY\", \"dry_run\": true}"
+```
+
+Each row is one of the tool's monitors, in the shape a [CSV import](/uptime-monitoring/csv-import/#with-the-api) returns, plus `source_id` (the tool's id for it) and `warnings` (what changes on the way in). A long list takes more than one request: while `next_offset` is set, send the same request again with `offset` set to it, after waiting `retry_after_seconds` when that is set. A continued dry run also sends `previewed`, the number of rows other than DNS monitors that earlier answers would create, so the preview counts them against your plan's monitor limit.
+
+Status pages import through [`POST /status_page/import`](/api-reference/operations/import_status_pages/) with the same `source` (`uptimerobot` or `betterstack`), `api_key` and `dry_run`.
+
+An AI assistant connected over [MCP](/integrations/mcp/) runs the same imports with the `import_monitors` and `import_status_pages` tools.

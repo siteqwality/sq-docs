@@ -158,6 +158,7 @@ export default defineConfig({
 						{ label: 'TCP port checks', slug: 'uptime-monitoring/tcp-checks' },
 						{ label: 'Ping checks', slug: 'uptime-monitoring/ping-checks' },
 						{ label: 'Import from a CSV', slug: 'uptime-monitoring/csv-import' },
+						{ label: 'Import from another tool', slug: 'uptime-monitoring/import-from-other-tools' },
 						{
 							label: 'SSL/TLS checks',
 							collapsed: true,

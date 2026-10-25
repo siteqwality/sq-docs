@@ -67,5 +67,7 @@
   { "page": "uptime-monitoring/cron-checks/reference.mdx", "text": "Changing `check_interval_seconds` or `grace_seconds` applies from the last ping at once", "needs": ["heartbeat.window_change"] },
   { "page": "uptime-monitoring/cron-checks/reference.mdx", "text": "Resuming a paused check starts the wait over from the resume.", "needs": ["heartbeat.window_change"] },
   { "page": "observability/alerts.mdx", "text": "**Resolved** notifications go to every channel that was told the instance fired, and to no other.", "needs": ["telemetry.rule_notifications"] },
-  { "page": "observability/alerts.mdx", "text": "**Webhook and Pushover** channels are skipped, with a `source_not_supported` receipt.", "needs": ["telemetry.rule_notifications"] }
+  { "page": "observability/alerts.mdx", "text": "**Webhook and Pushover** channels are skipped, with a `source_not_supported` receipt.", "needs": ["telemetry.rule_notifications"] },
+  { "page": "uptime-monitoring/import-from-other-tools.mdx", "text": "The key is used for that import only and never stored.", "needs": ["import.other_tools"] },
+  { "page": "uptime-monitoring/import-from-other-tools.mdx", "text": "Status pages come across from UptimeRobot and Better Stack.", "needs": ["import.other_tools"] }
 ]
