@@ -48151,6 +48151,17 @@
           }
         }
       },
+      "CertificateProblem": {
+        "type": "string",
+        "description": "Why a browser would reject a certificate. A verdict names one: the first of\nthese, in this order, that applies.",
+        "enum": [
+          "expired",
+          "not_yet_valid",
+          "self_signed",
+          "untrusted_chain",
+          "hostname_mismatch"
+        ]
+      },
       "ChangePasswordRequest": {
         "type": "object",
         "required": [
@@ -49997,6 +50008,13 @@
             ],
             "format": "int32",
             "description": "Port the TLS check connects to, 1 to 65535. Omitted keeps the stored\nport (443 for a new TLS check). Needs `monitor_tls`."
+          },
+          "alert_on_invalid_certificate": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Alert when the certificate is one a browser would reject: expired, not yet\nvalid, self-signed, an untrusted chain or a hostname mismatch. Defaults to\ntrue. Ignored without `monitor_tls`."
           },
           "recovery_period_runs": {
             "type": [
@@ -54989,6 +55007,13 @@
             ],
             "format": "int32",
             "description": "Port the paired TLS check connects to. Only on `GET /http/job/{id}`\nwhen TLS is monitored."
+          },
+          "alert_on_invalid_certificate": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether an invalid certificate alerts. Only on `GET /http/job/{id}`\nwhen TLS is monitored."
           },
           "recovery_period_runs": {
             "type": "integer",
@@ -61753,6 +61778,13 @@
                   ],
                   "format": "int32",
                   "description": "Port the paired TLS check connects to. Only on `GET /http/job/{id}`\nwhen TLS is monitored."
+                },
+                "alert_on_invalid_certificate": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "Whether an invalid certificate alerts. Only on `GET /http/job/{id}`\nwhen TLS is monitored."
                 },
                 "recovery_period_runs": {
                   "type": "integer",
@@ -77198,7 +77230,8 @@
           "current_status",
           "domain",
           "created_at",
-          "port"
+          "port",
+          "alert_on_invalid_certificate"
         ],
         "properties": {
           "id": {
@@ -77248,6 +77281,37 @@
             "type": "integer",
             "format": "int32",
             "description": "Port the TLS check connects to."
+          },
+          "alert_on_invalid_certificate": {
+            "type": "boolean",
+            "description": "Whether an invalid certificate alerts."
+          },
+          "certificate_problem": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CertificateProblem",
+                "description": "Why a browser would reject the certificate, from the latest check that\ncould tell. `null` when it is valid or has not been judged yet."
+              }
+            ]
+          },
+          "certificate_checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the certificate was last judged, by an uptime check or this TLS check."
+          },
+          "certificate_problem_since": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the current problem was first seen."
           }
         }
       },
@@ -78900,6 +78964,13 @@
             ],
             "format": "int32",
             "description": "Port the TLS check connects to, 1 to 65535. Omitted keeps the stored\nport (443 for a new TLS check). Needs `monitor_tls`."
+          },
+          "alert_on_invalid_certificate": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Alert when the certificate is one a browser would reject. Omitted keeps\nthe stored setting (true for a new TLS check). Ignored without `monitor_tls`."
           },
           "recovery_period_runs": {
             "type": [
