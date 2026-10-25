@@ -55,5 +55,6 @@
   { "page": "uptime-monitoring/tcp-checks.mdx", "text": "TCP port checks run from every check location", "needs": ["uptime.tcp_checks"] },
   { "page": "uptime-monitoring/tcp-checks.mdx", "text": "creating or updating a TCP port check on port 25 is refused", "needs": ["uptime.tcp_port_25_refused"] },
   { "page": "uptime-monitoring/ping-checks.mdx", "text": "ping checks run from the Google Cloud locations only", "needs": ["uptime.ping_checks"] },
-  { "page": "uptime-monitoring/ping-checks.mdx", "text": "The default threshold is 100%, so a check fails only when every packet is lost.", "needs": ["uptime.ping_checks"] }
+  { "page": "uptime-monitoring/ping-checks.mdx", "text": "The default threshold is 100%, so a check fails only when every packet is lost.", "needs": ["uptime.ping_checks"] },
+  { "page": "uptime-monitoring/ssl-tls-checks/overview.mdx", "text": "The alert does not change the monitor's status, its uptime or any status page, and it does not open an incident.", "needs": ["uptime.tls_invalid_alerts"] }
 ]

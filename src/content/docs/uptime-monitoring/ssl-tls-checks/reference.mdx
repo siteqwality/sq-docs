@@ -1,7 +1,7 @@
 ---
 title: TLS check reference
 description: Every field on a TLS check, with status meanings.
-last_verified: 2026-10-13
+last_verified: 2026-10-24
 owner: jj
 ---
 
@@ -21,6 +21,10 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `last_run_at` | rfc3339 \| null | Most recent handshake timestamp. |
 | `last_status_change_at` | rfc3339 \| null | When `current_status` last transitioned. |
 | `created_at` | rfc3339 | When the TLS check was first provisioned. |
+| `alert_on_invalid_certificate` | bool | Whether an [invalid certificate](#invalid-certificate-alerts) alerts. |
+| `certificate_problem` | enum \| null | Why browsers would reject the certificate, from the latest judgment. See [certificate problems](#certificate-problems). `null` when it is valid or not judged yet. |
+| `certificate_checked_at` | rfc3339 \| null | When the certificate was last judged, by an uptime check or the TLS check. |
+| `certificate_problem_since` | rfc3339 \| null | When the current problem was first seen. `null` without a problem. |
 
 ## Status enum
 
@@ -32,7 +36,24 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 
 A TLS check that stays `unknown` for more than 24 hours means certificate expiry is not being watched. Site Qwality emails the account owners once per stretch and records a `tls_unknown` [monitor event](/uptime-monitoring/http-checks/reference/#monitor-events) on the HTTP check. A wrong port is a common cause: set `tls_port`.
 
-## Endpoints
+## Certificate problems
+
+| `certificate_problem` | Meaning |
+|---|---|
+| `expired` | The certificate, or one in its chain, has expired. |
+| `not_yet_valid` | The certificate, or one in its chain, is not valid yet. |
+| `self_signed` | The certificate is signed by its own key, not by a certificate authority. |
+| `untrusted_chain` | The chain does not lead to a root in the Mozilla root store: an intermediate is missing, the issuer is unknown, or a signature does not verify. |
+| `hostname_mismatch` | The certificate does not cover the hostname. |
+
+When several apply, the first in this table is named.
+
+## Invalid certificate alerts
+
+Send `alert_on_invalid_certificate` on `POST /http/job` or `PUT /http/job/{job_id}` to switch the alert on or off. It defaults to `true` when TLS monitoring starts, a `PUT` without it keeps the current value, and it is ignored without `monitor_tls`. `GET /http/job/{job_id}` returns it when TLS monitoring is on.
+
+The alert fires after two invalid judgments in a row, with the event `tls.invalid` on webhooks, and its recovery is `tls.recovered`. On PagerDuty and Opsgenie the two share the key `sq-tls-invalid-<tls_job_id>-<alert-id>`, so the recovery resolves what the alert opened.
+
 
 The TLS check is read-only via its own endpoints (you create it implicitly by setting `monitor_tls: true` on an HTTP check):
 

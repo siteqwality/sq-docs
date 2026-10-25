@@ -107,9 +107,11 @@ Because the key includes the state transition, a *second* outage of the same mon
 
 Summaries longer than 1024 characters are truncated to fit the Events API limit.
 
-### Domain expiry alerts do not auto-close
+An [invalid certificate](/uptime-monitoring/ssl-tls-checks/overview/#invalid-certificate-alerts) triggers at the channel's severity under `sq-tls-invalid-<tls-check-id>-<alert-id>`, and its recovery resolves that key.
 
-DNS and domain-expiry warnings are **trigger-only**: they key on the DNS job plus the expiry date (`sq-dns-expiry-<job-id>-YYYY-MM-DD`), so repeated warnings about the same date collapse into one PagerDuty incident, but nothing ever resolves it. Close those incidents in PagerDuty yourself. Renewing the domain does not close them, and because renewal changes the expiry date, the next warning opens a **new** incident while the old one stays open. Expiry warnings always send at severity `warning`, ignoring the channel's configured severity.
+### Expiry alerts do not auto-close
+
+Domain and TLS certificate expiry warnings are **trigger-only**: they key on the check plus the expiry date (`sq-dns-expiry-<job-id>-YYYY-MM-DD`, `sq-tls-expiry-<tls-check-id>-YYYY-MM-DD`), so repeated warnings about the same date collapse into one PagerDuty incident, but nothing ever resolves it. Close those incidents in PagerDuty yourself. Renewing does not close them, and because renewal changes the expiry date, the next warning opens a **new** incident while the old one stays open. Expiry warnings always send at severity `warning`, ignoring the channel's configured severity.
 
 ## Delivery behavior
 
@@ -117,7 +119,7 @@ An event PagerDuty refuses is recorded as rejected and not retried. Other failur
 
 ## Limitations
 
-- TLS expiry warnings and page speed alerts do not reach PagerDuty. See the [coverage table](/integrations/coverage/#pagerduty).
+- Page speed alerts do not reach PagerDuty. See the [coverage table](/integrations/coverage/#pagerduty).
 - Incidents and escalation policies do not page through PagerDuty. The integration sends monitor and alert-rule events only.
 
 ## See also

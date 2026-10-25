@@ -93,7 +93,7 @@ A group's `delay_send_after_minutes` holds back the first down alert, which then
 | HTTP monitor down | Applies |
 | Browser check down | Applies |
 | Heartbeat (cron) down | Applies |
-| TLS expiry, domain expiry, DNS record, page speed | Sends at once |
+| TLS certificate, domain expiry, DNS record, page speed | Sends at once |
 | Recovery (up) alerts, every type | Sends at once |
 
 To stop a single failed check from paging anyone, raise the monitor's [confirmation threshold](/uptime-monitoring/http-checks/how-to/confirmation-threshold/) instead. The delay does not stop an incident from opening on a linked service.

@@ -1,19 +1,20 @@
 ---
 title: SSL/TLS checks
-description: Track certificate expiry on an HTTP check's hostname and get warned before the certificate lapses.
-last_verified: 2026-05-03
+description: Track certificate expiry and validity on an HTTP check's hostname, and get alerted before it lapses or when browsers would reject it.
+last_verified: 2026-10-24
 owner: jj
 ---
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-A **TLS check** verifies that a domain's TLS certificate is valid and tells you when it's about to expire, even while the site itself is up.
+A **TLS check** tells you when a domain's TLS certificate is about to expire, and when browsers would reject it, even while the site itself is up.
 
 ## When to use TLS checks
 
 - Anything served over HTTPS where an expired cert would cause customer pain.
 - Internal services with self-renewing certs (Let's Encrypt, ACM) where renewal can fail without anyone noticing.
 - Custom-domain status pages, customer subdomains, anything where you don't have full control of the renewal pipeline.
+- Deploys that can swap in the wrong certificate or drop an intermediate from the chain.
 
 ## How it works
 
@@ -27,7 +28,22 @@ The TLS check's `current_status` reflects the most recent handshake:
 
 Only the expiry date decides the status. The chain and hostname match are recorded on each result but do not fail the check.
 
-`expiry_date` is recorded so the dashboard can render a countdown. Warnings go out 30, 14, 7 and 1 days before expiry and on the day it expires, through the HTTP check's notification groups.
+`expiry_date` is recorded so the dashboard can render a countdown, whether or not the certificate covers the hostname. Warnings go out 30, 14, 7 and 1 days before expiry and on the day it expires, through the HTTP check's notification groups.
+
+## Invalid certificate alerts
+
+Every uptime check on the same host and port, and the daily TLS check, also judge the certificate the way a browser would. It is **invalid** when it:
+
+- has expired, or is not valid yet;
+- is self-signed;
+- does not chain to a trusted root, for example because the server leaves out an intermediate certificate or the issuer is unknown;
+- does not cover the hostname.
+
+Trust follows the Mozilla root store, and a missing intermediate is never fetched, so a chain that only some browsers repair counts as untrusted. Judging the certificate never fails the uptime check.
+
+When two judgments in a row find it invalid, a **Certificate invalid** alert naming the problem goes to the HTTP check's notification groups. When it is valid again, a recovery follows. The alert does not change the monitor's status, its uptime or any status page, and it does not open an incident.
+
+The alert is on by default for a new HTTP check. Turn it off with `alert_on_invalid_certificate: false` on the HTTP check (see the [reference](/uptime-monitoring/ssl-tls-checks/reference/#invalid-certificate-alerts)); the dashboard still shows the problem.
 
 You don't need a TLS check for every HTTPS endpoint: enable `monitor_tls` on one HTTP check per host and that hostname is covered.
 
@@ -36,6 +52,7 @@ You don't need a TLS check for every HTTPS endpoint: enable `monitor_tls` on one
 - **Standalone TLS checks** (without an HTTP host) aren't supported.
 - **CT log checks** (confirming new certs appear in Certificate Transparency logs) aren't supported.
 - **Custom expiry-warning thresholds** aren't supported.
+- **Revocation** (OCSP or CRLs) isn't checked.
 
 ## See also
 

@@ -112,12 +112,15 @@ Priority is fixed and not configurable per channel:
 | Event | Priority |
 |---|---|
 | Monitor or browser check down | `P1` |
+| Certificate invalid | `P1` |
 | Recovery (close) | none sent |
-| Domain expiry warning | `P3` |
+| Domain or TLS certificate expiry warning | `P3` |
 
-### Domain expiry alerts do not auto-close
+An [invalid certificate](/uptime-monitoring/ssl-tls-checks/overview/#invalid-certificate-alerts) creates an alert with the alias `sq-tls-invalid-<tls-check-id>-<alert-id>`, and its recovery closes it.
 
-Domain and DNS expiry warnings are **create-only**: they key on the DNS job plus the expiry date (`sq-dns-expiry-<job-id>-YYYY-MM-DD`), so repeated warnings for the same date collapse into one alert, but nothing ever closes it. Close those alerts yourself. Renewing the domain does not close them, and since renewal moves the expiry date, the next warning creates a **new** alert while the old one stays open.
+### Expiry alerts do not auto-close
+
+Domain and TLS certificate expiry warnings are **create-only**: they key on the check plus the expiry date (`sq-dns-expiry-<job-id>-YYYY-MM-DD`, `sq-tls-expiry-<tls-check-id>-YYYY-MM-DD`), so repeated warnings for the same date collapse into one alert, but nothing ever closes it. Close those alerts yourself. Renewing does not close them, and since renewal moves the expiry date, the next warning creates a **new** alert while the old one stays open.
 
 ## Delivery behavior
 
@@ -125,7 +128,7 @@ An event the service refuses is recorded as rejected and not retried. Other fail
 
 ## Limitations
 
-- Heartbeat (cron) monitors, TLS expiry warnings, page speed alerts and DNS record changes do not reach these channels. See the [coverage table](/integrations/coverage/#opsgenie).
+- Heartbeat (cron) monitors, page speed alerts and DNS record changes do not reach these channels. See the [coverage table](/integrations/coverage/#opsgenie).
 - Incidents and escalation policies do not page through Jira Service Management or Opsgenie.
 
 ## See also

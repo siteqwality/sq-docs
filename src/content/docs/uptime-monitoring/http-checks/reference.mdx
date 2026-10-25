@@ -43,6 +43,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `group_notification_ids` | uuid[] | default group | Notification groups to fire on state change. Maximum 10, no duplicates, must belong to your account. On create, omitting it (or sending `null`) attaches your account's [default group](/incident-management/notifications/default-routing/#the-default-notification-group); `[]` notifies no one. |
 | `monitor_tls` | bool | `true` | Provision a paired [TLS check](/uptime-monitoring/ssl-tls-checks/overview/) for the URL's hostname. |
 | `tls_port` | int | `443` | Port the TLS check connects to, 1 to 65535. Needs `monitor_tls`. See [TLS port](/uptime-monitoring/ssl-tls-checks/reference/#port). |
+| `alert_on_invalid_certificate` | bool | `true` | Alert when browsers would reject the certificate. Ignored without `monitor_tls`; a `PUT` without it keeps the current value. See [invalid certificate alerts](/uptime-monitoring/ssl-tls-checks/reference/#invalid-certificate-alerts). |
 | `monitor_dns` | bool | `true` | Provision a paired [domain expiry check](/uptime-monitoring/dns-checks/overview/) for the URL's registrable domain. Silently skipped at create time, and rejected with `400` on update, when the host is on a shared platform suffix such as `*.vercel.app`. |
 | `monitor_page_speed` | bool | `false` | Provision a paired page-speed (Lighthouse) check on a slower schedule. |
 | `tags` | string[] | none | Free-form tags. Used for grouping and [maintenance-window](/incident-management/maintenance/overview/) matching. |
@@ -68,6 +69,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `page_speed_job_id` | uuid \| null | Paired page-speed check, if `monitor_page_speed` is on. |
 | `group_notifications` | object[] \| null | Full notification-group objects resolved from `group_notification_ids`. |
 | `tls_port` | int | Fetch one check only, when TLS monitoring is on. The port the TLS check uses. |
+| `alert_on_invalid_certificate` | bool | Fetch one check only, when TLS monitoring is on. Whether an invalid certificate alerts. |
 | `partial_failure` | object \| absent | Present while runs pass the quorum but some locations fail: `failed_locations` (location ids), `total_locations` and `since` (rfc3339). Never paged. |
 | `not_checked_reason` | string \| null | Set only while an active check is not being run. `quota`: the account's uptime quota for this period is used up. See [not checked](#not-checked). |
 
