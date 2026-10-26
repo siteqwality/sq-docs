@@ -16641,6 +16641,54 @@
         ]
       }
     },
+    "/monitors/import": {
+      "post": {
+        "tags": [
+          "Monitors Overview"
+        ],
+        "summary": "Import monitors from UptimeRobot, Pingdom, StatusCake or Better Stack with an API key\nfor that tool. HTTP, keyword, TCP port, ping, heartbeat and DNS monitors come across\nwith their settings; paused ones stay paused. Intervals the plan does not allow are\nslowed, and each row says what changed. Monitors already here are skipped, so running\nthe import again is safe. A long list takes several calls: repeat the request with\n`next_offset` until it is null. `dry_run` reports without creating anything.",
+        "operationId": "import_monitors",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportMonitorsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Each monitor's outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportMonitorsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No API key"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "422": {
+            "description": "The tool refused the API key; the message has its reason"
+          },
+          "502": {
+            "description": "The tool could not be reached or sent an unreadable answer"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/monitors/list": {
       "get": {
         "tags": [
@@ -26659,6 +26707,57 @@
           },
           "500": {
             "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/import": {
+      "post": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Import status pages from UptimeRobot or Better Stack with an API key for that tool.\nEach page is created with the same name, groups and components, showing the monitors\nalready in this account that match the tool's by URL or heartbeat name: import the\nmonitors first. Pages whose name is taken are skipped. Custom domains, passwords and\nbranding do not carry over; each page lists what did not. `dry_run` reports without\ncreating anything.",
+        "operationId": "import_status_pages",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportStatusPagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Each page's outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportStatusPagesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No API key, or the tool's API has no status pages"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "422": {
+            "description": "The tool refused the API key; the message has its reason"
+          },
+          "429": {
+            "description": "The tool is rate limiting the key; wait and try again"
+          },
+          "502": {
+            "description": "The tool could not be reached or sent an unreadable answer"
           }
         },
         "security": [
@@ -55269,6 +55368,44 @@
           }
         }
       },
+      "ImportComponentResult": {
+        "type": "object",
+        "required": [
+          "name",
+          "included"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "group": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The group it sits in; null for the ungrouped list."
+          },
+          "included": {
+            "type": "boolean",
+            "description": "Whether it is on the page (or, in a dry run, would be)."
+          },
+          "monitor_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The monitor it shows: one of yours, matched by URL or heartbeat name. Null for a\ncomponent whose status you set yourself."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why it is left off the page."
+          }
+        }
+      },
       "ImportCounts": {
         "type": "object",
         "description": "How many rows came to each result.",
@@ -55384,6 +55521,87 @@
           }
         }
       },
+      "ImportMonitorsRequest": {
+        "type": "object",
+        "required": [
+          "source",
+          "api_key"
+        ],
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/ImportSource"
+          },
+          "api_key": {
+            "type": "string",
+            "description": "An API key or token for that tool; a read-only one is enough. It is used for this\nrequest only and never stored."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Check every monitor and report what would happen without creating anything."
+          },
+          "offset": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Continue from this place in the tool's list: the previous answer's `next_offset`.",
+            "minimum": 0
+          },
+          "previewed": {
+            "type": "integer",
+            "description": "For a dry run continued with `offset`: how many monitors other than DNS monitors the\nearlier answers would create, so the preview counts them against the plan's limit.",
+            "minimum": 0
+          }
+        }
+      },
+      "ImportMonitorsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ImportHttpJobsResponse",
+            "description": "Each row's `line` is the monitor's place in the tool's list, from 1."
+          },
+          {
+            "type": "object",
+            "required": [
+              "source",
+              "total",
+              "offset"
+            ],
+            "properties": {
+              "source": {
+                "$ref": "#/components/schemas/ImportSource"
+              },
+              "total": {
+                "type": "integer",
+                "description": "Monitors the tool listed.",
+                "minimum": 0
+              },
+              "offset": {
+                "type": "integer",
+                "description": "Where in the tool's list this answer starts.",
+                "minimum": 0
+              },
+              "next_offset": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "More remain: send the same request with this `offset`. Null when every monitor\nhas been through.",
+                "minimum": 0
+              },
+              "retry_after_seconds": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int64",
+                "description": "The tool is rate limiting the key: wait this many seconds before continuing.",
+                "minimum": 0
+              }
+            }
+          }
+        ]
+      },
       "ImportResult": {
         "type": "string",
         "description": "What one address in an import came to.",
@@ -55402,7 +55620,8 @@
         "type": "object",
         "required": [
           "line",
-          "status"
+          "status",
+          "warnings"
         ],
         "properties": {
           "line": {
@@ -55447,6 +55666,20 @@
               "null"
             ],
             "description": "Why the row was skipped, failed or not attempted."
+          },
+          "source_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The other tool's id for the monitor; null for a CSV row."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What changes on the way in, such as a slower interval on your plan."
           }
         }
       },
@@ -55459,6 +55692,67 @@
           "failed",
           "not_attempted"
         ]
+      },
+      "ImportSource": {
+        "type": "string",
+        "description": "The tool to import from.",
+        "enum": [
+          "uptimerobot",
+          "pingdom",
+          "statuscake",
+          "betterstack"
+        ]
+      },
+      "ImportStatusPageResult": {
+        "type": "object",
+        "required": [
+          "source_id",
+          "name",
+          "status",
+          "warnings",
+          "components"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "description": "The page's id in the other tool."
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImportRowStatus"
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The new status page's id."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the page was skipped, failed or not attempted."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What does not carry over, such as a custom domain or a password."
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportComponentResult"
+            },
+            "description": "What the page shows, in order."
+          }
+        }
       },
       "ImportStatusPageSubscribers": {
         "type": "object",
@@ -55494,6 +55788,75 @@
             "type": "integer",
             "format": "int64",
             "description": "The most confirmation emails an import sends for one page in an hour."
+          }
+        }
+      },
+      "ImportStatusPagesRequest": {
+        "type": "object",
+        "required": [
+          "source",
+          "api_key"
+        ],
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/ImportSource",
+            "description": "`uptimerobot` or `betterstack`; Pingdom's and StatusCake's APIs have no status pages."
+          },
+          "api_key": {
+            "type": "string",
+            "description": "An API key or token for that tool; a read-only one is enough. It is used for this\nrequest only and never stored."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Report what would happen without creating anything."
+          }
+        }
+      },
+      "ImportStatusPagesResponse": {
+        "type": "object",
+        "required": [
+          "source",
+          "dry_run",
+          "created",
+          "would_create",
+          "skipped",
+          "failed",
+          "not_attempted",
+          "pages"
+        ],
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/ImportSource"
+          },
+          "dry_run": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "would_create": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "not_attempted": {
+            "type": "integer",
+            "description": "Pages left when time ran out; running the import again adds them.",
+            "minimum": 0
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportStatusPageResult"
+            }
           }
         }
       },
