@@ -105,9 +105,9 @@ Two optional **Email rules** read the subject. Both ignore case and take a word,
 
 Set them when you add the source, with **Email rules** on it, or with `email_rules` in [`POST`](/api-reference/operations/v1_create_alert_source/) or [`PATCH /v1/alert-sources/{id}`](/api-reference/operations/v1_edit_alert_source/), which replaces both.
 
-Only the subject is read. The body is never stored. An email is refused unless it passes [DMARC](https://dmarc.org/overview/), the check that proves which domain sent it, so someone who only fakes the From line cannot open incidents. Gmail, Outlook and most email services pass it. Mail sent straight from a web server often does not: send it through your domain's mail service instead. Mail marked as spam or carrying a virus is refused too. Refused emails show under **Events** with the reason.
+Only the subject is read. The body is never stored. Mail from any sender is accepted, unless it is marked as spam or carries a virus. Refused emails show under **Events** with the reason.
 
-The address stays on the alert sources page. Anyone who has it can send alerts, so keep it like a password. If it leaks, **New address** replaces it, and the old one stops working at once. Plus addressing works: `<address>+backups@inbound.siteqwality.com` reaches the same source.
+The address stays on the alert sources page. Anyone who has it can send alerts, so keep it like a password. Its 24 random characters can't be guessed, and mail to an address no source uses is dropped without a reply, so trying addresses tells a stranger nothing. If it leaks, **New address** replaces it, and the old one stops working at once. Plus addressing works: `<address>+backups@inbound.siteqwality.com` reaches the same source.
 
 ## Change events
 
