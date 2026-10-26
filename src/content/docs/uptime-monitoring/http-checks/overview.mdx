@@ -1,7 +1,7 @@
 ---
 title: HTTP checks
 description: Schedule HTTP requests against your endpoints and alert on failure, slowness, or unexpected responses.
-last_verified: 2026-10-14
+last_verified: 2026-10-26
 owner: jj
 ---
 
@@ -26,6 +26,8 @@ Every HTTP check has a **schedule** (5 minutes by default in the dashboard; inte
 2. Each response is evaluated against your **assertions**: status code, response body keyword search, response time. With several locations, `min_healthy_regions` decides how many must pass.
 3. If the result differs from the previous status (e.g., success → failure), the monitor's [notification groups](/incident-management/notifications/default-routing/) send an alert. If the monitor is linked to a service that opens incidents automatically, an **incident** also opens and pages through the service's escalation policy.
 4. The result is recorded for uptime/latency dashboards and historical reporting.
+
+The dashboard and Slack alerts show the website's icon next to the check. [Site Qwality Monitor](/bot/) fetches it from the site about once a month.
 
 A single HTTP check can also automatically provision a paired:
 

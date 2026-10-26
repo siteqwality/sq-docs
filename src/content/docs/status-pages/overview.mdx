@@ -1,7 +1,7 @@
 ---
 title: Status pages
 description: Branded, custom-domain public status pages with components, scheduled maintenance, and email subscribers.
-last_verified: 2026-10-16
+last_verified: 2026-10-26
 owner: jj
 ---
 
@@ -27,7 +27,7 @@ Additional status pages and custom domains are paid status page extras. See [pla
 A status page has three layers:
 
 1. **Status page object**: the container, with branding (logo, colors, default theme) and an optional custom domain.
-2. **Components**: what the page reports on. Most link to a monitor (an HTTP check, a browser check or a heartbeat) and show its live status, with a public name and, for checks, an optional SLA target. A manual component has no monitor, and you set its status. Any component can carry a status override with a public note.
+2. **Components**: what the page reports on. Most link to a monitor (an HTTP check, a browser check or a heartbeat) and show its live status, with a public name and, for checks, an optional SLA target. A manual component has no monitor, and you set its status. Any component can carry a status override with a public note. When the page's HTTP checks cover two or more websites, each shows its website's icon.
 3. **Incidents and maintenance**: published events. You publish incidents and post their public updates yourself; internal notes never reach the page. A [service](/incident-management/services/overview/) can also publish the incidents it opens automatically, in the words of its public template, and those resolve when their monitors recover. Scheduled maintenance shows planned downtime ahead of time.
 
 The page reads the same data as the dashboard, so a change in the dashboard shows up on it within about a minute. The same data is available from the [public status page API](/status-pages/reference/#public-status-page-api).

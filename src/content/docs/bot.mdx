@@ -10,7 +10,8 @@ Site Qwality Monitor is the bot that runs Site Qwality's uptime checks. If it sh
 ## What it does
 
 - It sends the HTTP checks our customers set up to confirm their sites are up and fast. Each check is one request to the exact URL the customer entered, with the method, headers and body they chose.
-- It does not crawl. It never follows links, discovers pages or indexes content. It follows redirects only when the monitor is set to.
+- It does not crawl. It never discovers pages or indexes content, and it follows redirects only when the monitor is set to.
+- To show a monitored site's icon next to its monitor, it also requests the site's home page and the icon files that page links to: its favicon, touch icon or web app manifest, else `/favicon.ico`. When a subdomain has none, it asks the main domain (`example.com` for `api.example.com`). These requests follow up to five redirects and never carry the monitor's headers or credentials.
 - It reads the response only to evaluate the check: the status code, timings, and any keyword or JSON value the customer asked for. When a check fails, the response is saved with the result so the customer can see what went wrong. Content is never used to train models or to build an index.
 
 ## How often
@@ -18,10 +19,11 @@ Site Qwality Monitor is the bot that runs Site Qwality's uptime checks. If it sh
 - Each monitor runs on the interval its owner picks, at most every 30 seconds.
 - A monitor can check from several locations. Each location sends its own request on every run.
 - A failed request may be retried up to twice within the same check.
+- Icon requests happen when a monitor is added, then about once a month per site, not per monitor. A site with no icon is asked weekly, and one that did not answer is retried a few times over the next day.
 
 ## Where requests come from
 
-Checks run from [check locations](/uptime-monitoring/overview/#check-locations) around the globe on AWS, Google Cloud and Microsoft Azure. The current list is on the [locations page](https://siteqwality.com/locations/). Requests leave from each provider's shared addresses, so there is no IP list. Monitors with Web Bot Auth turned on sign their requests, and those [signatures can be verified](#verifying-a-request).
+Checks run from [check locations](/uptime-monitoring/overview/#check-locations) around the globe on AWS, Google Cloud and Microsoft Azure. The current list is on the [locations page](https://siteqwality.com/locations/). Icon requests come from AWS US East (N. Virginia). Requests leave from each provider's shared addresses, so there is no IP list. Monitors with Web Bot Auth turned on sign their requests, and those [signatures can be verified](#verifying-a-request).
 
 ## How to recognize it
 
@@ -32,7 +34,7 @@ Checks run from [check locations](/uptime-monitoring/overview/#check-locations) 
 | `Signature-Agent` | `"https://bot.siteqwality.com"` |
 | `Signature-Input`, `Signature` | A [Web Bot Auth](#verifying-a-request) signature |
 
-The last two rows apply only to monitors with Web Bot Auth turned on.
+The last two rows apply only to monitors with Web Bot Auth turned on. Icon requests send the first two.
 
 ## Verifying a request
 
@@ -46,7 +48,7 @@ A request came from Site Qwality when its `Signature` verifies against one of th
 
 ## robots.txt
 
-Site Qwality Monitor does not read robots.txt, because it never crawls: every request goes to a URL a customer chose to monitor.
+Site Qwality Monitor does not read robots.txt, because it never crawls: every request goes to a URL a customer chose to monitor, or to that site's home page and icon files.
 
 ## Allowing or blocking it
 
