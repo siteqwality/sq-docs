@@ -49,6 +49,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `monitor_page_speed` | bool | `false` | Provision a paired page-speed (Lighthouse) check on a slower schedule. |
 | `tags` | string[] | none | Free-form tags. Used for grouping and [maintenance-window](/incident-management/maintenance/overview/) matching. |
 | `http_version` | enum | `auto` | Preferred HTTP version for the check transport. See [HTTP versions](#http-versions). |
+| `web_bot_auth` | bool | `false` | Sign each check request with [Web Bot Auth](/bot/#verifying-a-request), so bot protection that supports it, such as Cloudflare, can recognize Site Qwality Monitor. HTTP checks only. See [blocked by bot protection](/uptime-monitoring/http-checks/allowlisting/#blocked-by-bot-protection). |
 | `state` | enum | `active` | Update only. `active` or `paused`. Paused checks stop running and alerting. |
 | `final_uri` | string | none | Expected final URL after redirects. A mismatch fails the check. |
 

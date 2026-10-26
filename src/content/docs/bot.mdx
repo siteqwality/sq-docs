@@ -1,7 +1,7 @@
 ---
 title: Site Qwality Monitor, our bot
 description: What Site Qwality Monitor requests and how often, how to verify a request came from us, and how to allow or block it.
-last_verified: 2026-10-10
+last_verified: 2026-10-26
 owner: jj
 ---
 
@@ -21,7 +21,7 @@ Site Qwality Monitor is the bot that runs Site Qwality's uptime checks. If it sh
 
 ## Where requests come from
 
-Checks run from [check locations](/uptime-monitoring/overview/#check-locations) around the globe on AWS, Google Cloud and Microsoft Azure. The current list is on the [locations page](https://siteqwality.com/locations/). Requests leave from each provider's shared addresses, so there is no IP list. To confirm a request came from us, [verify its signature](#verifying-a-request).
+Checks run from [check locations](/uptime-monitoring/overview/#check-locations) around the globe on AWS, Google Cloud and Microsoft Azure. The current list is on the [locations page](https://siteqwality.com/locations/). Requests leave from each provider's shared addresses, so there is no IP list. Monitors with Web Bot Auth turned on sign their requests, and those [signatures can be verified](#verifying-a-request).
 
 ## How to recognize it
 
@@ -32,9 +32,11 @@ Checks run from [check locations](/uptime-monitoring/overview/#check-locations) 
 | `Signature-Agent` | `"https://bot.siteqwality.com"` |
 | `Signature-Input`, `Signature` | A [Web Bot Auth](#verifying-a-request) signature |
 
+The last two rows apply only to monitors with Web Bot Auth turned on.
+
 ## Verifying a request
 
-Anyone can copy a User-Agent, but not a signature. Site Qwality signs check requests with Web Bot Auth, which uses HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)) and Ed25519 keys. Our public keys are published at:
+Anyone can copy a User-Agent, but not a signature. A monitor with Web Bot Auth turned on signs its check requests with HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)) and Ed25519 keys. Customers turn it on for monitors that bot protection blocks; it is off by default. Our public keys are published at:
 
 ```
 https://bot.siteqwality.com/.well-known/http-message-signatures-directory

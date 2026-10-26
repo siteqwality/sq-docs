@@ -1,7 +1,7 @@
 ---
 title: Allowlisting our checks
-description: Let Site Qwality checks through a firewall, WAF or bot protection with a secret header or the User-Agent, and what the bot_protection failure reason means.
-last_verified: 2026-10-07
+description: Let Site Qwality checks through a firewall, WAF or bot protection with a secret header, the User-Agent or Web Bot Auth, and what the bot_protection failure reason means.
+last_verified: 2026-10-26
 owner: jj
 ---
 
@@ -43,7 +43,7 @@ Every check sends this User-Agent:
 site-qwality-check/1.0
 ```
 
-You can match on it to skip a bot challenge or a rate limit. Anyone can send the same string, though, so it identifies our checks without proving a request came from us. Use it where a false match costs little, or together with the secret header. To prove a request came from us, [verify its signature](/bot/#verifying-a-request).
+You can match on it to skip a bot challenge or a rate limit. Anyone can send the same string, though, so it identifies our checks without proving a request came from us. Use it where a false match costs little, or together with the secret header. A monitor with Web Bot Auth turned on also carries a signature that [proves a request came from us](/bot/#verifying-a-request).
 
 ## Blocked by bot protection
 
@@ -53,6 +53,7 @@ It still counts as a failure: the monitor goes down and alerts like any other fa
 
 What to do about it:
 
+- **Turn on Web Bot Auth** when the site is behind Cloudflare and you cannot change its rules. Open the monitor, choose **Edit monitor**, then **Advanced**, and turn on **Sign requests with Web Bot Auth** (`web_bot_auth` in the API). Each request then carries a signature that identifies Site Qwality Monitor, which Cloudflare lists as a verified bot.
 - **Allowlist our checks** with a [secret header](#option-1-a-secret-custom-header). This is the fix that lasts.
 - **Add a location on another provider.** Bot protection often scores cloud networks differently, so checking from another network can help. More than one location per monitor needs a paid uptime plan; see [check locations](/uptime-monitoring/http-checks/reference/#check-locations).
 - **Try HTTP/1.1.** Some bot-management edges treat HTTP/2 and HTTP/1.1 clients differently. Set `http_version` to `http1_1`; see [HTTP versions](/uptime-monitoring/http-checks/reference/#http-versions).
