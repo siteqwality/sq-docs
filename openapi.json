@@ -79304,7 +79304,8 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/HttpJobContentType"
+                "$ref": "#/components/schemas/HttpJobContentType",
+                "description": "Absent keeps it; `null` removes it."
               }
             ]
           },
@@ -79314,7 +79315,8 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/HttpJobAuthType"
+                "$ref": "#/components/schemas/HttpJobAuthType",
+                "description": "Absent keeps it; `null` turns authentication off."
               }
             ]
           },
@@ -79361,6 +79363,7 @@
               "object",
               "null"
             ],
+            "description": "Replaces the stored headers. Absent keeps them; `null` or `{}` removes them.",
             "additionalProperties": {
               "type": "string"
             },
