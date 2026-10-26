@@ -30,7 +30,7 @@ Use `https://api.siteqwality.com` and read credentials. Preserve service/environ
 
 ## Explorer interpretation
 
-Open a trace for waterfall, flame graph, critical path, span events/links and correlated data. Timing offsets and durations are nanosecond strings; converting them to a floating point Number too early loses precision. The critical path describes recorded timing and does not prove causality for an unrecorded dependency. Incomplete/skeleton/truncated traces are labeled; do not assume they represent every operation in the request.
+Open a trace for waterfall, critical path, span events/links and correlated data. Timing offsets and durations are nanosecond strings; converting them to a floating point Number too early loses precision. The critical path describes recorded timing and does not prove causality for an unrecorded dependency. Incomplete/skeleton/truncated traces are labeled; do not assume they represent every operation in the request.
 
 Service and endpoint RED uses weighted received spans and reports estimated and quality state; an upstream head sampler has already removed some requests. Percentiles are approximate. See the [sampling guide](/observability/traces/how-to/sampling/) and [Services](/observability/services/).
 

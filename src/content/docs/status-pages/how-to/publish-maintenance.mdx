@@ -20,15 +20,15 @@ A [maintenance window](/incident-management/maintenance/overview/) is different:
 
 1. Open the status page and go to the **Maintenance** tab.
 
-2. Click **Schedule Maintenance**.
+2. Click **Schedule maintenance**.
 
 3. Enter a **Title** (for example `Database migration`) and an optional **Message** that says what visitors should expect.
 
-4. Set **Scheduled Start** and **Scheduled End**. The end must be after the start.
+4. Set **Scheduled start** and **Scheduled end**. The end must be after the start.
 
 5. Under **Scope**, pick **Whole page**, or **Specific monitors** and choose the affected checks. There is no default.
 
-6. Click **Schedule Maintenance**. Confirmed subscribers get an email, unless they chose not to hear about maintenance or about these checks.
+6. Click **Schedule maintenance**. Confirmed subscribers get an email, unless they chose not to hear about maintenance or about these checks.
 
 </Steps>
 
@@ -61,7 +61,7 @@ Name the scope in every create and update: list at least one monitor in `affecte
 - When the start time passes, the page shows it as **in progress** and the components it covers show **Maintenance** instead of an outage. A maintenance for the whole page (`whole_page: true`) shows the whole page as **Under Maintenance**.
 - When the end time passes, it drops off the page.
 
-To start early, edit it and set its **Status** to **In Progress** (`in_progress` through the API). To finish early, set it to **Completed** (`completed`).
+To start early, edit it and set its **Status** to **In progress** (`in_progress` through the API). To finish early, set it to **Completed** (`completed`).
 
 Maintenance covers the HTTP checks you pick. A browser check shows maintenance only when the maintenance covers the whole page.
 

@@ -43,11 +43,11 @@ Right after you add the integration, the dashboard offers to do this for you: ch
 
 1. Go to **Respond → Notifications**. Click a group's name to open it, or click **Add group** to make a new one.
 
-2. Under **Notifications**, click **Add Notification Method**. Set **Notification Type** to **Slack** and choose this integration under **Integration**.
+2. Under **Notifications**, click **Add notification method**. Set **Notification type** to **Slack** and choose this integration under **Integration**.
 
 3. In **Channel**, pick the Slack channel from the list. It holds the workspace's public channels and the private channels the app was added to, and stores the channel's ID, which survives renames. To type one instead, such as `#ops` or `C0123456789`, click **Enter a channel ID**; that is also what you get when the list cannot load.
 
-4. Click **Done editing**, then **Update Group** (**Create Group** for a new group).
+4. Click **Done editing**, then **Save changes** (**Create group** for a new group).
 
 </Steps>
 
@@ -84,7 +84,7 @@ A service's Slack broadcast target can send with this integration (pick it and a
 
 ## Removing
 
-Go to **Manage → Integrations**, find the Slack integration under **Existing Integrations** and delete it. Through the API, call [`DELETE /integration/{integration_id}`](/api-reference/operations/delete_integration/):
+Go to **Manage → Integrations**, find the Slack integration under **Existing integrations** and delete it. Through the API, call [`DELETE /integration/{integration_id}`](/api-reference/operations/delete_integration/):
 
 ```bash
 curl -X DELETE https://api.siteqwality.com/integration/<slack-integration-id> \

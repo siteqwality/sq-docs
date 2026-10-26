@@ -23,7 +23,7 @@ The Google Chat integration posts alerts into a space as `cardsV2` messages, thr
 
 ## Connect it
 
-In the dashboard, go to **Manage → Integrations** and click the **Google Chat** card. Name it, paste the URL into **Webhook URL**, and click **Add**.
+In the dashboard, go to **Manage → Integrations** and click the **Google Chat** card. Name it, paste the URL into **Webhook URL**, and click **Add integration**.
 
 Or through the API, with [`POST /integration/google_chat`](/api-reference/operations/add_google_chat_integration/):
 
@@ -37,7 +37,7 @@ curl -X POST https://api.siteqwality.com/integration/google_chat \
   }'
 ```
 
-The URL must start with `https://chat.googleapis.com/v1/spaces/`. Whether the webhook still works is not checked, so a deleted webhook shows up as a failed notification. The URL carries its own auth token and never reads back in full, so keep your own copy; to change it, add a new integration and delete the old one.
+The URL must start with `https://chat.googleapis.com/v1/spaces/`. Whether the webhook still works is not checked, so a deleted webhook shows up as a failed notification. The URL carries its own auth token and never reads back in full, so keep your own copy; to change it, choose **Edit** in the integration's **⋯** menu and paste the new one.
 
 ## Add it to a notification group
 
@@ -47,9 +47,9 @@ Right after you add the integration, the dashboard offers to do this for you: ch
 
 1. Go to **Respond → Notifications**. Click a group's name to open it, or click **Add group** to make a new one.
 
-2. Under **Notifications**, click **Add Notification Method**. Set **Notification Type** to **Google Chat** and choose this integration under **Integration**.
+2. Under **Notifications**, click **Add notification method**. Set **Notification type** to **Google Chat** and choose this integration under **Integration**.
 
-3. Click **Done editing**, then **Update Group** (**Create Group** for a new group).
+3. Click **Done editing**, then **Save changes** (**Create group** for a new group).
 
 </Steps>
 

@@ -124,7 +124,7 @@ Each integration holds a credential, so only account admins can add, change or r
 
 API keys and [API clients](/enterprise/api-clients/) need the `integrations:manage` scope for those changes; `write:notifications` does not cover them. An API key with no scope list is unrestricted. AI assistants that sign in with OAuth are never offered the scope.
 
-Credentials never read back in full. `GET /integration` shows a webhook URL as its scheme and host, such as `https://discord.com/****`, and a key or token as `****` followed by its last four characters (just `****` when it is shorter than 16 characters). To change a credential, add a new integration and delete the old one.
+Credentials never read back in full. `GET /integration` shows a webhook URL as its scheme and host, such as `https://discord.com/****`, and a key or token as `****` followed by its last four characters (just `****` when it is shorter than 16 characters). To change a credential, choose **Edit** (**Settings** for a webhook) in the integration's **⋯** menu and enter the new one. Slack reconnects with **Add to Slack** instead.
 
 ## What a save checks
 

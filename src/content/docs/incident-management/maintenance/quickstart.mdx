@@ -16,7 +16,7 @@ If your monitors aren't tagged yet:
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-Open the monitor and choose **Edit monitor**. In the **Monitor** section, add `service:api` under **Tags**, then click **Save**.
+Open the monitor and choose **Edit monitor**. In the **Monitor** section, add `service:api` under **Tags**, then click **Save changes**.
 
 </TabItem>
 <TabItem label="API">
@@ -42,15 +42,15 @@ curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
 
 <Steps>
 
-1. Go to **Respond → Notifications**, click **Maintenance windows**, then **+ Add Maintenance Window**.
+1. Go to **Respond → Notifications**, click **Maintenance windows**, then **+ Add maintenance window**.
 
 2. Configure:
    - **Name:** `Friday API deploy`.
    - **Tags:** `service:api`.
-   - **Schedule Type:** **One-time**.
+   - **Schedule type:** **One-time**.
    - **Start:** `2027-01-15 14:00`. **End:** `2027-01-15 14:30`. The pickers use your browser's time zone, so enter the local time for 14:00–14:30 UTC.
 
-3. Click **Create Window**.
+3. Click **Create window**.
 
 </Steps>
 

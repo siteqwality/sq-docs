@@ -25,13 +25,13 @@ Services are the only way a monitor failure becomes an incident, and the only wa
 
 2. Give it a name and, optionally, a description.
 
-3. Pick an **escalation policy**. Without one, the service's incidents page nobody.
+3. Pick an **Escalation policy**. Without one, the service's incidents page nobody.
 
-4. Pick an **incident creation mode** (see below) and a **default severity**.
+4. Pick an **Incident creation mode** (see below) and a **Default severity**.
 
 5. Set the [reopen window](#reopen-window) and [auto-resolve](#auto-resolve).
 
-6. Choose the **HTTP monitors**, **cron monitors** (heartbeats) and **browser checks** that belong to the service, and save.
+6. Choose the **Uptime monitors**, **Cron monitors** (heartbeats) and **Browser checks** that belong to the service, and save.
 
 </Steps>
 
@@ -72,7 +72,7 @@ Beside the health, each service shows its open incidents, failing monitors, when
 
 The service page also shows the last 30 days: incidents opened, mean time to acknowledge, mean time to resolve, and uptime, the share of that time with no open incident on the service.
 
-Set a service's team, tags and on-call schedule in **Edit Settings** on its page.
+Set a service's team, tags and on-call schedule in **Edit settings** on its page.
 
 ## Incident creation modes
 
@@ -169,7 +169,7 @@ Open the incident in Site Qwality to acknowledge or resolve it.
 
 Opened messages look as they always have. Resolved messages do too, except that a public note posted with the resolve is quoted under the title. Resolved webhooks still carry only the seven fields, with no note.
 
-In the dashboard, open the service from **Manage → Services** and click **+ Add Target** under **Notification Targets**. Through the API, see the [reference](/incident-management/services/reference/#broadcast-targets).
+In the dashboard, open the service from **Manage → Services** and click **+ Add target** under **Notification Targets**. Through the API, see the [reference](/incident-management/services/reference/#broadcast-targets).
 
 ## Manual incidents
 
@@ -177,7 +177,7 @@ An incident you open by hand on a service starts at the service's default severi
 
 ## Publish incidents to a status page
 
-**Auto-publish to Status Page** (`auto_publish_to_status_page_id`) puts every incident the service opens automatically on that [status page](/status-pages/overview/) and emails the page's [subscribers](/status-pages/how-to/subscribers/) that it opened.
+**Auto-publish to status page** (`auto_publish_to_status_page_id`) puts every incident the service opens automatically on that [status page](/status-pages/overview/) and emails the page's [subscribers](/status-pages/how-to/subscribers/) that it opened.
 
 The **public incident template** (`public_incident_template`) words what customers read, so a monitor's name or an internal hostname never reaches the page:
 

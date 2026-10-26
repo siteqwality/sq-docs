@@ -27,7 +27,7 @@ Monitors open incidents on their own only through a [service](/incident-manageme
 
 Use this for internal tracking: you get the timeline without publishing, and paging once it has a [service](#making-it-page-someone).
 
-In the dashboard, go to **Respond → Incidents** and click **Report incident**. Give it a **Title**, a **Severity** and an **Initial Message**, then click **Report Incident**.
+In the dashboard, go to **Respond → Incidents** and click **Report incident**. Give it a **Title**, a **Severity** and an **Initial message**, then click **Report incident**.
 
 Through the API:
 
@@ -46,7 +46,7 @@ curl -X POST https://api.siteqwality.com/incident \
 
 Use this when the outage affects customers and they should know.
 
-In the dashboard, go to **Manage → Status Pages** and open the page. On its **Incidents** tab, click **Report Incident**, fill in the **Title**, **Severity** and **Initial Update**, optionally pick the **Affected Monitors**, and click **Report Incident**.
+In the dashboard, go to **Manage → Status Pages** and open the page. On its **Incidents** tab, click **Report incident**, fill in the **Title**, **Severity** and **Initial update**, optionally pick the **Affected monitors**, and click **Report incident**.
 
 Through the API:
 
@@ -65,7 +65,7 @@ The incident appears immediately on the public page, and the page's confirmed su
 
 ## Publish later, and keep notes internal
 
-An incident you started without a page can go on one later. In the dashboard, open it and click **Publish to status page**: pick the page, check the public title and the first public update customers will read, choose whether to email the page's subscribers, and click **Publish**. Once it is on a page, the button reads **Status pages**, and its panel lists each page with **Unpublish**. Through the API:
+An incident you started without a page can go on one later. In the dashboard, open it and click **Publish to status page**: pick the page, check the public title and the first public update customers will read, choose whether to email the page's subscribers, and click **Publish update**. Once it is on a page, the button reads **Status pages**, and its side panel lists each page with **Unpublish**. Through the API:
 
 ```bash
 curl -X POST https://api.siteqwality.com/incident/$INCIDENT_ID/publish \
@@ -123,7 +123,7 @@ The service's broadcast targets, if it has any, are also notified, even when the
 
 ## Move an incident to another service
 
-Open the incident, click **Edit**, pick the right **Service** (or **None**) and click **Save Changes**.
+Open the incident, click **Edit**, pick the right **Service** (or **None**) and click **Save changes**.
 
 Through the API, send `service_id` on `PUT /incident/{incident_id}`. `null` detaches the incident from any service.
 

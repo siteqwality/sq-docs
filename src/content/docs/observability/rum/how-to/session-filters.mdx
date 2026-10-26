@@ -131,7 +131,7 @@ curl -X POST "https://api.siteqwality.com/rum/$APP_ID/rules" \
 
 ### Pause a rule, then delete it
 
-In the dashboard, turn off the rule's **Enabled** switch to pause it, and choose **Delete** from its actions menu to remove it.
+In the dashboard, turn off the rule's **Enabled** switch to pause it, and choose **Delete** from its actions menu, then **Delete rule**, to remove it.
 
 Through the API, `PUT /rum/{app_id}/rules/{rule_id}` changes only the fields you send, and validates the result as a whole. Set `RULE_ID` to the rule's `id`, returned when it is created and by `GET /rum/{app_id}/rules`:
 

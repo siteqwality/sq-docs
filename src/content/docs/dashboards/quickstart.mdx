@@ -33,7 +33,7 @@ You will chart the share of checks that failed. That takes two queries and a for
 
 1. Choose **Edit** (or press `e`). The header turns into an edit bar.
 
-2. Choose **Add widget**, search for **Time series** and click it. The widget editor opens as a drawer.
+2. Choose **Add widget**, search for **Time series** and click it. The widget editor opens.
 
 3. Set query **a** to source **Monitors** and measure **Checks**.
 
@@ -41,7 +41,7 @@ You will chart the share of checks that failed. That takes two queries and a for
 
 5. Choose **Add formula** and enter `b / a * 100` (see [formulas](/dashboards/queries/#formulas)). Set its unit to **Percent** and its alias to `Failure rate`.
 
-6. Leave the title empty to use the suggested one, or type your own. Choose **Apply** to place the widget on the grid.
+6. Leave the title empty to use the suggested one, or type your own. Choose **Add widget** to place the widget on the grid.
 
 </Steps>
 
@@ -55,9 +55,9 @@ Drag the widget to move it, or drag its corner to resize it. Nothing is saved ye
 
 2. On the **Variables** tab, choose **Add variable**. Name it `region`, set **Source** to Monitors and **Field** to Region. Leave **Allow multiple selections** and **Include an All option** on, with **All** as the default.
 
-3. Choose **Apply**. A `region` dropdown appears in the variables bar.
+3. Choose **Save changes**. A `region` dropdown appears in the variables bar.
 
-4. Open the menu of the **Average response time by region** chart and choose **Edit**. Add a filter on **Region** and choose `$region` as the value. Choose **Apply**.
+4. Open the menu of the **Average response time by region** chart and choose **Edit**. Add a filter on **Region** and choose `$region` as the value. Choose **Save widget**.
 
 </Steps>
 
@@ -103,7 +103,7 @@ A time change on its own lives in the URL and does not change the dashboard. **S
 
 </Steps>
 
-Anyone with the link can see the data in the widgets, read-only. To stop sharing, pause or revoke the link from the same dialog. See [sharing](/dashboards/sharing/).
+Anyone with the link can see the data in the widgets, read-only. To stop sharing, pause or revoke the link from the same side panel. See [sharing](/dashboards/sharing/).
 
 ## Prefer the API?
 

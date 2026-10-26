@@ -20,7 +20,7 @@ By the end of this guide you'll have a public status page at `https://statuspage
 
 2. Set the **Name**, e.g. `Acme Cloud`. Subscriber email uses it; the public page shows the **Page Title** you set when you [brand the page](#3-brand-the-page).
 
-3. Click **Add**, then click the new page in the list to open it. Its public URL is shown at the top.
+3. Click **Create status page**, then click the new page in the list to open it. Its public URL is shown at the top.
 
 </Steps>
 
@@ -50,11 +50,11 @@ A *component* is a public-facing label for one of your monitors. Here you attach
 
 <Steps>
 
-1. On the page, open the **Monitors** tab and click **Add Monitor**. For a browser check, use the **Browser Checks** tab and **Add Browser Check**.
+1. On the page, open the **Monitors** tab and click **Add monitor**. For a browser check, use the **Browser Checks** tab and **Add browser check**.
 
-2. Pick the check under **HTTP Site** (**Browser Check** for a browser check) and give it a public **Name** if the internal one is too technical (`prod-api-eu-west-1` → `API`). Click **Add**.
+2. Pick the check under **Monitor** (**Browser check** for a browser check) and give it a public **Name** if the internal one is too technical (`prod-api-eu-west-1` → `API`). Click **Add to status page**.
 
-3. Optionally click the pencil on its row, set an **SLA Target (%)** (e.g. `99.9`) and click **Edit**. For an HTTP check, the page compares the uptime over the range the visitor picked (7, 30, 60 or 90 days) with this target.
+3. Optionally click the pencil on its row, set an **SLA target (%)** (e.g. `99.9`) and click **Save changes**. For an HTTP check, the page compares the uptime over the range the visitor picked (7, 30, 60 or 90 days) with this target.
 
 </Steps>
 
@@ -97,7 +97,7 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/browser_che
 
 4. Under **Page Info**, set a **Page Title** (browser tab) and optional **Header Text** and **Footer Text**.
 
-5. Click **Save Settings**.
+5. Click **Save branding**.
 
 </Steps>
 
@@ -150,13 +150,13 @@ Create an incident by hand to confirm the page shows it. Incidents also reach a 
 
 <Steps>
 
-1. On the status page, open the **Incidents** tab and click **Report Incident**.
+1. On the status page, open the **Incidents** tab and click **Report incident**.
 
 2. **Title:** `Investigating elevated API latency`. **Severity:** **Minor**. The incident starts as investigating.
 
-3. In **Initial Update**, paste: `Our monitoring detected increased latency on the API. We're looking into it now.` Optionally pick the **Affected Monitors**.
+3. In **Initial update**, paste: `Our monitoring detected increased latency on the API. We're looking into it now.` Optionally pick the **Affected monitors**.
 
-4. Click **Report Incident**. The incident appears on the public page within about a minute.
+4. Click **Report incident**. The incident appears on the public page within about a minute.
 
 </Steps>
 
@@ -197,7 +197,7 @@ Changes reach the page within about a minute, and an open page refreshes itself 
 <Tabs syncKey="interface">
 <TabItem label="Dashboard">
 
-Open the incident from the **Incidents** tab and click **Mark Resolved**. That posts a public **Resolved** update, emails the page's subscribers and closes the incident on the page. For a closing message of your own, pick **Resolved** under **Post Update** instead, write the message and click **Post Update**.
+Open the incident from the **Incidents** tab and click **Mark resolved**. That posts a public **Resolved** update, emails the page's subscribers and closes the incident on the page. For a closing message of your own, pick **Resolved** under **Post an update** instead, write the message and click **Post update**.
 
 </TabItem>
 <TabItem label="API">

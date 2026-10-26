@@ -27,7 +27,7 @@ Paging more than one person needs a responder pack, and the people in this guide
 
 1. Go to **Respond → Escalation Policies** and click **New policy**.
 
-2. Name: `Primary escalation`. **Times to repeat:** `1`. Leave **When nobody acknowledges** on **Email the account owners and admins**. Click **Create Policy**.
+2. Name: `Primary escalation`. **Times to repeat:** `1`. Leave **When nobody acknowledges** on **Email the account's Super Admins and Admins**. Click **Create policy**.
 
 </Steps>
 
@@ -57,11 +57,11 @@ Save the returned `id` as `POLICY_ID`.
 
 1. Open the policy and click **Add level**.
 
-2. Level 1: **Timeout (minutes)** `5`. Under **Target Schedules**, pick the `Primary on-call` schedule. Click **Add Level**.
+2. Level 1: **Timeout (minutes)** `5`. Under **Target schedules**, pick the `Primary on-call` schedule. Click **Add level**.
 
-3. **Add level** again. Level 2: **Timeout (minutes)** `10`. Under **Target Users**, pick the secondary engineer. Click **Add Level**.
+3. **Add level** again. Level 2: **Timeout (minutes)** `10`. Under **Target users**, pick the secondary engineer. Click **Add level**.
 
-4. **Add level** again. Level 3: **Timeout (minutes)** `15`. Under **Target Users**, pick the engineering manager. Click **Add Level**.
+4. **Add level** again. Level 3: **Timeout (minutes)** `15`. Under **Target users**, pick the engineering manager. Click **Add level**.
 
 </Steps>
 

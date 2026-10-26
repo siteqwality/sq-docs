@@ -23,7 +23,7 @@ The Mattermost integration posts to a channel through an incoming webhook, using
 
 ## Connect it
 
-In the dashboard, go to **Manage → Integrations** and click the **Mattermost** card. Name it, paste the URL into **Webhook URL**, and click **Add**.
+In the dashboard, go to **Manage → Integrations** and click the **Mattermost** card. Name it, paste the URL into **Webhook URL**, and click **Add integration**.
 
 Or through the API, with [`POST /integration/mattermost`](/api-reference/operations/add_mattermost_integration/):
 
@@ -37,7 +37,7 @@ curl -X POST https://api.siteqwality.com/integration/mattermost \
   }'
 ```
 
-The URL must use `https` on a public host. It is not test-sent at save time, and it never reads back in full, so keep your own copy; to change it, add a new integration and delete the old one.
+The URL must use `https` on a public host. It is not test-sent at save time, and it never reads back in full, so keep your own copy; to change it, choose **Edit** in the integration's **⋯** menu and paste the new one.
 
 ## Add it to a notification group
 
@@ -47,9 +47,9 @@ Right after you add the integration, the dashboard offers to do this for you: ch
 
 1. Go to **Respond → Notifications**. Click a group's name to open it, or click **Add group** to make a new one.
 
-2. Under **Notifications**, click **Add Notification Method**. Set **Notification Type** to **Mattermost** and choose this integration under **Integration**.
+2. Under **Notifications**, click **Add notification method**. Set **Notification type** to **Mattermost** and choose this integration under **Integration**.
 
-3. Click **Done editing**, then **Update Group** (**Create Group** for a new group).
+3. Click **Done editing**, then **Save changes** (**Create group** for a new group).
 
 </Steps>
 
