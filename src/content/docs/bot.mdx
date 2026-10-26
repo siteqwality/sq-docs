@@ -42,7 +42,7 @@ Anyone can copy a User-Agent, but not a signature. A monitor with Web Bot Auth t
 https://bot.siteqwality.com/.well-known/http-message-signatures-directory
 ```
 
-A request came from Site Qwality when its `Signature` verifies against one of those keys, its `Signature-Input` has `tag="web-bot-auth"` and covers `@authority` and `signature-agent`, and its `expires` time has not passed. Bot-protection services that support Web Bot Auth can run this check for you.
+A request came from Site Qwality when its `Signature` verifies against one of those keys, its `Signature-Input` has `tag="web-bot-auth"` and covers `@authority` and `signature-agent`, and its `expires` time has not passed. Bot-protection services that support Web Bot Auth can run this check for you. Cloudflare lists Site Qwality Monitor as a [verified bot](https://radar.cloudflare.com/bots/directory/site-qwality-monitor).
 
 ## robots.txt
 

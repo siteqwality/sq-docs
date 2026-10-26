@@ -51,7 +51,7 @@ Use this when the site is behind Cloudflare and you cannot change its rules, for
 
 A signed request carries a digital signature next to its usual headers. Site Qwality makes the signature with a private key only we hold and publishes the matching public key at `bot.siteqwality.com`. Whoever receives the request can check the signature against that key, and if it matches, the request came from Site Qwality. Anyone can copy a User-Agent, but nobody can make a valid signature without our key.
 
-Cloudflare lists Site Qwality Monitor as a verified bot. When a signed check reaches a site behind Cloudflare, Cloudflare checks the signature and recognizes the request as ours. Its bot protection usually lets verified bots through without a challenge, unless the site's own rules block them.
+Cloudflare [lists Site Qwality Monitor as a verified bot](https://radar.cloudflare.com/bots/directory/site-qwality-monitor). When a signed check reaches a site behind Cloudflare, Cloudflare checks the signature and recognizes the request as ours. Its bot protection usually lets verified bots through without a challenge, unless the site's own rules block them.
 
 To turn it on, open the monitor, choose **Edit monitor**, then **Advanced**, and check **Sign requests with Web Bot Auth**. In the API, set `web_bot_auth` to `true`. It is off by default and applies to HTTP monitors only.
 
