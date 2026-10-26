@@ -1,19 +1,13 @@
 ---
 title: Allowlisting our checks
-description: Let Site Qwality checks through a firewall, WAF or bot protection with a secret header, the User-Agent or Web Bot Auth, and what the bot_protection failure reason means.
+description: Let Site Qwality checks through a firewall, WAF or bot protection with a secret header, the User-Agent, fixed IP addresses or Web Bot Auth, and what the bot_protection failure reason means.
 last_verified: 2026-10-26
 owner: jj
 ---
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 
-If your site sits behind a firewall, a WAF or bot protection, it can block or challenge our checks, and the monitor reports an outage your users never saw.
-
-## There are no fixed IP addresses
-
-HTTP checks run from [check locations](/uptime-monitoring/overview/#check-locations) on AWS, Google Cloud and Microsoft Azure. Each location sends its requests from its cloud provider's shared address ranges, and those addresses change, so there is no list of IPs to allowlist. Allowlisting those shared ranges would also let in every other customer of the same cloud. Allowlist by something the request carries instead: a secret header (recommended) or our User-Agent.
-
-If your setup cannot match on a header and you need checks from a fixed IP address, email [hello@siteqwality.com](mailto:hello@siteqwality.com).
+If your site sits behind a firewall, a WAF or bot protection, it can block or challenge our checks, and the monitor reports an outage your users never saw. Let them through with a secret header, our User-Agent, fixed IP addresses or signed requests. The secret header works from every location and proves a request came from your monitor, so start there unless your firewall can only match on addresses.
 
 ## Option 1: a secret custom header
 
@@ -44,6 +38,18 @@ site-qwality-check/1.0
 ```
 
 You can match on it to skip a bot challenge or a rate limit. Anyone can send the same string, though, so it identifies our checks without proving a request came from us. Use it where a false match costs little, or together with the secret header. A monitor with Web Bot Auth turned on also carries a signature that [proves a request came from us](/bot/#verifying-a-request).
+
+## Option 3: fixed IP addresses
+
+Our standard [check locations](/uptime-monitoring/overview/#check-locations) on AWS, Google Cloud and Microsoft Azure send requests from each provider's shared address ranges, and those addresses change. If your firewall accepts only a fixed list of addresses, email [hello@siteqwality.com](mailto:hello@siteqwality.com) and we will set up one of these:
+
+- **Fixed IP addresses** that Site Qwality checks run from.
+- **Dedicated IP addresses** that only your account's checks use.
+- **A private location**: our check probe runs inside your own network, so it can also reach services that are not on the public internet.
+
+Tell us which sites you monitor and what your firewall accepts, and we will recommend the one that fits.
+
+An IP address shows where a request came from, not who sent it. Shared fixed addresses also carry checks for other Site Qwality accounts, so a rule based on the addresses alone also lets through a monitor someone else points at your site. Require the [secret header](#option-1-a-secret-custom-header) as well, or use dedicated addresses.
 
 ## Web Bot Auth: signed requests
 

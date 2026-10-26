@@ -129,7 +129,7 @@ Without `check_regions`, a ping check runs from the default ping location. The d
 
 Each location a check runs from counts as one uptime check, from the same monthly volume as HTTP checks. The free plan's limits apply as they do to HTTP checks: a 5-minute minimum interval and one location per monitor. See [plan limits](/getting-started/plan-limits/).
 
-Checks come from cloud address ranges that change, so there are no fixed addresses to allowlist. The host must answer ICMP echo requests from the internet.
+The host must answer ICMP echo requests from the internet. Checks come from cloud address ranges that change; if your firewall accepts only known addresses, we can run them from [fixed IP addresses](/uptime-monitoring/http-checks/allowlisting/#option-3-fixed-ip-addresses).
 
 ## Results
 
