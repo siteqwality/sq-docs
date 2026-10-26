@@ -19443,6 +19443,96 @@
         }
       }
     },
+    "/reports/confirm/{token}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Opening a report confirmation link: shows who asks, what the address would receive and a\nbutton that confirms. Reads only.",
+        "operationId": "report_confirm_page",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Confirmation token from the email",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirmation page (HTML). Nothing is changed.",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "404": {
+            "description": "Unknown link. Nothing is changed.",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "410": {
+            "description": "Expired, or the address unsubscribed. Nothing is changed.",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "500": {
+            "description": "The link could not be checked",
+            "content": {
+              "text/html": {}
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Confirming a report recipient: from now on the address receives the schedule's reports.",
+        "operationId": "report_confirm",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Confirmation token from the email",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirmed (HTML result page)",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "404": {
+            "description": "Unknown link. Nothing is changed.",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "410": {
+            "description": "Expired, or the address unsubscribed. Nothing is changed.",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "500": {
+            "description": "The link could not be processed",
+            "content": {
+              "text/html": {}
+            }
+          }
+        }
+      }
+    },
     "/reports/on_call": {
       "get": {
         "tags": [
@@ -19519,6 +19609,724 @@
             "bearer_auth": []
           }
         ]
+      }
+    },
+    "/reports/runs": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Reports the account's schedules sent, or tried to, newest first.",
+        "operationId": "list_report_runs",
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "query",
+            "description": "Only this schedule's runs.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 100, default 50.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "RFC 3339: runs created before this instant, for the next page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Runs, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReportRunResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad limit or before"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/reports/runs/{id}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "One run, with the report it sent (`null` for a client uptime report). A scoped key or token\ngets the report trimmed as `GET /reports/summary` trims it.",
+        "operationId": "get_report_run",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Run id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportRunDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Run not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/reports/runs/{id}/document": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "The report a run sent, as a printable HTML page. A client uptime report is its branded\ndocument.",
+        "operationId": "get_report_run_document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Run id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The report (HTML)",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Run not found, or it stored no report"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/reports/subscriptions": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Every report schedule of the account, oldest first, with its recipients.",
+        "operationId": "list_report_subscriptions",
+        "responses": {
+          "200": {
+            "description": "The schedules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReportSubscriptionResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Creates a report schedule.",
+        "description": "Team members (`user_id`) receive the report at once. An outside address (`email`) gets one\nemail asking it to confirm, and receives nothing until it does; the link expires after 7\ndays. An address that bounced or marked our mail as spam gets no confirmation, and one that\nunsubscribed from any of the account's reports is added as `unsubscribed`. Adding outside\naddresses needs a verified email address on your login. An account has at most 20\nschedules, a schedule at most 25 recipients, at most 50 confirmation emails go out per\naccount per 24 hours, and at most 3 reach one address per 24 hours.\n\nA scoped API key or token can schedule an executive or operations report only if it can\nalso read incidents and RUM (`read:incidents`, `read:rum`).",
+        "operationId": "create_report_subscription",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The schedule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid name, kind, frequency, timezone, hour or recipient"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Outside recipients need a verified email address (`EMAIL_NOT_VERIFIED`), or a scoped key cannot read incidents and RUM"
+          },
+          "409": {
+            "description": "The account already has 20 schedules"
+          },
+          "429": {
+            "description": "Too many confirmation emails in the last 24 hours"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/reports/subscriptions/{id}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "One report schedule with its recipients.",
+        "operationId": "get_report_subscription",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Schedule id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The schedule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Schedule not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Replaces a report schedule, recipients included.",
+        "description": "Recipients still listed keep their status: an address that unsubscribed stays unsubscribed.\nRecipients left out are removed; adding one back later starts over, so an outside address\nconfirms again. New outside addresses get a confirmation email, under the same rules as\ncreating a schedule. A schedule that stays on with the same kind, frequency, timezone and\nhour keeps its next send time, so a report that is due still goes out.",
+        "operationId": "update_report_subscription",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Schedule id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The schedule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid name, kind, frequency, timezone, hour or recipient"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Outside recipients need a verified email address (`EMAIL_NOT_VERIFIED`), or a scoped key cannot read incidents and RUM"
+          },
+          "404": {
+            "description": "Schedule not found"
+          },
+          "429": {
+            "description": "Too many confirmation emails in the last 24 hours"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Deletes a report schedule, its recipients and its sent history.",
+        "operationId": "delete_report_subscription",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Schedule id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Schedule not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/reports/subscriptions/{id}/recipients/{recipient_id}/resend": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Sends a pending outside recipient a new confirmation link. The old link stops working.",
+        "operationId": "resend_report_confirmation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Schedule id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "recipient_id",
+            "in": "path",
+            "description": "Recipient id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The recipient, with the new confirmation time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportRecipientResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The recipient is not waiting for a confirmation, or its address bounced or complained before"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Outside recipients need a verified email address (`EMAIL_NOT_VERIFIED`)"
+          },
+          "404": {
+            "description": "Schedule or recipient not found"
+          },
+          "429": {
+            "description": "Sent in the last minute, or too many confirmation emails in the last 24 hours (50 per account, 3 per address)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/reports/subscriptions/{id}/test": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Emails the schedule's last complete period to you only, marked as a test.",
+        "description": "Works for a signed-in user (not an API key), once a minute. The recipients are not emailed\nand the sent history does not change.",
+        "operationId": "send_report_test",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Schedule id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "The test email is on its way"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Only a signed-in user can send a test"
+          },
+          "404": {
+            "description": "Schedule not found"
+          },
+          "429": {
+            "description": "A test was sent in the last minute"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/reports/summary": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "The account's executive summary or operations report for one period, compared with the\nperiod before it.",
+        "description": "`offset` 1 (the default) is the last complete period, 0 the one in progress. Days, weeks\n(Monday to Sunday) and months are counted in `timezone`, which defaults to the account's\ntimezone.\n\nUptime is the share of HTTP, TCP port, ping and browser checks that passed. A heartbeat\nmonitor's uptime is the share of the period outside missed-ping outages. The `attention`\nsection is the state now, whatever the period.\n\nA scoped API key or token gets incidents and on-call figures only with `read:incidents`, and\nRUM only with `read:rum`; `withheld` names the sections left empty.",
+        "operationId": "get_report_summary",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "`executive` (default) or `operations`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "frequency",
+            "in": "query",
+            "description": "`daily`, `weekly` (default) or `monthly`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "1 (default) is the last complete period, 0 the one in progress, 2 the one before the last.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "IANA zone the days are counted in. Defaults to the account's timezone.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown kind or frequency, an offset over 12, or an unknown timezone"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/reports/unsubscribe/{token}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Opening an unsubscribe link: asks to confirm. Reads only.",
+        "operationId": "report_unsubscribe_page",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Token from a report email",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unsubscribe page (HTML). Nothing is changed.",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "404": {
+            "description": "Unknown link. Nothing is changed.",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "500": {
+            "description": "The link could not be checked",
+            "content": {
+              "text/html": {}
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Unsubscribing a recipient. Also the one-click target of the `List-Unsubscribe` header\n(RFC 8058), so any body unsubscribes, except the form field `action=resubscribe`, which the\nresult page's button posts to undo it.",
+        "description": "An outside address that unsubscribes also opts out of the account's other reports: the\naccount cannot add it again until it resubscribes. A team member's unsubscribe covers this\nschedule only.",
+        "operationId": "report_unsubscribe",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Token from a report email",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Optional. `action=resubscribe` undoes an unsubscribe; any other body unsubscribes.",
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Unsubscribed, or resubscribed (HTML result page)",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "404": {
+            "description": "Unknown link. Nothing is changed.",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "500": {
+            "description": "The link could not be processed",
+            "content": {
+              "text/html": {}
+            }
+          }
+        }
+      }
+    },
+    "/reports/view/{token}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "A delivered report as a web page, from what was sent. The link works for 90 days while the\naddress still receives the report and the account is in good standing. A copy sent outside\nthe account shows on-call totals without names.",
+        "operationId": "report_view",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Token from a report email",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The report (HTML)",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "404": {
+            "description": "Unknown link, or one that no longer works",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "500": {
+            "description": "The report could not be shown",
+            "content": {
+              "text/html": {}
+            }
+          }
+        }
       }
     },
     "/rum": {
@@ -45380,6 +46188,185 @@
           }
         }
       },
+      "AccountReport": {
+        "type": "object",
+        "description": "The account's report over one period, compared with the period before. Fields missing from\na stored report read as empty, so older reports keep rendering.",
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReportKind",
+                "description": "`executive` or `operations`."
+              }
+            ],
+            "default": "executive"
+          },
+          "account_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The account's display name, when it has one.",
+            "default": null
+          },
+          "period": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReportPeriod"
+              }
+            ],
+            "default": {
+              "complete": true,
+              "end": "1970-01-01T00:00:00Z",
+              "frequency": "weekly",
+              "label": "",
+              "start": "1970-01-01T00:00:00Z",
+              "timezone": "UTC"
+            }
+          },
+          "previous_period": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReportPeriod"
+              }
+            ],
+            "default": {
+              "complete": true,
+              "end": "1970-01-01T00:00:00Z",
+              "frequency": "weekly",
+              "label": "",
+              "start": "1970-01-01T00:00:00Z",
+              "timezone": "UTC"
+            }
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "default": [
+              1970,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "uptime": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UptimeSection"
+              }
+            ],
+            "default": {
+              "coverage": {
+                "browser": 0,
+                "heartbeat": 0,
+                "http": 0,
+                "ping": 0,
+                "tcp": 0
+              },
+              "default_target": 0.0,
+              "downtime_seconds": {
+                "current": null,
+                "previous": null
+              },
+              "longest_outages": [],
+              "monitors": [],
+              "monitors_judged": 0,
+              "monitors_meeting_target": 0,
+              "monitors_omitted": 0,
+              "outages": {
+                "current": null,
+                "previous": null
+              },
+              "outages_omitted": 0,
+              "response_time_p95_ms": {
+                "current": null,
+                "previous": null
+              },
+              "uptime_percentage": {
+                "current": null,
+                "previous": null
+              }
+            }
+          },
+          "incidents": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IncidentSection"
+              }
+            ],
+            "default": {
+              "by_severity": [],
+              "longest": [],
+              "mtta_seconds": {
+                "current": null,
+                "previous": null
+              },
+              "mttr_seconds": {
+                "current": null,
+                "previous": null
+              },
+              "open_now": 0,
+              "opened": {
+                "current": null,
+                "previous": null
+              },
+              "resolved": {
+                "current": null,
+                "previous": null
+              }
+            }
+          },
+          "on_call": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OnCallSection"
+              }
+            ],
+            "default": {
+              "by_person": [],
+              "pages": {
+                "current": null,
+                "previous": null
+              }
+            }
+          },
+          "attention": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AttentionSection"
+              }
+            ],
+            "default": {
+              "expiring": [],
+              "monitors_down": [],
+              "open_incidents": []
+            }
+          },
+          "rum": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RumSection"
+              }
+            ],
+            "default": {
+              "apps": []
+            }
+          },
+          "withheld": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Sections left empty because the caller's access does not cover them: `incidents` and\n`on_call` without `read:incidents`, `rum` without `read:rum`.",
+            "default": []
+          }
+        }
+      },
       "AccountSlaMonitor": {
         "type": "object",
         "description": "One monitor in the account SLA report.",
@@ -47191,6 +48178,36 @@
           }
         }
       },
+      "AttentionSection": {
+        "type": "object",
+        "description": "What needs attention now, whatever the period.",
+        "properties": {
+          "monitors_down": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DownMonitorRow"
+            },
+            "description": "Longest down first. At most 20.",
+            "default": []
+          },
+          "open_incidents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportIncidentRow"
+            },
+            "description": "Oldest first. At most 10.",
+            "default": []
+          },
+          "expiring": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpiringRow"
+            },
+            "description": "Certificates and domains expiring within 30 days (or expired in the last 30), soonest first. At most 20.",
+            "default": []
+          }
+        }
+      },
       "AuditConfigurationChange": {
         "type": "object",
         "description": "The observed configuration around one successful mutation. Missing sides mean create or delete.",
@@ -48790,6 +49807,28 @@
           "1d",
           "1w"
         ]
+      },
+      "Compared": {
+        "type": "object",
+        "description": "A figure for the period and the one before it; `null` when there is no data.",
+        "properties": {
+          "current": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "default": null
+          },
+          "previous": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "default": null
+          }
+        }
       },
       "Comparison": {
         "type": "string",
@@ -53161,6 +54200,33 @@
           }
         }
       },
+      "DownMonitorRow": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "monitor_type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "monitor_type": {
+            "type": "string"
+          },
+          "since": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "EditIncidentNoteRequest": {
         "type": "object",
         "required": [
@@ -54183,6 +55249,38 @@
           }
         },
         "additionalProperties": false
+      },
+      "ExpiringRow": {
+        "type": "object",
+        "required": [
+          "kind",
+          "monitor_id",
+          "domain",
+          "expires_at",
+          "days_left"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "`tls` or `domain`."
+          },
+          "monitor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "days_left": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Negative once expired."
+          }
+        }
       },
       "ExpiryData": {
         "type": "object",
@@ -56537,6 +57635,81 @@
               "$ref": "#/components/schemas/MergedIncidentResponse"
             },
             "description": "The incidents merged into this one, each with its own updates. Empty on list endpoints."
+          }
+        }
+      },
+      "IncidentSection": {
+        "type": "object",
+        "properties": {
+          "opened": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared",
+                "description": "Incidents opened in the period, merged incidents excluded."
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "resolved": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared",
+                "description": "Of those, how many are resolved."
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "open_now": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Incidents not resolved now.",
+            "default": 0,
+            "minimum": 0
+          },
+          "mtta_seconds": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared",
+                "description": "Mean seconds to acknowledge, for incidents opened in the period."
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "mttr_seconds": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared",
+                "description": "Mean seconds to resolve, for incidents opened in the period."
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "by_severity": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SeverityCount"
+            },
+            "default": []
+          },
+          "longest": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportIncidentRow"
+            },
+            "description": "Incidents open during the period, longest first. At most 5.",
+            "default": []
           }
         }
       },
@@ -60491,6 +61664,32 @@
           }
         }
       },
+      "OnCallPersonRow": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "default": "00000000-0000-0000-0000-000000000000"
+          },
+          "name": {
+            "type": "string",
+            "default": ""
+          },
+          "pages": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
+          },
+          "incidents": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
+          }
+        }
+      },
       "OnCallReportResponse": {
         "type": "object",
         "description": "Who carried the on-call load over a range, and where the schedules had gaps.",
@@ -60761,6 +61960,31 @@
             "items": {
               "$ref": "#/components/schemas/OnCallOverrideResponse"
             }
+          }
+        }
+      },
+      "OnCallSection": {
+        "type": "object",
+        "properties": {
+          "pages": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared",
+                "description": "Responders paged."
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "by_person": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnCallPersonRow"
+            },
+            "description": "Most paged first. At most 10. Empty in a copy for someone outside the account.",
+            "default": []
           }
         }
       },
@@ -66338,6 +67562,560 @@
           }
         }
       },
+      "ReportDeliveryCounts": {
+        "type": "object",
+        "description": "Emails of a run by outcome.",
+        "required": [
+          "sent",
+          "failed",
+          "suppressed"
+        ],
+        "properties": {
+          "sent": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "suppressed": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Not sent: the address bounced or complained before.",
+            "minimum": 0
+          }
+        }
+      },
+      "ReportFrequency": {
+        "type": "string",
+        "enum": [
+          "daily",
+          "weekly",
+          "monthly"
+        ]
+      },
+      "ReportIncidentRow": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "severity",
+          "status",
+          "started_at",
+          "duration_seconds"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "`triggered`, `acknowledged` or `resolved`."
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolved_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "ReportKind": {
+        "type": "string",
+        "description": "Which report: the leadership summary, the team's operations report, or the branded client report.",
+        "enum": [
+          "executive",
+          "operations",
+          "client_uptime"
+        ]
+      },
+      "ReportMonitorRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "default": "00000000-0000-0000-0000-000000000000"
+          },
+          "name": {
+            "type": "string",
+            "default": ""
+          },
+          "monitor_type": {
+            "type": "string",
+            "description": "`http`, `tcp`, `ping`, `browser` or `heartbeat`.",
+            "default": ""
+          },
+          "uptime_percentage": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "default": null
+          },
+          "previous_uptime_percentage": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "default": null
+          },
+          "target": {
+            "type": "number",
+            "format": "double",
+            "description": "The strictest SLA target on the monitor's status pages, else the default.",
+            "default": 0.0
+          },
+          "attained": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`null` when the period has no data for the monitor, or it was paused throughout.",
+            "default": null
+          },
+          "outages": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
+          },
+          "downtime_seconds": {
+            "type": "number",
+            "format": "double",
+            "default": 0.0
+          },
+          "avg_response_time_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "default": null
+          },
+          "p95_response_time_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "default": null
+          }
+        }
+      },
+      "ReportOutageRow": {
+        "type": "object",
+        "required": [
+          "monitor_id",
+          "monitor_name",
+          "monitor_type",
+          "started_at",
+          "seconds_in_period"
+        ],
+        "properties": {
+          "monitor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "monitor_name": {
+            "type": "string"
+          },
+          "monitor_type": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "`null` while the monitor is still failing."
+          },
+          "seconds_in_period": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "ReportPeriod": {
+        "type": "object",
+        "description": "One period of a report. `end` is exclusive.",
+        "properties": {
+          "frequency": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReportFrequency"
+              }
+            ],
+            "default": "weekly"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "default": [
+              1970,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "default": [
+              1970,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "timezone": {
+            "type": "string",
+            "description": "The IANA zone the period's days are counted in.",
+            "default": "UTC"
+          },
+          "label": {
+            "type": "string",
+            "description": "\"Oct 24, 2026\", \"Oct 19 to 25, 2026\" or \"October 2026\".",
+            "default": ""
+          },
+          "complete": {
+            "type": "boolean",
+            "description": "False for a period still in progress.",
+            "default": true
+          }
+        }
+      },
+      "ReportRecipientInput": {
+        "type": "object",
+        "description": "A recipient to add: a team member by `user_id`, or anyone else by `email`.",
+        "properties": {
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ReportRecipientResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Set for a team member."
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The member's name, when they have one."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReportRecipientStatus"
+          },
+          "confirmation_sent_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ReportRecipientStatus": {
+        "type": "string",
+        "description": "A recipient's state: external addresses stay `pending` until they confirm.",
+        "enum": [
+          "pending",
+          "active",
+          "unsubscribed"
+        ]
+      },
+      "ReportRunDetailResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ReportRunResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "snapshot": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AccountReport",
+                    "description": "The report as sent; `null` for client uptime reports, whose document is at `/reports/runs/{id}/document`."
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "description": "A run with the report it sent."
+      },
+      "ReportRunResponse": {
+        "type": "object",
+        "description": "One period a schedule sent, or tried to.",
+        "required": [
+          "id",
+          "subscription_id",
+          "subscription_name",
+          "kind",
+          "frequency",
+          "period_start",
+          "period_end",
+          "period_label",
+          "status",
+          "created_at",
+          "deliveries"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subscription_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subscription_name": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ReportKind"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/ReportFrequency"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "period_label": {
+            "type": "string",
+            "description": "As the report shows it, such as \"October 2026\"."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReportRunStatus"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the run failed or was skipped, or which emails failed."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sent_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "deliveries": {
+            "$ref": "#/components/schemas/ReportDeliveryCounts"
+          }
+        }
+      },
+      "ReportRunStatus": {
+        "type": "string",
+        "enum": [
+          "sending",
+          "sent",
+          "failed",
+          "skipped"
+        ]
+      },
+      "ReportSubscriptionRequest": {
+        "type": "object",
+        "description": "Body of `POST /reports/subscriptions` and `PUT /reports/subscriptions/{id}`.",
+        "required": [
+          "name",
+          "kind",
+          "frequency"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "1 to 120 characters."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ReportKind"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/ReportFrequency",
+            "description": "Client uptime reports are monthly only."
+          },
+          "timezone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "IANA zone for the period's days and the send hour. Defaults to the account's timezone."
+          },
+          "send_hour": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Local hour the report is sent, 0 to 23. Defaults to 8."
+          },
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Defaults to true."
+          },
+          "recipients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportRecipientInput"
+            },
+            "description": "At most 25."
+          }
+        }
+      },
+      "ReportSubscriptionResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "frequency",
+          "timezone",
+          "send_hour",
+          "enabled",
+          "created_at",
+          "updated_at",
+          "recipients"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ReportKind"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/ReportFrequency"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "send_hour": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "next_send_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the next report goes out; `null` while the schedule is turned off."
+          },
+          "last_sent_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recipients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportRecipientResponse"
+            }
+          }
+        }
+      },
       "ResolveIncidentRequest": {
         "type": "object",
         "description": "Optional body of `POST /incident/{id}/resolve`.",
@@ -67255,6 +69033,76 @@
           "threshold",
           "metric"
         ]
+      },
+      "RumAppRow": {
+        "type": "object",
+        "properties": {
+          "app_id": {
+            "type": "string",
+            "format": "uuid",
+            "default": "00000000-0000-0000-0000-000000000000"
+          },
+          "name": {
+            "type": "string",
+            "default": ""
+          },
+          "sessions": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared"
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "error_session_rate": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared",
+                "description": "Share of sessions with an error, from 0 to 1."
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "lcp_p75_ms": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared"
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "inp_p75_ms": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared"
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "cls_p75": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared"
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          }
+        }
       },
       "RumApplication": {
         "type": "object",
@@ -69701,6 +71549,19 @@
               "null"
             ],
             "description": "Unknown or unparseable SDK versions have no age assessment."
+          }
+        }
+      },
+      "RumSection": {
+        "type": "object",
+        "properties": {
+          "apps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RumAppRow"
+            },
+            "description": "The five applications with the most sessions.",
+            "default": []
           }
         }
       },
@@ -72579,6 +74440,22 @@
         "properties": {
           "client_secret": {
             "type": "string"
+          }
+        }
+      },
+      "SeverityCount": {
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "description": "`minor`, `major` or `critical`.",
+            "default": ""
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
           }
         }
       },
@@ -80718,6 +82595,42 @@
           }
         }
       },
+      "UptimeCoverage": {
+        "type": "object",
+        "description": "Active (not paused) monitors by type.",
+        "properties": {
+          "http": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
+          },
+          "tcp": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
+          },
+          "ping": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
+          },
+          "browser": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
+          },
+          "heartbeat": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
+          }
+        }
+      },
       "UptimeDay": {
         "type": "object",
         "required": [
@@ -80786,6 +82699,120 @@
             "type": "integer",
             "format": "int64",
             "description": "The pair is the default only while the account stays within this percent of `quota`."
+          }
+        }
+      },
+      "UptimeSection": {
+        "type": "object",
+        "properties": {
+          "coverage": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UptimeCoverage"
+              }
+            ],
+            "default": {
+              "browser": 0,
+              "heartbeat": 0,
+              "http": 0,
+              "ping": 0,
+              "tcp": 0
+            }
+          },
+          "uptime_percentage": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared",
+                "description": "Share of HTTP, TCP, ping and browser checks that passed, in percent."
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "default_target": {
+            "type": "number",
+            "format": "double",
+            "description": "The target for a monitor with none set on a status page.",
+            "default": 0.0
+          },
+          "monitors_meeting_target": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
+          },
+          "monitors_judged": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Monitors with data in the period.",
+            "default": 0,
+            "minimum": 0
+          },
+          "outages": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared",
+                "description": "Outages overlapping the period, heartbeats included."
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "downtime_seconds": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared",
+                "description": "Time at least one monitor was down."
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "response_time_p95_ms": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Compared",
+                "description": "95th percentile response time of HTTP checks across the account."
+              }
+            ],
+            "default": {
+              "current": null,
+              "previous": null
+            }
+          },
+          "monitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportMonitorRow"
+            },
+            "description": "Worst first: lowest uptime, then most downtime. At most 500.",
+            "default": []
+          },
+          "monitors_omitted": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
+          },
+          "longest_outages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportOutageRow"
+            },
+            "description": "Longest first by time inside the period. At most 20.",
+            "default": []
+          },
+          "outages_omitted": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0,
+            "minimum": 0
           }
         }
       },
@@ -82327,6 +84354,10 @@
     {
       "name": "SLA Reports",
       "description": "Monthly uptime attainment against SLA targets."
+    },
+    {
+      "name": "Reports",
+      "description": "Executive summary and operations reports for a day, week or month, scheduled report emails and their sent history."
     },
     {
       "name": "Security",
