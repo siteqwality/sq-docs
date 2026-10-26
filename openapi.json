@@ -51029,6 +51029,13 @@
               }
             ]
           },
+          "web_bot_auth": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`http` only. Sign check requests with Web Bot Auth so bot protection such as\nCloudflare recognizes SiteQwality Monitor, a verified bot. Defaults to off."
+          },
           "request_body": {
             "type": [
               "string",
@@ -56070,6 +56077,10 @@
           "recheck_on_failure": {
             "$ref": "#/components/schemas/RecheckOnFailure",
             "description": "Whether a failed run is checked once more before it counts: `off`,\n`same_location` or `another_cloud`."
+          },
+          "web_bot_auth": {
+            "type": "boolean",
+            "description": "Whether check requests are signed with Web Bot Auth as SiteQwality Monitor."
           },
           "request_body": {
             "type": [
@@ -63258,6 +63269,10 @@
                 "recheck_on_failure": {
                   "$ref": "#/components/schemas/RecheckOnFailure",
                   "description": "Whether a failed run is checked once more before it counts: `off`,\n`same_location` or `another_cloud`."
+                },
+                "web_bot_auth": {
+                  "type": "boolean",
+                  "description": "Whether check requests are signed with Web Bot Auth as SiteQwality Monitor."
                 },
                 "request_body": {
                   "type": [
@@ -81449,6 +81464,13 @@
                 "description": "Check a failed run once more before it counts. Absent leaves it unchanged;\n`another_cloud` needs a paid plan."
               }
             ]
+          },
+          "web_bot_auth": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`http` only. Sign check requests with Web Bot Auth. Absent leaves it unchanged."
           }
         }
       },
