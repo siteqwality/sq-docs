@@ -1,7 +1,7 @@
 ---
 title: Plans and limits
 description: What the free plan includes, what a paid plan adds, and what happens at a limit, when a plan ends, or when a payment fails.
-last_verified: 2026-10-22
+last_verified: 2026-10-25
 owner: jj
 ---
 
@@ -65,7 +65,7 @@ Limits agreed for your account replace the ones on this page.
 
 ## At a limit
 
-Reaching a limit removes nothing you already have. Whatever would go over it is refused (a new monitor, invite, status page or domain, or a shorter check interval) until you are under the limit or upgrade. Usage-based products never bill overage: once the allowance and any grace buffer are used, they stop until the next period or an upgrade. Account settings show your usage.
+Reaching a limit removes nothing you already have. Whatever would go over it is refused (a new monitor, invite, status page or domain, or a shorter check interval) until you are under the limit or upgrade. Usage-based products never bill overage: once the allowance and any grace buffer are used, they stop until the next period or an upgrade. For uptime checks, the dashboard won't save a monitor, or a change to one, that would take your monitors' projected monthly checks past the allowance, and offers fewer locations, a longer interval or an upgrade instead. Account settings show your usage.
 
 Through the API, a request over a limit gets `402 Payment Required`, except check intervals, check locations, rechecks from another cloud and the browser check count, which get `403 Forbidden`.
 
