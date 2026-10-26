@@ -36,7 +36,7 @@ The last two rows apply only to monitors with Web Bot Auth turned on.
 
 ## Verifying a request
 
-Anyone can copy a User-Agent, but not a signature. A monitor with Web Bot Auth turned on signs its check requests with HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)) and Ed25519 keys. Customers turn it on for monitors that bot protection blocks; it is off by default. Our public keys are published at:
+Anyone can copy a User-Agent, but not a signature. A monitor with Web Bot Auth turned on signs its check requests with HTTP Message Signatures ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)) and Ed25519 keys. Customers [turn it on](/uptime-monitoring/http-checks/allowlisting/#web-bot-auth-signed-requests) for monitors that bot protection blocks; it is off by default. Our public keys are published at:
 
 ```
 https://bot.siteqwality.com/.well-known/http-message-signatures-directory

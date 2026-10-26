@@ -45,6 +45,20 @@ site-qwality-check/1.0
 
 You can match on it to skip a bot challenge or a rate limit. Anyone can send the same string, though, so it identifies our checks without proving a request came from us. Use it where a false match costs little, or together with the secret header. A monitor with Web Bot Auth turned on also carries a signature that [proves a request came from us](/bot/#verifying-a-request).
 
+## Web Bot Auth: signed requests
+
+Use this when the site is behind Cloudflare and you cannot change its rules, for example a client's site.
+
+A signed request carries a digital signature next to its usual headers. Site Qwality makes the signature with a private key only we hold and publishes the matching public key at `bot.siteqwality.com`. Whoever receives the request can check the signature against that key, and if it matches, the request came from Site Qwality. Anyone can copy a User-Agent, but nobody can make a valid signature without our key.
+
+Cloudflare lists Site Qwality Monitor as a verified bot. When a signed check reaches a site behind Cloudflare, Cloudflare checks the signature and recognizes the request as ours. Its bot protection usually lets verified bots through without a challenge, unless the site's own rules block them.
+
+To turn it on, open the monitor, choose **Edit monitor**, then **Advanced**, and check **Sign requests with Web Bot Auth**. In the API, set `web_bot_auth` to `true`. It is off by default and applies to HTTP monitors only.
+
+- Signing adds the `Signature-Agent`, `Signature-Input` and `Signature` headers. The URL, method, other headers and body stay the same.
+- Site Qwality Monitor is registered with Cloudflare. Other bot-protection services may still challenge a signed check, and so can a Cloudflare rule that blocks verified bots. Use a [secret header](#option-1-a-secret-custom-header) there.
+- To verify a signature yourself, see [verifying a request](/bot/#verifying-a-request).
+
 ## Blocked by bot protection
 
 When a check fails and the response carries the signature of a known bot-protection service, the result's `failure_reason` is `bot_protection`, shown in the dashboard as **Blocked by bot protection**. The signatures recognized include Cloudflare challenges, AWS WAF CAPTCHA and challenge actions, Akamai, Imperva, DataDome and PerimeterX (HUMAN). The label is only applied to a check that already failed on its status code.
@@ -53,7 +67,7 @@ It still counts as a failure: the monitor goes down and alerts like any other fa
 
 What to do about it:
 
-- **Turn on Web Bot Auth** when the site is behind Cloudflare and you cannot change its rules. Open the monitor, choose **Edit monitor**, then **Advanced**, and turn on **Sign requests with Web Bot Auth** (`web_bot_auth` in the API). Each request then carries a signature that identifies Site Qwality Monitor, which Cloudflare lists as a verified bot.
+- **Turn on Web Bot Auth** when the site is behind Cloudflare and you cannot change its rules. Each check is then signed as Site Qwality Monitor, which Cloudflare lists as a verified bot. See [Web Bot Auth: signed requests](#web-bot-auth-signed-requests).
 - **Allowlist our checks** with a [secret header](#option-1-a-secret-custom-header). This is the fix that lasts.
 - **Add a location on another provider.** Bot protection often scores cloud networks differently, so checking from another network can help. More than one location per monitor needs a paid uptime plan; see [check locations](/uptime-monitoring/http-checks/reference/#check-locations).
 - **Try HTTP/1.1.** Some bot-management edges treat HTTP/2 and HTTP/1.1 clients differently. Set `http_version` to `http1_1`; see [HTTP versions](/uptime-monitoring/http-checks/reference/#http-versions).
