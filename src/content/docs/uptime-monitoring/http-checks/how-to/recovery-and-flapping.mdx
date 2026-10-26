@@ -26,8 +26,6 @@ curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
   -d '{ "recovery_period_runs": 2, "flap_hold_override": null }'
 ```
 
-Send the check's current `auth_type`, `content_type` and `custom_http_headers` in the same `PUT` if it uses them: leaving them out clears them.
-
 ## Recovery period
 
 The monitor goes back to `success` on the first healthy check. Uptime, SLA reports and the outage's recorded duration all use that first healthy check. What waits for the recovery period:

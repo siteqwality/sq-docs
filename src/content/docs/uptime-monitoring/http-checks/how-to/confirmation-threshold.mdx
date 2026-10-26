@@ -22,8 +22,6 @@ With the default threshold of `1`, an HTTP check alerts you on its first failed 
      -d '{ "confirmation_threshold": 3 }'
    ```
 
-   Send the check's current `auth_type`, `content_type` and `custom_http_headers` in the same `PUT` if it uses them: leaving them out clears them.
-
 2. **Work out what it costs you in detection time.** The alert fires on the Nth failed check itself, so:
 
    ```

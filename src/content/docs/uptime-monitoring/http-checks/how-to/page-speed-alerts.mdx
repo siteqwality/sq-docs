@@ -20,8 +20,6 @@ curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
   -d '{ "monitor_page_speed": true }'
 ```
 
-Send the check's current `auth_type`, `content_type` and `custom_http_headers` in the same `PUT` if it uses them: leaving them out clears them.
-
 A **Page Speed Insights** tab appears on the monitor once the first result lands. Read the latest result with `GET /http/job/{job_id}/page_speed` and the series with `GET /http/job/{job_id}/page_speed/history`.
 
 ## What triggers an alert

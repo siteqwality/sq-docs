@@ -34,7 +34,7 @@ curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
   -d '{ "monitor_dns": true }'
 ```
 
-New HTTP checks have it on unless created with `"monitor_dns": false`. Send the check's current `auth_type`, `content_type` and `custom_http_headers` in the same `PUT` if it uses them: leaving them out clears them.
+New HTTP checks have it on unless created with `"monitor_dns": false`.
 
 The HTTP check's response carries the paired check's id as `dns_job_id`; the API steps below use it as `$DNS_JOB_ID`.
 

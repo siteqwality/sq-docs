@@ -25,7 +25,7 @@ Add a header with a long random value to the monitor, then tell your firewall or
 
 2. Open the monitor and choose **Edit monitor**, then **Request**. Under **Custom HTTP Headers**, enter `X-Uptime-Check` as the header name and your random value as the header value. Save. Use this custom name rather than a standard metadata header such as `User-Agent`, whose value can remain visible in results.
 
-   Through the API, read the monitor with `GET /http/job/{job_id}`, then send its current `auth_type`, `content_type` and complete `custom_http_headers` map, with `X-Uptime-Check` added, in `PUT /http/job/{job_id}`. Omitting those three fields clears them. Masked header values sent back unchanged keep their stored values; omit password and bearer-token fields to keep the stored credentials.
+   Through the API, read the monitor with `GET /http/job/{job_id}`, then send its complete `custom_http_headers` map, with `X-Uptime-Check` added, in `PUT /http/job/{job_id}`. The map replaces the stored headers, and masked values sent back unchanged keep their stored values.
 
 3. In your firewall, WAF or bot protection, add a rule that allows requests whose `X-Uptime-Check` header equals the value, or lets them skip the challenge. In Cloudflare, for example, that is a WAF custom rule with the expression `any(http.request.headers["x-uptime-check"][*] eq "<your random value>")` and the **Skip** action.
 

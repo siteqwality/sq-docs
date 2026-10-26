@@ -52,7 +52,7 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `state` | enum | `active` | Update only. `active` or `paused`. Paused checks stop running and alerting. |
 | `final_uri` | string | none | Expected final URL after redirects. A mismatch fails the check. |
 
-`PUT /http/job/{job_id}` takes the same fields, all optional; a request with no fields is rejected. Sending `check_regions: []` on update leaves regions unchanged. Include the current `auth_type`, `content_type`, and complete `custom_http_headers` map when changing other fields: omitting these fields clears them.
+`PUT /http/job/{job_id}` takes the same fields, all optional; a request with no fields is rejected. Sending `check_regions: []` on update leaves regions unchanged. Fields you leave out keep their values; send `auth_type`, `content_type` or `custom_http_headers` as `null` to remove them. `custom_http_headers` replaces the whole map.
 
 ## Read-only fields
 
