@@ -1,7 +1,7 @@
 ---
 title: Telemetry services
 description: Service identity, RED, endpoints, deployments and dependency quality.
-last_verified: 2026-10-18
+last_verified: 2026-10-26
 owner: jj
 ---
 
@@ -9,7 +9,7 @@ Open **Services**, then the **From telemetry** tab, to explore services observed
 
 Service and endpoint RED shows received request rate, errors and duration with sampling and quality indicators. RED is derived from received spans, before your trace exclusion or sampling rules where supported. It does not reconstruct traffic the SDK never sent, and weighted counts can be estimates. A dependency map needs actual matching client/server trace relationships; missing spans and short retention can leave edges incomplete.
 
-Deployment markers come from observed service versions and deployment information. They help compare error, rate and duration changes, but they show reported versions, not proof that a whole fleet deployed. Open related logs, metrics, trace samples and Errors with the same time range. An admin links a telemetry service to its incident service with **Catalog links**.
+Deployment markers come from observed service versions and deployment information. They help compare error, rate and duration changes, but they show reported versions, not proof that a whole fleet deployed. Open related logs, metrics, trace samples and Errors with the same time range. On a service's page, an admin links it to its incident service with **Link incident service**; the services list then shows that incident service by name.
 
 | Read endpoint | Purpose |
 |---|---|
@@ -20,6 +20,7 @@ Deployment markers come from observed service versions and deployment informatio
 | `GET /services/telemetry/{name}/dependencies` | Service dependencies. |
 | `GET /services/map` | Scoped map. |
 | `GET /services/deployments` | Deployment markers. |
-| `PUT /services/{id}/telemetry-links` | Link an incident service to telemetry identities. |
+| `GET /services/{id}/telemetry-links` | An incident service's linked telemetry identities. |
+| `PUT /services/{id}/telemetry-links` | Replace an incident service's linked telemetry identities. |
 
 These are API-relative paths at `https://api.siteqwality.com`. URL-encode names. Derived results can be pending or partial; wait or narrow the query rather than treating an empty result as zero traffic.
