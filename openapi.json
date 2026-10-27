@@ -20357,7 +20357,7 @@
         "tags": [
           "RUM Applications"
         ],
-        "summary": "Create a RUM application (issues a new SDK token), with Balanced privacy and the default\nrecording rules (design J3 to J5). Its SDK config is published before this returns.",
+        "summary": "Create a RUM application (issues a new SDK token), with Balanced privacy and the default\nrecording rules. Its SDK config is published before this returns.",
         "operationId": "create_rum_application",
         "requestBody": {
           "content": {
@@ -23346,7 +23346,7 @@
           "RUM Analytics"
         ],
         "summary": "List user sessions for a RUM application.",
-        "description": "A listed session has a measure in `[from, to]` and a page view in its extended range. Each session is summarized\nover its whole lifetime, so `duration_ms`, `first_seen` and `last_seen` are never clipped by\nthe range. `total` and `total_with_replay` count every session matching the query exactly.\nPage with `next_cursor`; the cursor keeps the first page's range, so new sessions never\nshift later pages. Filters use the RUM filter grammar in `f`; the Wave 1 parameters still\nwork and combine with them. Filtering on `console_message` needs body access; without it,\n`error_message` and `search` skip errors captured from the console.",
+        "description": "A listed session has a measure in `[from, to]` and a page view in its extended range. Each session is summarized\nover its whole lifetime, so `duration_ms`, `first_seen` and `last_seen` are never clipped by\nthe range. `total` and `total_with_replay` count every session matching the query exactly.\nPage with `next_cursor`; the cursor keeps the first page's range, so new sessions never\nshift later pages. Filters use the RUM filter grammar in `f`; the older single-filter\nparameters still work and combine with them. Filtering on `console_message` needs body access; without it,\n`error_message` and `search` skip errors captured from the console.",
         "operationId": "list_rum_sessions",
         "parameters": [
           {
@@ -23581,7 +23581,7 @@
           "RUM Analytics"
         ],
         "summary": "Get a RUM session's summary: the session page header, its page views and tabs, counts per\nevent kind, acquisition context, attributes and the first events.",
-        "description": "`events` keeps the Wave 1 timeline (detail events and page views, oldest first) up to 2,000\nrows, with `events_truncated` when there are more; the session page pages through\n`/sessions/{session_id}/events`. A session without a page view is returned too, with\n`view_count` 0.",
+        "description": "`events` keeps the original timeline (detail events and page views, oldest first) up to 2,000\nrows, with `events_truncated` when there are more; the session page pages through\n`/sessions/{session_id}/events`. A session without a page view is returned too, with\n`view_count` 0.",
         "operationId": "get_rum_session_detail",
         "parameters": [
           {
@@ -49242,7 +49242,7 @@
       },
       "CanvasCapture": {
         "type": "object",
-        "description": "Opt-in canvas recording (design 5.5, Phase 7).",
+        "description": "Opt-in canvas recording.",
         "properties": {
           "enabled": {
             "type": "boolean",
@@ -50484,7 +50484,7 @@
           },
           "full_access": {
             "type": "boolean",
-            "description": "`true` asks for a `full` key with no scope list, which reaches the whole customer API. A `full` key with no\nscopes is refused without it (integrations design 5.8.6). Ignored when scopes are given or on `ingest` keys."
+            "description": "`true` asks for a `full` key with no scope list, which reaches the whole customer API. A `full` key with no\nscopes is refused without it. Ignored when scopes are given or on `ingest` keys."
           },
           "expires_in_days": {
             "type": [
@@ -54267,7 +54267,7 @@
               "boolean",
               "null"
             ],
-            "description": "Microsoft Teams only: send a check card each month so the flow keeps running (design 5.6.3)."
+            "description": "Microsoft Teams only: send a check card each month so the flow keeps running."
           },
           "headers": {
             "type": [
@@ -54277,7 +54277,7 @@
             "items": {
               "$ref": "#/components/schemas/CustomHeader"
             },
-            "description": "Webhooks only: the custom headers to send, replacing the set; `[]` clears them (design 5.5.6)."
+            "description": "Webhooks only: the custom headers to send, replacing the set; `[]` clears them."
           },
           "auth": {
             "oneOf": [
@@ -55187,7 +55187,7 @@
       },
       "EventQuery": {
         "type": "object",
-        "description": "A log, span or trace query (design 6.5.3): the explorer URL, a saved view, a widget, an\nalert rule and an MCP call all carry this. `text` and `filters` are AND-combined.",
+        "description": "A log, span or trace query: the explorer URL, a saved view, a widget, an\nalert rule and an MCP call all carry this. `text` and `filters` are AND-combined.",
         "required": [
           "v",
           "signal",
@@ -55993,7 +55993,7 @@
               "string",
               "null"
             ],
-            "description": "This field actually isn't in use right now.\nOriginally, I think it's intention was related to having a validation that the final\nresolved URI equals this value (as another validation method).\nBut we may end up just getting rid of this. - JJ 12 May 2025"
+            "description": "Reserved and currently unused."
           },
           "method": {
             "type": "string",
@@ -58305,7 +58305,7 @@
               "string",
               "null"
             ],
-            "description": "A direct `files.stripe.com` link, handed to the browser as-is rather\nthan proxied. A PDF download is a file, not a management screen, so it\ndoes not break the \"no screen sends the customer to Stripe\" rule, and\nproxying it would mean streaming a document through a Lambda for no\ngain. The link is short-lived and scoped to the invoice by Stripe."
+            "description": "A direct `files.stripe.com` link to the invoice PDF, short-lived and\nscoped to the invoice by Stripe."
           },
           "description": {
             "type": "string",
@@ -60060,7 +60060,7 @@
       },
       "MetricQuery": {
         "type": "object",
-        "description": "A metrics query (design 6.5.4): lettered queries, formulas over them, one window.",
+        "description": "A metrics query: lettered queries, formulas over them, one window.",
         "required": [
           "v",
           "queries",
@@ -60194,7 +60194,7 @@
               },
               {
                 "$ref": "#/components/schemas/TimeAgg",
-                "description": "Absent: the T13 default for the metric's type (histograms: `merge`, `merge`)."
+                "description": "Absent: the default for the metric's type (histograms: `merge`, `merge`)."
               }
             ]
           },
@@ -63185,7 +63185,7 @@
                     "string",
                     "null"
                   ],
-                  "description": "This field actually isn't in use right now.\nOriginally, I think it's intention was related to having a validation that the final\nresolved URI equals this value (as another validation method).\nBut we may end up just getting rid of this. - JJ 12 May 2025"
+                  "description": "Reserved and currently unused."
                 },
                 "method": {
                   "type": "string",
@@ -65748,7 +65748,7 @@
       },
       "PrivacyLevel": {
         "type": "string",
-        "description": "A named privacy preset (design 7.1). `None` on [`RumPrivacySettings::level`] is the legacy\n\"Custom\" level, where the individual masking flags apply.",
+        "description": "A named privacy preset. No preset on [`RumPrivacySettings::level`] is the legacy\n\"Custom\" level, where the individual masking flags apply.",
         "enum": [
           "strict",
           "balanced",
@@ -68921,7 +68921,7 @@
             }
           }
         ],
-        "description": "One condition of a rule (design 6.2). A rule matches when all of its conditions hold."
+        "description": "One condition of a rule. A rule matches when all of its conditions hold."
       },
       "RumAccountSettings": {
         "type": "object",
@@ -68982,7 +68982,7 @@
       },
       "RumAlertQuery": {
         "type": "object",
-        "description": "A RUM alert rule (Wave 2 design 5.13, 6.10). Issue triggers fire per issue event; threshold\nand metric triggers are windowed like log and metric rules.",
+        "description": "A RUM alert rule. Issue triggers fire per issue event; threshold\nand metric triggers are windowed like log and metric rules.",
         "required": [
           "application_id",
           "trigger"
@@ -69203,7 +69203,7 @@
           },
           "capture": {
             "$ref": "#/components/schemas/RumCaptureSettings",
-            "description": "Network, console, error and canvas capture (Wave 2). Omitted while default, like every\nWave 2 key: see `rum_settings`."
+            "description": "Network, console, error and canvas capture. Omitted while default: see `rum_settings`."
           },
           "routes": {
             "type": "array",
@@ -69557,7 +69557,7 @@
       },
       "RumContentAccess": {
         "type": "string",
-        "description": "Who may watch replays in an account (design 7.3, J6). Viewers and auditors never can.",
+        "description": "Who may watch replays in an account. Viewers and auditors never can.",
         "enum": [
           "members",
           "admins"
@@ -70897,7 +70897,7 @@
               },
               {
                 "$ref": "#/components/schemas/PrivacyLevel",
-                "description": "Wave 2 privacy preset; `None` is the legacy \"Custom\" level where the flags above apply."
+                "description": "Privacy preset; `None` is the legacy \"Custom\" level where the flags above apply."
               }
             ]
           },
@@ -71766,7 +71766,7 @@
             }
           }
         ],
-        "description": "One event of the session, in the shape of the ingest kinds (design 6.3)."
+        "description": "One event of the session, in the shape of the ingest kinds."
       },
       "RumSessionEventCounts": {
         "type": "object",
