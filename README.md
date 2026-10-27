@@ -18,7 +18,7 @@ src/
 └── assets/                    # Images, logos, OG cards.
 public/                        # Static files served as-is.
 astro.config.mjs               # Starlight config + sidebar.
-openapi.json                   # (Phase 2) auto-synced from core-rs.
+openapi.json                   # API spec, auto-synced from the API source.
 ```
 
 ## Content conventions
@@ -56,7 +56,3 @@ owner: jj
 ## Deployment
 
 Pushing to `main` runs `.github/workflows/pages.yml`, which builds the site and deploys it to GitHub Pages.
-
-## Background
-
-See `~/code/SiteQwality/docs/plans/2026-05-02-docs-site-rebuild-design.md` for the full design and migration plan.
