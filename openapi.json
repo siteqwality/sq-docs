@@ -26888,6 +26888,46 @@
       }
     },
     "/services/{id}/telemetry-links": {
+      "get": {
+        "tags": [
+          "Telemetry services"
+        ],
+        "operationId": "list_links",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The catalog service's telemetry links",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TelemetryServiceLink"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Service not found"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
       "put": {
         "tags": [
           "Telemetry services"
@@ -50175,7 +50215,8 @@
           "email",
           "sms",
           "phone_call",
-          "slack_dm"
+          "slack_dm",
+          "mobile_push"
         ]
       },
       "ContactMethodVerificationSent": {
@@ -56305,6 +56346,17 @@
               "null"
             ],
             "description": "Whether an invalid certificate alerts. Only on `GET /http/job/{id}`\nwhen TLS is monitored."
+          },
+          "icon": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SiteIcon",
+                "description": "The website's icon. Only on `GET /http/job/{id}`, once one is found."
+              }
+            ]
           },
           "recovery_period_runs": {
             "type": "integer",
@@ -63497,6 +63549,17 @@
                     "null"
                   ],
                   "description": "Whether an invalid certificate alerts. Only on `GET /http/job/{id}`\nwhen TLS is monitored."
+                },
+                "icon": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SiteIcon",
+                      "description": "The website's icon. Only on `GET /http/job/{id}`, once one is found."
+                    }
+                  ]
                 },
                 "recovery_period_runs": {
                   "type": "integer",
@@ -74683,6 +74746,32 @@
           "no_healthy_pair"
         ]
       },
+      "SiteIcon": {
+        "type": "object",
+        "description": "A website's icon: a square PNG of at most 128 pixels, taken from the site's own pages.",
+        "required": [
+          "url",
+          "tone"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Public HTTPS URL of the PNG. The same image always has the same URL."
+          },
+          "tone": {
+            "$ref": "#/components/schemas/SiteIconTone"
+          }
+        }
+      },
+      "SiteIconTone": {
+        "type": "string",
+        "description": "How the icon reads on a transparent background: `dark` or `light` is a mark of that tone,\nwhich needs a contrasting backdrop on a surface of the same tone. `neutral` reads on either.",
+        "enum": [
+          "dark",
+          "light",
+          "neutral"
+        ]
+      },
       "SlaMonth": {
         "type": "object",
         "description": "Attainment of one calendar month against the monitor's target.",
@@ -76126,7 +76215,8 @@
           "change_password",
           "disable_totp",
           "regenerate_recovery_codes",
-          "add_passkey"
+          "add_passkey",
+          "connect_device"
         ]
       },
       "StepUpStartRequest": {
@@ -80375,6 +80465,17 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "icon": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SiteIcon",
+                "description": "The website's icon. HTTP checks only, and null until one is found."
+              }
             ]
           },
           "method": {
