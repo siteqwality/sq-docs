@@ -2067,7 +2067,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -2092,7 +2092,7 @@
         "operationId": "list_telemetry_alert_rules",
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -2128,7 +2128,7 @@
         },
         "responses": {
           "201": {
-            "description": "",
+            "description": "Created",
             "content": {
               "text/plain": {
                 "schema": {
@@ -2154,7 +2154,7 @@
         "operationId": "capabilities",
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -2190,7 +2190,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -2234,7 +2234,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -2279,7 +2279,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           }
         },
         "security": [
@@ -2308,7 +2308,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -2347,7 +2347,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -2386,7 +2386,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -2435,7 +2435,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           }
         },
         "security": [
@@ -2474,7 +2474,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           }
         },
         "security": [
@@ -2511,7 +2511,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           }
         },
         "security": [
@@ -2550,7 +2550,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           }
         },
         "security": [
@@ -2589,7 +2589,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           }
         },
         "security": [
@@ -3616,7 +3616,7 @@
         "operationId": "get_details",
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -3649,7 +3649,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -3780,7 +3780,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -4243,7 +4243,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -4370,7 +4370,7 @@
         "operationId": "get_grace",
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -4403,7 +4403,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -5304,10 +5304,10 @@
             "schema": {
               "oneOf": [
                 {
-                  "type": "null"
+                  "$ref": "#/components/schemas/CheckType"
                 },
                 {
-                  "$ref": "#/components/schemas/CheckType"
+                  "type": "null"
                 }
               ]
             }
@@ -7894,7 +7894,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -8099,7 +8099,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -8292,7 +8292,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -11545,10 +11545,10 @@
               "schema": {
                 "oneOf": [
                   {
-                    "type": "null"
+                    "$ref": "#/components/schemas/ReopenIncidentRequest"
                   },
                   {
-                    "$ref": "#/components/schemas/ReopenIncidentRequest"
+                    "type": "null"
                   }
                 ]
               }
@@ -11616,10 +11616,10 @@
               "schema": {
                 "oneOf": [
                   {
-                    "type": "null"
+                    "$ref": "#/components/schemas/ResolveIncidentRequest"
                   },
                   {
-                    "$ref": "#/components/schemas/ResolveIncidentRequest"
+                    "type": "null"
                   }
                 ]
               }
@@ -12931,7 +12931,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -13121,7 +13121,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -13154,7 +13154,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -13367,7 +13367,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -13565,7 +13565,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -13755,7 +13755,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -13788,7 +13788,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -13978,7 +13978,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -14168,7 +14168,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -14201,7 +14201,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -14406,7 +14406,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -14596,7 +14596,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -14786,7 +14786,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -14819,7 +14819,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -15024,7 +15024,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -15617,7 +15617,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -15807,7 +15807,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -16005,7 +16005,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -16040,7 +16040,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -16087,7 +16087,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -16137,7 +16137,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -16172,7 +16172,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -16377,7 +16377,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -20877,7 +20877,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -20924,7 +20924,7 @@
         },
         "responses": {
           "201": {
-            "description": "",
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -21024,7 +21024,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -21230,7 +21230,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -21279,7 +21279,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {}
@@ -21439,7 +21439,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -21491,7 +21491,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -21659,7 +21659,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -22052,7 +22052,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -22252,7 +22252,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -22455,7 +22455,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -22663,7 +22663,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -22711,7 +22711,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -22758,7 +22758,7 @@
         },
         "responses": {
           "201": {
-            "description": "",
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -22861,7 +22861,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -22972,7 +22972,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -23991,7 +23991,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -24235,7 +24235,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -24341,7 +24341,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -24391,7 +24391,7 @@
         },
         "responses": {
           "201": {
-            "description": "",
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -24452,7 +24452,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -24685,7 +24685,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -25698,7 +25698,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -25888,7 +25888,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -26078,7 +26078,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -26276,7 +26276,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -26474,7 +26474,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -26672,7 +26672,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -26870,7 +26870,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -26989,7 +26989,7 @@
         "operationId": "list_slos",
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -27025,7 +27025,7 @@
         },
         "responses": {
           "201": {
-            "description": "",
+            "description": "Created",
             "content": {
               "text/plain": {
                 "schema": {
@@ -27062,7 +27062,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -27106,7 +27106,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -27151,7 +27151,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           }
         },
         "security": [
@@ -27180,7 +27180,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -27219,7 +27219,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -27268,7 +27268,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           }
         },
         "security": [
@@ -27307,7 +27307,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           }
         },
         "security": [
@@ -27344,7 +27344,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           }
         },
         "security": [
@@ -27383,7 +27383,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           }
         },
         "security": [
@@ -27422,7 +27422,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           }
         },
         "security": [
@@ -27451,7 +27451,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -30358,7 +30358,7 @@
         "operationId": "access",
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -30397,7 +30397,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -30541,7 +30541,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -30623,7 +30623,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -30661,7 +30661,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -30695,7 +30695,7 @@
         "operationId": "list_telemetry_pipelines",
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -30734,7 +30734,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {}
@@ -30776,7 +30776,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -30828,7 +30828,7 @@
         },
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           },
           "400": {
             "description": "Invalid pipeline"
@@ -30867,7 +30867,7 @@
         ],
         "responses": {
           "204": {
-            "description": ""
+            "description": "No Content"
           },
           "403": {
             "description": "Admin required"
@@ -30894,7 +30894,7 @@
         "operationId": "settings",
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -30930,7 +30930,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -30964,7 +30964,7 @@
         "operationId": "usage",
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -31002,7 +31002,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -31038,7 +31038,7 @@
         },
         "responses": {
           "201": {
-            "description": "",
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -31090,7 +31090,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -31253,7 +31253,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -31288,7 +31288,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -31493,7 +31493,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -31683,7 +31683,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -31873,7 +31873,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -31906,7 +31906,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -32111,7 +32111,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -32301,7 +32301,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -32499,7 +32499,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -32558,7 +32558,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -32759,7 +32759,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -32965,7 +32965,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -34476,10 +34476,10 @@
               "schema": {
                 "oneOf": [
                   {
-                    "type": "null"
+                    "$ref": "#/components/schemas/RollApiKeyRequest"
                   },
                   {
-                    "$ref": "#/components/schemas/RollApiKeyRequest"
+                    "type": "null"
                   }
                 ]
               }
@@ -38115,10 +38115,10 @@
               "schema": {
                 "oneOf": [
                   {
-                    "type": "null"
+                    "$ref": "#/components/schemas/AcknowledgeIncidentRequest"
                   },
                   {
-                    "$ref": "#/components/schemas/AcknowledgeIncidentRequest"
+                    "type": "null"
                   }
                 ]
               }
@@ -38324,10 +38324,10 @@
               "schema": {
                 "oneOf": [
                   {
-                    "type": "null"
+                    "$ref": "#/components/schemas/ReopenIncidentRequest"
                   },
                   {
-                    "$ref": "#/components/schemas/ReopenIncidentRequest"
+                    "type": "null"
                   }
                 ]
               }
@@ -38456,10 +38456,10 @@
               "schema": {
                 "oneOf": [
                   {
-                    "type": "null"
+                    "$ref": "#/components/schemas/ResolveIncidentRequest"
                   },
                   {
-                    "$ref": "#/components/schemas/ResolveIncidentRequest"
+                    "type": "null"
                   }
                 ]
               }
@@ -39644,10 +39644,10 @@
               "schema": {
                 "oneOf": [
                   {
-                    "type": "null"
+                    "$ref": "#/components/schemas/RotateSigningSecretRequest"
                   },
                   {
-                    "$ref": "#/components/schemas/RotateSigningSecretRequest"
+                    "type": "null"
                   }
                 ]
               }
@@ -46233,12 +46233,8 @@
         "description": "The account's report over one period, compared with the period before. Fields missing from\na stored report read as empty, so older reports keep rendering.",
         "properties": {
           "kind": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ReportKind",
-                "description": "`executive` or `operations`."
-              }
-            ],
+            "$ref": "#/components/schemas/ReportKind",
+            "description": "`executive` or `operations`.",
             "default": "executive"
           },
           "account_name": {
@@ -46250,11 +46246,7 @@
             "default": null
           },
           "period": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ReportPeriod"
-              }
-            ],
+            "$ref": "#/components/schemas/ReportPeriod",
             "default": {
               "complete": true,
               "end": "1970-01-01T00:00:00Z",
@@ -46265,11 +46257,7 @@
             }
           },
           "previous_period": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ReportPeriod"
-              }
-            ],
+            "$ref": "#/components/schemas/ReportPeriod",
             "default": {
               "complete": true,
               "end": "1970-01-01T00:00:00Z",
@@ -46295,11 +46283,7 @@
             ]
           },
           "uptime": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/UptimeSection"
-              }
-            ],
+            "$ref": "#/components/schemas/UptimeSection",
             "default": {
               "coverage": {
                 "browser": 0,
@@ -46334,11 +46318,7 @@
             }
           },
           "incidents": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/IncidentSection"
-              }
-            ],
+            "$ref": "#/components/schemas/IncidentSection",
             "default": {
               "by_severity": [],
               "longest": [],
@@ -46362,11 +46342,7 @@
             }
           },
           "on_call": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/OnCallSection"
-              }
-            ],
+            "$ref": "#/components/schemas/OnCallSection",
             "default": {
               "by_person": [],
               "pages": {
@@ -46376,11 +46352,7 @@
             }
           },
           "attention": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/AttentionSection"
-              }
-            ],
+            "$ref": "#/components/schemas/AttentionSection",
             "default": {
               "expiring": [],
               "monitors_down": [],
@@ -46388,11 +46360,7 @@
             }
           },
           "rum": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/RumSection"
-              }
-            ],
+            "$ref": "#/components/schemas/RumSection",
             "default": {
               "apps": []
             }
@@ -46719,11 +46687,11 @@
           "incident": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ActionItemIncident",
                 "description": "The incident, on the follow-up list only."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -46798,11 +46766,11 @@
           "role": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ParticipantRole",
                 "description": "Defaults to `responder`; `lead` needs a `user_id`."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -47076,11 +47044,11 @@
           "proration_date": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/i64",
                 "description": "From the quote. Required for a purchase or upgrade on a live plan."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -47298,11 +47266,11 @@
           "acknowledgement": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/OutageAcknowledgement",
                 "description": "Who acknowledged this outage, if anyone."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -47583,22 +47551,22 @@
           "email_rules": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/EmailRules",
                 "description": "How an `email` source reads each email."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "mapping": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/GenericMapping",
                 "description": "Where a `generic_json` source finds each field."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -48255,20 +48223,20 @@
           "before": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AuditConfigurationSnapshot"
               },
               {
-                "$ref": "#/components/schemas/AuditConfigurationSnapshot"
+                "type": "null"
               }
             ]
           },
           "after": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AuditConfigurationSnapshot"
               },
               {
-                "$ref": "#/components/schemas/AuditConfigurationSnapshot"
+                "type": "null"
               }
             ]
           }
@@ -48815,10 +48783,10 @@
           "address": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/BillingAddress"
               },
               {
-                "$ref": "#/components/schemas/BillingAddress"
+                "type": "null"
               }
             ]
           },
@@ -48929,10 +48897,10 @@
           "verification": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/BillingTaxIdVerification"
               },
               {
-                "$ref": "#/components/schemas/BillingTaxIdVerification"
+                "type": "null"
               }
             ]
           }
@@ -49147,11 +49115,11 @@
           "not_checked_reason": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/NotCheckedReason",
                 "description": "Set while the monitor is active but not being checked: `quota` when\nthe account's quota for it is used up. Omitted otherwise."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -49389,11 +49357,11 @@
           "proration_date": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/i64",
                 "description": "From the quote. Required for an upgrade, so the charge is the one quoted."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -49515,11 +49483,11 @@
           "bouncing": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ChannelBounce",
                 "description": "An email channel whose address hard-bounced or complained after its last delivery:\nSES now suppresses it, so the channel is `degraded` until the address is fixed."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -50471,22 +50439,22 @@
           "mapping": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/GenericMapping",
                 "description": "Required for `generic_json`, refused for the other formats: where each field is in the body."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "email_rules": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/EmailRules",
                 "description": "For `email` only: how each email's subject is read."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -50505,11 +50473,11 @@
           "key_type": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ApiKeyType",
                 "description": "Omitted means `full`.\n\nThis is deliberately NOT the dashboard's default (which is `ingest`,\nthe safer choice). The API default has to preserve the historical\nbehavior, because a customer script that has been POSTing\n`{\"friendly_name\": \"...\"}` for years must keep getting a key that can\ndo what its keys have always done."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -50745,11 +50713,11 @@
           "definition": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/DashboardDefinition",
                 "description": "A blank board when absent."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -50890,11 +50858,11 @@
           "on_exhausted": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/OnExhausted",
                 "description": "What happens when the repeats are used up, or no level reaches anyone. Default `notify_owners`."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -50974,11 +50942,11 @@
           "check_type": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/CheckType",
                 "description": "What the monitor checks: `http` (the default), `tcp` or `ping`. Fixed once created."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -51062,11 +51030,11 @@
           "recheck_on_failure": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/RecheckOnFailure",
                 "description": "Check a failed run once more before it counts: `off`, `same_location`,\nor `another_cloud` (paid plans). Omitted takes the plan's default:\n`another_cloud` on a paid plan, `same_location` on the free plan."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -51086,20 +51054,20 @@
           "content_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/HttpJobContentType"
               },
               {
-                "$ref": "#/components/schemas/HttpJobContentType"
+                "type": "null"
               }
             ]
           },
           "auth_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/HttpJobAuthType"
               },
               {
-                "$ref": "#/components/schemas/HttpJobAuthType"
+                "type": "null"
               }
             ]
           },
@@ -51205,11 +51173,11 @@
           "http_version": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/HttpJobHttpVersion",
                 "description": "Preferred HTTP version. Defaults to `auto` when omitted."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -51301,11 +51269,11 @@
           "severity": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IncidentSeverity",
                 "description": "Defaults to the service's default severity; required without a `service_id`."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -51352,11 +51320,11 @@
           "status": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IncidentStatus",
                 "description": "The new public status for a public update; omitted keeps it. An internal update never\nchanges it, and `resolved` there is a 400 (use resolve)."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -51366,11 +51334,11 @@
           "visibility": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IncidentUpdateVisibility",
                 "description": "`public` (default) or `internal`. Only public updates reach status pages and their\nsubscribers; the app's own composer sends `internal` unless asked to publish."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -51962,11 +51930,11 @@
           "min_severity": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IncidentSeverity",
                 "description": "Skip incidents below this severity. Compared with the highest severity the incident reached."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -52007,10 +51975,10 @@
           "incident_creation_mode": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/IncidentCreationMode"
               },
               {
-                "$ref": "#/components/schemas/IncidentCreationMode"
+                "type": "null"
               }
             ]
           },
@@ -52033,20 +52001,20 @@
           "default_incident_severity": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/IncidentSeverity"
               },
               {
-                "$ref": "#/components/schemas/IncidentSeverity"
+                "type": "null"
               }
             ]
           },
           "public_incident_template": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/PublicIncidentTemplate"
               },
               {
-                "$ref": "#/components/schemas/PublicIncidentTemplate"
+                "type": "null"
               }
             ]
           },
@@ -52061,11 +52029,11 @@
           "auto_resolve": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/AutoResolve",
                 "description": "Default `unless_acknowledged`."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -52634,11 +52602,11 @@
           "connected_app": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/AuditConnectedApp",
                 "description": "The AI assistant or other OAuth app involved: the one that acted when\n`actor_type` is `connected_app`, or the one approved, denied or\nrevoked on an `oauth.authorize` or `account.connected_apps` row."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -52676,10 +52644,10 @@
           "configuration_change": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AuditConfigurationChange"
               },
               {
-                "$ref": "#/components/schemas/AuditConfigurationChange"
+                "type": "null"
               }
             ]
           }
@@ -52708,11 +52676,11 @@
           "actor_type": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/CustomerAuditActorType",
                 "description": "Only entries with this actor type."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -52907,20 +52875,20 @@
           "created_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserRef"
               },
               {
-                "$ref": "#/components/schemas/UserRef"
+                "type": "null"
               }
             ]
           },
           "updated_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserRef"
               },
               {
-                "$ref": "#/components/schemas/UserRef"
+                "type": "null"
               }
             ]
           },
@@ -53126,20 +53094,20 @@
           "created_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserRef"
               },
               {
-                "$ref": "#/components/schemas/UserRef"
+                "type": "null"
               }
             ]
           },
           "updated_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserRef"
               },
               {
-                "$ref": "#/components/schemas/UserRef"
+                "type": "null"
               }
             ]
           },
@@ -53209,10 +53177,10 @@
           "created_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserRef"
               },
               {
-                "$ref": "#/components/schemas/UserRef"
+                "type": "null"
               }
             ]
           },
@@ -53460,11 +53428,11 @@
           "single_location_reason": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/SingleLocationReason",
                 "description": "Set when `check_regions` is one location; absent for the pair."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -54323,11 +54291,11 @@
           "auth": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/WebhookAuth",
                 "description": "Webhooks only: `{\"type\": \"bearer\", \"token\"}`, `{\"type\": \"basic\", \"username\", \"password\"}` or\n`{\"type\": \"none\"}`."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -54353,11 +54321,11 @@
           "status": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/StatusPageMaintenanceStatus",
                 "description": "Leave out to keep the stored status, or to let a moved window decide it."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -55266,10 +55234,10 @@
           "analytics": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Analytics"
               },
               {
-                "$ref": "#/components/schemas/Analytics"
+                "type": "null"
               }
             ]
           }
@@ -55675,10 +55643,10 @@
           "unit": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Unit"
               },
               {
-                "$ref": "#/components/schemas/Unit"
+                "type": "null"
               }
             ]
           },
@@ -56133,22 +56101,22 @@
           "content_type": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/HttpJobContentType",
                 "description": "The content type of the HTTP request (e.g., application/json)."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "auth_type": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/HttpJobAuthType",
                 "description": "The type of authentication used for the HTTP request (e.g., Basic, Bearer)."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -56324,11 +56292,11 @@
           "not_checked_reason": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/NotCheckedReason",
                 "description": "Set while the monitor is active but not being checked: `quota` when\nthe account's quota for it is used up. Omitted otherwise."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -56350,11 +56318,11 @@
           "icon": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/SiteIcon",
                 "description": "The website's icon. Only on `GET /http/job/{id}`, once one is found."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -56380,11 +56348,11 @@
           "partial_failure": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/PartialFailure",
                 "description": "Set while runs pass but some locations fail. Omitted otherwise."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -57297,10 +57265,10 @@
           "service": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/NamedRef"
               },
               {
-                "$ref": "#/components/schemas/NamedRef"
+                "type": "null"
               }
             ]
           },
@@ -57402,10 +57370,10 @@
           "impact": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/MonitorImpact"
               },
               {
-                "$ref": "#/components/schemas/MonitorImpact"
+                "type": "null"
               }
             ]
           }
@@ -57437,11 +57405,11 @@
           "impact": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/MonitorImpact",
                 "description": "What status pages show for it; null derives it from the incident's severity."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -57705,24 +57673,16 @@
         "type": "object",
         "properties": {
           "opened": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared",
-                "description": "Incidents opened in the period, merged incidents excluded."
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
+            "description": "Incidents opened in the period, merged incidents excluded.",
             "default": {
               "current": null,
               "previous": null
             }
           },
           "resolved": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared",
-                "description": "Of those, how many are resolved."
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
+            "description": "Of those, how many are resolved.",
             "default": {
               "current": null,
               "previous": null
@@ -57736,24 +57696,16 @@
             "minimum": 0
           },
           "mtta_seconds": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared",
-                "description": "Mean seconds to acknowledge, for incidents opened in the period."
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
+            "description": "Mean seconds to acknowledge, for incidents opened in the period.",
             "default": {
               "current": null,
               "previous": null
             }
           },
           "mttr_seconds": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared",
-                "description": "Mean seconds to resolve, for incidents opened in the period."
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
+            "description": "Mean seconds to resolve, for incidents opened in the period.",
             "default": {
               "current": null,
               "previous": null
@@ -57937,11 +57889,11 @@
           "external_ref": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ApiIntegrationExternalRef",
                 "description": "Where a PagerDuty or JSM/Opsgenie integration sends. `null` on every other type."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -57952,22 +57904,22 @@
           "health": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IntegrationHealth",
                 "description": "How deliveries through it are going. Only the list carries it."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "disabled": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IntegrationDisabled",
                 "description": "Set while it is turned off. The list and the enable and disable answers carry it."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -57981,11 +57933,11 @@
           "webhook_request": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/WebhookRequestHint",
                 "description": "Webhooks only: the custom header names and the auth type it sends, never a value. The list and\nedits carry it."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -58149,11 +58101,11 @@
           "last_delivery": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IntegrationDelivery",
                 "description": "The newest receipt, skips by design included."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -58735,10 +58687,10 @@
               "assignee": {
                 "oneOf": [
                   {
-                    "type": "null"
+                    "$ref": "#/components/schemas/IssueAssignee"
                   },
                   {
-                    "$ref": "#/components/schemas/IssueAssignee"
+                    "type": "null"
                   }
                 ]
               }
@@ -58871,22 +58823,22 @@
           "status": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ComponentStatus",
                 "description": "The status the owner set on a manual component; null for every other kind."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "status_override": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/StatusOverride",
                 "description": "The override in force, or null. One past its expiry reads as null."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -59730,10 +59682,10 @@
           "default_aggregation": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Aggregation"
               },
               {
-                "$ref": "#/components/schemas/Aggregation"
+                "type": "null"
               }
             ]
           },
@@ -60041,10 +59993,10 @@
           "histogram": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/MetricHistogram"
               },
               {
-                "$ref": "#/components/schemas/MetricHistogram"
+                "type": "null"
               }
             ]
           }
@@ -60242,21 +60194,21 @@
           "time_agg": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/TimeAgg",
                 "description": "Absent: the default for the metric's type (histograms: `merge`, `merge`)."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "space_agg": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/SpaceAgg"
               },
               {
-                "$ref": "#/components/schemas/SpaceAgg"
+                "type": "null"
               }
             ]
           },
@@ -60496,10 +60448,10 @@
           "group_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/MonitorGroupBy"
               },
               {
-                "$ref": "#/components/schemas/MonitorGroupBy"
+                "type": "null"
               }
             ]
           },
@@ -61099,11 +61051,11 @@
           "health": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ChannelHealth",
                 "description": "How this channel's recent deliveries went: whether the last alert\nreached anyone, and why not when it did not (a revoked Slack token, a\nbouncing inbox). Present on the read endpoints; absent on create and\nupdate responses."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -61616,10 +61568,10 @@
           "rotation_anchor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/RotationAnchorResponse"
               },
               {
-                "$ref": "#/components/schemas/RotationAnchorResponse"
+                "type": "null"
               }
             ]
           },
@@ -61680,11 +61632,11 @@
           "next": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/OnCallShiftResponse",
                 "description": "The shift that starts when `on_call` ends; absent when that is beyond 90 days."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -61957,11 +61909,11 @@
           "rotation_anchor": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/RotationAnchorResponse",
                 "description": "Where the rotation is counted from: absent on layers created before anchors were stored."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -62030,12 +61982,8 @@
         "type": "object",
         "properties": {
           "pages": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared",
-                "description": "Responders paged."
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
+            "description": "Responders paged.",
             "default": {
               "current": null,
               "previous": null
@@ -62273,22 +62221,22 @@
           "default_payment_method": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/PaymentMethodResponse",
                 "description": "What Stripe charges: the subscription's default, else the customer's. Any type, not only cards."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "pending_purchase": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/PendingPurchase",
                 "description": "A purchase waiting on its payment, if any."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -62365,22 +62313,22 @@
                 "email_rules": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/EmailRules",
                       "description": "How an `email` source reads each email."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
                 "mapping": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/GenericMapping",
                       "description": "Where a `generic_json` source finds each field."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -62565,11 +62513,11 @@
                 "not_checked_reason": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/NotCheckedReason",
                       "description": "Set while the monitor is active but not being checked: `quota` when\nthe account's quota for it is used up. Omitted otherwise."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -62832,11 +62780,11 @@
                 "connected_app": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/AuditConnectedApp",
                       "description": "The AI assistant or other OAuth app involved: the one that acted when\n`actor_type` is `connected_app`, or the one approved, denied or\nrevoked on an `oauth.authorize` or `account.connected_apps` row."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -62874,10 +62822,10 @@
                 "configuration_change": {
                   "oneOf": [
                     {
-                      "type": "null"
+                      "$ref": "#/components/schemas/AuditConfigurationChange"
                     },
                     {
-                      "$ref": "#/components/schemas/AuditConfigurationChange"
+                      "type": "null"
                     }
                   ]
                 }
@@ -63336,22 +63284,22 @@
                 "content_type": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/HttpJobContentType",
                       "description": "The content type of the HTTP request (e.g., application/json)."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
                 "auth_type": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/HttpJobAuthType",
                       "description": "The type of authentication used for the HTTP request (e.g., Basic, Bearer)."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -63527,11 +63475,11 @@
                 "not_checked_reason": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/NotCheckedReason",
                       "description": "Set while the monitor is active but not being checked: `quota` when\nthe account's quota for it is used up. Omitted otherwise."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -63553,11 +63501,11 @@
                 "icon": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/SiteIcon",
                       "description": "The website's icon. Only on `GET /http/job/{id}`, once one is found."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -63583,11 +63531,11 @@
                 "partial_failure": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/PartialFailure",
                       "description": "Set while runs pass but some locations fail. Omitted otherwise."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -63974,11 +63922,11 @@
                 "external_ref": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/ApiIntegrationExternalRef",
                       "description": "Where a PagerDuty or JSM/Opsgenie integration sends. `null` on every other type."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -63989,22 +63937,22 @@
                 "health": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/IntegrationHealth",
                       "description": "How deliveries through it are going. Only the list carries it."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
                 "disabled": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/IntegrationDisabled",
                       "description": "Set while it is turned off. The list and the enable and disable answers carry it."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -64018,11 +63966,11 @@
                 "webhook_request": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/WebhookRequestHint",
                       "description": "Webhooks only: the custom header names and the auth type it sends, never a value. The list and\nedits carry it."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -64085,11 +64033,11 @@
                 "health": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/ChannelHealth",
                       "description": "How this channel's recent deliveries went: whether the last alert\nreached anyone, and why not when it did not (a revoked Slack token, a\nbouncing inbox). Present on the read endpoints; absent on create and\nupdate responses."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -64271,11 +64219,11 @@
                 "public_incident_template": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/PublicIncidentTemplate",
                       "description": "Prefills Publish and words auto-published incidents."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -64304,11 +64252,11 @@
                 "health": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/ServiceHealth",
                       "description": "The roll-up of incidents, monitors, maintenance and on call. On the list and get routes."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -64423,10 +64371,10 @@
                 "browser_check": {
                   "oneOf": [
                     {
-                      "type": "null"
+                      "$ref": "#/components/schemas/BrowserCheck"
                     },
                     {
-                      "$ref": "#/components/schemas/BrowserCheck"
+                      "type": "null"
                     }
                   ]
                 }
@@ -64476,10 +64424,10 @@
                 "cron_job": {
                   "oneOf": [
                     {
-                      "type": "null"
+                      "$ref": "#/components/schemas/CronJob"
                     },
                     {
-                      "$ref": "#/components/schemas/CronJob"
+                      "type": "null"
                     }
                   ]
                 }
@@ -64536,10 +64484,10 @@
                 "http_job": {
                   "oneOf": [
                     {
-                      "type": "null"
+                      "$ref": "#/components/schemas/HttpJob"
                     },
                     {
-                      "$ref": "#/components/schemas/HttpJob"
+                      "type": "null"
                     }
                   ]
                 }
@@ -64692,11 +64640,11 @@
                 "consent_source": {
                   "oneOf": [
                     {
-                      "type": "null"
-                    },
-                    {
                       "$ref": "#/components/schemas/ConsentSource",
                       "description": "How the address was added. Absent on subscribers from before it was recorded."
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -64717,10 +64665,10 @@
                 "quarantine_reason": {
                   "oneOf": [
                     {
-                      "type": "null"
+                      "$ref": "#/components/schemas/QuarantineReason"
                     },
                     {
-                      "$ref": "#/components/schemas/QuarantineReason"
+                      "type": "null"
                     }
                   ]
                 }
@@ -65352,10 +65300,10 @@
           "unit": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Unit"
               },
               {
-                "$ref": "#/components/schemas/Unit"
+                "type": "null"
               }
             ]
           }
@@ -65422,11 +65370,11 @@
           "recent": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/RangeSpec",
                 "description": "When present, preview the last 100 matching stored logs or spans in this window."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -65750,11 +65698,11 @@
           "proration_date": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/i64",
                 "description": "For an upgrade: send this back on the confirm, so the charge is the one quoted."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -66207,22 +66155,22 @@
           "first_touch": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/FirstTouchRequest",
                 "description": "Write-once: fills only the columns that are still empty."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "self_reported": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/SelfReportedRequest",
                 "description": "Replaces an earlier answer, including a skip."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -66263,10 +66211,10 @@
           "aggregation": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Aggregation"
               },
               {
-                "$ref": "#/components/schemas/Aggregation"
+                "type": "null"
               }
             ]
           },
@@ -66385,10 +66333,10 @@
           "unit": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Unit"
               },
               {
-                "$ref": "#/components/schemas/Unit"
+                "type": "null"
               }
             ]
           },
@@ -66403,11 +66351,11 @@
           "compare": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/Compare",
                 "description": "Only `previous_period` is meaningful for a single value."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -67177,11 +67125,11 @@
           "urgency": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/Urgency",
                 "description": "Set when the warning is about one urgency."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -67424,10 +67372,10 @@
           "reason": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ReplayNoneReason"
               },
               {
-                "$ref": "#/components/schemas/ReplayNoneReason"
+                "type": "null"
               }
             ]
           },
@@ -67845,11 +67793,7 @@
         "description": "One period of a report. `end` is exclusive.",
         "properties": {
           "frequency": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ReportFrequency"
-              }
-            ],
+            "$ref": "#/components/schemas/ReportFrequency",
             "default": "weekly"
           },
           "start": {
@@ -67980,11 +67924,11 @@
               "snapshot": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/AccountReport",
                     "description": "The report as sent; `null` for client uptime reports, whose document is at `/reports/runs/{id}/document`."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               }
@@ -69011,20 +68955,20 @@
           "replay_access": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/RumContentAccess"
               },
               {
-                "$ref": "#/components/schemas/RumContentAccess"
+                "type": "null"
               }
             ]
           },
           "body_access": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/RumContentAccess"
               },
               {
-                "$ref": "#/components/schemas/RumContentAccess"
+                "type": "null"
               }
             ]
           }
@@ -69068,11 +69012,11 @@
           "measure": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/RumAlertMeasure",
                 "description": "What threshold and metric triggers measure."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -69085,10 +69029,10 @@
           "device_class": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/DeviceClass"
               },
               {
-                "$ref": "#/components/schemas/DeviceClass"
+                "type": "null"
               }
             ]
           },
@@ -69125,56 +69069,36 @@
             "default": ""
           },
           "sessions": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared"
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
             "default": {
               "current": null,
               "previous": null
             }
           },
           "error_session_rate": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared",
-                "description": "Share of sessions with an error, from 0 to 1."
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
+            "description": "Share of sessions with an error, from 0 to 1.",
             "default": {
               "current": null,
               "previous": null
             }
           },
           "lcp_p75_ms": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared"
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
             "default": {
               "current": null,
               "previous": null
             }
           },
           "inp_p75_ms": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared"
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
             "default": {
               "current": null,
               "previous": null
             }
           },
           "cls_p75": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared"
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
             "default": {
               "current": null,
               "previous": null
@@ -69402,11 +69326,7 @@
         "description": "What the SDK captures beyond views and errors.",
         "properties": {
           "network": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/NetworkCapture"
-              }
-            ],
+            "$ref": "#/components/schemas/NetworkCapture",
             "default": {
               "body_urls": [],
               "header_allowlist": [
@@ -69430,11 +69350,7 @@
             ]
           },
           "errors": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ErrorCapture"
-              }
-            ],
+            "$ref": "#/components/schemas/ErrorCapture",
             "default": {
               "console_errors_as_issues": false,
               "deny_urls": [],
@@ -69442,11 +69358,7 @@
             }
           },
           "canvas": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CanvasCapture"
-              }
-            ],
+            "$ref": "#/components/schemas/CanvasCapture",
             "default": {
               "enabled": false,
               "fps": 2,
@@ -69470,11 +69382,11 @@
           "mention_delivery": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/RumMentionDelivery",
                 "description": "Present on writes. Queue acceptance is not delivery confirmation."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -70956,11 +70868,11 @@
           "level": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/PrivacyLevel",
                 "description": "Privacy preset; `None` is the legacy \"Custom\" level where the flags above apply."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -71818,11 +71730,11 @@
               "group": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/RumEventGroup",
                     "description": "Present on a collapsed row that stands for more than one stored row."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               }
@@ -73152,10 +73064,10 @@
           "comparison": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/TelemetryComparison"
               },
               {
-                "$ref": "#/components/schemas/TelemetryComparison"
+                "type": "null"
               }
             ]
           },
@@ -74126,11 +74038,11 @@
           "min_severity": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IncidentSeverity",
                 "description": "Lifecycle events of incidents below this severity are not sent; absent sends every severity."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -74310,11 +74222,11 @@
           "public_incident_template": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/PublicIncidentTemplate",
                 "description": "Prefills Publish and words auto-published incidents."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -74343,11 +74255,11 @@
           "health": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ServiceHealth",
                 "description": "The roll-up of incidents, monitors, maintenance and on call. On the list and get routes."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -74572,10 +74484,10 @@
           "created_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserRef"
               },
               {
-                "$ref": "#/components/schemas/UserRef"
+                "type": "null"
               }
             ]
           },
@@ -75455,10 +75367,10 @@
           "symbolication": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Symbolication"
               },
               {
-                "$ref": "#/components/schemas/Symbolication"
+                "type": "null"
               }
             ]
           }
@@ -75827,10 +75739,10 @@
           "browser_check": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/BrowserCheck"
               },
               {
-                "$ref": "#/components/schemas/BrowserCheck"
+                "type": "null"
               }
             ]
           }
@@ -75861,10 +75773,10 @@
           "cron_job": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CronJob"
               },
               {
-                "$ref": "#/components/schemas/CronJob"
+                "type": "null"
               }
             ]
           }
@@ -75930,22 +75842,22 @@
           "health": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/CustomDomainHealth",
                 "description": "The last check of a live domain; absent until the first one, a few minutes after it goes live."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "sender": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/CustomDomainSender",
                 "description": "Absent for our own hostnames, which always mail from the default sender."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -75982,11 +75894,11 @@
           "proration_date": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/i64",
                 "description": "From the quote. Required when the quantity goes up on a live plan."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -76024,10 +75936,10 @@
           "http_job": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/HttpJob"
               },
               {
-                "$ref": "#/components/schemas/HttpJob"
+                "type": "null"
               }
             ]
           }
@@ -76173,11 +76085,11 @@
           "consent_source": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ConsentSource",
                 "description": "How the address was added. Absent on subscribers from before it was recorded."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -76198,10 +76110,10 @@
           "quarantine_reason": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/QuarantineReason"
               },
               {
-                "$ref": "#/components/schemas/QuarantineReason"
+                "type": "null"
               }
             ]
           }
@@ -76411,11 +76323,11 @@
           "scheduled_change": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/ScheduledChangeResponse",
                 "description": "A downgrade (or removal) Stripe will apply at the end of the current\nbilling period, or `null` when nothing is scheduled."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -76451,10 +76363,10 @@
           "complimentary": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ComplimentarySummary"
               },
               {
-                "$ref": "#/components/schemas/ComplimentarySummary"
+                "type": "null"
               }
             ]
           }
@@ -76495,10 +76407,10 @@
           "unit": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Unit"
               },
               {
-                "$ref": "#/components/schemas/Unit"
+                "type": "null"
               }
             ]
           },
@@ -77349,10 +77261,10 @@
           "definition": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/TelemetryAlertDefinition"
               },
               {
-                "$ref": "#/components/schemas/TelemetryAlertDefinition"
+                "type": "null"
               }
             ]
           },
@@ -78221,10 +78133,10 @@
           "anchor": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/LogRow"
               },
               {
-                "$ref": "#/components/schemas/LogRow"
+                "type": "null"
               }
             ]
           },
@@ -78774,10 +78686,10 @@
           "histogram": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/MetricHistogram"
               },
               {
-                "$ref": "#/components/schemas/MetricHistogram"
+                "type": "null"
               }
             ]
           },
@@ -79106,10 +79018,10 @@
           "red": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/TelemetryV2RedRow"
               },
               {
-                "$ref": "#/components/schemas/TelemetryV2RedRow"
+                "type": "null"
               }
             ]
           },
@@ -79217,10 +79129,10 @@
           "summary": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/TelemetryV2TraceSummary"
               },
               {
-                "$ref": "#/components/schemas/TelemetryV2TraceSummary"
+                "type": "null"
               }
             ]
           },
@@ -79606,20 +79518,20 @@
           "y_axis": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/YAxis"
               },
               {
-                "$ref": "#/components/schemas/YAxis"
+                "type": "null"
               }
             ]
           },
           "unit": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Unit"
               },
               {
-                "$ref": "#/components/schemas/Unit"
+                "type": "null"
               }
             ]
           },
@@ -79640,10 +79552,10 @@
           "compare": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Compare"
               },
               {
-                "$ref": "#/components/schemas/Compare"
+                "type": "null"
               }
             ]
           },
@@ -79754,11 +79666,11 @@
           "certificate_problem": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/CertificateProblem",
                 "description": "Why a browser would reject the certificate, from the latest check that\ncould tell. `null` when it is valid or has not been judged yet."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -80112,10 +80024,10 @@
           "unit": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Unit"
               },
               {
-                "$ref": "#/components/schemas/Unit"
+                "type": "null"
               }
             ]
           },
@@ -80363,11 +80275,11 @@
           "not_checked_reason": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/NotCheckedReason",
                 "description": "Set on an ACTIVE monitor that is not being checked: `quota` while the\naccount's quota for its product is used up. Show this instead of `current_status`."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -80453,11 +80365,11 @@
           "check_type": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/CheckType",
                 "description": "What an uptime monitor checks: `http`, `tcp` or `ping`. Null on\nheartbeats and browser checks."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -80470,11 +80382,11 @@
           "icon": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/SiteIcon",
                 "description": "The website's icon. HTTP checks only, and null until one is found."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -80543,20 +80455,20 @@
           "content_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/HttpJobContentType"
               },
               {
-                "$ref": "#/components/schemas/HttpJobContentType"
+                "type": "null"
               }
             ]
           },
           "auth_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/HttpJobAuthType"
               },
               {
-                "$ref": "#/components/schemas/HttpJobAuthType"
+                "type": "null"
               }
             ]
           },
@@ -80636,10 +80548,10 @@
           "http_version": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/HttpJobHttpVersion"
               },
               {
-                "$ref": "#/components/schemas/HttpJobHttpVersion"
+                "type": "null"
               }
             ]
           },
@@ -80713,10 +80625,10 @@
           "status": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ActionItemStatus"
               },
               {
-                "$ref": "#/components/schemas/ActionItemStatus"
+                "type": "null"
               }
             ]
           },
@@ -80762,10 +80674,10 @@
           "query": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AlertQuery"
               },
               {
-                "$ref": "#/components/schemas/AlertQuery"
+                "type": "null"
               }
             ]
           },
@@ -80858,22 +80770,22 @@
           "mapping": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/GenericMapping",
                 "description": "Replaces a `generic_json` source's mapping."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "email_rules": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/EmailRules",
                 "description": "Replaces an `email` source's rules."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -80940,10 +80852,10 @@
           "state": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/BrowserCheckState"
               },
               {
-                "$ref": "#/components/schemas/BrowserCheckState"
+                "type": "null"
               }
             ]
           },
@@ -81034,10 +80946,10 @@
           "state": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/CronJobState"
               },
               {
-                "$ref": "#/components/schemas/CronJobState"
+                "type": "null"
               }
             ]
           },
@@ -81187,11 +81099,11 @@
           "on_exhausted": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/OnExhausted",
                 "description": "Leaving `escalate_to_policy` clears `escalate_to_policy_id`."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -81294,22 +81206,22 @@
           "content_type": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/HttpJobContentType",
                 "description": "Absent keeps it; `null` removes it."
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "auth_type": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/HttpJobAuthType",
                 "description": "Absent keeps it; `null` turns authentication off."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -81408,10 +81320,10 @@
           "state": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/HttpJobState"
               },
               {
-                "$ref": "#/components/schemas/HttpJobState"
+                "type": "null"
               }
             ]
           },
@@ -81427,11 +81339,11 @@
           "http_version": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/HttpJobHttpVersion",
                 "description": "Preferred HTTP version for the check client."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -81510,11 +81422,11 @@
           "check_type": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/CheckType",
                 "description": "The monitor's own `check_type` may be sent back; any other is a 400 (it is fixed)."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -81558,11 +81470,11 @@
           "recheck_on_failure": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/RecheckOnFailure",
                 "description": "Check a failed run once more before it counts. Absent leaves it unchanged;\n`another_cloud` needs a paid plan."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -81581,11 +81493,11 @@
           "impact": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/MonitorImpact",
                 "description": "Null or absent derives it from the incident's severity."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -81615,21 +81527,21 @@
           "severity": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/IncidentSeverity"
               },
               {
-                "$ref": "#/components/schemas/IncidentSeverity"
+                "type": "null"
               }
             ]
           },
           "status": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IncidentStatus",
                 "description": "Deprecated: post an update, or call resolve or reopen. `resolved`\nresolves (with a public update); other values set the public status."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -81757,10 +81669,10 @@
           "status": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ComponentStatus"
               },
               {
-                "$ref": "#/components/schemas/ComponentStatus"
+                "type": "null"
               }
             ]
           }
@@ -81823,20 +81735,20 @@
           "type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/NotificationType"
               },
               {
-                "$ref": "#/components/schemas/NotificationType"
+                "type": "null"
               }
             ]
           },
           "details": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/NotificationDetails"
               },
               {
-                "$ref": "#/components/schemas/NotificationDetails"
+                "type": "null"
               }
             ]
           }
@@ -81891,11 +81803,11 @@
           "status": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/PostmortemStatus",
                 "description": "`published` needs a resolved incident."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -81929,11 +81841,11 @@
           "settings": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/RumApplicationSettings",
                 "description": "Keys given replace the stored values (nested objects merge); keys left out keep theirs."
+              },
+              {
+                "type": "null"
               }
             ]
           }
@@ -81952,10 +81864,10 @@
           "capture": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/RuleCapture"
               },
               {
-                "$ref": "#/components/schemas/RuleCapture"
+                "type": "null"
               }
             ]
           },
@@ -82109,11 +82021,11 @@
           "min_severity": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/IncidentSeverity",
                 "description": "`null` sends every severity again."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -82162,10 +82074,10 @@
           "incident_creation_mode": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/IncidentCreationMode"
               },
               {
-                "$ref": "#/components/schemas/IncidentCreationMode"
+                "type": "null"
               }
             ]
           },
@@ -82195,21 +82107,21 @@
           "default_incident_severity": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/IncidentSeverity"
               },
               {
-                "$ref": "#/components/schemas/IncidentSeverity"
+                "type": "null"
               }
             ]
           },
           "public_incident_template": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/PublicIncidentTemplate",
                 "description": "`null` clears it; each field is optional and blank fields are dropped."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -82224,10 +82136,10 @@
           "auto_resolve": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/AutoResolve"
               },
               {
-                "$ref": "#/components/schemas/AutoResolve"
+                "type": "null"
               }
             ]
           },
@@ -82278,10 +82190,10 @@
           "config": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ShareConfig"
               },
               {
-                "$ref": "#/components/schemas/ShareConfig"
+                "type": "null"
               }
             ]
           }
@@ -82467,11 +82379,11 @@
           "status": {
             "oneOf": [
               {
-                "type": "null"
-              },
-              {
                 "$ref": "#/components/schemas/StatusPageMaintenanceStatus",
                 "description": "Leave out to keep the stored status, or to let a moved window decide it."
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -82518,10 +82430,10 @@
           "urgency": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Urgency"
               },
               {
-                "$ref": "#/components/schemas/Urgency"
+                "type": "null"
               }
             ]
           },
@@ -82829,11 +82741,7 @@
         "type": "object",
         "properties": {
           "coverage": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/UptimeCoverage"
-              }
-            ],
+            "$ref": "#/components/schemas/UptimeCoverage",
             "default": {
               "browser": 0,
               "heartbeat": 0,
@@ -82843,12 +82751,8 @@
             }
           },
           "uptime_percentage": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared",
-                "description": "Share of HTTP, TCP, ping and browser checks that passed, in percent."
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
+            "description": "Share of HTTP, TCP, ping and browser checks that passed, in percent.",
             "default": {
               "current": null,
               "previous": null
@@ -82874,36 +82778,24 @@
             "minimum": 0
           },
           "outages": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared",
-                "description": "Outages overlapping the period, heartbeats included."
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
+            "description": "Outages overlapping the period, heartbeats included.",
             "default": {
               "current": null,
               "previous": null
             }
           },
           "downtime_seconds": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared",
-                "description": "Time at least one monitor was down."
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
+            "description": "Time at least one monitor was down.",
             "default": {
               "current": null,
               "previous": null
             }
           },
           "response_time_p95_ms": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Compared",
-                "description": "95th percentile response time of HTTP checks across the account."
-              }
-            ],
+            "$ref": "#/components/schemas/Compared",
+            "description": "95th percentile response time of HTTP checks across the account.",
             "default": {
               "current": null,
               "previous": null
@@ -83325,10 +83217,10 @@
           "created_by": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/UserRef"
               },
               {
-                "$ref": "#/components/schemas/UserRef"
+                "type": "null"
               }
             ]
           },
@@ -83440,20 +83332,20 @@
           "lcp": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/LcpAttribution"
               },
               {
-                "$ref": "#/components/schemas/LcpAttribution"
+                "type": "null"
               }
             ]
           },
           "inp": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/InpAttribution"
               },
               {
-                "$ref": "#/components/schemas/InpAttribution"
+                "type": "null"
               }
             ]
           },
@@ -83784,11 +83676,11 @@
               "time": {
                 "oneOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "$ref": "#/components/schemas/RangeSpec",
                     "description": "Overrides the dashboard range for this widget."
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               }
@@ -84349,10 +84241,10 @@
           "window": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResultWindow"
               },
               {
-                "$ref": "#/components/schemas/ResultWindow"
+                "type": "null"
               }
             ]
           },
@@ -84368,10 +84260,10 @@
           "data": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/WidgetData"
               },
               {
-                "$ref": "#/components/schemas/WidgetData"
+                "type": "null"
               }
             ]
           }
