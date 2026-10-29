@@ -980,106 +980,19 @@
         ]
       }
     },
-    "/account/security/oauth/google/complete": {
-      "post": {
-        "tags": [
-          "Security"
-        ],
-        "summary": "Attach Google after confirming the same member, organization and email.",
-        "operationId": "complete_google_oauth_connect",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OAuthConnectCompleteRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Google connected",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SecuritySimpleResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Missing session token or email mismatch"
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "403": {
-            "description": "Endpoint requires a user session"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "502": {
-            "description": "Sign-in service unavailable"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
-    "/account/security/oauth/google/start": {
-      "get": {
-        "tags": [
-          "Security"
-        ],
-        "summary": "Start attaching Google OAuth to the currently signed-in member.",
-        "description": "Returns an org-scoped Stytch start URL (not discovery). The SPA navigates\nthe browser there; after Google consent Stytch redirects to the dashboard\ncallback with a token that `complete_google_oauth_connect` consumes.",
-        "operationId": "start_google_oauth_connect",
-        "responses": {
-          "200": {
-            "description": "OAuth start URL",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OAuthConnectStartResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid authentication"
-          },
-          "403": {
-            "description": "Endpoint requires a user session"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
     "/account/security/oauth/{provider}": {
       "delete": {
         "tags": [
           "Security"
         ],
-        "summary": "Disconnect an OAuth provider from the authenticated member.",
-        "description": "`github` returns 404 until Branch C lands the GitHub OAuth integration.",
+        "summary": "Stop a provider signing in to the authenticated member.",
+        "description": "Sign-in with the provider is refused until it is connected again.",
         "operationId": "disconnect_oauth_provider",
         "parameters": [
           {
             "name": "provider",
             "in": "path",
-            "description": "OAuth provider id (currently \"google\")",
+            "description": "\"google\" or \"github\"",
             "required": true,
             "schema": {
               "type": "string"
@@ -1104,13 +1017,125 @@
             "description": "Endpoint requires a user session"
           },
           "404": {
-            "description": "Provider not connected, or not supported yet"
+            "description": "Unknown provider"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/oauth/{provider}/complete": {
+      "post": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Attach the provider after confirming the same member, organization and email.",
+        "operationId": "complete_oauth_connect",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "description": "\"google\" or \"github\"",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthConnectCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Provider connected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuritySimpleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing session token or email mismatch"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "404": {
+            "description": "Unknown provider"
           },
           "500": {
             "description": "Internal server error"
           },
           "502": {
             "description": "Sign-in service unavailable"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/account/security/oauth/{provider}/start": {
+      "get": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Start attaching Google or GitHub to the currently signed-in member.",
+        "description": "Returns an org-scoped Stytch start URL (not discovery). The SPA navigates\nthe browser there; after consent Stytch redirects to the dashboard\ncallback with a token that `complete_oauth_connect` consumes.",
+        "operationId": "start_oauth_connect",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "description": "\"google\" or \"github\"",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OAuth start URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthConnectStartResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "403": {
+            "description": "Endpoint requires a user session"
+          },
+          "404": {
+            "description": "Unknown provider"
+          },
+          "500": {
+            "description": "Internal server error"
           }
         },
         "security": [
@@ -7289,6 +7314,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "Check history is briefly unavailable"
           }
         },
         "security": [
@@ -8935,6 +8963,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "Check history is briefly unavailable"
           }
         },
         "security": [
@@ -8975,6 +9006,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "Check history is briefly unavailable"
           }
         },
         "security": [
@@ -9268,6 +9302,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "Check history is briefly unavailable"
           }
         },
         "security": [
@@ -9342,6 +9379,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "Check history is briefly unavailable"
           }
         },
         "security": [
@@ -9379,6 +9419,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "Check history is briefly unavailable"
           }
         },
         "security": [
@@ -9430,6 +9473,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "Check history is briefly unavailable"
           }
         },
         "security": [
@@ -9498,6 +9544,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "Check history is briefly unavailable"
           }
         },
         "security": [
@@ -16895,6 +16944,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "Check history is briefly unavailable"
           }
         },
         "security": [
@@ -16910,7 +16962,7 @@
           "Monitors"
         ],
         "summary": "A branded uptime report for one calendar month, as a printable page.",
-        "description": "Returns **HTML, not JSON**. The page is styled for paper: open it in a\nbrowser and use Print, or \"Save as PDF\", to produce the document you send\non. There is a print button on the page for exactly that.\n\n`month` is a UTC calendar month, `YYYY-MM`. Omit it and you get the last\ncomplete month, which is the one a monthly report normally covers. Asking\nfor the month in progress is allowed and the report says plainly that it\nis not finished.\n\nThe page takes its logo, colors and title from your status page branding.\nAn account with no branding gets a plain, unbranded document rather than\nours, because this is a report you hand to somebody else.\n\nTwo things the report states about itself, and worth knowing before you\nsend it:\n\n* It covers **HTTP, TCP port and ping monitors only**. Heartbeat monitors and browser checks\n  have no daily uptime figure behind them, so they are named as excluded\n  rather than quietly dropped.\n* Uptime comes from a rollup rebuilt daily at 03:00 UTC, so a report for\n  the current month is month-to-date. The outage log is separate and is\n  current to the minute.",
+        "description": "Returns **HTML, not JSON**. The page is styled for paper: open it in a\nbrowser and use Print, or \"Save as PDF\", to produce the document you send\non. There is a print button on the page for exactly that.\n\n`month` is a UTC calendar month, `YYYY-MM`. Omit it and you get the last\ncomplete month, which is the one a monthly report normally covers. Asking\nfor the month in progress is allowed and the report says plainly that it\nis not finished.\n\nThe page takes its logo, colors and title from your status page branding.\nAn account with no branding gets a plain, unbranded document rather than\nours, because this is a report you hand to somebody else.\n\nTwo things the report states about itself, and worth knowing before you\nsend it:\n\n* It covers **HTTP, TCP port and ping monitors only**. Heartbeat monitors and browser checks\n  have no daily uptime figure behind them, so they are named as excluded\n  rather than quietly dropped.\n* Uptime comes from daily figures updated every five minutes, so a report\n  for the current month is month-to-date. The outage log is separate and is\n  current to the minute.",
         "operationId": "get_monthly_report",
         "parameters": [
           {
@@ -16970,6 +17022,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "Check history is briefly unavailable"
           }
         },
         "security": [
@@ -31226,6 +31281,9 @@
           },
           "500": {
             "description": "Internal server error"
+          },
+          "503": {
+            "description": "Check history is briefly unavailable"
           }
         },
         "security": [
@@ -61432,7 +61490,7 @@
         "properties": {
           "provider": {
             "type": "string",
-            "description": "Provider identifier. Currently \"google\" (Branch C will add \"github\")."
+            "description": "Provider identifier: \"google\" or \"github\"."
           },
           "connected_email": {
             "type": "string"
