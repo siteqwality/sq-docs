@@ -59,7 +59,7 @@ Other rules:
 - **Attainment is inclusive.** Exactly 99.900% against a 99.9% target is attained.
 - Months are **UTC calendar months**, so the newest month is always month-to-date.
 
-SLA figures come from a daily rollup that **refreshes once a day at 03:00 UTC**, so the current UTC day is missing, and before 03:00 UTC yesterday is missing too. An outage this morning appears in the SLA report tomorrow, though the monitor's check history shows it immediately. For contractual reporting, run the report a day after month end.
+SLA figures come from daily figures **updated every five minutes**, so the current UTC day counts with the checks so far, and each day is complete by 01:00 UTC the next day. For contractual reporting, run the report after 01:00 UTC on the 1st.
 
 ## Limitations
 

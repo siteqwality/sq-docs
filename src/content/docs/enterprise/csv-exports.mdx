@@ -36,7 +36,7 @@ dns_ms, tcp_connect_ms, tls_ms, ttfb_ms, download_ms, failure_reason,
 packets_sent, packets_received, rtt_min_us, rtt_avg_us, rtt_max_us, rtt_mdev_us
 ```
 
-`from` and `to` are optional: `to` defaults to now, `from` to 30 days before it. `from` must be before `to`.
+`from` and `to` are optional: `to` defaults to now, `from` to 30 days before it. `from` must be before `to`. Check runs are kept for 90 days, so an older range returns only what is left of it.
 
 The per-phase timing columns (`dns_ms`, `tcp_connect_ms`, `tls_ms`, `ttfb_ms`, `download_ms`) are empty for results recorded before mid-2026. `total_ms` is empty on a TCP port check that never connected and on a ping check that got no reply. The last six columns are the [ping statistics](/uptime-monitoring/ping-checks/#results), round trips in microseconds, and are empty except on ping checks.
 
@@ -60,7 +60,7 @@ avg_response_time_ms, days_with_data, range_from, range_to
 ```
 
 - **Uptime monitors only**, despite the endpoint name: `check_type` is `http`, `tcp` or `ping`. Browser, cron, DNS and TLS monitors are not included. Paused monitors are, with empty metrics.
-- **`uptime_percentage` is the unweighted average of daily uptime percentages**, from the same daily rollup as the [SLA report](/enterprise/sla-reports/#how-the-number-is-calculated), so the current day is usually missing.
+- **`uptime_percentage` is the unweighted average of daily uptime percentages**, from the same daily figures as the [SLA report](/enterprise/sla-reports/#how-the-number-is-calculated), so the current day counts with the checks so far.
 
 ## When you exceed the cap
 

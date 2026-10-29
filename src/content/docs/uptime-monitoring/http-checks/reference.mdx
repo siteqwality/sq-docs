@@ -224,7 +224,7 @@ The negotiated version observed on each run is recorded on the check result.
 
 ## Response bodies
 
-Every check records its outcome, status code and per-phase timings. The **response body is kept only when a check fails**.
+Every check records its outcome, status code and per-phase timings. The **response body is kept only when a check fails**. Check results are kept for 90 days, or as long as the body for a failed check when your plan keeps bodies longer. Charts and figures for older ranges use hourly summaries, kept for 25 months.
 
 When a check fails, the result carries:
 

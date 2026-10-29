@@ -544,5 +544,15 @@
     "status": "live",
     "summary": "Outside report recipients get a confirmation email and receive nothing else until they confirm",
     "source": "core-rs api/src/handlers/reports/mod.rs"
+  },
+  "checks.result_retention": {
+    "status": "live",
+    "summary": "Check results are kept 90 days (a failed check's as long as its body when that is longer), and hourly summaries 25 months that older charts and figures read",
+    "source": "core-rs common/src/check_results/mod.rs (http_retention_days), common/src/db/check_results_ch.rs (raw_horizon)"
+  },
+  "sla.daily_figures_every_five_minutes": {
+    "status": "live",
+    "summary": "The daily uptime figures behind SLA and client reports are rewritten every five minutes and complete by 01:00 UTC the next day",
+    "source": "core-rs cron-executor/src/check_rows.rs (copy_back)"
   }
 }
