@@ -1,7 +1,7 @@
 ---
 title: Get alerted when page speed drops
 description: How Lighthouse performance-score crossings fire alerts and recoveries through your monitor's notification groups.
-last_verified: 2026-08-02
+last_verified: 2026-10-29
 owner: jj
 ---
 
@@ -71,6 +71,7 @@ Inside a window, a degraded alert is **held** until the window ends and then rel
 
 - The 6 hour schedule is not configurable, so a regression can be up to 6 hours old before you hear about it.
 - Rate limits and transient 5xx responses from Google's PageSpeed Insights API are retried on the next scheduled run rather than surfacing as a failure.
+- Google gets **2 minutes** per run. If PageSpeed Insights has not returned a result by then, or Lighthouse cannot load the page, the run is skipped: the last scores stay in place, nothing alerts, and the next run tries again.
 - There is no mobile or desktop toggle: Site Qwality sends no `strategy` parameter, so the analysis runs with Google's own default.
 
 ## See also
