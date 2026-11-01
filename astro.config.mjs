@@ -27,7 +27,7 @@ export default defineConfig({
 				light: './src/assets/atlas-logo-light.svg',
 				dark: './src/assets/atlas-logo-dark.svg',
 				alt: 'Site Qwality',
-				replacesTitle: false,
+				replacesTitle: true,
 			},
 			favicon: '/favicon.svg',
 			routeMiddleware: './src/routeData.ts',

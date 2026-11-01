@@ -308,8 +308,19 @@ header.header {
   .site-title { font-size: 1.375rem; }
 }
 
-/* logo mark sizing */
-.site-title img { height: 1.85rem; width: auto; }
+/* brand lockup, then a quiet "Docs" label */
+.site-title { gap: 0.6rem; }
+.site-title img { height: 1.75rem; width: auto; }
+.site-title::after {
+  content: 'Docs';
+  padding-inline-start: 0.6rem;
+  border-inline-start: 1px solid var(--sl-color-hairline);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.6rem;
+  color: var(--sl-color-gray-3);
+}
 
 /* divider between the product links and the theme picker */
 header .social-icons::after { border-inline-end-color: var(--sl-color-hairline); }
