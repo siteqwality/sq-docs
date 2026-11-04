@@ -1,6 +1,6 @@
 ---
 title: Brand your status page
-description: Set colors and logos for the light and dark themes, clear branding fields, and style the page with custom CSS through its stable data-sq hooks.
+description: Set colors and logos for the light and dark themes, pick the page's language, clear branding fields, and style the page with custom CSS through its stable data-sq hooks.
 last_verified: 2026-10-15
 owner: jj
 ---
@@ -48,6 +48,20 @@ In each theme the page uses a color as given when it meets WCAG 2.2 AA, and othe
 The **Logo** shows in the header in both themes. Add a **Dark theme logo** when your logo is drawn for a light background, such as dark lettering: the dark theme then shows it instead. With only a dark theme logo set, the light theme shows the page title.
 
 In the dashboard, use **Upload** next to each image under **Images**. Through the API, request an upload with `"file_type": "logo_dark"` and save the returned key as `logo_dark_s3_key`, as described in the [asset upload flow](/status-pages/reference/#asset-upload-flow). Logos can be PNG, JPEG, SVG or WebP up to 2 MB.
+
+## Page language
+
+A page speaks English, Deutsch, Italiano, Français, Español, Português (Brasil) or Nederlands. English is the default. Pick one under **Page language** on the **Branding** tab and click **Save branding**, or send `language` (`en`, `de`, `it`, `fr`, `es`, `pt-BR` or `nl`) in the branding API or the `update_status_page_branding` [MCP tool](/integrations/mcp/#status-pages).
+
+The language covers everything Site Qwality writes for visitors:
+
+- All visitor-facing text and accessibility labels on the public page, the [private page](/status-pages/private-pages/) sign-in screen and error pages, and the dates and times.
+- The confirm, unsubscribe and preferences pages.
+- Confirmation and notice emails, reminders included.
+- Slack, Microsoft Teams, Discord and Google Chat messages.
+- The RSS and Atom feed titles, the `summary.json` description and the badge.
+
+What you write shows as you wrote it: titles, incident and maintenance updates, component names, and the header and footer text. The webhook JSON and the dashboard stay in English.
 
 ## Clear a field
 
@@ -106,13 +120,13 @@ Every region carries `data-sq="<name>"`:
 | `maintenance-item` | One maintenance window. |
 | `components` | The card that lists the components. |
 | `group` | One section of components. |
-| `component` | One HTTP check or browser check row. Heartbeat and manual component rows carry only `component-status`. |
+| `component` | One HTTP check or browser check row. Heartbeat, manual and third-party component rows carry only `component-status`. |
 | `component-name` | An HTTP check's or browser check's name. |
 | `component-status` | A component's status dot and label. |
 | `uptime-percentage` | A component's uptime figure. |
 | `uptime-bars` | A component's daily uptime bars. |
 | `history` | Past incidents, on the main page and the history page. |
-| `subscribe` | The email subscription form. |
+| `subscribe` | The subscription form. |
 | `footer` | The footer. |
 | `footer-text` | Your footer text. |
 

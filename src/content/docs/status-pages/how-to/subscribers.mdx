@@ -1,24 +1,24 @@
 ---
 title: Manage subscribers
-description: Let visitors subscribe to status page incidents and maintenance by email, choose what they get, and manage or import the list.
+description: Let visitors follow status page incidents and maintenance by email, Slack, Microsoft Teams, Discord, Google Chat or webhook, choose what they get, and manage or import the list.
 last_verified: 2026-10-16
 owner: jj
 ---
 
 import { LinkCard } from '@astrojs/starlight/components';
 
-A *subscriber* is someone who confirmed an email address on your status page. They get email about the page's incidents and maintenance, limited to the kinds of update and the components they chose. Subscriptions are email only; visitors who prefer a feed reader can follow the page's [RSS or Atom feed](/status-pages/how-to/feeds-badge-embed/) with no sign-up.
+A *subscriber* gets your status page's incident and maintenance notices, limited to the kinds of update and the components they chose. Each subscriber uses one channel: email, Slack, Microsoft Teams, Discord, Google Chat or webhook. Visitors pick the channel on the public page, and you can add subscribers in the dashboard. Visitors who prefer a feed reader can follow the page's [RSS or Atom feed](/status-pages/how-to/feeds-badge-embed/) with no sign-up.
 
-Every address confirms from a link we send before it gets any notice, whether the visitor used the public form, you added it, or it came in through an import. There is no way to add or import confirmed subscribers.
+Every email address confirms from a link we send before it gets any notice, whether the visitor used the public form, you added it, or it came in through an import. There is no way to add or import confirmed email subscribers. A chat or webhook subscriber is live at once, with no confirmation step, and gets a welcome message.
 
-## When subscribers get email
+## When subscribers hear from you
 
-A page's subscribers get email when:
+A page's subscribers get a notice when:
 
 - An incident goes on the page: it is created there (`POST /status_page/{status_page_id}/incident`), you publish it (`POST /incident/{incident_id}/publish`, unless `notify_subscribers` is `false`), or a [service publishes it automatically](/incident-management/services/overview/#publish-incidents-to-a-status-page). Each page is told once per incident, and never about one that is already resolved.
 - A public update is posted through the page (`POST /status_page/{status_page_id}/incident/{incident_id}/update`, unless `notify_subscribers` is `false`), or through `POST /incident/{incident_id}/update` with `notify_subscribers: true`, which emails every page the incident is on.
 - The incident is resolved by hand, unless `notify_subscribers` is `false`. When its monitors recover and it resolves itself, only pages whose subscribers already heard about it are told.
-- Maintenance is scheduled on the page, when it starts and when it ends.
+- Maintenance is scheduled on the page, before it starts if it has a [reminder](/status-pages/how-to/publish-maintenance/#remind-subscribers), when it starts and when it ends. For [recurring maintenance](/status-pages/how-to/publish-maintenance/#repeat-it), subscribers hear about the series once unless you ask for every occurrence.
 
 Nothing is sent for an internal note, an unpublish, a reopen, a maintenance edit, or an incident that was [merged](/incident-management/incidents/how-to/merge-incidents/) into another.
 
@@ -29,17 +29,17 @@ Each subscriber chooses the kinds of update (incidents, maintenance, or both) an
 | Notice | Goes to confirmed subscribers who |
 |---|---|
 | Incident opened, updated or resolved | take incidents, and chose every component or at least one component the incident affects. |
-| Maintenance scheduled, started or completed | take maintenance, and chose every component or at least one component the maintenance covers. |
+| Maintenance scheduled, reminder, started or completed | take maintenance, and chose every component or at least one component the maintenance covers. |
 
 An incident with no affected components goes to everyone who takes incidents. A maintenance for the whole page goes to everyone who takes maintenance. Set the affected components on an incident, and pick specific monitors for a maintenance that touches only part of your service, so people who follow one part hear only about that part.
 
-Each subscriber gets each notice once, and every update to an incident is its own email.
+Each subscriber gets each notice once, and every update to an incident is its own message.
 
 ## Choose what to get
 
-The subscribe form on the public page takes only an email address, which subscribes to everything. A **Choose what to get** link on the form lets the visitor pick incidents, maintenance or both, and every component or only some.
+The subscribe form on the public page asks where to send updates (**Email**, Slack, Microsoft Teams, Discord, Google Chat or **Webhook**) and takes an email address or the chat app's incoming webhook URL. Left as it is, it subscribes to everything. A **Choose what to get** link on the form lets the visitor pick incidents, maintenance or both, and every component or only some. [Third-party components](/status-pages/how-to/organize-components/#show-a-third-party-service) are not offered.
 
-Every notice email has two links:
+Every chat message links to the page and to unsubscribe, and every webhook delivery carries an `unsubscribe_url`. Every notice email has two links:
 
 - **Manage preferences** opens a page at `https://statuspageapi.siteqwality.com/subscribe/preferences?token=...` where the subscriber changes the kinds of update and the components, or unsubscribes. The page shown after confirming an address links there too.
 - **Unsubscribe** stops all mail from your page.
@@ -48,7 +48,7 @@ Once an address is confirmed, only that preferences page changes its choices. Su
 
 ## See and manage the list
 
-In the dashboard, open the status page and use the **Subscribers** tab. It shows the count in each [state](/status-pages/reference/#states) and the places used out of 1,000, filters by state or address, adds an address, imports a CSV, removes an address and exports the list as CSV or JSON.
+In the dashboard, open the status page and use the **Subscribers** tab. It shows the count in each [state](/status-pages/reference/#states) and the places used out of 1,000, filters by state or address, adds a subscriber on any channel, imports a CSV, removes a subscriber, re-enables a disabled one and exports the list as CSV or JSON. Every channel counts toward the 1,000. Chat and webhook URLs show masked, as their host and last four characters.
 
 Through the API, with an [API key](/getting-started/account-and-team/#generate-api-keys) that has access to status pages, exported as `SITEQWALITY_API_KEY`, and the page's `id` as `STATUS_PAGE_ID`:
 
@@ -78,7 +78,7 @@ Fields, states and limits are in the [status page reference](/status-pages/refer
 
 ## Add one address
 
-In the dashboard, click **Add subscriber** on the **Subscribers** tab. Adding an address sends it a confirmation email.
+In the dashboard, click **Add subscriber** on the **Subscribers** tab and leave **Channel** on email. Adding an address sends it a confirmation email.
 
 Through the API you can preselect what the person gets with `kinds` (`incident`, `maintenance`) and `component_ids` (ids of checks on the page). Leave both out for everything.
 
@@ -94,6 +94,60 @@ curl -s -X POST -H "Authorization: Bearer $SITEQWALITY_API_KEY" -H "Content-Type
 ```
 
 Nothing is sent when the address is already subscribed or a link went out to it in the last hour.
+
+## Add a chat channel or webhook
+
+On the **Subscribers** tab, click **Add subscriber**, pick the **Channel** and paste the URL:
+
+| Channel | URL to paste |
+|---|---|
+| Slack | An incoming webhook URL for the channel, from your Slack app's settings. |
+| Microsoft Teams | The URL of the channel's "Post to a channel when a webhook request is received" workflow. |
+| Discord | A channel webhook URL, from the channel's settings under **Integrations**, then **Webhooks**. |
+| Google Chat | A space webhook URL, from the space's **Apps & integrations**, then **Webhooks**. It ends in `/messages?key=...`. |
+| Webhook | Any `https` URL that takes a JSON `POST`. |
+
+Through the API, send `channel` (`slack`, `teams`, `discord`, `google_chat` or `webhook`) and `url` instead of `email` to `POST /status_page/{id}/subscriber`, with the same optional `kinds` and `component_ids`. The answer's `result` is `subscribed`.
+
+The subscriber is live at once and gets a welcome message, then every matching notice in the page's [language](/status-pages/how-to/branding/#page-language). A URL already subscribed to the page is refused.
+
+### Webhook subscribers
+
+A webhook subscriber gets a signing secret that starts with `whsec_`. It is shown once, when the subscriber is added, in the dashboard, on the public page or in the API's `signing_secret`; it cannot be read again.
+
+Each notice is a JSON `POST` with the user agent `SiteQwality-Webhooks/1`:
+
+```json
+{
+  "id": "msg_5f0c...",
+  "type": "status_page.incident.opened",
+  "page": { "id": "...", "name": "Acme Cloud", "url": "https://status.example.com" },
+  "incident": {
+    "id": "...",
+    "title": "Elevated API latency",
+    "status": "Investigating",
+    "message": "We are looking into slow responses.",
+    "url": "https://status.example.com/incidents/..."
+  },
+  "components": [{ "id": "..." }],
+  "unsubscribe_url": "https://statuspageapi.siteqwality.com/subscribe/unsubscribe?token=...",
+  "occurred_at": "2026-11-03T10:00:00Z"
+}
+```
+
+| `type` | Sent when |
+|---|---|
+| `status_page.incident.opened`, `.updated`, `.resolved` | An incident notice. The body has `incident`. |
+| `status_page.maintenance.scheduled`, `.reminder`, `.started`, `.completed` | A maintenance notice. The body has `maintenance` with `id`, `title`, `status`, `message`, `starts_at`, `ends_at` and `url` instead of `incident`. |
+| `status_page.subscription.created` | The welcome, once, when the subscriber is added. |
+
+`components` lists the affected components by `id`; empty means the whole page. `id` is the same on every retry of one delivery, so use it to drop duplicates.
+
+Deliveries are signed with [Standard Webhooks](https://www.standardwebhooks.com/) headers: `webhook-id`, `webhook-timestamp` and `webhook-signature` (`v1,` and the base64 HMAC-SHA256 of `id.timestamp.body`, keyed with the secret). Verify them the way [alert webhooks are verified](/integrations/webhooks/#verify-the-signature).
+
+### Failed deliveries
+
+Each request has 5 seconds to answer with a `2xx`, and redirects are not followed. A subscriber is disabled after 5 failed deliveries in a row, or at once when the endpoint answers `401`, `403` or `410`, or `404` from a chat app. A disabled subscriber gets nothing more and shows as `disabled` with the reason in the **Subscribers** tab. Fix the endpoint, then click **Enable** on its row (`POST /status_page/{id}/subscriber/{subscriber_id}/enable`) to turn it back on.
 
 ## Import a CSV
 
@@ -133,7 +187,7 @@ Each subscriber keeps a record of how it came to be on your list: how the addres
 
 ## Remove an address
 
-When someone asks you to delete their data, remove them in the **Subscribers** tab or with `DELETE` (above). Removal works in any state, quarantined included, and nothing more is mailed to the address. Delivery records for mail to subscribers are kept 90 days at most, and are cleared within two days after the address is gone.
+When someone asks you to delete their data, remove them in the **Subscribers** tab or with `DELETE` (above). Removal works in any state, quarantined included, and nothing more is sent to the subscriber. Delivery records for mail to subscribers are kept 90 days at most, and are cleared within two days after the address is gone.
 
 ## Best practices
 

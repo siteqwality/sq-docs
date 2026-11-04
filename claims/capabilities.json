@@ -524,9 +524,9 @@
   },
   "import.other_tools": {
     "status": "live",
-    "summary": "Import monitors from UptimeRobot, Pingdom, StatusCake and Better Stack, and status pages from UptimeRobot and Better Stack, with the tool's API key, used for that request only and never stored",
+    "summary": "Import monitors from UptimeRobot, Pingdom, StatusCake and Better Stack, and status pages from UptimeRobot, Better Stack and Atlassian Statuspage, with the tool's API key, used for that request only and never stored",
     "api": ["POST /monitors/import", "POST /status_page/import"],
-    "source": "core-rs api/src/handlers/monitor_import/mod.rs"
+    "source": "core-rs api/src/handlers/monitor_import/mod.rs, api/src/handlers/monitor_import/statuspage.rs"
   },
   "reports.summary": {
     "status": "live",
@@ -554,5 +554,25 @@
     "status": "live",
     "summary": "The daily uptime figures behind SLA and client reports are rewritten every five minutes and complete by 01:00 UTC the next day",
     "source": "core-rs cron-executor/src/check_rows.rs (copy_back)"
+  },
+  "status_page.private_pages": {
+    "status": "live",
+    "summary": "Private status pages behind a password (8 to 256 characters), an IP allowlist (up to 50 entries) or both; 10 password attempts per 5 minutes per address; feeds, summary, badge and embed off",
+    "source": "core-rs common/src/status_page_access.rs, status-page-api/src/access.rs, common/src/status_page_rate_limit.rs"
+  },
+  "status_page.private_page_pack": {
+    "status": "live",
+    "summary": "Private status page pack: $20/mo, $200/yr, one private page per unit, pooled per account; the free plan includes none; 14-day grace, then excess private pages are unpublished",
+    "source": "core-rs .ci/schema/pending/99w-status-page-private-pages.sql, common/src/db/status_page_billing.rs"
+  },
+  "status_page.subscriber_channels": {
+    "status": "live",
+    "summary": "Status page subscribers by email, Slack, Microsoft Teams, Discord, Google Chat or signed webhook; chat and webhook subscribers are live at once with a welcome message",
+    "source": "core-rs common/src/status_page_channel.rs, api/src/handlers/status_page/subscribers/create.rs"
+  },
+  "status_page.language": {
+    "status": "live",
+    "summary": "A status page's language: en, de, it, fr, es, pt-BR or nl, for visitor text, subscription pages, emails, chat messages, feeds and the badge",
+    "source": "core-rs common/src/status_page_i18n.rs (Lang)"
   }
 }

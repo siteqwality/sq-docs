@@ -1,6 +1,6 @@
 ---
 title: Group and order status page components
-description: Add heartbeats and manual components to a status page, group and order every component, describe or hide one, and set its status by hand with a note.
+description: Add heartbeats, manual and third-party components to a status page, group and order every component, describe or hide one, and set its status by hand with a note.
 last_verified: 2026-10-15
 owner: jj
 ---
@@ -9,9 +9,9 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 
 A status page lists its components in one flat list by default. With a **layout** you split the list into named groups (for example `Public API`, `Dashboard`, `Third-party`), choose the order, add a line of explanation under a name, hide a component without detaching it, or show a component's status without the uptime history.
 
-Besides HTTP and browser checks, a page can show a **heartbeat** (one of your heartbeat monitors) and a **manual component** (no monitor behind it; you set its status). Any component can also carry a **status override**: a status you set by hand, with an optional note for visitors and an optional end time.
+Besides HTTP and browser checks, a page can show a **heartbeat** (one of your heartbeat monitors), a **manual component** (no monitor behind it; you set its status) and a **third-party component** (a vendor such as AWS or Stripe, with the status its own status page publishes). Any component can also carry a **status override**: a status you set by hand, with an optional note for visitors and an optional end time.
 
-In the dashboard, open the status page and use the **Layout** tab: **Add component** and **Add heartbeat** add the new kinds, each row's menu sets or clears its status override, and you add and rename groups and move components with the arrows, the group menu or drag and drop. New components, heartbeats and overrides go live at once; the layout waits for **Save layout**. The rest of this page does the same through the API, with an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY` and the page's `id` as `STATUS_PAGE_ID`.
+In the dashboard, open the status page and use the **Layout** tab: **Add component** and **Add heartbeat** add the new kinds (pick **Third-party service** under **Add component** for a vendor), each row's menu sets or clears its status override, and you add and rename groups and move components with the arrows, the group menu or drag and drop. New components, heartbeats and overrides go live at once; the layout waits for **Save layout**. The rest of this page does the same through the API, with an [API key](/getting-started/account-and-team/#generate-api-keys) exported as `SITEQWALITY_API_KEY` and the page's `id` as `STATUS_PAGE_ID`.
 
 ## Add a heartbeat
 
@@ -44,6 +44,23 @@ curl -X PATCH https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/component/
 
 The status is `operational`, `degraded`, `down` or `maintenance`, and it stays until you change it.
 
+## Show a third-party service
+
+A third-party component shows a vendor you depend on, with the status its own status page publishes, so visitors can tell your outage from your provider's. You can pick from 80 services, such as AWS, Google Cloud, Cloudflare, GitHub, Stripe and OpenAI.
+
+In the **Layout** tab, click **Add component**, pick **Third-party service**, choose the **Service**, and either follow the whole service or pick up to 50 of its **Components**. AWS, Microsoft Azure, Google Cloud, Firebase, Gemini, Gmail, Hetzner, Slack and Okta publish only the parts an incident affects, so they can be followed only as a whole.
+
+What the component shows:
+
+| Following | Status |
+|---|---|
+| Chosen components | The worst of them: a degraded performance or partial outage shows as degraded, a major outage as down, and under maintenance as maintenance. |
+| The whole service | The vendor's overall indicator. |
+
+Data older than 15 minutes shows as unknown, and a [status set by hand](#set-a-status-by-hand) wins over the vendor's. A third-party component never changes the page headline, even when it is down or under maintenance, and it shows no uptime bars. Under its name the page shows "via *Vendor* status" with a link to the vendor's status page. Subscribers cannot pick third-party components.
+
+Through the API, `GET /status_page/third_party/vendors` lists the services, `GET /status_page/third_party/vendors/{slug}` lists one's components, and `POST /status_page/{id}/component/third_party` adds the component. The fields are in the [reference](/status-pages/reference/#third-party-components).
+
 ## Set a status by hand
 
 An override puts a status, and a note if you want one, on any component until you clear it or until the time you give:
@@ -59,7 +76,7 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/component/$C
   }'
 ```
 
-`$COMPONENT_ID` is the component's `id` from the layout. Clear the override with `DELETE` on the same path. The page shows the note under the component's name, the headline counts the override, and it lapses on its own at `expires_at`.
+`$COMPONENT_ID` is the component's `id` from the layout. Clear the override with `DELETE` on the same path. The page shows the note under the component's name, the headline counts the override (except on a third-party component), and it lapses on its own at `expires_at`.
 
 <Aside type="caution">
 An override wins over what the monitor says, a pause and any maintenance. Forcing `operational` on a component that is really down hides the outage from visitors, and from the headline.
@@ -72,7 +89,7 @@ curl https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/layout \
   -H "Authorization: Bearer $SITEQWALITY_API_KEY"
 ```
 
-The response has `ungrouped` (shown first, with no heading) and `groups`, each with its `components` in page order. Every component has `id`, `kind` (`http_job`, `browser_check`, `cron_job` for a heartbeat or `manual`), `friendly_name`, `description`, `hidden`, `show_uptime`, `status` (a manual component's status, `null` for the other kinds) and `status_override` (`status`, `note`, `expires_at` and `set_at`, or `null`). Hidden components are included.
+The response has `ungrouped` (shown first, with no heading) and `groups`, each with its `components` in page order. Every component has `id`, `kind` (`http_job`, `browser_check`, `cron_job` for a heartbeat, `manual` or `third_party`), `friendly_name`, `description`, `hidden`, `show_uptime`, `status` (a manual component's status, `null` for the other kinds), `status_override` (`status`, `note`, `expires_at` and `set_at`, or `null`) and `third_party` (`vendor_slug` and `component_ids`, or `null`). Hidden components are included.
 
 ## Save a layout
 
@@ -108,7 +125,7 @@ curl -X PUT https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/layout \
 | `id` | component | A component already on this page: its `id` from the layout. |
 | `description` | component | Optional one line under the name, at most 200 characters. |
 | `hidden` | component | `true` leaves the component off the public page and out of the headline. Default `false`. |
-| `show_uptime` | component | `false` shows the status only, with no uptime bars, percentage or SLA badge. Default `true`. Only HTTP checks use it: browser checks, heartbeats and manual components never show uptime bars, and a browser check keeps its SLA label. |
+| `show_uptime` | component | `false` shows the status only, with no uptime bars, percentage or SLA badge. Default `true`. Only HTTP checks use it: browser checks, heartbeats, manual and third-party components never show uptime bars, and a browser check keeps its SLA label. |
 
 Order is the order of the arrays, and a page holds at most 50 groups. The response is the saved layout.
 

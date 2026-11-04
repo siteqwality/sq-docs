@@ -1,6 +1,6 @@
 ---
 title: Status page reference
-description: Every field on status pages, components, branding, custom domains, scheduled maintenance, and subscribers.
+description: Every field on status pages, components, branding, access, custom domains, scheduled maintenance, and subscribers.
 last_verified: 2026-10-23
 owner: jj
 ---
@@ -17,11 +17,11 @@ The full request schemas live in the auto-generated [API Reference](/api-referen
 | `page_url` | string | Read-only. Where the public page lives: `https://<your-domain>` once a custom domain is active, otherwise `https://statuspage.siteqwality.com/<account-id>/<page-id>`. Create, get and list all return it. |
 | `created_at` | rfc3339 | Read-only. |
 
-Branding, components, incidents, maintenance, and the custom domain are all nested resources (below).
+Branding, access, components, incidents, maintenance, and the custom domain are all nested resources (below).
 
 ## Components
 
-A page shows four kinds of component:
+A page shows five kinds of component:
 
 | Kind | Layout `kind` | Status comes from | Uptime bars |
 |---|---|---|---|
@@ -29,8 +29,9 @@ A page shows four kinds of component:
 | Browser check | `browser_check` | The monitor. | No. |
 | Heartbeat | `cron_job` | A heartbeat monitor: up while its pings arrive on time, down once one is missed. | No. |
 | Manual | `manual` | You. There is no monitor behind it. | No. |
+| Third-party | `third_party` | A vendor's own status page, such as AWS or Stripe. Never changes the page headline. | No. |
 
-A page shows at most 100 components, all four kinds together. Adding a 101st returns `400` with `A status page can show at most 100 components`. Attaching a monitor already on the page updates its `friendly_name`.
+A page shows at most 100 components, all five kinds together. Adding a 101st returns `400` with `A status page can show at most 100 components`. Attaching a monitor already on the page updates its `friendly_name`.
 
 Group, order, describe and hide every kind in the dashboard's **Layout** tab or with `PUT /status_page/{id}/layout`, which saves the whole layout at once. See [Group and order status page components](/status-pages/how-to/organize-components/).
 
@@ -67,6 +68,23 @@ A component with no monitor, for something you cannot check from outside (a supp
 
 `PATCH /status_page/{status_page_id}/component/{component_id}` changes any of `friendly_name`, `description` and `status`; fields you leave out stay as they are. `DELETE` on the same path removes it and answers `204`. Both return `404` for an id that is not a manual component on this page.
 
+### Third-party components
+
+A component that shows a vendor's published status. `GET /status_page/third_party/vendors` lists the services you can follow, each with its `slug`, `name`, `status_page_url` and `lists_all_components`. `GET /status_page/third_party/vendors/{slug}` returns one with its current `indicator` and its `components` (`id`, `name`, `group`, `status`). See [Show a third-party service](/status-pages/how-to/organize-components/#show-a-third-party-service).
+
+`POST /status_page/{status_page_id}/component/third_party` adds one and answers `201` with the component as the layout shows it.
+
+| Field | Type | On | Description |
+|---|---|---|---|
+| `vendor_slug` | string | create only | Required. A `slug` from the vendor list. |
+| `vendor_component_ids` | string[] | create + update | The vendor's component ids to follow, at most 50. Empty or left out follows the whole service. A vendor whose `lists_all_components` is `false` takes only the whole service. |
+| `friendly_name` | string | create + update | At most 256 characters. Defaults to the vendor's name. |
+| `description` | string \| null | create + update | One line under the name, at most 200 characters. Send `null` to clear. |
+| `group_id` | uuid \| null | create only | A group on this page. Leave it out for the ungrouped list. |
+| `hidden` | bool | create only | `true` keeps it off the public page for now. |
+
+`PATCH /status_page/{status_page_id}/component/{component_id}/third_party` changes `friendly_name`, `description` or `vendor_component_ids`; fields you leave out stay as they are. Remove one with `DELETE /status_page/{status_page_id}/component/{component_id}`, as for a manual component. In the layout it carries `third_party` with `vendor_slug` and `component_ids` (empty for the whole service).
+
 ### Status override
 
 Force what the page shows for any component, whatever its monitor says: for example `degraded` while a supplier you depend on is slow, or `operational` while a monitor is misreading.
@@ -98,6 +116,7 @@ An override wins over the monitor, a pause and any maintenance, and it counts to
 | `meta_description` | string | max 160 characters | Search and link preview description. | a generated one |
 | `custom_css` | string | max 50 KB | Stylesheet loaded after the page's own. See [Brand your status page](/status-pages/how-to/branding/#custom-css). | nothing |
 | `white_label` | bool | none | Removes the "Powered by Site Qwality" badge. | `false` |
+| `language` | enum | `en` \| `de` \| `it` \| `fr` \| `es` \| `pt-BR` \| `nl` | The language visitors, subscriber email and chat messages get. See [Page language](/status-pages/how-to/branding/#page-language). | `en` |
 | `logo_s3_key` | string | from the upload flow | Header logo. | the title |
 | `logo_dark_s3_key` | string | from the upload flow | Header logo in the dark theme. | `logo_s3_key` |
 | `favicon_s3_key` | string | from the upload flow | Browser tab icon. | Site Qwality icon, none when white-labeled |
@@ -123,6 +142,21 @@ The page never draws a brand color where it would be hard to read. For each them
 | `logo`, `logo_dark` | `image/png`, `image/jpeg`, `image/svg+xml`, `image/webp` | 2 MB |
 | `favicon` | `image/png`, `image/x-icon`, `image/vnd.microsoft.icon`, `image/svg+xml` | 512 KB |
 | `og_image` | `image/png`, `image/jpeg`, `image/webp` | 5 MB |
+
+## Access
+
+`GET` and `PUT /status_page/{status_page_id}/access` read and change who may see the page. See [Private status pages](/status-pages/private-pages/).
+
+| Field | Type | On | Description |
+|---|---|---|---|
+| `password` | string \| null | update only | 8 to 256 characters. `null` removes it. Never returned. |
+| `ip_allowlist` | string[] | read + update | IPv4 or IPv6 addresses or CIDR blocks, at most 50. `[]` removes them all. |
+| `visibility` | enum | read only | `public`, or `private` while a password or an allowlist is set. |
+| `has_password` | bool | read only | Whether a password is set. |
+| `private_pages_used` | integer | read only | The account's private pages, this one included when it is private. |
+| `private_pages_limit` | integer \| null | read only | How many pages may be private. `null` is unlimited. |
+
+A field left out of `PUT` keeps its value. Any change to the password or the allowlist signs out every visitor, and so does `POST /status_page/{status_page_id}/access/sign_out_all`.
 
 ## Custom domain
 
@@ -154,6 +188,7 @@ Customer-facing planned-downtime entries under `/status_page/{status_page_id}/ma
 | `whole_page` | bool | create + update | `true` puts the whole page under maintenance. Default `false`. |
 | `affected_http_job_ids` | uuid[] | create + update | The HTTP checks the maintenance covers. Default empty. |
 | `status` | enum | update only, optional | `scheduled`, `in_progress`, or `completed`. New entries start as `scheduled`. Leave it out to keep the current status. |
+| `reminder_minutes` | integer \| null | create + update | Minutes before the start that subscribers get a [reminder](/status-pages/how-to/publish-maintenance/#remind-subscribers), 5 to 10080. Left out on create, or `null`, sends none; left out on update keeps it. |
 
 Every create and update names the scope: `whole_page: true` with no `affected_http_job_ids`, or at least one id in `affected_http_job_ids` with `whole_page` left `false`. Anything else returns `400`, including both left out, so an empty list never means the whole page.
 
@@ -166,7 +201,7 @@ Every create and update names the scope: `whole_page: true` with no `affected_ht
 }
 ```
 
-Responses return `id`, `status_page_id`, `title`, `body`, `status`, `scheduled_start_at`, `scheduled_end_at`, `affected_http_job_ids`, `whole_page` and `created_at`. `affected_http_job_ids` is empty when `whole_page` is `true`.
+Responses return `id`, `status_page_id`, `title`, `body`, `status`, `scheduled_start_at`, `scheduled_end_at`, `affected_http_job_ids`, `whole_page`, `reminder_minutes`, `series_id` (the [recurring maintenance](/status-pages/how-to/publish-maintenance/#repeat-it) it is an occurrence of, or `null`) and `created_at`. `affected_http_job_ids` is empty when `whole_page` is `true`.
 
 The page shows a `scheduled` entry as in progress once `scheduled_start_at` passes, and drops it after `scheduled_end_at`. Setting `in_progress` starts it early, and `completed` ends it early. Moving the window while sending the status back unchanged gives it the status the new window implies, and subscribers hear about the new start and end. Creating a maintenance, its start and its end each email the matching subscribers (see [Notice matching](#notice-matching)). See [Publish a status page maintenance](/status-pages/how-to/publish-maintenance/).
 
@@ -178,13 +213,15 @@ The routes under `/status_page/{status_page_id}/incident` only reach incidents s
 
 ## Subscribers
 
-The people who signed up for email about a page. Subscriptions are email only. A page holds at most 1000; `confirmed`, `pending` and `queued` addresses count, `expired` and `quarantined` ones do not. Beyond that the public form and `POST` below answer `409`. For the walkthrough, see [Manage subscribers](/status-pages/how-to/subscribers/).
+The people and endpoints that get a page's notices, by email, Slack, Microsoft Teams, Discord, Google Chat or webhook. A page holds at most 1000 across every channel; `confirmed`, `pending`, `queued` and `disabled` subscribers count, `expired` and `quarantined` ones do not. Beyond that the public form and `POST` below answer `409`. For the walkthrough, see [Manage subscribers](/status-pages/how-to/subscribers/).
 
 | Field | Type | Description |
 |---|---|---|
 | `id` | uuid | Subscriber id, used to remove one. |
-| `email` | string | Lower-cased address. |
-| `state` | enum | `confirmed`, `pending`, `queued`, `expired` or `quarantined` (below). |
+| `channel` | enum | `email`, `slack`, `teams`, `discord`, `google_chat` or `webhook`. |
+| `email` | string \| null | Lower-cased address. `null` for a chat or webhook subscriber. |
+| `destination` | string \| null | A chat or webhook subscriber's URL, masked as its host and last four characters. |
+| `state` | enum | `confirmed`, `pending`, `queued`, `expired`, `quarantined` or `disabled` (below). |
 | `subscribed_at` | rfc3339 | When the address was first submitted. |
 | `confirmed_at` | rfc3339 | When the person confirmed. Absent until then. |
 | `component_ids` | uuid[] | The page's checks the subscriber follows. Empty means every component. |
@@ -193,8 +230,11 @@ The people who signed up for email about a page. Subscriptions are email only. A
 | `consent_version` | string | Version of the confirmation wording the person agreed to, a date such as `2026-10-15`. |
 | `quarantined_at` | rfc3339 | When the address was quarantined. |
 | `quarantine_reason` | enum | `bounce` (a permanent bounce) or `complaint` (a spam complaint). |
+| `consecutive_failures` | integer | Chat and webhook deliveries that failed in a row. |
+| `disabled_at` | rfc3339 | When a chat or webhook subscriber was disabled. |
+| `disabled_reason` | string | Why it was disabled. |
 
-Optional fields (`confirmed_at`, `consent_source`, `consent_version`, `quarantined_at`, `quarantine_reason`) are left out when unset. Addresses that subscribed before consent records were kept have no `consent_source` or `consent_version`. No IP address is stored.
+Optional fields (`confirmed_at`, `consent_source`, `consent_version`, `quarantined_at`, `quarantine_reason`, `disabled_at`, `disabled_reason`) are left out when unset. Addresses that subscribed before consent records were kept have no `consent_source` or `consent_version`. No IP address is stored.
 
 Subscribers change their choices or unsubscribe on `https://statuspageapi.siteqwality.com/subscribe/preferences?token=...`, a page linked from every notice email (**Manage preferences**) and from the page shown after confirming.
 
@@ -211,26 +251,30 @@ A notice goes only to `confirmed` subscribers whose `kinds` are empty or include
 | `queued` | Added by an import, waiting for its confirmation email. | No | Yes |
 | `expired` | Never confirmed and the link lapsed. Deleted 7 days after the link expired. | No | No |
 | `quarantined` | A permanent bounce or a spam complaint on any mail to the address. Gets no notices and no queued confirmations. | No | No |
+| `disabled` | A chat or webhook subscriber whose endpoint failed 5 times in a row, or refused with `401`, `403`, `410`, or `404` from a chat app. `POST /status_page/{id}/subscriber/{subscriber_id}/enable` turns it back on. | No | Yes |
 
 `quarantined` takes precedence over the other states and applies to the address on every page it is subscribed to. After a bounce, subscribing again through the page form or adding the address again sends a fresh confirmation, and confirming lifts the quarantine. A link sent before the bounce does not. After a complaint, the form, `POST` and import send nothing to it; only removing the address and a fresh confirmation bring it back.
 
 ### List
 
-`GET /status_page/{id}/subscriber` returns one page, newest first, as `{"data": [...], "total": N, "counts": {"confirmed", "pending", "queued", "expired", "quarantined"}, "capacity": 1000}`. `total` is the number matching your filters; `counts` always covers the whole list. Filters: `state` (one of the five states), `q` (part of an address, ignoring case), `limit` (default 50, at most 200) and `offset`.
+`GET /status_page/{id}/subscriber` returns one page, newest first, as `{"data": [...], "total": N, "counts": {"confirmed", "pending", "queued", "expired", "quarantined", "disabled"}, "capacity": 1000}`. `total` is the number matching your filters; `counts` always covers the whole list. Filters: `state` (one of the six states), `q` (part of an address, ignoring case), `limit` (default 50, at most 200) and `offset`.
 
 ### Add one
 
 `POST /status_page/{id}/subscriber` with `{"email": "you@example.com"}` sends that address a confirmation link. It joins the list as `pending` and receives nothing until the person clicks. Optional `component_ids` and `kinds` preselect what the person gets; leave both out for everything. Once an address is confirmed, only the subscriber's preferences page changes its choices.
 
-The answer is `{"email": "...", "result": "..."}` with one of:
+For a chat or webhook subscriber, send `channel` (`slack`, `teams`, `discord`, `google_chat` or `webhook`) and `url` instead of `email`. It is live at once, gets a welcome message, and the answer's `result` is `subscribed`. A webhook subscriber's answer also carries `signing_secret` (`whsec_...`), shown this once. See [Add a chat channel or webhook](/status-pages/how-to/subscribers/#add-a-chat-channel-or-webhook).
+
+The answer is `{"email": "...", "channel": "...", "destination": "...", "result": "..."}` with one of:
 
 | `result` | Meaning |
 |---|---|
 | `confirmation_sent` | A confirmation link went out. |
+| `subscribed` | A chat or webhook subscriber was added and is live. |
 | `nothing_to_send` | The address is already subscribed, or a link went out to it in the last hour. |
 | `quarantined` | A spam complaint quarantined the address, so nothing was sent. |
 
-It returns `400` for an invalid request (not a plain address, or a component the page does not show), `409` for a full page and `429` when the page (30) or Site Qwality as a whole (300) has reached its hourly confirmation limit.
+It returns `400` for an invalid request (not a plain address, a URL the channel does not take, or a component the page does not show), `409` for a full page and `429` when the page (30) or Site Qwality as a whole (300) has reached its hourly confirmation limit.
 
 ### Import
 
@@ -251,11 +295,11 @@ The answer is `{"rows": [{"row", "email", "result"}], "counts": {...}, "sends_pe
 
 ### Export
 
-`GET /status_page/{id}/subscriber/export` downloads the whole list as CSV, or JSON with `?format=json`. It takes the same `state` and `q` filters. The CSV columns are `email`, `state`, `subscribed_at`, `confirmed_at`, `consent_source`, `consent_version`, `quarantined_at`, `quarantine_reason`, `component_ids` and `kinds`; `component_ids` and `kinds` are space-separated lists.
+`GET /status_page/{id}/subscriber/export` downloads the whole list as CSV, or JSON with `?format=json`. It takes the same `state` and `q` filters. The CSV columns are `email`, `state`, `subscribed_at`, `confirmed_at`, `consent_source`, `consent_version`, `quarantined_at`, `quarantine_reason`, `component_ids`, `kinds`, `channel`, `destination` (masked), `disabled_at` and `disabled_reason`; `component_ids` and `kinds` are space-separated lists.
 
 ### Remove
 
-`DELETE /status_page/{id}/subscriber/{subscriber_id}` removes one address in any state, quarantined included, for an erasure request or a mistake. Nothing more is mailed to it, and `404` means no such subscriber on that page.
+`DELETE /status_page/{id}/subscriber/{subscriber_id}` removes one subscriber in any state, quarantined included, for an erasure request or a mistake. Nothing more is sent to it, and `404` means no such subscriber on that page.
 
 ### Limits
 
@@ -288,7 +332,11 @@ The first import confirmations go out during the import; the rest stay `queued` 
 | `GET` / `PUT` / `DELETE` | `/status_page/{status_page_id}` | Read / rename / delete a page. |
 | `GET` / `PUT` | `/status_page/{id}/layout` | Read / replace the groups, order and per-component settings. |
 | `POST` | `/status_page/{id}/component` | Create a manual component. |
-| `PATCH` / `DELETE` | `/status_page/{id}/component/{component_id}` | Update / delete a manual component. |
+| `PATCH` / `DELETE` | `/status_page/{id}/component/{component_id}` | Update a manual component / delete a manual or third-party component. |
+| `GET` | `/status_page/third_party/vendors` | List the third-party services a page can show. |
+| `GET` | `/status_page/third_party/vendors/{slug}` | Read one service's components and status. |
+| `POST` | `/status_page/{id}/component/third_party` | Add a third-party component. |
+| `PATCH` | `/status_page/{id}/component/{component_id}/third_party` | Update a third-party component. |
 | `PUT` / `DELETE` | `/status_page/{id}/component/{component_id}/override` | Set / clear a status override on any component. |
 | `GET` | `/status_page/{id}/cron_job` | List the page's heartbeats. |
 | `POST` / `PUT` / `DELETE` | `/status_page/{id}/cron_job/{cron_job_id}` | Attach / rename / detach a heartbeat. |
@@ -300,12 +348,17 @@ The first import confirmations go out during the import; the rest stay `queued` 
 | `POST` | `/status_page/{id}/subscriber/import` | Import a CSV of addresses (each gets a confirmation email). |
 | `GET` | `/status_page/{id}/subscriber/export` | Download subscribers as CSV or JSON. |
 | `DELETE` | `/status_page/{id}/subscriber/{subscriber_id}` | Remove a subscriber in any state. |
+| `POST` | `/status_page/{id}/subscriber/{subscriber_id}/enable` | Turn a disabled chat or webhook subscriber back on. |
 | `POST` / `GET` | `/status_page/{id}/incident` | Create / list page incidents. |
 | `GET` / `PUT` / `DELETE` | `/status_page/{id}/incident/{incident_id}` | Read / update / delete an incident on the page. |
 | `POST` | `/status_page/{id}/incident/{incident_id}/update` | Post an incident update and email subscribers. |
 | `POST` | `/incident/{incident_id}/publish` | Show an existing incident on a page, with `{"status_page_id": "..."}`. |
 | `POST` / `GET` | `/status_page/{id}/maintenance` | Create / list scheduled maintenance. |
 | `GET` / `PUT` / `DELETE` | `/status_page/{id}/maintenance/{maintenance_id}` | Read / update / delete maintenance. |
+| `POST` / `GET` | `/status_page/{id}/maintenance_series` | Create / list recurring maintenance. |
+| `GET` / `PUT` / `DELETE` | `/status_page/{id}/maintenance_series/{series_id}` | Read / update / delete recurring maintenance. |
+| `GET` / `PUT` | `/status_page/{id}/access` | Read / change who may see the page. |
+| `POST` | `/status_page/{id}/access/sign_out_all` | Sign out every visitor of a private page. |
 | `GET` / `PUT` | `/status_page/{id}/branding` | Read / update branding. |
 | `POST` | `/status_page/{id}/branding/upload` | Presigned asset upload. |
 | `DELETE` | `/status_page/{id}/branding/asset/{asset_type}` | Remove an asset. |
@@ -323,6 +376,7 @@ The first import confirmations go out during the import; the rest stay `queued` 
 | Scheduled maintenance | `GET` and `POST /v1/status-pages/{id}/maintenances`; `GET`, `PATCH` and `DELETE` on `.../maintenances/{maintenance_id}` |
 | Branding | `GET` and `PATCH /v1/status-pages/{id}/branding`; `POST .../branding/upload-url`; `DELETE .../branding/assets/{asset_type}` |
 | Custom domain | `GET`, `POST` and `DELETE /v1/status-pages/{id}/custom-domain` |
+| Access | `GET` and `PUT /v1/status-pages/{id}/access`; `POST .../access/sign-out-all` |
 
 ```bash
 curl "https://api.siteqwality.com/v1/status-pages?limit=50" \
@@ -348,25 +402,25 @@ The status page front-end reads a public, unauthenticated JSON API. You can use 
 | `GET` | `/status-page/{account_id}/{status_page_id}/live` | A fresh status for each HTTP check, for polling. The page calls it every 60 seconds. Heartbeats and manual components are not in it; read them from the page itself. |
 | `GET` | `/status-page/{account_id}/{status_page_id}/incidents/{incident_id}` | One incident on the page, however old, in the `active_incidents` shape. 404 when the incident is not on the page. |
 | `GET` | `/status-page/{account_id}/{status_page_id}/history` | Every incident on the page, newest first, a page at a time: `{"incidents": [...], "next_before": "..."}`. `?limit=` sets the page size (default 20, at most 50). Pass `next_before` back as `?before=` (an RFC 3339 time) for the next, older page; it is absent on the last one. |
-| `POST` | `/status-page/{account_id}/{status_page_id}/subscribe` | Starts an email subscription with `{"email": "you@example.com"}`, plus optional `component_ids` and `kinds` (as in [Subscribers](#subscribers)); leave both out for everything. The address gets a confirmation link and receives nothing until it confirms. A confirmed address's choices do not change here. Returns 200 with `{"message": "Check your email to confirm the subscription."}`. Errors: 400 for an invalid address, or with `Unknown component` for an id the page does not show, 404 for an unknown page, 409 when the page already holds 1000 subscribers and 429 when rate limited. |
+| `POST` | `/status-page/{account_id}/{status_page_id}/subscribe` | Starts an email subscription with `{"email": "you@example.com"}`, plus optional `component_ids` and `kinds` (as in [Subscribers](#subscribers)); leave both out for everything. The address gets a confirmation link and receives nothing until it confirms. A confirmed address's choices do not change here. Returns 200 with `{"message": "Check your email to confirm the subscription."}`. For a chat or webhook subscriber send `channel` and `url` instead of `email`; it is live at once, and a webhook's answer carries its `signing_secret` once. Errors: 400 for an invalid address, or with `Unknown component` for an id the page does not show, 404 for an unknown page, 409 when the page already holds 1000 subscribers and 429 when rate limited. |
 
 Each client address can make 3,000 requests to this API in a five-minute window: at most 600 to `/status-page/` paths other than `/live`, and at most 30 subscription calls, the email links included. Past that the API answers `429` with `rate_limited` and a `Retry-After` header in seconds.
 
-Both ids are in the page's address: `https://statuspage.siteqwality.com/<account-id>/<page-id>`. An unknown page returns 404. Every error comes back as JSON, described in [Errors](#errors) below.
+Both ids are in the page's address: `https://statuspage.siteqwality.com/<account-id>/<page-id>`. An unknown page returns 404, and a [private page](/status-pages/private-pages/) returns 401 with the code `access_required` to anyone without access. Every error comes back as JSON, described in [Errors](#errors) below.
 
 The page response has these fields:
 
 | Field | Type | Description |
 |---|---|---|
-| `global_status` | enum | The headline: `operational`, `unknown`, `degraded_performance`, `partial_outage`, `major_outage` or `under_maintenance`. `unknown` means no component has a current reading. Every visible component counts, with any status override applied. |
+| `global_status` | enum | The headline: `operational`, `unknown`, `degraded_performance`, `partial_outage`, `major_outage` or `under_maintenance`. `unknown` means no component has a current reading. Every visible component except third-party ones counts, with any status override applied. |
 | `groups[]` | array | Section headings in page order: `id`, `name`, `description`. A group with nothing to show is left out. |
 | `http_jobs[]` | array | One entry per HTTP check: `http_job_id`, `friendly_name`, `sla_target_percentage` (or `null`), `current_status`, `group_id` (`null` for ungrouped), `description`, `show_uptime`, `order` (rank among the page's components, compare within one group), and `performance_data[]` (empty when `show_uptime` is `false`) with one row for every UTC day of the window, oldest first (`day`, `uptime_percentage`, `avg_response_time_ms`, `p50_response_time_ms`, `p95_response_time_ms`, `p99_response_time_ms`). A day with no checks has `null` for every figure. |
 | `browser_checks[]` | array | One entry per browser check: `browser_check_id`, `friendly_name`, `sla_target_percentage`, `current_status`, and the same `group_id`, `description`, `show_uptime` and `order`. No daily data. |
-| `components[]` | array | Heartbeats and manual components: `id`, `kind` (`heartbeat` or `manual`), `friendly_name`, `current_status`, `status_note`, `group_id`, `description` and `order`. No daily data. |
+| `components[]` | array | Heartbeats, manual and third-party components: `id`, `kind` (`heartbeat`, `manual` or `third_party`), `friendly_name`, `current_status`, `status_note`, `group_id`, `description` and `order`, plus `vendor` (`name`, `status_page_url`) on a third-party one. No daily data. |
 | `active_incidents[]` | array | Open incidents with their `updates[]`. |
 | `upcoming_maintenances[]` | array | Maintenance that is scheduled or in progress: `id`, `title`, `body`, `status`, `scheduled_start_at`, `scheduled_end_at`, `affected_http_job_ids`, `whole_page` (`true` when it covers the whole page, and then `affected_http_job_ids` is empty). |
 | `incident_history[]` | array | The latest 30 incidents, same shape as `active_incidents`, with `resolved_at` once closed. Older ones come from `/history`. |
-| `branding` | object \| null | `page_title`, `default_theme`, `logo_url`, `logo_dark_url` (absent when there is no dark logo), `favicon_url`, `og_image_url`, `primary_color`, `accent_color`, `header_text`, `footer_text`, `white_label`, `meta_description` and `custom_css`. `null` when none is saved. |
+| `branding` | object \| null | `page_title`, `default_theme`, `logo_url`, `logo_dark_url` (absent when there is no dark logo), `favicon_url`, `og_image_url`, `primary_color`, `accent_color`, `header_text`, `footer_text`, `white_label`, `meta_description`, `custom_css` and `language`. `null` when none is saved. |
 | `page_url` | string | The page's public address: `https://<your-domain>` when a custom domain is live, otherwise `https://statuspage.siteqwality.com/<account-id>/<page-id>`. Incidents are at `<page_url>/incidents/<incident-id>` and the full history at `<page_url>/history`. |
 
 `current_status` is one of `operational`, `degraded` (failing, not yet confirmed down), `down`, `paused`, `maintenance` or `unknown`. With a status override in force it is the override's status, and every entry in `http_jobs`, `browser_checks` and `components` carries the override's note as `status_note` (`null` otherwise). The `/live` response is a list with `http_job_id`, `status` (the same values), `status_note`, `success`, `response_time_ms` and `checked_at` for each HTTP check.
@@ -389,6 +443,7 @@ Every error from this API has `Content-Type: application/json` and the same body
 | Status | `code` |
 |---|---|
 | 400 | `bad_request` |
+| 401 | `access_required` (a private page) |
 | 404 | `not_found` |
 | 405 | `method_not_allowed` |
 | 409 | `conflict` |
@@ -404,11 +459,12 @@ The confirm, unsubscribe and preferences links stay HTML pages for people, not J
 
 ## Published files
 
-The same page is also published as static files that update within a minute of a change: the page JSON above at `https://statuspagecdn.siteqwality.com/v1/pages/<account-id>/<page-id>.json`, and beside it `summary.json`, `incidents.rss`, `incidents.atom` and `badge.svg`, plus an embed script at `https://statuspagecdn.siteqwality.com/v1/embed.js`. See [Feeds, badge and embed](/status-pages/how-to/feeds-badge-embed/).
+The same page is also published as static files that update within a minute of a change: the page JSON above at `https://statuspagecdn.siteqwality.com/v1/pages/<account-id>/<page-id>.json`, and beside it `summary.json`, `incidents.rss`, `incidents.atom` and `badge.svg`, plus an embed script at `https://statuspagecdn.siteqwality.com/v1/embed.js`. See [Feeds, badge and embed](/status-pages/how-to/feeds-badge-embed/). A private page publishes none of these.
 
 ## See also
 
 - [Status pages overview](/status-pages/overview/) for the three-layer model.
+- [Private status pages](/status-pages/private-pages/) for passwords and allowed networks.
 - [Custom domain guide](/status-pages/how-to/custom-domain/) for DNS setup.
 - [Brand your status page](/status-pages/how-to/branding/) for colors, dark logos and custom CSS.
 - [API Reference](/api-reference/) for wire-level shapes.

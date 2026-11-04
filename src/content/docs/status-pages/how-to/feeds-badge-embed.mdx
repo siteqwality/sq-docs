@@ -7,7 +7,7 @@ owner: jj
 
 import { LinkCard } from '@astrojs/starlight/components';
 
-Every status page publishes a few public files. They update within a minute of any change on the page, and nothing needs turning on. A status page's **Share** tab in the dashboard lists every address and snippet below, ready to copy.
+Every public status page publishes a few files anyone can read. They update within a minute of any change on the page, and nothing needs turning on. A [private page](/status-pages/private-pages/) publishes none of them. A status page's **Share** tab in the dashboard lists every address and snippet below, ready to copy.
 
 All of them live under one address, built from the two ids in your page's URL (`https://statuspage.siteqwality.com/<account-id>/<page-id>`):
 
@@ -48,9 +48,9 @@ curl -s https://statuspagecdn.siteqwality.com/v1/pages/$ACCOUNT_ID/$PAGE_ID/summ
 | Field | Description |
 |---|---|
 | `page` | `id`, `name` (the page title) and `url` (the page's public address, its custom domain when one is live). |
-| `status` | `indicator` is the headline: `operational`, `unknown`, `degraded_performance`, `partial_outage`, `major_outage` or `under_maintenance`. `description` is the wording the page shows. |
+| `status` | `indicator` is the headline: `operational`, `unknown`, `degraded_performance`, `partial_outage`, `major_outage` or `under_maintenance`. `description` is the wording the page shows, in the page's [language](/status-pages/how-to/branding/#page-language). |
 | `groups[]` | Section headings in page order: `id`, `name`, `description`. |
-| `components[]` | In page order: `id`, `name`, `kind` (`http`, `browser`, `heartbeat` or `manual`), `status` (`operational`, `degraded`, `down`, `paused`, `maintenance` or `unknown`), `status_note` (the note on a status you set by hand, or `null`) and `group_id`. Hidden components are left out. |
+| `components[]` | In page order: `id`, `name`, `kind` (`http`, `browser`, `heartbeat`, `manual` or `third_party`), `status` (`operational`, `degraded`, `down`, `paused`, `maintenance` or `unknown`), `status_note` (the note on a status you set by hand, or `null`) and `group_id`. Hidden components are left out. |
 | `active_incidents[]` | `id`, `title`, `status`, `severity`, `created_at`, `updated_at` (the newest update), `latest_update` (its text) and `url`. |
 | `maintenances[]` | Scheduled and in-progress maintenance: `id`, `title`, `status`, `scheduled_start_at`, `scheduled_end_at`. |
 
@@ -91,4 +91,4 @@ If your page has a custom domain, load the script from it (`https://status.examp
 ## See also
 
 <LinkCard title="Status page reference" description="The full page JSON, endpoints and limits." href="/status-pages/reference/" />
-<LinkCard title="Manage subscribers" description="Email updates for visitors who want them." href="/status-pages/how-to/subscribers/" />
+<LinkCard title="Manage subscribers" description="Updates by email, chat or webhook for visitors who want them." href="/status-pages/how-to/subscribers/" />

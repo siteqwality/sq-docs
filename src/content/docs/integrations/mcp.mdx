@@ -260,8 +260,11 @@ Assistants pick the tool themselves. **Write** tools need the matching `write:` 
 | `update_incident_postmortem` | Edits a postmortem's body or owner, or moves it to `in_review` or `published`. Publishing needs a resolved incident. | Write |
 | `list_follow_ups` | Lists action items across incidents, soonest due first, each with its incident. Open items by default; filters for owner and overdue. | Read |
 | `add_action_item`, `update_action_item` | Adds a follow-up to an incident with an optional owner, due date and issue link, or edits, closes or reopens one. See [postmortems and follow-ups](/incident-management/incidents/how-to/postmortems/). | Write |
+| `list_incident_templates` | Lists the account's [incident templates](/incident-management/incidents/how-to/templates/). | Read |
+| `create_incident_template`, `update_incident_template` | Saves a template (name, title, message, and optionally severity and status), or changes one. | Write |
+| `delete_incident_template` | Deletes a template. Incidents written from it keep their wording. | Write, asks first |
 | `list_status_pages` | Lists your status pages, each with its public address (`page_url`). | Read |
-| `list_status_page_components` | Lists a status page's components in page order (monitors, heartbeats and manual components), with any status set by hand. | Read |
+| `list_status_page_components` | Lists a status page's components in page order (monitors, heartbeats, manual and third-party components), with any status set by hand. | Read |
 | `set_status_page_component_status` | Sets what a status page shows for one component, with an optional note and end time. | Write |
 | `clear_status_page_component_status` | Clears that status, so the page follows the monitor again. | Write |
 | `search_logs` | Searches your logs. | Read |
@@ -279,7 +282,9 @@ These tools use the Status Pages scopes, except the three incident tools (`list_
 | `delete_status_page` | Deletes a page. | Write, asks first |
 | `update_status_page_layout` | Replaces the whole layout: groups, their order and the components in each. | Write, asks first |
 | `create_status_page_component`, `update_status_page_component` | Adds a manual component (one with no monitor, whose status you set), or renames it, changes its description or sets its status. | Write |
-| `delete_status_page_component` | Deletes a manual component. | Write, asks first |
+| `delete_status_page_component` | Deletes a manual or third-party component. | Write, asks first |
+| `list_third_party_vendors`, `get_third_party_vendor` | Lists the [third-party services](/status-pages/how-to/organize-components/#show-a-third-party-service) a page can show, or one service's components and their current status. | Read |
+| `create_third_party_status_page_component`, `update_third_party_status_page_component` | Adds a third-party service to a page, for the whole service or chosen components, or renames it or changes what it follows. | Write |
 | `list_status_page_monitors`, `get_status_page_monitor` | Lists the HTTP monitors, browser checks and heartbeats (cron jobs) on a page, or shows one with its page name and SLA target. | Read |
 | `add_status_page_monitor`, `update_status_page_monitor` | Adds a monitor or heartbeat to a page, or changes its page name or SLA target. | Write |
 | `remove_status_page_monitor` | Takes a monitor or heartbeat off a page. It keeps running. | Write, asks first |
@@ -287,19 +292,24 @@ These tools use the Status Pages scopes, except the three incident tools (`list_
 | `update_status_page_incident` | Changes a page incident's title or severity. Its status changes through `post_incident_update` or `resolve_incident`. | Write |
 | `delete_status_page_incident` | Deletes an incident shown on a page. | Write, asks first |
 | `list_status_page_maintenances`, `get_status_page_maintenance` | Lists a page's maintenance windows, or shows one. | Read |
-| `schedule_status_page_maintenance`, `update_status_page_maintenance` | Schedules or changes a maintenance window. Each call names what it covers: `whole_page: true`, or the monitors in `affected_http_job_ids`, never both. Confirmed subscribers hear about new and rescheduled windows. | Write |
+| `schedule_status_page_maintenance`, `update_status_page_maintenance` | Schedules or changes a maintenance window, with an optional reminder. Each call names what it covers: `whole_page: true`, or the monitors in `affected_http_job_ids`, never both. Confirmed subscribers hear about new and rescheduled windows. | Write |
+| `list_status_page_maintenance_series` | Lists a page's [recurring maintenance](/status-pages/how-to/publish-maintenance/#repeat-it), each with its schedule, time zone and next occurrence. | Read |
+| `create_status_page_maintenance_series`, `update_status_page_maintenance_series` | Schedules maintenance that repeats daily, weekly or monthly in a time zone, or changes one. Changes reach the occurrences that have not started. | Write |
+| `delete_status_page_maintenance_series` | Deletes a recurring maintenance and its occurrences that have not started. Past ones stay on the page. | Write, asks first |
 | `delete_status_page_maintenance` | Deletes a maintenance window. | Write, asks first |
-| `list_status_page_subscribers`, `export_status_page_subscribers` | Lists a page's email subscribers, or exports them all as CSV. | Read |
-| `add_status_page_subscriber` | Sends an address a confirmation link, optionally for only some components or only incidents or maintenance. | Write |
+| `list_status_page_subscribers`, `export_status_page_subscribers` | Lists a page's subscribers on every channel, or exports them all as CSV. Chat and webhook URLs are masked. | Read |
+| `add_status_page_subscriber` | Sends an address a confirmation link, or adds a Slack, Microsoft Teams, Discord, Google Chat or webhook subscriber that is live at once, optionally for only some components or only incidents or maintenance. | Write |
 | `import_status_page_subscribers` | Imports addresses from CSV. Each gets a confirmation link; past the hourly limit they are queued. | Write |
-| `import_status_pages` | Imports status pages from UptimeRobot or Better Stack, showing the monitors you already imported. It previews unless told to create. | Write |
+| `import_status_pages` | Imports status pages from UptimeRobot or Better Stack, showing the monitors you already imported, or a page from Atlassian Statuspage with optional incident history and email subscribers. It previews unless told to create. | Write |
 | `remove_status_page_subscriber` | Removes a subscriber. | Write, asks first |
 | `get_status_page_branding` | Shows a page's branding. | Read |
-| `update_status_page_branding`, `get_status_page_branding_upload_url` | Changes branding, or gets an upload link for a logo, dark-theme logo, favicon or social image. | Write |
+| `update_status_page_branding`, `get_status_page_branding_upload_url` | Changes branding, including the page's [language](/status-pages/how-to/branding/#page-language), or gets an upload link for a logo, dark-theme logo, favicon or social image. | Write |
 | `delete_status_page_branding_asset` | Removes a logo, dark-theme logo, favicon or social image. | Write, asks first |
 | `get_status_page_custom_domain` | Shows a page's custom domain and the DNS records it needs. | Read |
 | `set_status_page_custom_domain` | Serves a page on your own domain. | Write |
 | `remove_status_page_custom_domain` | Stops serving a page on its custom domain. | Write, asks first |
+| `get_status_page_access` | Shows whether a page is public or [private](/status-pages/private-pages/), whether it has a password (never the password itself) and its allowed networks. | Read |
+| `set_status_page_access` | Makes a page private with a password, allowed networks or both, or public again. Any change signs out every visitor. | Write |
 
 ### Services
 

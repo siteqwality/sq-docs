@@ -1,0 +1,48 @@
+---
+title: Incident templates
+description: Save the title, message and severity you use often, and fill an incident or status page update with them in one pick.
+last_verified: 2026-11-03
+owner: jj
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+An incident template is saved wording for an incident you declare often, such as a payment provider outage or a slow checkout. Picking one fills the form, so the first message goes out fast and reads the same every time. Templates are shared across the account.
+
+## Create a template
+
+<Steps>
+
+1. Go to **Respond → Incidents** and open the **Templates** tab.
+
+2. Click **New template**.
+
+3. Give it a **Name** (how the team finds it), the incident **Title** and the **Message** it starts with. Optionally set a **Severity** and an **Update status** (investigating, identified or monitoring).
+
+4. Click **Create template**.
+
+</Steps>
+
+| Field | Limit |
+|---|---|
+| Name | Up to 100 characters, unique in the account (ignoring case). |
+| Title | Up to 512 characters. |
+| Message | Up to 10,000 characters. |
+| Severity | Optional: minor, major or critical. |
+| Update status | Optional: investigating, identified or monitoring, never resolved. |
+
+An account holds up to 100 templates. Editing or deleting one leaves the incidents and updates already written from it as they are.
+
+## Use a template
+
+Pick a template under **Use template** when you:
+
+- report an incident from **Respond → Incidents** or a status page's **Incidents** tab,
+- publish an incident to a status page,
+- post an update on a status page incident.
+
+The form fills with the template's text, severity and status, and you can edit everything before you send it. The **Use template** list shows only when the account has templates.
+
+## With the API
+
+Templates live at `/incident_template`: `GET` lists them and `POST` creates one with `name`, `title`, `message` and optional `severity` and `status`. `GET`, `PUT` and `DELETE` on `/incident_template/{template_id}` read, replace and delete one. API keys need the `incidents` scopes. An AI assistant uses the `list_incident_templates`, `create_incident_template`, `update_incident_template` and `delete_incident_template` [MCP tools](/integrations/mcp/#what-you-can-ask-for).

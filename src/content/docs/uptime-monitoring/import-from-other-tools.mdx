@@ -1,5 +1,5 @@
 ---
-title: Import from UptimeRobot, Pingdom, StatusCake or Better Stack
+title: Import from UptimeRobot, Pingdom, StatusCake, Better Stack or Statuspage
 description: Bring your monitors and status pages over from another monitoring tool with its API key, with a preview of every monitor before anything is created.
 last_verified: 2026-10-26
 owner: jj
@@ -7,7 +7,7 @@ owner: jj
 
 import { Steps } from '@astrojs/starlight/components';
 
-Paste an API key from UptimeRobot, Pingdom, StatusCake or Better Stack and your monitors come across with their settings. Status pages come across from UptimeRobot and Better Stack. You see what each monitor becomes before anything is created, and the other tool keeps running until you switch it off.
+Paste an API key from UptimeRobot, Pingdom, StatusCake or Better Stack and your monitors come across with their settings. Status pages come across from UptimeRobot, Better Stack and Atlassian Statuspage. You see what each monitor becomes before anything is created, and the other tool keeps running until you switch it off.
 
 The key is used for that import only and never stored. Use a read-only key where the tool offers one.
 
@@ -25,7 +25,7 @@ The key is used for that import only and never stored. Use a read-only key where
 
 5. Point your cron jobs at the new ping URLs. The import lists one for each heartbeat it created.
 
-6. For UptimeRobot and Better Stack, click **Next: status pages**, check the preview, then import them. The **Status Pages** list also has an **Import** button for this step on its own.
+6. For UptimeRobot and Better Stack, click **Next: status pages**, check the preview, then import them. The **Status Pages** list also has an **Import** button for this step on its own, which is where Atlassian Statuspage pages come in.
 
 </Steps>
 
@@ -62,7 +62,17 @@ UptimeRobot and Better Stack status pages come across with their name and their 
 
 A component shows one of your monitors here, matched to the other tool's monitor by URL, or by name for a heartbeat. Import your monitors first: a component whose monitor is not here yet is left off, and the preview says so. Running the status page import again skips the pages it already created, so add a monitor you import later to its page yourself.
 
-A page is skipped when you already have a status page with the same name. Each new page is published at its own address straight away. Custom domains, passwords, branding, subscribers and past incidents do not carry over; the preview lists what each page leaves behind. Your plan's status page limit applies.
+A page is skipped when you already have a status page with the same name. Each new page is published at its own address straight away. From UptimeRobot and Better Stack, custom domains, passwords, branding, subscribers and past incidents do not carry over; the preview lists what each page leaves behind. Your plan's status page limit applies.
+
+### Atlassian Statuspage
+
+Statuspage has no monitors to import, so its pages come across on their own. On the **Status Pages** list, click **Import**, open the **Atlassian Statuspage** tab and paste an API key ([where to find it](#atlassian-statuspage-1)). If the key reaches several pages, pick the one to import.
+
+- **Components and groups** come across in order, as manual components carrying their current status, which you set from then on. Add your monitors to the page to have their status follow checks.
+- **Incident history**, with **Import incident history**: the 500 most recent incidents, published with their public updates at their original times. Nobody is notified. Scheduled maintenances are left out.
+- **Email subscribers**, with **Import email subscribers**: up to 1,000 active ones. Each gets a confirmation email and hears nothing until it confirms, sent at the same pace as a [CSV import](/status-pages/how-to/subscribers/#the-hourly-queue). SMS, webhook, Slack, Teams and other subscribers are counted in the preview and left out.
+
+Custom domains, passwords and branding do not carry over. A page whose name you already use is skipped.
 
 Pingdom's and StatusCake's APIs do not share status pages. Create a [status page](/status-pages/overview/) here and add your imported monitors to it.
 
@@ -84,6 +94,10 @@ In StatusCake, open your account page and copy an API key. StatusCake has no rea
 
 In Better Stack, open **API tokens** and copy a team-based **Uptime** API token for the team whose monitors you are moving.
 
+### Atlassian Statuspage
+
+At manage.statuspage.io, open your avatar menu, then **API info**, and copy an API key.
+
 ## Running the import again
 
 Monitors you already have are skipped, by the same rules as a [CSV import](/uptime-monitoring/csv-import/#duplicates-are-skipped): the same URL, a heartbeat with the same name, or a DNS monitor of the same zone. So importing again after fixing something in the other tool creates only what is new.
@@ -101,6 +115,6 @@ curl -X POST https://api.siteqwality.com/monitors/import \
 
 Each row is one of the tool's monitors, in the shape a [CSV import](/uptime-monitoring/csv-import/#with-the-api) returns, plus `source_id` (the tool's id for it) and `warnings` (what changes on the way in). A long list takes more than one request: while `next_offset` is set, send the same request again with `offset` set to it, after waiting `retry_after_seconds` when that is set. A continued dry run also sends `previewed`, the number of rows other than DNS monitors that earlier answers would create, so the preview counts them against your plan's monitor limit.
 
-Status pages import through [`POST /status_page/import`](/api-reference/operations/import_status_pages/) with the same `source` (`uptimerobot` or `betterstack`), `api_key` and `dry_run`.
+Status pages import through [`POST /status_page/import`](/api-reference/operations/import_status_pages/) with the same `source` (`uptimerobot`, `betterstack` or `statuspage`), `api_key` and `dry_run`. For Statuspage, `page_id` names the page; when the key reaches several pages and none is named, the answer lists them in `choose_page` and imports nothing. `include_incidents` and `include_subscribers` bring the incident history and the email subscribers.
 
 An AI assistant connected over [MCP](/integrations/mcp/) runs the same imports with the `import_monitors` and `import_status_pages` tools.

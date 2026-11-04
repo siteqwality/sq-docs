@@ -1,0 +1,78 @@
+---
+title: Private status pages
+description: Show a status page only to people with its password or on networks you allow, such as your own team or one customer.
+last_verified: 2026-11-03
+owner: jj
+---
+
+import { Steps, LinkCard } from '@astrojs/starlight/components';
+
+A private status page shows only to visitors who enter its password or come from a network you allow. Use one for an internal status page, or for a page meant for a single customer. Everyone else sees a sign-in screen with your logo and page title.
+
+Each private page uses a paid Private status page add-on. See [plan limits](/getting-started/plan-limits/#status-pages).
+
+## Make a page private
+
+<Steps>
+
+1. Open the status page and go to the **Access** tab.
+
+2. Under **Visibility**, pick **Private**.
+
+3. Set a **Password**, add **Allowed networks** with **Add network**, or both.
+
+4. Click **Make page private**.
+
+</Steps>
+
+A private page can use either method or both:
+
+- **Password.** 8 to 256 characters. It is stored hashed and never shown again, in the dashboard or the API.
+- **Allowed networks.** Up to 50 IPv4 or IPv6 addresses or CIDR blocks, such as `203.0.113.7` or `203.0.113.0/24`.
+- **Both.** Visitors on an allowed network get straight in, and everyone else enters the password.
+
+To make the page public again, pick **Public** on the **Access** tab. That removes the password and the allowed networks.
+
+## What visitors get
+
+| Way in | Access lasts |
+|---|---|
+| The password | 30 days in that browser. |
+| An allowed network | 1 hour, renewed without the visitor noticing while they stay on the network. |
+
+Changing the password or the allowed networks signs every visitor out, and so does **Sign out all visitors** on the **Access** tab. They then need the password, or an allowed network, again.
+
+Each address gets 10 password attempts per 5 minutes. When wrong passwords for a page keep arriving from many addresses, password sign-in to that page pauses for a short while. Visitors on allowed networks and visitors already signed in are not affected.
+
+Private pages work on a [custom domain](/status-pages/how-to/custom-domain/) too.
+
+## What a private page turns off
+
+A private page is for the people you let in, so it publishes nothing anyone else can read:
+
+- The [RSS and Atom feeds](/status-pages/how-to/feeds-badge-embed/), `summary.json`, the badge and the embed script stop serving.
+- The [public status page API](/status-pages/reference/#public-status-page-api) answers `401` with the code `access_required` to anyone without access.
+- The page is marked `noindex`, so search engines leave it out.
+
+## Subscribers
+
+Visitors with access can subscribe as on any page. Signing visitors out, or changing the password, does not remove existing [subscribers](/status-pages/how-to/subscribers/): they keep getting updates. To stop someone's updates, remove them in the **Subscribers** tab.
+
+## Billing
+
+Private status page add-ons are pooled across the account, and each one lets one page be private. Making a page public is always allowed. When a plan change leaves more private pages than add-ons, the extra private pages keep working for 14 days. After that they are unpublished, never made public, and they come back when the add-ons do.
+
+## With the API
+
+The access settings live at `GET` and `PUT /status_page/{id}/access` (`/v1/status-pages/{id}/access` in the [`/v1` API](/status-pages/reference/#manage-pages-over-the-v1-api)).
+
+```json
+{
+  "password": "a long shared password",
+  "ip_allowlist": ["203.0.113.0/24", "2001:db8::/32"]
+}
+```
+
+A field you leave out keeps its value. `"password": null` removes the password and `"ip_allowlist": []` removes every network; with neither left, the page is public. The answer has `visibility` (`public` or `private`), `has_password`, `ip_allowlist`, and `private_pages_used` and `private_pages_limit` for the account. `POST /status_page/{id}/access/sign_out_all` (`/v1/status-pages/{id}/access/sign-out-all`) signs every visitor out. An AI assistant uses the `get_status_page_access` and `set_status_page_access` [MCP tools](/integrations/mcp/#status-pages).
+
+<LinkCard title="Status page reference" description="Every field and endpoint." href="/status-pages/reference/" />

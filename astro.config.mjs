@@ -396,6 +396,7 @@ export default defineConfig({
 						{ label: 'Overview', slug: 'status-pages/overview' },
 						{ label: 'Quickstart', slug: 'status-pages/quickstart' },
 						{ label: 'Reference', slug: 'status-pages/reference' },
+						{ label: 'Private pages', slug: 'status-pages/private-pages' },
 						{
 							label: 'How-to guides',
 							collapsed: true,

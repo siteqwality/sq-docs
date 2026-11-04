@@ -1,13 +1,13 @@
 ---
 title: Publish a status page maintenance
-description: Tell visitors about planned work, show it on your status page, and email your subscribers when it is scheduled, starts and ends.
+description: Tell visitors about planned work, show it on your status page, remind your subscribers before it starts, and repeat it on a schedule.
 last_verified: 2026-10-16
 owner: jj
 ---
 
 import { Steps, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 
-A **status page maintenance** is the customer-facing notice for planned work. It appears on your public status page, marks the components it covers as under maintenance instead of down, and emails your confirmed subscribers when you schedule it, when it starts and when it ends.
+A **status page maintenance** is the customer-facing notice for planned work. It appears on your public status page, marks the components it covers as under maintenance instead of down, and tells your [subscribers](/status-pages/how-to/subscribers/) when you schedule it, before it starts if you set a reminder, when it starts and when it ends.
 
 A [maintenance window](/incident-management/maintenance/overview/) is different: it only silences alerts and never appears on a status page. For a planned outage you usually want both.
 
@@ -28,7 +28,9 @@ A [maintenance window](/incident-management/maintenance/overview/) is different:
 
 5. Under **Scope**, pick **Whole page**, or **Specific monitors** and choose the affected checks. There is no default.
 
-6. Click **Schedule maintenance**. Confirmed subscribers get an email, unless they chose not to hear about maintenance or about these checks.
+6. Pick a **Reminder**, or **Off**. It starts at 1 hour before.
+
+7. Click **Schedule maintenance**. Subscribers get a notice, unless they chose not to hear about maintenance or about these checks.
 
 </Steps>
 
@@ -50,7 +52,7 @@ curl -X POST https://api.siteqwality.com/status_page/$STATUS_PAGE_ID/maintenance
   }'
 ```
 
-Name the scope in every create and update: list at least one monitor in `affected_http_job_ids`, or send `"whole_page": true` with no ids. A request with both, or neither, is rejected.
+Name the scope in every create and update: list at least one monitor in `affected_http_job_ids`, or send `"whole_page": true` with no ids. A request with both, or neither, is rejected. Add `"reminder_minutes"` for a [reminder](#remind-subscribers).
 
 </TabItem>
 </Tabs>
@@ -67,9 +69,43 @@ Maintenance covers the HTTP checks you pick. A browser check shows maintenance o
 
 ## Subscribers
 
-Confirmed subscribers who take maintenance notices get three emails: one when you create the maintenance, one within a minute of the start time, and one within a minute of the end time. Starting or completing it by hand sends the same start or end email. Editing it sends nothing, and a maintenance you complete before it started sends no start or end email. If the plan changes, create a new maintenance or post the change as an incident update.
+Confirmed subscribers who take maintenance notices hear when you create the maintenance, before it starts if it has a [reminder](#remind-subscribers), within a minute of the start time, and within a minute of the end time. Starting or completing it by hand sends the same start or end notice. Editing it sends nothing, and a maintenance you complete before it started sends no start or end notice. If the plan changes, create a new maintenance or post the change as an incident update.
+
+### Remind subscribers
+
+A reminder goes out once, the time you chose before the start: 5 minutes to 7 days (10,080 minutes) through the API, `reminder_minutes`. Editing the window sets the reminder up again for the new start. A maintenance created closer to its start than the reminder's lead time gets no reminder.
 
 A subscriber who chose specific components gets these emails only when the maintenance covers one of them, or covers the whole page. See [who gets which notice](/status-pages/how-to/subscribers/#who-gets-which-notice).
+
+## Repeat it
+
+For planned work on a schedule, such as a weekly database window, set **Repeats** to **Daily**, **Weekly** or **Monthly** when you schedule it:
+
+- **Daily**, **Weekly** on the days you pick, or **Monthly** on a day from 1 to 28.
+- A **Start time** in a **Time zone** you choose, and how long each occurrence **Lasts**. Daylight saving changes keep the local start time.
+- A **First date** and an optional **End date**. With no end date it repeats until you delete it.
+
+Each occurrence is an ordinary maintenance on the page, created 14 days ahead. The public page shows each series' next occurrence. Editing the series changes the occurrences that have not started; started and past ones keep what they had. Deleting the series deletes its occurrences that have not started and keeps the past ones. A page holds up to 25 series.
+
+By default subscribers hear about a series once: when it is created or its schedule changes, they get one notice about its next occurrence, and no reminder, start or completion notices follow. Tick **Notify subscribers about every occurrence** to send the scheduled, reminder, started and completed notices for every occurrence.
+
+Through the API, recurring maintenance lives under `/status_page/{id}/maintenance_series`:
+
+```json
+{
+  "title": "Weekly database maintenance",
+  "whole_page": true,
+  "timezone": "Europe/Berlin",
+  "start_time": "02:00",
+  "duration_minutes": 30,
+  "frequency": "weekly",
+  "weekdays": [2, 4],
+  "starts_on": "2026-11-10",
+  "reminder_minutes": 60
+}
+```
+
+`frequency` is `daily`, `weekly` (with `weekdays`, 1 for Monday to 7 for Sunday) or `monthly` (with `month_day`, 1 to 28). `duration_minutes` is 5 to 1,440 for a daily series and up to 10,080 otherwise. `ends_on` sets the last day, and `notify_each_occurrence: true` notifies every occurrence. `PUT` on `/status_page/{id}/maintenance_series/{series_id}` replaces the series and `DELETE` removes it. Each occurrence carries the series' id as `series_id`.
 
 ## Change or cancel it
 

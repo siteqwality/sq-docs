@@ -151,15 +151,15 @@ A separate object (*not* a maintenance window) that publishes "scheduled mainten
 
 ### Status page
 
-A public, branded page at `https://statuspage.siteqwality.com/<account-id>/<page-id>` (or your custom domain) showing the current and historical state of components you choose to publish.
+A branded page at `https://statuspage.siteqwality.com/<account-id>/<page-id>` (or your custom domain) showing the current and historical state of components you choose to publish. It is public, or [private](/status-pages/private-pages/) behind a password or an IP allowlist.
 
 ### Status page component
 
-One row on a status page, with a public-facing `friendly_name`: an HTTP check, browser check or heartbeat, whose status follows the monitor, or a manual component, whose status you set. HTTP and browser check components take an optional `sla_target_percentage`, and any component can carry a status override set by hand. See [Group and order components](/status-pages/how-to/organize-components/).
+One row on a status page, with a public-facing `friendly_name`: an HTTP check, browser check or heartbeat, whose status follows the monitor, a manual component, whose status you set, or a third-party component, whose status follows a vendor's own status page. HTTP and browser check components take an optional `sla_target_percentage`, and any component can carry a status override set by hand. See [Group and order components](/status-pages/how-to/organize-components/).
 
 ### Subscriber
 
-A visitor who confirmed an email address to be notified when the status page publishes an incident or maintenance. They can choose incidents, maintenance or both, and every component or only some. Email only.
+Someone notified when the status page publishes an incident or maintenance, by email (once they confirm the address), Slack, Microsoft Teams, Discord, Google Chat or webhook. They can choose incidents, maintenance or both, and every component or only some.
 
 ## Observability vocabulary
 

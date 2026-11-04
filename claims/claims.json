@@ -69,10 +69,15 @@
   { "page": "observability/alerts.mdx", "text": "**Resolved** notifications go to every channel that was told the instance fired, and to no other.", "needs": ["telemetry.rule_notifications"] },
   { "page": "observability/alerts.mdx", "text": "**Webhook and Pushover** channels are skipped, with a `source_not_supported` receipt.", "needs": ["telemetry.rule_notifications"] },
   { "page": "uptime-monitoring/import-from-other-tools.mdx", "text": "The key is used for that import only and never stored.", "needs": ["import.other_tools"] },
-  { "page": "uptime-monitoring/import-from-other-tools.mdx", "text": "Status pages come across from UptimeRobot and Better Stack.", "needs": ["import.other_tools"] },
+  { "page": "uptime-monitoring/import-from-other-tools.mdx", "text": "Status pages come across from UptimeRobot, Better Stack and Atlassian Statuspage.", "needs": ["import.other_tools"] },
   { "page": "reports/scheduled-emails.mdx", "text": "**Outside addresses** get a confirmation email first, and nothing else is sent to them until they confirm.", "needs": ["reports.external_confirmation"] },
   { "page": "reports/scheduled-emails.mdx", "text": "If sending is held up, only the latest period goes out, never a backlog.", "needs": ["reports.scheduled_email"] },
   { "page": "reports/overview.mdx", "text": "Every figure is compared with the period just before, of the same length.", "needs": ["reports.summary"] },
   { "page": "uptime-monitoring/http-checks/reference.mdx", "text": "Check results are kept for 90 days, or as long as the body for a failed check when your plan keeps bodies longer. Charts and figures for older ranges use hourly summaries, kept for 25 months.", "needs": ["checks.result_retention"] },
-  { "page": "enterprise/sla-reports.mdx", "text": "SLA figures come from daily figures **updated every five minutes**, so the current UTC day counts with the checks so far, and each day is complete by 01:00 UTC the next day.", "needs": ["sla.daily_figures_every_five_minutes"] }
+  { "page": "enterprise/sla-reports.mdx", "text": "SLA figures come from daily figures **updated every five minutes**, so the current UTC day counts with the checks so far, and each day is complete by 01:00 UTC the next day.", "needs": ["sla.daily_figures_every_five_minutes"] },
+  { "page": "getting-started/plan-limits.mdx", "text": "| Private status page | $20/mo ($200/yr) | 1 [private page](/status-pages/private-pages/) |", "needs": ["status_page.private_page_pack"] },
+  { "page": "getting-started/plan-limits.mdx", "text": "The free plan includes no private pages.", "needs": ["status_page.private_page_pack"] },
+  { "page": "status-pages/private-pages.mdx", "text": "Each address gets 10 password attempts per 5 minutes.", "needs": ["status_page.private_pages"] },
+  { "page": "status-pages/how-to/subscribers.mdx", "text": "Each subscriber uses one channel: email, Slack, Microsoft Teams, Discord, Google Chat or webhook.", "needs": ["status_page.subscriber_channels"] },
+  { "page": "status-pages/how-to/branding.mdx", "text": "A page speaks English, Deutsch, Italiano, Français, Español, Português (Brasil) or Nederlands.", "needs": ["status_page.language"] }
 ]

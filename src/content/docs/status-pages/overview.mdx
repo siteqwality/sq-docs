@@ -1,6 +1,6 @@
 ---
 title: Status pages
-description: Branded, custom-domain public status pages with components, scheduled maintenance, and email subscribers.
+description: Branded, custom-domain status pages, public or private, with components, scheduled maintenance, and subscribers.
 last_verified: 2026-10-26
 owner: jj
 ---
@@ -9,7 +9,7 @@ import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 A **status page** shows visitors the current and past state of the parts of your service you choose to publish, driven by the monitors you already run. It lives at `https://statuspage.siteqwality.com/<account-id>/<page-id>` or on your own domain.
 
-Additional status pages and custom domains are paid status page extras. See [plan limits](/getting-started/plan-limits/#status-pages).
+Additional status pages, custom domains and [private pages](/status-pages/private-pages/) are paid status page extras. See [plan limits](/getting-started/plan-limits/#status-pages).
 
 ## When to use a status page
 
@@ -26,9 +26,9 @@ Additional status pages and custom domains are paid status page extras. See [pla
 
 A status page has three layers:
 
-1. **Status page object**: the container, with branding (logo, colors, default theme) and an optional custom domain.
-2. **Components**: what the page reports on. Most link to a monitor (an HTTP check, a browser check or a heartbeat) and show its live status, with a public name and, for checks, an optional SLA target. A manual component has no monitor, and you set its status. Any component can carry a status override with a public note. When the page's HTTP checks cover two or more websites, each shows its website's icon.
-3. **Incidents and maintenance**: published events. You publish incidents and post their public updates yourself; internal notes never reach the page. A [service](/incident-management/services/overview/) can also publish the incidents it opens automatically, in the words of its public template, and those resolve when their monitors recover. Scheduled maintenance shows planned downtime ahead of time.
+1. **Status page object**: the container, with branding (logo, colors, default theme, language), an optional custom domain, and its access: public, or private behind a password or an IP allowlist.
+2. **Components**: what the page reports on. Most link to a monitor (an HTTP check, a browser check or a heartbeat) and show its live status, with a public name and, for checks, an optional SLA target. A manual component has no monitor, and you set its status. A third-party component shows a vendor's own published status, such as AWS or Stripe. Any component can carry a status override with a public note. When the page's HTTP checks cover two or more websites, each shows its website's icon.
+3. **Incidents and maintenance**: published events. You publish incidents and post their public updates yourself; internal notes never reach the page. A [service](/incident-management/services/overview/) can also publish the incidents it opens automatically, in the words of its public template, and those resolve when their monitors recover. Scheduled maintenance shows planned downtime ahead of time, once or on a repeating schedule. [Incident templates](/incident-management/incidents/how-to/templates/) fill in the wording you use often.
 
 The page reads the same data as the dashboard, so a change in the dashboard shows up on it within about a minute. The same data is available from the [public status page API](/status-pages/reference/#public-status-page-api).
 
@@ -36,15 +36,16 @@ The page reads the same data as the dashboard, so a change in the dashboard show
 
 | Concern | Settings |
 |---|---|
-| **Identity** | name, page title, default theme (light, dark or system) |
+| **Identity** | name, page title, default theme (light, dark or system), [language](/status-pages/how-to/branding/#page-language) |
+| **Access** | public, or [private](/status-pages/private-pages/) behind a password, an IP allowlist or both |
 | **Branding** | logo and dark theme logo, favicon, link preview image, primary and accent colors (kept readable in both themes), header and footer text, custom CSS, white-label (no Site Qwality badge or icon, and subscriber email carries your page's name) |
 | **Custom domain** | your own subdomain (e.g. `status.example.com`), with a TLS certificate provisioned for you |
-| **Components** | HTTP, TCP port and ping checks, browser checks, heartbeats and manual components, with a public name, SLA target, status override, groups and order |
+| **Components** | HTTP, TCP port and ping checks, browser checks, heartbeats, manual components and [third-party services](/status-pages/how-to/organize-components/#show-a-third-party-service), with a public name, SLA target, status override, groups and order |
 | **Incidents** | open, publish, update, resolve or unpublish by hand, or have a service publish the incidents it opens automatically |
-| **Maintenance** | scheduled windows published ahead of planned work |
-| **Subscribers** | visitors subscribe by email, confirm through a link, and choose incidents, maintenance or both, for every component or only some; you can import a list, and each address still confirms |
+| **Maintenance** | scheduled windows published ahead of planned work, with an optional reminder, once or [repeating](/status-pages/how-to/publish-maintenance/#repeat-it) |
+| **Subscribers** | visitors subscribe by email (confirmed through a link), Slack, Microsoft Teams, Discord, Google Chat or webhook, and choose incidents, maintenance or both, for every component or only some; you can import an email list, and each address still confirms |
 
-Subscriptions are email only. Anyone can also follow incidents by [RSS or Atom](/status-pages/how-to/feeds-badge-embed/).
+Anyone can also follow a public page's incidents by [RSS or Atom](/status-pages/how-to/feeds-badge-embed/). To move from Atlassian Statuspage, [import your page](/uptime-monitoring/import-from-other-tools/#atlassian-statuspage).
 
 ## Next steps
 
@@ -52,5 +53,6 @@ Subscriptions are email only. Anyone can also follow incidents by [RSS or Atom](
   <LinkCard title="Quickstart" description="Create, brand, and publish your first status page." href="/status-pages/quickstart/" />
   <LinkCard title="Add a custom domain" description="Point status.yourcompany.com at your status page." href="/status-pages/how-to/custom-domain/" />
   <LinkCard title="Manage subscribers" description="Let visitors subscribe to incident updates." href="/status-pages/how-to/subscribers/" />
+  <LinkCard title="Private pages" description="Show a page only to people with its password or on your networks." href="/status-pages/private-pages/" />
   <LinkCard title="API reference" description="Status-page endpoints in the API." href="/api-reference/" />
 </CardGrid>
