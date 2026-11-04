@@ -11904,6 +11904,233 @@
         ]
       }
     },
+    "/incident_template": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "List the account's incident templates by name.",
+        "operationId": "list_incident_templates",
+        "responses": {
+          "200": {
+            "description": "Templates by name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IncidentTemplate"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Save wording for incidents you declare often. An account keeps up to 100 templates.",
+        "operationId": "create_incident_template",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncidentTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Template created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentTemplate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A blank or too long field, or a resolved status"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "409": {
+            "description": "The name is taken, or the account has 100 templates"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/incident_template/{template_id}": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Get one incident template.",
+        "operationId": "get_incident_template",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "description": "Template identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The template",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentTemplate"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Template not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Replace an incident template.",
+        "operationId": "update_incident_template",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "description": "Template identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncidentTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Template updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentTemplate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A blank or too long field, or a resolved status"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Template not found"
+          },
+          "409": {
+            "description": "The name is taken"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Delete an incident template. Incidents declared from it keep their wording.",
+        "operationId": "delete_incident_template",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "description": "Template identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Template deleted"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Template not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/integration": {
       "get": {
         "tags": [
@@ -27624,7 +27851,7 @@
         "tags": [
           "Status Pages"
         ],
-        "summary": "Import status pages from UptimeRobot or Better Stack with an API key for that tool.\nEach page is created with the same name, groups and components, showing the monitors\nalready in this account that match the tool's by URL or heartbeat name: import the\nmonitors first. Pages whose name is taken are skipped. Custom domains, passwords and\nbranding do not carry over; each page lists what did not. `dry_run` reports without\ncreating anything.",
+        "summary": "Import status pages from UptimeRobot, Better Stack or Atlassian Statuspage with an API key\nfor that tool. Each page is created with the same name, groups and components. UptimeRobot\nand Better Stack pages show the monitors already in this account that match the tool's by\nURL or heartbeat name: import the monitors first. A Statuspage page's components become\ncomponents whose status you set, with their current status; `include_incidents` brings its\n500 most recent incidents as published history without notifying anyone, and\n`include_subscribers` imports its active email subscribers, each asked to confirm. A\nStatuspage key that reaches several pages needs `page_id`. Pages whose name is taken are\nskipped. Custom domains, passwords and branding do not carry over; each page lists what did\nnot. `dry_run` reports without creating anything.",
         "operationId": "import_status_pages",
         "requestBody": {
           "content": {
@@ -27661,6 +27888,87 @@
           },
           "502": {
             "description": "The tool could not be reached or sent an unreadable answer"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/third_party/vendors": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "List the third-party services a status page can show: vendors such as AWS, Stripe and GitHub,\nwhose status comes from their own status pages.",
+        "operationId": "list_third_party_vendors",
+        "responses": {
+          "200": {
+            "description": "Every vendor, by name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ThirdPartyVendor"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "502": {
+            "description": "The vendor list could not be loaded; try again"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/third_party/vendors/{slug}": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "One vendor's components and their current status, to choose which a component follows.",
+        "operationId": "get_third_party_vendor",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Vendor slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The vendor and its components",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThirdPartyVendorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "No such vendor"
+          },
+          "502": {
+            "description": "The vendor could not be loaded; try again"
           }
         },
         "security": [
@@ -27796,6 +28104,161 @@
         "responses": {
           "200": {
             "description": "Status page deleted"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/access": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Get who may see a status page.",
+        "operationId": "get_status_page_access",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public or private, whether a password is set (never the password), the IP allowlist and the account's private page use",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageAccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Set a status page's password and IP allowlist. A page with either is private.",
+        "operationId": "update_status_page_access",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStatusPageAccess"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The page's access after the change. A changed password or allowlist signs out every visitor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageAccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A password under 8 or over 256 characters, an entry that is not an IP address or CIDR block, or more than 50 entries"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "402": {
+            "description": "Every private page the plan includes is in use; the message names the Private status page add-on"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/access/sign_out_all": {
+      "post": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Sign out every visitor of a private status page.",
+        "operationId": "sign_out_status_page_visitors",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every visitor must enter the password, or come from an allowed network, again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageAccess"
+                }
+              }
+            }
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -28363,6 +28826,66 @@
         ]
       }
     },
+    "/status_page/{status_page_id}/component/third_party": {
+      "post": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Add a third-party component: a vendor shown with the status its own status page publishes,\nfor the whole service or chosen components. It never shows uptime and never changes the\npage's overall status. It goes last in its group.",
+        "operationId": "create_third_party_component",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateThirdPartyComponent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The new component",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayoutComponent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An unknown vendor or component, components of a vendor that can only be followed as a whole, a group that is not on this page, or the page already shows 100 components"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "502": {
+            "description": "The vendor could not be loaded; try again"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/status_page/{status_page_id}/component/{component_id}": {
       "delete": {
         "tags": [
@@ -28591,6 +29114,76 @@
           },
           "500": {
             "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/component/{component_id}/third_party": {
+      "patch": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Rename a third-party component, change its description, or change which of the vendor's\ncomponents it follows. Its place, group and visibility are part of the layout.",
+        "operationId": "update_third_party_component",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "component_id",
+            "in": "path",
+            "description": "Third-party component identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateThirdPartyComponent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The updated component",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayoutComponent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body, or an unknown vendor component"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found, or no third-party component with this id on it"
+          },
+          "502": {
+            "description": "The vendor could not be loaded; try again"
           }
         },
         "security": [
@@ -30070,6 +30663,290 @@
         ]
       }
     },
+    "/status_page/{status_page_id}/maintenance_series": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "List a status page's recurring maintenance.",
+        "operationId": "list_status_page_maintenance_series",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The page's series, oldest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StatusPageMaintenanceSeriesResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Schedule a maintenance that repeats daily, weekly or monthly at a local time. Its occurrences\nappear on the page 14 days ahead; subscribers get one notice per occurrence plus its reminder.",
+        "operationId": "create_status_page_maintenance_series",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusPageMaintenanceSeriesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Series created and its first occurrences made",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageMaintenanceSeriesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid schedule, title, scope or reminder"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page or affected monitor not found"
+          },
+          "409": {
+            "description": "The page already has 25 series"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/maintenance_series/{series_id}": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Get one recurring maintenance.",
+        "operationId": "get_status_page_maintenance_series",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "series_id",
+            "in": "path",
+            "description": "Maintenance series identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The series",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageMaintenanceSeriesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Series not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Replace a recurring maintenance. Occurrences that have not started follow the change; a new\nschedule remakes them. Started and past ones keep what they had.",
+        "operationId": "update_status_page_maintenance_series",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "series_id",
+            "in": "path",
+            "description": "Maintenance series identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusPageMaintenanceSeriesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Series updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageMaintenanceSeriesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid schedule, title, scope or reminder"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Series or affected monitor not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Delete a recurring maintenance and its occurrences that have not started. Past ones stay.",
+        "operationId": "delete_status_page_maintenance_series",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "series_id",
+            "in": "path",
+            "description": "Maintenance series identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Series and its future occurrences deleted"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Series not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/status_page/{status_page_id}/subscriber": {
       "get": {
         "tags": [
@@ -30091,7 +30968,7 @@
           {
             "name": "state",
             "in": "query",
-            "description": "confirmed, pending, queued, expired or quarantined. Omit for all",
+            "description": "confirmed, pending, queued, expired, quarantined or disabled. Omit for all",
             "required": false,
             "schema": {
               "type": "string"
@@ -30161,7 +31038,7 @@
         "tags": [
           "Status Pages"
         ],
-        "summary": "Ask an address to subscribe. It stays pending until its owner clicks the emailed link.",
+        "summary": "Add a subscriber. An address stays pending until its owner clicks the emailed link; a chat or\nwebhook subscriber is live at once and gets a welcome message.",
         "operationId": "add_status_page_subscriber",
         "parameters": [
           {
@@ -30197,7 +31074,7 @@
             }
           },
           "400": {
-            "description": "Not a plain email address, or a component not on this page"
+            "description": "Not a plain email address, a URL the channel does not take, or a component not on this page"
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -30206,10 +31083,10 @@
             "description": "Status page not found"
           },
           "409": {
-            "description": "The page already holds 1000 subscribers"
+            "description": "The page already holds 1000 subscribers, the URL is already subscribed, or the page is not published"
           },
           "429": {
-            "description": "Too many confirmation emails this hour"
+            "description": "Too many confirmation emails or new chat subscribers this hour"
           },
           "500": {
             "description": "Internal server error"
@@ -30270,7 +31147,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A CSV file with the columns email, state, subscribed_at, confirmed_at, consent_source, consent_version, quarantined_at, quarantine_reason, component_ids and kinds (space-separated, empty for all), or a JSON list of subscribers"
+            "description": "A CSV file with the columns email, state, subscribed_at, confirmed_at, consent_source, consent_version, quarantined_at, quarantine_reason, component_ids and kinds (space-separated, empty for all), channel, destination (masked), disabled_at and disabled_reason, or a JSON list of subscribers"
           },
           "400": {
             "description": "Invalid format or filter"
@@ -30387,6 +31264,63 @@
         "responses": {
           "200": {
             "description": "Subscriber removed"
+          },
+          "401": {
+            "description": "Missing or invalid authentication"
+          },
+          "404": {
+            "description": "Status page or subscriber not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/status_page/{status_page_id}/subscriber/{subscriber_id}/enable": {
+      "post": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Turn a disabled chat or webhook subscriber back on. Its failure count starts again from zero.",
+        "operationId": "enable_status_page_subscriber",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "description": "Status page identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "subscriber_id",
+            "in": "path",
+            "description": "Subscriber identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The subscriber, enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageSubscriber"
+                }
+              }
+            }
           },
           "401": {
             "description": "Missing or invalid authentication"
@@ -42099,6 +43033,283 @@
         ]
       }
     },
+    "/v1/status-pages/{status_page_id}/access": {
+      "get": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Get who may see a status page.",
+        "operationId": "v1_get_status_page_access",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public or private, whether a password is set (never the password), the IP allowlist and the account's private page use",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageAccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such status page in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Set a status page's password and IP allowlist. A page with either is private.",
+        "operationId": "v1_set_status_page_access",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStatusPageAccess"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The page's access after the change. A changed password or allowlist signs out every visitor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageAccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A password under 8 or over 256 characters, an entry that is not an IP address or CIDR block, or more than 50 entries",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Every private page the plan includes is in use; the message names the Private status page add-on",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such status page in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/v1/status-pages/{status_page_id}/access/sign-out-all": {
+      "post": {
+        "tags": [
+          "Status Pages"
+        ],
+        "summary": "Sign out every visitor of a private status page.",
+        "operationId": "v1_sign_out_status_page_visitors",
+        "parameters": [
+          {
+            "name": "status_page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every visitor must enter the password, or come from an allowed network, again",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "`true` when this is the stored first response"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPageAccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key or member may not do this, or lacks the scope it needs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such status page in this account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; wait for the time in `Retry-After`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/v1/status-pages/{status_page_id}/branding": {
       "get": {
         "tags": [
@@ -45638,7 +46849,7 @@
           {
             "name": "Idempotency-Key",
             "in": "header",
-            "description": "Makes a retry safe: the same key and body within 24 hours returns the first response with `Idempotent-Replayed: true`. The same key with another body is refused with 422 `idempotency_key_reused`, and one still running with 409 `idempotency_key_in_use`.",
+            "description": "Makes a retry safe, but the new secret is shown once and never stored: a retry with the same key and body is refused with 409 `secret_not_replayable` instead of running again.",
             "required": false,
             "schema": {
               "type": "string",
@@ -45659,14 +46870,6 @@
         "responses": {
           "200": {
             "description": "Confirmation sent, or nothing to send; the address stays pending until its owner clicks the link",
-            "headers": {
-              "Idempotent-Replayed": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "`true` when this is the stored first response"
-              }
-            },
             "content": {
               "application/json": {
                 "schema": {
@@ -46992,12 +48195,24 @@
       },
       "AddStatusPageSubscriber": {
         "type": "object",
-        "required": [
-          "email"
-        ],
         "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/SubscriberChannel",
+            "description": "`email` (default), `slack`, `teams`, `discord`, `google_chat` or `webhook`."
+          },
           "email": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The address, for the email channel."
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The incoming webhook URL for a chat channel, or any https URL for `webhook`."
           },
           "component_ids": {
             "type": "array",
@@ -47019,15 +48234,36 @@
       "AddStatusPageSubscriberResponse": {
         "type": "object",
         "required": [
-          "email",
+          "channel",
           "result"
         ],
         "properties": {
           "email": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null for a chat or webhook subscriber."
+          },
+          "channel": {
+            "$ref": "#/components/schemas/SubscriberChannel"
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The URL, masked."
           },
           "result": {
             "$ref": "#/components/schemas/AddSubscriberResult"
+          },
+          "signing_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A webhook subscriber's signing secret (`whsec_...`). Returned here once, never again."
           }
         }
       },
@@ -47036,7 +48272,8 @@
         "enum": [
           "confirmation_sent",
           "nothing_to_send",
-          "quarantined"
+          "quarantined",
+          "subscribed"
         ]
       },
       "AddTelegramIntegrationRequest": {
@@ -52214,6 +53451,59 @@
           "whole_page": {
             "type": "boolean",
             "description": "The whole page is under maintenance. Leave `affected_http_job_ids` empty."
+          },
+          "reminder_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Minutes before the start that subscribers get a reminder (5 to 10080). Absent or null\nsends none. A window created inside this lead time gets no reminder."
+          }
+        }
+      },
+      "CreateThirdPartyComponent": {
+        "type": "object",
+        "required": [
+          "vendor_slug"
+        ],
+        "properties": {
+          "vendor_slug": {
+            "type": "string",
+            "description": "From `GET /status_page/third_party/vendors`."
+          },
+          "vendor_component_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Component ids from `GET /status_page/third_party/vendors/{slug}`. Leave out or empty to\nfollow the whole service. At most 50."
+          },
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Up to 256 characters. Defaults to the vendor's name."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "One line under the name. Up to 200 characters."
+          },
+          "group_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "A group on this page. Leave out for the ungrouped list."
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "Keep it off the public page for now."
           }
         }
       },
@@ -54418,6 +55708,14 @@
               "null"
             ],
             "description": "`true` covers the whole page and drops the monitor list."
+          },
+          "reminder_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Minutes before the start that subscribers get a reminder (5 to 10080); null turns it off."
           }
         }
       },
@@ -56887,7 +58185,8 @@
           "uptimerobot",
           "pingdom",
           "statuscake",
-          "betterstack"
+          "betterstack",
+          "statuspage"
         ]
       },
       "ImportStatusPageResult": {
@@ -56938,6 +58237,28 @@
               "$ref": "#/components/schemas/ImportComponentResult"
             },
             "description": "What the page shows, in order."
+          },
+          "history": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportedHistory",
+                "description": "Statuspage, when incident history was asked for."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "subscribers": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportedSubscribers",
+                "description": "Statuspage, when subscribers were asked for."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -56987,7 +58308,7 @@
         "properties": {
           "source": {
             "$ref": "#/components/schemas/ImportSource",
-            "description": "`uptimerobot` or `betterstack`; Pingdom's and StatusCake's APIs have no status pages."
+            "description": "`uptimerobot`, `betterstack` or `statuspage`; Pingdom's and StatusCake's APIs have no\nstatus pages."
           },
           "api_key": {
             "type": "string",
@@ -56996,6 +58317,21 @@
           "dry_run": {
             "type": "boolean",
             "description": "Report what would happen without creating anything."
+          },
+          "page_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Statuspage: the page to import. Without it, a key that reaches several pages gets\n`choose_page` back and nothing is imported."
+          },
+          "include_incidents": {
+            "type": "boolean",
+            "description": "Statuspage: also bring the 500 most recent incidents, published with their updates and\noriginal times. Nobody is notified."
+          },
+          "include_subscribers": {
+            "type": "boolean",
+            "description": "Statuspage: also import active email subscribers (at most 1000). Each gets a confirmation\nemail and receives nothing until it confirms."
           }
         }
       },
@@ -57039,11 +58375,58 @@
             "description": "Pages left when time ran out; running the import again adds them.",
             "minimum": 0
           },
+          "choose_page": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/StatuspageChoice"
+            },
+            "description": "Statuspage: the key reaches several pages and none was named. Nothing was read or\ncreated; repeat the request with one of these as `page_id`."
+          },
           "pages": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ImportStatusPageResult"
             }
+          }
+        }
+      },
+      "ImportedHistory": {
+        "type": "object",
+        "description": "Statuspage incident history: what was found and what came across.",
+        "required": [
+          "found",
+          "imported",
+          "would_import",
+          "over_limit",
+          "maintenance_skipped"
+        ],
+        "properties": {
+          "found": {
+            "type": "integer",
+            "description": "Incidents found, scheduled maintenance left out.",
+            "minimum": 0
+          },
+          "imported": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "would_import": {
+            "type": "integer",
+            "description": "In a dry run, how many would be imported.",
+            "minimum": 0
+          },
+          "over_limit": {
+            "type": "integer",
+            "description": "Older incidents past the 500 an import brings.",
+            "minimum": 0
+          },
+          "maintenance_skipped": {
+            "type": "integer",
+            "description": "Scheduled maintenance, which is not imported.",
+            "minimum": 0
           }
         }
       },
@@ -57065,6 +58448,58 @@
           },
           "result": {
             "$ref": "#/components/schemas/ImportResult"
+          }
+        }
+      },
+      "ImportedSubscribers": {
+        "type": "object",
+        "description": "Statuspage email subscribers: each one imported is asked to confirm.",
+        "required": [
+          "found",
+          "requested",
+          "would_request",
+          "already_subscribed",
+          "invalid",
+          "over_limit"
+        ],
+        "properties": {
+          "found": {
+            "type": "integer",
+            "description": "Active email subscribers found.",
+            "minimum": 0
+          },
+          "requested": {
+            "type": "integer",
+            "description": "Asked to confirm now or queued to be asked.",
+            "minimum": 0
+          },
+          "would_request": {
+            "type": "integer",
+            "description": "In a dry run, how many would be asked.",
+            "minimum": 0
+          },
+          "already_subscribed": {
+            "type": "integer",
+            "description": "Already subscribed or already asked.",
+            "minimum": 0
+          },
+          "invalid": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "over_limit": {
+            "type": "integer",
+            "description": "Past the 1000 an import takes, or past the page's subscriber limit.",
+            "minimum": 0
+          },
+          "other_kinds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "SMS, webhook, Slack, Teams and other subscribers, which are not imported. Null when\nStatuspage did not say.",
+            "minimum": 0
           }
         }
       },
@@ -57809,6 +59244,107 @@
           "monitoring",
           "resolved"
         ]
+      },
+      "IncidentTemplate": {
+        "type": "object",
+        "description": "Reusable incident wording. Picking one in the app fills the title, message and severity.",
+        "required": [
+          "id",
+          "name",
+          "title",
+          "message",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Unique per account, ignoring case."
+          },
+          "title": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "severity": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IncidentSeverity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IncidentStatus",
+                "description": "The status of the incident's first update: investigating, identified or monitoring."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IncidentTemplateRequest": {
+        "type": "object",
+        "description": "A template on create, and its full new state on edit.",
+        "required": [
+          "name",
+          "title",
+          "message"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Up to 100 characters, unique per account."
+          },
+          "title": {
+            "type": "string",
+            "description": "Up to 512 characters."
+          },
+          "message": {
+            "type": "string",
+            "description": "Up to 10,000 characters."
+          },
+          "severity": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IncidentSeverity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IncidentStatus",
+                "description": "investigating, identified or monitoring."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
       },
       "IncidentUpdateResponse": {
         "type": "object",
@@ -58773,6 +60309,19 @@
           }
         }
       },
+      "Lang": {
+        "type": "string",
+        "description": "A status page language. Stored in `status_page_branding.language` as its code.",
+        "enum": [
+          "en",
+          "de",
+          "it",
+          "fr",
+          "es",
+          "pt-BR",
+          "nl"
+        ]
+      },
       "LayerRestriction": {
         "type": "object",
         "description": "A window a layer covers, repeated every day or every week in the layer's zone. A window that\nruns past midnight (or past the end of the week) carries on into the next day.",
@@ -58876,7 +60425,7 @@
           },
           "show_uptime": {
             "type": "boolean",
-            "description": "False shows the status only, with no uptime bars or percentage. Heartbeats and manual\ncomponents never show uptime."
+            "description": "False shows the status only, with no uptime bars or percentage. Heartbeats, manual and\nthird-party components never show uptime."
           },
           "status": {
             "oneOf": [
@@ -58894,6 +60443,17 @@
               {
                 "$ref": "#/components/schemas/StatusOverride",
                 "description": "The override in force, or null. One past its expiry reads as null."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "third_party": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ThirdPartySource",
+                "description": "The vendor a third-party component follows; null for every other kind."
               },
               {
                 "type": "null"
@@ -58934,7 +60494,8 @@
           "http_job",
           "browser_check",
           "cron_job",
-          "manual"
+          "manual",
+          "third_party"
         ]
       },
       "LayoutGroup": {
@@ -64623,6 +66184,22 @@
                   "type": "boolean",
                   "description": "Covers the whole page; `affected_http_job_ids` is then empty."
                 },
+                "reminder_minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "Minutes before the start that subscribers get a reminder. Null sends none."
+                },
+                "series_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "The recurring series this window is an occurrence of."
+                },
                 "created_at": {
                   "type": "string",
                   "format": "date-time"
@@ -64650,10 +66227,9 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Someone who asked for email about a status page.",
+              "description": "Someone who gets a status page's updates by email, chat or webhook.",
               "required": [
                 "id",
-                "email",
                 "state",
                 "subscribed_at"
               ],
@@ -64662,11 +66238,45 @@
                   "type": "string"
                 },
                 "email": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The address. Null for a chat or webhook subscriber."
+                },
+                "channel": {
+                  "$ref": "#/components/schemas/SubscriberChannel",
+                  "description": "`email`, `slack`, `teams`, `discord`, `google_chat` or `webhook`."
+                },
+                "destination": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "A chat or webhook subscriber's URL, masked: its host and the last four characters."
                 },
                 "state": {
                   "$ref": "#/components/schemas/SubscriberState",
-                  "description": "`confirmed` receives notices. `pending` has not clicked the link yet. `queued` was\nimported and waits for its confirmation email. `expired` never clicked, and the link\nlapsed. `quarantined` bounced or complained and gets nothing."
+                  "description": "`confirmed` receives notices. `pending` has not clicked the link yet. `queued` was\nimported and waits for its confirmation email. `expired` never clicked, and the link\nlapsed. `quarantined` bounced or complained and gets nothing. `disabled` is a chat or\nwebhook subscriber whose endpoint refused or kept failing; enable it to resume."
+                },
+                "consecutive_failures": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Chat and webhook deliveries that failed in a row; 5 disables the subscriber."
+                },
+                "disabled_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "disabled_reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Why it was disabled."
                 },
                 "subscribed_at": {
                   "type": "string",
@@ -66124,6 +67734,10 @@
               "string",
               "null"
             ]
+          },
+          "language": {
+            "$ref": "#/components/schemas/Lang",
+            "description": "The page's language. A page without branding is English."
           }
         }
       },
@@ -73900,6 +75514,14 @@
           "bars"
         ]
       },
+      "SeriesFrequency": {
+        "type": "string",
+        "enum": [
+          "daily",
+          "weekly",
+          "monthly"
+        ]
+      },
       "ServiceHealth": {
         "type": "object",
         "required": [
@@ -75609,12 +77231,51 @@
           }
         }
       },
+      "StatusPageAccess": {
+        "type": "object",
+        "description": "Who may see a status page. The password itself is never returned.",
+        "required": [
+          "visibility",
+          "has_password",
+          "ip_allowlist",
+          "private_pages_used"
+        ],
+        "properties": {
+          "visibility": {
+            "$ref": "#/components/schemas/StatusPageVisibility"
+          },
+          "has_password": {
+            "type": "boolean"
+          },
+          "ip_allowlist": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Addresses and CIDR blocks whose visitors skip the password, e.g. `203.0.113.0/24`."
+          },
+          "private_pages_used": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The account's private pages, this one included when it is private."
+          },
+          "private_pages_limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "How many pages may be private; `null` is unlimited. Each Private status page add-on adds one."
+          }
+        }
+      },
       "StatusPageBillingOverview": {
         "type": "object",
         "required": [
           "pages",
           "domains",
-          "page_limit"
+          "page_limit",
+          "private_page_ids"
         ],
         "properties": {
           "pages": {
@@ -75647,6 +77308,22 @@
             ],
             "format": "int64"
           },
+          "private_page_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The account's private pages, in no order; past `private_page_limit` they count against grace."
+          },
+          "private_page_limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "How many pages may be private; `null` is unlimited."
+          },
           "expires_at": {
             "type": [
               "string",
@@ -75661,7 +77338,8 @@
         "required": [
           "status_page_id",
           "default_theme",
-          "white_label"
+          "white_label",
+          "language"
         ],
         "properties": {
           "status_page_id": {
@@ -75763,6 +77441,10 @@
               "string",
               "null"
             ]
+          },
+          "language": {
+            "$ref": "#/components/schemas/Lang",
+            "description": "The language visitors see the page, subscription emails and chat messages in."
           }
         }
       },
@@ -76079,7 +77761,233 @@
             "type": "boolean",
             "description": "Covers the whole page; `affected_http_job_ids` is then empty."
           },
+          "reminder_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Minutes before the start that subscribers get a reminder. Null sends none."
+          },
+          "series_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The recurring series this window is an occurrence of."
+          },
           "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "StatusPageMaintenanceSeriesRequest": {
+        "type": "object",
+        "description": "A series on create, and its full new state on edit.",
+        "required": [
+          "title",
+          "timezone",
+          "start_time",
+          "duration_minutes",
+          "frequency",
+          "starts_on"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "whole_page": {
+            "type": "boolean",
+            "description": "The whole page is under maintenance. Leave `affected_http_job_ids` empty."
+          },
+          "affected_http_job_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The monitors under maintenance. Required unless `whole_page` is true."
+          },
+          "reminder_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Minutes before each start that subscribers get a reminder (5 to 10080). Null sends none."
+          },
+          "notify_each_occurrence": {
+            "type": "boolean",
+            "description": "Tell subscribers about every occurrence (scheduled, reminder, started, completed). By\ndefault they hear once, when the series is made or its schedule changes."
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA zone, e.g. `Europe/Berlin`."
+          },
+          "start_time": {
+            "type": "string",
+            "description": "Local start time, `HH:MM`."
+          },
+          "duration_minutes": {
+            "type": "integer",
+            "format": "int32",
+            "description": "5 to 10080 minutes; at most 1440 for a daily series."
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/SeriesFrequency"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "ISO weekdays, 1 = Monday to 7 = Sunday. Required for weekly; ignored otherwise."
+          },
+          "month_day": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "1 to 28. Required for monthly; ignored otherwise."
+          },
+          "starts_on": {
+            "type": "string",
+            "description": "First day an occurrence may fall on, `YYYY-MM-DD` in `timezone`."
+          },
+          "ends_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Last day an occurrence may fall on. Null repeats with no end."
+          }
+        }
+      },
+      "StatusPageMaintenanceSeriesResponse": {
+        "type": "object",
+        "description": "A maintenance that repeats. Each occurrence is an ordinary maintenance with `series_id` set,\nmaterialized 14 days ahead. Subscribers hear once per schedule unless `notify_each_occurrence`.",
+        "required": [
+          "id",
+          "status_page_id",
+          "title",
+          "whole_page",
+          "affected_http_job_ids",
+          "notify_each_occurrence",
+          "timezone",
+          "start_time",
+          "duration_minutes",
+          "frequency",
+          "weekdays",
+          "starts_on",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status_page_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "whole_page": {
+            "type": "boolean"
+          },
+          "affected_http_job_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "reminder_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "notify_each_occurrence": {
+            "type": "boolean",
+            "description": "Subscribers hear about every occurrence. False: once when the series is made or rescheduled."
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA zone the start time and days are read in."
+          },
+          "start_time": {
+            "type": "string",
+            "description": "Local start time, `HH:MM`."
+          },
+          "duration_minutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/SeriesFrequency"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "ISO weekdays (1 = Monday), weekly only."
+          },
+          "month_day": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Day of the month (1 to 28), monthly only."
+          },
+          "starts_on": {
+            "type": "string",
+            "description": "`YYYY-MM-DD`."
+          },
+          "ends_on": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "next_occurrence_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The next occurrence still to start."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
             "type": "string",
             "format": "date-time"
           }
@@ -76095,10 +78003,9 @@
       },
       "StatusPageSubscriber": {
         "type": "object",
-        "description": "Someone who asked for email about a status page.",
+        "description": "Someone who gets a status page's updates by email, chat or webhook.",
         "required": [
           "id",
-          "email",
           "state",
           "subscribed_at"
         ],
@@ -76107,11 +78014,45 @@
             "type": "string"
           },
           "email": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The address. Null for a chat or webhook subscriber."
+          },
+          "channel": {
+            "$ref": "#/components/schemas/SubscriberChannel",
+            "description": "`email`, `slack`, `teams`, `discord`, `google_chat` or `webhook`."
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A chat or webhook subscriber's URL, masked: its host and the last four characters."
           },
           "state": {
             "$ref": "#/components/schemas/SubscriberState",
-            "description": "`confirmed` receives notices. `pending` has not clicked the link yet. `queued` was\nimported and waits for its confirmation email. `expired` never clicked, and the link\nlapsed. `quarantined` bounced or complained and gets nothing."
+            "description": "`confirmed` receives notices. `pending` has not clicked the link yet. `queued` was\nimported and waits for its confirmation email. `expired` never clicked, and the link\nlapsed. `quarantined` bounced or complained and gets nothing. `disabled` is a chat or\nwebhook subscriber whose endpoint refused or kept failing; enable it to resume."
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Chat and webhook deliveries that failed in a row; 5 disables the subscriber."
+          },
+          "disabled_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "disabled_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why it was disabled."
           },
           "subscribed_at": {
             "type": "string",
@@ -76174,6 +78115,30 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "StatusPageVisibility": {
+        "type": "string",
+        "description": "Public: anyone with the link. Private: a password, an IP allowlist, or both.",
+        "enum": [
+          "public",
+          "private"
+        ]
+      },
+      "StatuspageChoice": {
+        "type": "object",
+        "description": "One of the account's Statuspage pages, for the customer to pick from.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
           }
         }
       },
@@ -76249,6 +78214,18 @@
           }
         }
       },
+      "SubscriberChannel": {
+        "type": "string",
+        "description": "Where a subscriber gets notices. Stored in `status_page_subscribers.channel`.",
+        "enum": [
+          "email",
+          "slack",
+          "teams",
+          "discord",
+          "google_chat",
+          "webhook"
+        ]
+      },
       "SubscriberCounts": {
         "type": "object",
         "required": [
@@ -76256,7 +78233,8 @@
           "pending",
           "queued",
           "expired",
-          "quarantined"
+          "quarantined",
+          "disabled"
         ],
         "properties": {
           "confirmed": {
@@ -76280,6 +78258,11 @@
             "type": "integer",
             "format": "int64",
             "description": "Bounced or complained. They get no mail and hold no place."
+          },
+          "disabled": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Chat or webhook subscribers whose endpoint refused or kept failing."
           }
         }
       },
@@ -76317,14 +78300,74 @@
       },
       "SubscriberState": {
         "type": "string",
-        "description": "Where a subscription stands. `Expired` is a sign-up whose link lapsed unconfirmed; a daily job purges it.\n`Queued` waits for its confirmation email. `Quarantined` bounced or complained and gets nothing.",
+        "description": "Where a subscription stands. `Expired` is a sign-up whose link lapsed unconfirmed; a daily job purges it.\n`Queued` waits for its confirmation email. `Quarantined` bounced or complained and gets nothing.\n`Disabled` is a chat or webhook subscriber whose endpoint kept failing; its owner can enable it.",
         "enum": [
           "confirmed",
           "pending",
           "queued",
           "expired",
-          "quarantined"
+          "quarantined",
+          "disabled"
         ]
+      },
+      "SubscriberWebhookPayload": {
+        "type": "object",
+        "description": "The JSON a webhook subscriber receives, signed with Standard Webhooks headers.",
+        "required": [
+          "id",
+          "type",
+          "page",
+          "components",
+          "unsubscribe_url",
+          "occurred_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Equal to the `webhook-id` header; the same on every retry, so use it to drop duplicates."
+          },
+          "type": {
+            "type": "string",
+            "description": "`status_page.incident.opened`, `.updated` or `.resolved`; `status_page.maintenance.scheduled`,\n`.reminder`, `.started` or `.completed`; `status_page.subscription.created` for the welcome."
+          },
+          "page": {
+            "$ref": "#/components/schemas/WebhookPage"
+          },
+          "incident": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WebhookIncident"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maintenance": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WebhookMaintenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookComponent"
+            },
+            "description": "The components it affects. Empty means the whole page."
+          },
+          "unsubscribe_url": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       },
       "SubscriptionResponse": {
         "type": "object",
@@ -79494,6 +81537,130 @@
           }
         }
       },
+      "ThirdPartySource": {
+        "type": "object",
+        "description": "What a third-party component follows.",
+        "required": [
+          "vendor_slug",
+          "component_ids"
+        ],
+        "properties": {
+          "vendor_slug": {
+            "type": "string",
+            "description": "The vendor's slug, from `GET /status_page/third_party/vendors`."
+          },
+          "component_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The vendor components it follows; empty follows the whole service."
+          }
+        }
+      },
+      "ThirdPartyVendor": {
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "lists_all_components"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "What a third-party component names as its `vendor_slug`."
+          },
+          "name": {
+            "type": "string"
+          },
+          "status_page_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The vendor's own status page."
+          },
+          "lists_all_components": {
+            "type": "boolean",
+            "description": "False when the vendor's status page names only the parts an incident affects. Such a\nvendor can only be followed as a whole."
+          }
+        }
+      },
+      "ThirdPartyVendorComponent": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "What `vendor_component_ids` names."
+          },
+          "name": {
+            "type": "string"
+          },
+          "group": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "`operational`, `under_maintenance`, `degraded_performance`, `partial_outage` or\n`major_outage`."
+          }
+        }
+      },
+      "ThirdPartyVendorDetail": {
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "lists_all_components",
+          "components"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status_page_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lists_all_components": {
+            "type": "boolean"
+          },
+          "indicator": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`none`, `maintenance`, `minor`, `major` or `critical`; null when no current status is\navailable."
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the vendor's status was last read."
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThirdPartyVendorComponent"
+            },
+            "description": "Empty when no current status is available; the vendor can still be followed as a whole."
+          }
+        }
+      },
       "ThresholdDirection": {
         "type": "string",
         "enum": [
@@ -82268,9 +84435,32 @@
           }
         }
       },
+      "UpdateStatusPageAccess": {
+        "type": "object",
+        "description": "A change to a page's access. A field left out stays as it is. Any change to the password or the\nallowlist signs out every visitor.",
+        "properties": {
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "8 to 256 characters. `null` removes the password."
+          },
+          "ip_allowlist": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "At most 50 IPv4 or IPv6 addresses or CIDR blocks. `[]` removes them all."
+          }
+        }
+      },
       "UpdateStatusPageBrandingRequest": {
         "type": "object",
-        "description": "A field left out keeps its value and `null` clears it: `default_theme` goes\nback to `system`, `white_label` to false, and every other field to unset.\nAn empty or blank text field clears it too.",
+        "description": "A field left out keeps its value and `null` clears it: `default_theme` goes\nback to `system`, `white_label` to false, `language` to `en`, and every other field to unset.\nAn empty or blank text field clears it too.",
         "properties": {
           "page_title": {
             "type": [
@@ -82360,6 +84550,17 @@
               "null"
             ],
             "description": "At most 50 KB."
+          },
+          "language": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Lang",
+                "description": "The language visitors see the page, subscription emails and chat messages in: `en`,\n`de`, `it`, `fr`, `es`, `pt-BR` or `nl`. Incident and maintenance text shows as written."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -82467,6 +84668,44 @@
           "whole_page": {
             "type": "boolean",
             "description": "The whole page is under maintenance. Leave `affected_http_job_ids` empty."
+          },
+          "reminder_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Minutes before the start that subscribers get a reminder (5 to 10080). Absent keeps the\nstored value; null turns it off."
+          }
+        }
+      },
+      "UpdateThirdPartyComponent": {
+        "type": "object",
+        "description": "Fields left out keep their values.",
+        "properties": {
+          "friendly_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Up to 256 characters."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Up to 200 characters. `null` clears it."
+          },
+          "vendor_component_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Replaces the components it follows; empty follows the whole service."
           }
         }
       },
@@ -83663,6 +85902,85 @@
         ],
         "description": "How the endpoint authenticates us. `None` clears it. `Debug` never prints a secret."
       },
+      "WebhookComponent": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "WebhookIncident": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "message",
+          "url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "What the update says, e.g. \"Investigating\" or \"Resolved\"."
+          },
+          "message": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "WebhookMaintenance": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "message",
+          "starts_at",
+          "ends_at",
+          "url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
       "WebhookNotificationDetails": {
         "type": "object",
         "required": [
@@ -83675,6 +85993,26 @@
           }
         },
         "additionalProperties": false
+      },
+      "WebhookPage": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
       },
       "WebhookRequestHint": {
         "type": "object",
