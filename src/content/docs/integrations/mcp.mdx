@@ -353,6 +353,16 @@ Two more tools reach everything else the [Site Qwality API](/api-reference/) can
 - **Changes are audited.** Every change an assistant makes goes through the same API as the dashboard and shows up in your [audit log](/enterprise/audit-log/#ai-assistants) as the member who approved it, with the assistant's name, "via MCP" and the tool it used. Connecting and disconnecting an assistant are logged too.
 - **Grant the least you need.** Choose read-only when you only want answers. You can reconnect with write access later.
 
+## Agent skill
+
+Coding agents that read [agent skills](https://skills.sh) (Claude Code, Codex, Cursor and others) can install the Site Qwality skill, which tells the agent how to connect this server or call the API with a key, and to confirm before deleting or publishing anything:
+
+```bash
+npx skills add siteqwality/skills
+```
+
+The source is at [github.com/siteqwality/skills](https://github.com/siteqwality/skills).
+
 ## Partner and agency accounts
 
 If you manage [client accounts](/partners/client-accounts/), an assistant can work in one of them when your client lets you set custom headers (Claude Code, Cursor, VS Code and Codex CLI do). Add this header next to the server URL:
