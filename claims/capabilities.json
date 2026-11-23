@@ -320,7 +320,7 @@
   },
   "notify.contact_methods": {
     "status": "live",
-    "summary": "Email, SMS and Slack DM contact methods, SMS verified by code",
+    "summary": "Email, SMS, Slack DM and mobile app contact methods, SMS verified by code",
     "api": [
       "POST /user/{user_id}/contact_method",
       "POST /user/{user_id}/contact_method/{contact_method_id}/verification",
@@ -410,15 +410,9 @@
     ]
   },
   "notify.mobile_app": {
-    "status": "absent",
-    "summary": "A Site Qwality mobile app or its push notifications",
-    "source": "core-rs common/src/dispatch/docs/capability.md (mobile_push: channel_not_built)",
-    "patterns": [
-      "mobile app",
-      "mobile push",
-      "iOS app",
-      "Android app"
-    ]
+    "status": "live",
+    "summary": "The Site Qwality app for iPhone and Android: incident pages by push, acknowledge and resolve, on-call and monitors",
+    "source": "core-rs api/src/handlers/device/push_token.rs, common/src/dispatch/table.rs (MobilePush); mobile repo"
   },
   "notify.browser": {
     "status": "absent",

@@ -79,7 +79,7 @@ Reached by HTTP monitors, browser checks, domain expiry, log/metric/trace/SLO al
 
 Incidents do not use notification channels.
 
-Escalation steps page responders through their [contact methods](/incident-management/notifications/overview/): email, SMS or a Slack DM with a bot token you paste in. Phone call contact methods are never used: each page to one is recorded as skipped with `phone_call_not_delivered`.
+Escalation steps page responders through their [contact methods](/incident-management/notifications/overview/): email, SMS, a Slack DM with a bot token you paste in or the Site Qwality mobile app. Phone call contact methods are never used: each page to one is recorded as skipped with `phone_call_not_delivered`.
 
 A service broadcasts its incidents to its own targets: a Slack channel with a bot token you paste in, a webhook URL or email.
 
@@ -114,5 +114,7 @@ When an alert is deliberately not sent to a channel, a receipt is recorded with 
 | `channel_not_built` | This channel type is not available yet. | No |
 | `not_a_user_channel` | A page meant for one person was not sent to a shared channel, or a shared alert to a personal contact method. | No |
 | `subscriber_channel_not_offered` | Status pages do not offer this kind of subscription. | No |
+| `push_not_configured` | Pushes to this phone's platform are not set up yet. The problem is on our side, not in your contact method. | No |
+| `device_unavailable` | The phone signed out of the Site Qwality app, or the app was removed. Open the app and sign in again. | Yes |
 
 Treat a reason you do not recognize as a plain skip. Skipped receipts appear in a channel's recent deliveries and in a monitor's alert history, as the [channels reference](/incident-management/notifications/channels/#skipped-deliveries) explains.

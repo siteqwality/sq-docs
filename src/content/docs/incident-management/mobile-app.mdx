@@ -1,0 +1,48 @@
+---
+title: Mobile app
+description: Get on-call pages on your iPhone or Android phone, and acknowledge, resolve and work incidents from it.
+last_verified: 2026-11-23
+owner: jj
+---
+
+import { LinkCard, Steps } from '@astrojs/starlight/components';
+
+The Site Qwality app puts your on-call pages on your phone. A page arrives as a push notification with an **Acknowledge** button, and the app lets you work the incident, see who is on call and check your monitors without opening a laptop.
+
+Get it on the [App Store](https://apps.apple.com/app/id6835960559) (iPhone) or [Google Play](https://play.google.com/store/apps/details?id=com.siteqwality.app) (Android). The app is free and signs in to an existing Site Qwality account; it has no sign-up.
+
+## What you can do in the app
+
+- **Incidents:** acknowledge, resolve or reopen an incident; see which monitors failed, from which locations, and why; add a note or post a status page update; page a teammate, a schedule's on-call or an escalation policy; declare an incident on a service.
+- **On call:** see who is on call now for every schedule and your own shifts for the next 30 days; take a shift, cover a gap, or go on call now for an hour, 4 hours or the rest of a shift.
+- **Monitors:** every HTTP, heartbeat and browser monitor with its status and uptime, recent outages and checks; run a check now, or pause and resume a monitor.
+
+The app can see and do everything your [role](/getting-started/account-and-team/) allows in the dashboard.
+
+## Sign in and get pages
+
+<Steps>
+
+1. **Sign in.** Open the app and tap **Sign in**. A Site Qwality sign-in page opens. Sign in as you would in the dashboard, then confirm with **Sign in** on the page that asks whether to sign in the app on your phone. If you signed in to the dashboard a while ago, it asks you to confirm it's you first. You return to the app, signed in.
+
+2. **Turn on notifications.** In the app, open **Settings** and tap **Turn on notifications**, then allow them when your phone asks. The phone becomes one of your [contact methods](/incident-management/notifications/how-to/contact-methods/), named after the phone.
+
+3. **Turn on Page me on this phone.** This adds a `high` urgency [notification rule](/incident-management/notifications/how-to/notification-rules/) with no delay, so `critical` and `major` incidents page this phone right away, alongside your other rules.
+
+4. **Send a test.** Tap **Send a test notification**. A test page should arrive within a few seconds. You can send 5 tests an hour from each phone.
+
+</Steps>
+
+To page the phone for `low` urgency too, or to page it after a delay, edit your rules in the dashboard: open the menu under your name, choose **Notifications**, and add a rule that points at the phone.
+
+On iPhone, pages are time-sensitive notifications, so they show during a Focus that allows time-sensitive notifications. On Android, pages use their own **Pages** notification channel at the highest importance. To let them through Do Not Disturb, add Site Qwality to the apps that can interrupt in your phone's Do Not Disturb settings.
+
+## Sign a phone out
+
+Tap **Sign out** in the app's **Settings**, or in the dashboard open **Notifications** from the menu under your name and click **Sign out** next to the phone under **Mobile app**. The phone stops getting pages, and its contact method and the rules that use it are removed.
+
+If you delete the app without signing out, the phone stays in your contact methods. Once Apple or Google reports that the app is gone, pages to it are recorded as skipped with `device_unavailable` (see [what reaches each channel](/integrations/coverage/)). Sign it out in the dashboard to remove it.
+
+Before you sign out your only phone, check that your other rules still reach you. The [readiness check](/incident-management/escalation/readiness/) shows whether each escalation policy still reaches someone.
+
+<LinkCard title="Set up notification rules" description="Choose which contact methods page you, for each urgency and after what delay." href="/incident-management/notifications/how-to/notification-rules/" />

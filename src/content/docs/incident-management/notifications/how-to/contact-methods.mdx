@@ -26,6 +26,8 @@ A Slack DM can reach you two ways:
 - **Linked from Slack** (the easy way): run `/oncall` in Slack and open the link it sends. The method holds no token. It sends through the account's Slack integration for that workspace, and reads back with `integration_id` and `linked_via` (the integration's name).
 - **With a bot token** you paste in: the method sends with that token and does not use the account's Slack integration. Its token never reads back in full: it shows as `****` followed by its last four characters.
 
+A `mobile_push` method is a phone signed in to the Site Qwality [mobile app](/incident-management/mobile-app/). It is added when you turn on notifications in the app, so creating one here is refused. Signing the phone out removes it.
+
 Phone calls are not delivered, so a `phone_call` method is refused.
 
 Each user can have up to 20 contact methods. You manage your own, and admins can manage anyone's.

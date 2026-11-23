@@ -114,7 +114,7 @@ A level's targets are resolved and de-duplicated, then each user is paged throug
 
 This mapping is fixed and cannot be overridden per policy. Every user starts with a high and a low rule on their sign-in email.
 
-Contact methods are email, SMS and Slack DM; there are no phone calls. A rule is skipped when its method cannot page: an SMS number that is not verified, an email address that bounced permanently or reported spam, or SMS when the account has none left. Each skip is recorded on the incident as a `page_skipped` event with its reason. A user no rule can reach is paged at their sign-in email, recorded as `escalation_fallback_email`. See [readiness](/incident-management/escalation/readiness/) for the full definition.
+Contact methods are email, SMS, Slack DM and the [mobile app](/incident-management/mobile-app/); there are no phone calls. A rule is skipped when its method cannot page: an SMS number that is not verified, an email address that bounced permanently or reported spam, or SMS when the account has none left. Each skip is recorded on the incident as a `page_skipped` event with its reason. A user no rule can reach is paged at their sign-in email, recorded as `escalation_fallback_email`. See [readiness](/incident-management/escalation/readiness/) for the full definition.
 
 ## Readiness endpoint
 
