@@ -52513,6 +52513,21 @@
             ],
             "description": "Alert when the certificate is one a browser would reject: expired, not yet\nvalid, self-signed, an untrusted chain or a hostname mismatch. Defaults to\ntrue. Ignored without `monitor_tls`."
           },
+          "alert_on_page_speed": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Alert when the page speed score drops below `page_speed_alert_threshold`; scores\nare recorded either way. Defaults to true. Ignored without `monitor_page_speed`."
+          },
+          "page_speed_alert_threshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The performance score (1-100) page speed alerts below; it recovers 10 points above.\nDefaults to 50. Ignored without `monitor_page_speed`."
+          },
           "recovery_period_runs": {
             "type": [
               "integer",
@@ -57670,6 +57685,21 @@
               "null"
             ],
             "description": "Whether an invalid certificate alerts. Only on `GET /http/job/{id}`\nwhen TLS is monitored."
+          },
+          "alert_on_page_speed": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether page speed alerts. Only on `GET /http/job/{id}` when page speed is monitored."
+          },
+          "page_speed_alert_threshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The score (1-100) page speed alerts below. Only on `GET /http/job/{id}` with page speed."
           },
           "icon": {
             "oneOf": [
@@ -65116,6 +65146,21 @@
                     "null"
                   ],
                   "description": "Whether an invalid certificate alerts. Only on `GET /http/job/{id}`\nwhen TLS is monitored."
+                },
+                "alert_on_page_speed": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "Whether page speed alerts. Only on `GET /http/job/{id}` when page speed is monitored."
+                },
+                "page_speed_alert_threshold": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "The score (1-100) page speed alerts below. Only on `GET /http/job/{id}` with page speed."
                 },
                 "icon": {
                   "oneOf": [
@@ -83606,6 +83651,21 @@
               "null"
             ],
             "description": "Alert when the certificate is one a browser would reject. Omitted keeps\nthe stored setting (true for a new TLS check). Ignored without `monitor_tls`."
+          },
+          "alert_on_page_speed": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Alert when the page speed score drops below the threshold. Omitted keeps the stored\nsetting (true for a new page speed check). Ignored without page speed monitoring."
+          },
+          "page_speed_alert_threshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The performance score (1-100) page speed alerts below; it recovers 10 points above.\nOmitted keeps the stored threshold (50 for a new check)."
           },
           "recovery_period_runs": {
             "type": [
