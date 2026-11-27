@@ -1,7 +1,7 @@
 ---
 title: HTTP check reference
 description: Every field on an HTTP check, with defaults, validation limits, and status meanings.
-last_verified: 2026-10-19
+last_verified: 2026-11-27
 owner: jj
 ---
 
@@ -47,6 +47,8 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `alert_on_invalid_certificate` | bool | `true` | Alert when browsers would reject the certificate. Ignored without `monitor_tls`; a `PUT` without it keeps the current value. See [invalid certificate alerts](/uptime-monitoring/ssl-tls-checks/reference/#invalid-certificate-alerts). |
 | `monitor_dns` | bool | `true` | Provision a paired [domain expiry check](/uptime-monitoring/dns-checks/overview/) for the URL's registrable domain. Silently skipped at create time, and rejected with `400` on update, when the host is on a shared platform suffix such as `*.vercel.app`. |
 | `monitor_page_speed` | bool | `false` | Provision a paired page-speed (Lighthouse) check on a slower schedule. |
+| `alert_on_page_speed` | bool | `true` | Alert when the performance score drops below `page_speed_alert_threshold`. Scores are recorded either way. Ignored without `monitor_page_speed`; a `PUT` without it keeps the current value. See [page speed alerts](/uptime-monitoring/http-checks/how-to/page-speed-alerts/). |
+| `page_speed_alert_threshold` | int | `50` | Performance score, 1 to 100, that page speed alerts below. It recovers 10 points above. Ignored without `monitor_page_speed`; a `PUT` without it keeps the current value. |
 | `tags` | string[] | none | Free-form tags. Used for grouping and [maintenance-window](/incident-management/maintenance/overview/) matching. |
 | `http_version` | enum | `auto` | Preferred HTTP version for the check transport. See [HTTP versions](#http-versions). |
 | `web_bot_auth` | bool | `false` | Sign each check request with [Web Bot Auth](/bot/#verifying-a-request), so bot protection that supports it, such as Cloudflare, can recognize Site Qwality Monitor. HTTP checks only. See [blocked by bot protection](/uptime-monitoring/http-checks/allowlisting/#blocked-by-bot-protection). |
@@ -72,6 +74,8 @@ The full request/response schema is in the auto-generated [API Reference](/api-r
 | `group_notifications` | object[] \| null | Full notification-group objects resolved from `group_notification_ids`. |
 | `tls_port` | int | Fetch one check only, when TLS monitoring is on. The port the TLS check uses. |
 | `alert_on_invalid_certificate` | bool | Fetch one check only, when TLS monitoring is on. Whether an invalid certificate alerts. |
+| `alert_on_page_speed` | bool | Fetch one check only, when page speed monitoring is on. Whether page speed alerts. |
+| `page_speed_alert_threshold` | int | Fetch one check only, when page speed monitoring is on. The score page speed alerts below. |
 | `partial_failure` | object \| absent | Present while runs pass the quorum but some locations fail: `failed_locations` (location ids), `total_locations` and `since` (rfc3339). Never paged. |
 | `not_checked_reason` | string \| null | Set only while an active check is not being run. `quota`: the account's uptime quota for this period is used up. See [not checked](#not-checked). |
 

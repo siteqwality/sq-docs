@@ -97,7 +97,7 @@ Every linked monitor type counts, and the incident counts as recovered when ever
 | TLS certificate | The certificate has expired. A check that cannot reach the site keeps the last known expiry date, so a blip neither opens nor resolves anything. An [invalid certificate](/uptime-monitoring/ssl-tls-checks/overview/#invalid-certificate-alerts) alerts but never fails the monitor. | A valid certificate is read. |
 | Domain registration | The registration has expired, on the same rule as TLS. | The registry reports a later expiry date. |
 | [DNS records](/uptime-monitoring/dns-record-monitors/overview/) | A change alert is sent, or the zone becomes unreadable (after two failed checks in a row). | A check matches the baseline again, for example after you accept the change. |
-| Page speed | The performance score drops below the job's threshold. | The score is back at or above the threshold. |
+| Page speed | The performance score drops below the [alert threshold](/uptime-monitoring/http-checks/how-to/page-speed-alerts/#the-threshold). With page speed alerts off, it never fails. | The score is 10 points above the threshold, or page speed alerts are turned off. |
 
 ### Reopen window
 

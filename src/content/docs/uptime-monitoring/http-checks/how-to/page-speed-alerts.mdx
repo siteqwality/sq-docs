@@ -1,13 +1,13 @@
 ---
 title: Get alerted when page speed drops
-description: How Lighthouse performance-score crossings fire alerts and recoveries through your monitor's notification groups.
-last_verified: 2026-10-29
+description: How a Lighthouse performance score below your threshold fires an alert, when it recovers, and how to turn page speed alerts off.
+last_verified: 2026-11-27
 owner: jj
 ---
 
 import { LinkCard } from '@astrojs/starlight/components';
 
-Turning on `monitor_page_speed` provisions a paired page-speed check that runs Google PageSpeed Insights against your URL every 6 hours. Beyond charting the scores, it alerts when the **Lighthouse performance score crosses a threshold**, and again when it crosses back.
+Turning on `monitor_page_speed` provisions a paired page-speed check that runs Google PageSpeed Insights against your URL every 6 hours. Beyond charting the scores, it alerts when the **Lighthouse performance score drops below a threshold**, and again when it recovers.
 
 ## Turn it on
 
@@ -24,27 +24,50 @@ A **Page Speed Insights** tab appears on the monitor once the first result lands
 
 ## What triggers an alert
 
-Alerting is **transition-only**. Each run compares the previous run's performance score against the current one:
+Each monitor is either healthy or degraded, and only a change between the two alerts:
 
-| Previous score | Current score | Result |
+| State | Current score | Result |
 |---|---|---|
-| at or above threshold | below threshold | **Degraded** alert fires |
-| below threshold | at or above threshold | **Recovered** alert fires |
-| both below | | nothing |
-| both at or above | | nothing |
+| healthy | below the threshold | **Degraded** alert fires |
+| degraded | at least 10 points above the threshold | **Recovered** alert fires |
+| degraded | anywhere below that | nothing |
+| healthy | at or above the threshold | nothing |
 
 - A score sitting **exactly at** the threshold counts as healthy. The comparison is strictly "below".
+- Recovery needs 10 points of headroom, capped at 100. Lighthouse scores move a few points between runs with nothing changed, so a page scoring around the threshold alerts once instead of on every run.
 - A monitor that stays degraded does **not** re-alert every 6 hours. You get one alert on the way down and one on the way back up.
 
-The very first page-speed run has no previous score to compare against, so it never alerts however bad the score is.
+A new page-speed check starts healthy, so its first run alerts if the score is already below the threshold.
 
 ## The threshold
 
-`performance_threshold` is `0.5` on every monitor. `GET /http/job/{job_id}/page_speed` returns it, but no endpoint or dashboard field changes it. So you are alerted when the Lighthouse performance score drops below **50 out of 100**, and again when it climbs back to 50 or above.
+The threshold defaults to **50 out of 100**. Change it under **Alert below score** in the **Optional checks** section of the monitor form, or with `page_speed_alert_threshold` (a whole number from 1 to 100) on the HTTP check:
 
-The value is on Lighthouse's native `0.0` to `1.0` scale. Alert text converts it for display, so `0.5` shows as `50/100`.
+```bash
+curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "page_speed_alert_threshold": 40 }'
+```
+
+With a threshold of 40, the monitor degrades below 40 and recovers at 50. The new threshold applies from the next run.
+
+`GET /http/job/{job_id}/page_speed` returns it as `performanceThreshold` on Lighthouse's native `0.0` to `1.0` scale, so 40 reads `0.4`.
 
 Only the **performance** category is compared. SEO, accessibility, and best-practices scores are collected and charted, but nothing alerts on them.
+
+## Turn alerts off
+
+To keep the scores and charts without the emails, clear **Alert on page speed** in the monitor form, or send `alert_on_page_speed: false`:
+
+```bash
+curl -X PUT https://api.siteqwality.com/http/job/$JOB_ID \
+  -H "Authorization: Bearer $SITEQWALITY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "alert_on_page_speed": false }'
+```
+
+The check keeps running every 6 hours. Turning alerts off on a degraded monitor marks it healthy, which resolves any page-speed incident it opened. Turned back on, it starts healthy, and the next run below the threshold alerts.
 
 ## Where the alert goes
 
@@ -54,9 +77,8 @@ PagerDuty, Jira Service Management (Opsgenie), Google Chat, Mattermost, Pushover
 
 ## What it does not do
 
-A page-speed crossing is a notification and nothing more. It does **not**:
+A page-speed alert opens an incident only when the HTTP check belongs to a [service](/incident-management/services/overview/). It does **not**:
 
-- open an incident, so it never pages an on-call rotation or triggers an escalation policy;
 - record a state transition, so it never affects uptime percentage or SLA reports;
 - appear on a status page;
 - change the HTTP monitor's own status.
@@ -76,5 +98,5 @@ Inside a window, a degraded alert is **held** until the window ends and then rel
 
 ## See also
 
-<LinkCard title="HTTP check reference" description="monitor_page_speed and the page-speed endpoints." href="/uptime-monitoring/http-checks/reference/" />
+<LinkCard title="HTTP check reference" description="monitor_page_speed, the page speed alert fields and the page-speed endpoints." href="/uptime-monitoring/http-checks/reference/" />
 <LinkCard title="Maintenance windows" description="How held alerts are released." href="/incident-management/maintenance/overview/" />
